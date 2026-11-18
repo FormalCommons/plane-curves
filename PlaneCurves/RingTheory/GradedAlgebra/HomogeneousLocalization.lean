@@ -26,6 +26,8 @@ submonoids. This file adds:
   ring of fractions `f / g` of homogeneous elements of equal degree with `g ≠ 0`, is a field.
   The inverse of `f / g` is `g / f` (`HomogeneousLocalization.mk_inv`).
   For the homogeneous coordinate ring of a projective variety it is the function field.
+* `HomogeneousLocalization.algebraMap_notMem_range_val`: a nonzero homogeneous element of nonzero
+  degree is not a fraction of degree zero.
 * `HomogeneousLocalization.lift`: for a submonoid `S` of non-zero-divisors and a ring hom
   `φ : A →+* K` to a field that does not vanish on the homogeneous elements of `S`, the ring hom
   sending `f / g` to `φ f / φ g` (`HomogeneousLocalization.lift_mk`). For a graded `R`-algebra
@@ -133,6 +135,33 @@ theorem mk_inv {i : ι} (f g : 𝒜 i) (hf : (f : A) ∈ (⊥ : Ideal A).primeCo
   inv_eq_of_mul_eq_one_right (mk_mul_mk_swap f g hf hg)
 
 end domain
+
+section val
+
+variable {S : Submonoid A} {𝒜}
+
+/-- In the homogeneous localization at a submonoid `S` of non-zero-divisors, a nonzero
+homogeneous element `a` of nonzero degree is not a fraction of degree zero: its image in the
+localization at `S` is not the value of any element of the homogeneous localization. -/
+theorem algebraMap_notMem_range_val [IsLeftCancelAdd ι] (hS : S ≤ nonZeroDivisors A) {i : ι}
+    (hi : i ≠ 0) {a : A} (ha : a ∈ 𝒜 i) (ha0 : a ≠ 0) :
+    algebraMap A (Localization S) a ∉ Set.range (val (𝒜 := 𝒜) (x := S)) := by
+  rintro ⟨z, hz⟩
+  obtain ⟨⟨j, ⟨f, hf⟩, ⟨g, hg⟩, hgS⟩, rfl⟩ := mk_surjective z
+  rw [val_mk, ← Localization.mk_one_eq_algebraMap, Localization.mk_eq_mk_iff,
+    Localization.r_iff_exists] at hz
+  obtain ⟨c, hc⟩ := hz
+  have hfg : f = g * a := by
+    simpa using (mul_cancel_left_mem_nonZeroDivisors (hS c.2)).1 hc
+  have hne : j + i ≠ j := fun h ↦ hi (add_eq_left.1 h)
+  have hf0 : f = 0 := by
+    have h₁ := DirectSum.decompose_of_mem_same 𝒜 hf
+    rw [hfg, DirectSum.decompose_of_mem_ne 𝒜 (SetLike.GradedMul.mul_mem hg ha) hne] at h₁
+    rw [hfg, ← h₁]
+  rw [hf0, eq_comm, mul_comm] at hfg
+  exact ha0 ((mul_right_mem_nonZeroDivisors_eq_zero_iff (hS hgS)).1 hfg)
+
+end val
 
 section lift
 

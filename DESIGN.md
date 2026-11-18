@@ -138,6 +138,7 @@ PlaneCurves/
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
 │   │   ├── Taylor.lean                  the Taylor shift p ↦ p(X + a) as an AlgEquiv (A9)
+│   │   ├── Factorization.lean           F = F' U, U(P) ≠ 0, irreducible factors of F' vanish at P
 │   │   ├── LinearForm.lean              linear forms ∑ C (a i) * X i (P8)
 │   │   ├── Homogenize/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
@@ -359,13 +360,13 @@ with their files.
   `HomogeneousLocalization`): a `Field` instance on `AtPrime 𝒜 ⊥` for a
   graded domain, `mapId_injective`, `mem_range_mapId_iff`.
 - **Regular functions on a set of maximal ideals**
-  (`Localization/RegularFunctions.lean`): `PlaneCurves.regularFunctionsOn R U`,
-  the infimum over `m ∈ U` of `Localization.subalgebra.ofField K m.primeCompl`
-  in the fraction field `K` (Fulton's `Γ(U)`). API:
-  `mem_regularFunctionsOn_iff`, `regularFunctionsOn_univ`
-  (`MaximalSpectrum.iInf_localization_eq_bot`), antitonicity,
-  `regularFunctionsOn_basicOpen` (`= R[1/f]`), finiteness of poles for a
-  one-dimensional Noetherian domain.
+  (`Localization/RegularFunctions.lean`):
+  `PlaneCurves.regularFunctionsOn R K U`, the infimum over `m ∈ U` of
+  `Localization.subalgebra.ofField K m.primeCompl` in the fraction field `K`
+  (Fulton's `Γ(U)`). API: `mem_regularFunctionsOn_iff`,
+  `regularFunctionsOn_univ` (`MaximalSpectrum.iInf_localization_eq_bot`),
+  `antitone_regularFunctionsOn`, `regularFunctionsOn_basicOpen`
+  (`= R[1/f]`). Finiteness of poles is R3's.
 - **Lengths over a local algebra with residue field k**
   (`LocalRing/Length.lean`), **order = colength**
   (`DiscreteValuationRing/Colength.lean`) and

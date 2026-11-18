@@ -30,6 +30,9 @@ by finitely many forms (Fulton, Proposition 1 of §4.2).
   for `σ` finite and `R` Noetherian, is spanned by finitely many forms.
 * `MvPolynomial.pow_idealOfVars_le_iff`: an ideal contains the `N`-th power of the ideal of the
   variables exactly when it contains every form of degree at least `N`.
+* `HomogeneousIdeal.mk_mem_quotientGrading`, `HomogeneousIdeal.exists_isHomogeneous_mk_eq`: the
+  graded piece of degree `d` of `MvPolynomial σ R ⧸ I` consists of the classes of forms of
+  degree `d`.
 
 ## Related results elsewhere
 
@@ -138,5 +141,29 @@ example {k : Type*} [Field k] (I : HomogeneousIdeal (homogeneousSubmodule σ k))
   inferInstance
 
 end MvPolynomial
+
+namespace HomogeneousIdeal
+
+open MvPolynomial
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+variable {σ R : Type*} [CommRing R] (I : HomogeneousIdeal (homogeneousSubmodule σ R)) {d : ℕ}
+
+/-- The class in `MvPolynomial σ R ⧸ I` of a form of degree `d` lies in the graded piece of
+degree `d`. -/
+theorem mk_mem_quotientGrading {f : MvPolynomial σ R} (hf : f.IsHomogeneous d) :
+    Ideal.Quotient.mk I.toIdeal f ∈ I.quotientGrading d :=
+  TauCeti.GradedAlgebra.mk_mem_quotientPiece _ _ ((mem_homogeneousSubmodule d f).2 hf)
+
+/-- Every element of the graded piece of degree `d` of `MvPolynomial σ R ⧸ I` is the class of a
+form of degree `d`. -/
+theorem exists_isHomogeneous_mk_eq {x : MvPolynomial σ R ⧸ I.toIdeal}
+    (hx : x ∈ I.quotientGrading d) :
+    ∃ f : MvPolynomial σ R, f.IsHomogeneous d ∧ Ideal.Quotient.mk I.toIdeal f = x := by
+  obtain ⟨f, hf, rfl⟩ := (TauCeti.GradedAlgebra.mem_quotientPiece_iff _ _).1 hx
+  exact ⟨f, (mem_homogeneousSubmodule d f).1 hf, rfl⟩
+
+end HomogeneousIdeal
 
 end
