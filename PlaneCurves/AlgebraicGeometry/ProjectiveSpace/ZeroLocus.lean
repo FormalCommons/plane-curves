@@ -47,7 +47,8 @@ correspondence of §4.2.
   `vanishingIdeal_univ`, `zeroLocus_range_linearForms` and `vanishingIdeal_singleton` (a point
   is cut out by the linear forms `aᵢXⱼ - aⱼXᵢ`, which span its ideal),
   `zeroLocus_vanishingIdeal_subset` and `zeroLocus_vanishingIdeal_zeroLocus`.
-* `isPrime_vanishingIdeal_singleton`: the ideal of a point is prime.
+* `isPrime_vanishingIdeal_singleton`, `zeroLocus_vanishingIdeal_singleton`: a point is a
+  projective variety.
 * `cone_zeroLocus` and `vanishingIdeal_cone`: the cone over `V(I)` is the affine zero locus of
   `I`, and the affine ideal of the cone over a nonempty `X` is `I(X)`.
 * `zeroLocus_linearSubst` and `mem_zeroLocus_iff_affineChart`: zero loci under a linear change
@@ -669,6 +670,16 @@ instance isPrime_vanishingIdeal_singleton (P : ℙ k (Fin (n + 1) → k)) :
       mem_vanishingIdeal_iff_of_isHomogeneous (hx.mul hy), Set.mem_singleton_iff, forall_eq,
       map_mul, mul_eq_zero] at hxy ⊢
     exact hxy
+
+/-- A point is a projective algebraic set: `V(I({P})) = {P}`. -/
+@[simp]
+theorem zeroLocus_vanishingIdeal_singleton (P : ℙ k (Fin (n + 1) → k)) :
+    zeroLocus (vanishingIdeal {P} : Set (MvPolynomial (Fin (n + 1)) k)) = {P} := by
+  induction P using Projectivization.ind with | h a ha =>
+  refine (subset_zeroLocus_vanishingIdeal _).antisymm' ?_
+  refine (zeroLocus_anti_mono fun f hf ↦ ?_).trans (zeroLocus_range_linearForms a ha).le
+  rw [SetLike.mem_coe, ← HomogeneousIdeal.mem_iff, vanishingIdeal_singleton a ha]
+  exact Ideal.subset_span hf
 
 end PlaneCurves.ProjectiveSpace
 

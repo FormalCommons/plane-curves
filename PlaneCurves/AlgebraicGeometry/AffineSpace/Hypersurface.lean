@@ -5,6 +5,7 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.RingTheory.Nullstellensatz
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
@@ -45,8 +46,10 @@ field the irreducible algebraic subsets of `𝔸²` are `𝔸²`, the points, an
   same zero locus if and only if they are associated.
 * `PlaneCurves.vanishingIdeal_zeroLocus_eq_span_of_infinite`: in the plane, `I(V(F)) = (F)` for
   irreducible `F` with `V(F)` infinite, over any field.
-* `PlaneCurves.isPrime_vanishingIdeal_plane_iff`: the irreducible algebraic subsets of the
-  plane over an infinite field.
+* `PlaneCurves.isPrime_vanishingIdeal_plane_iff`, `PlaneCurves.isPrime_vanishingIdeal_line_iff`:
+  the irreducible algebraic subsets of the plane and of the line over an infinite field.
+* `MvPolynomial.finite_zeroLocus_span_singleton_of_unique`: in one variable, a nonzero polynomial
+  has finitely many zeros.
 * `PlaneCurves.vanishingIdeal_zeroLocus_and_components`: all of the above, in Fulton's form.
 
 ## References
@@ -84,6 +87,20 @@ theorem exists_irreducible_dvd_subset_zeroLocus {V : Set (σ → k)} {F : MvPoly
   obtain ⟨p, hp, hpF, hpV⟩ := hV.exists_irreducible_dvd_mem hF hFV
   refine ⟨p, hp, hpF, (zeroLocus_vanishingIdeal_le V).trans (zeroLocus_anti_mono ?_)⟩
   exact (span_singleton_le_iff_mem _).2 hpV
+
+/-- In one variable, over any field, a nonzero polynomial has finitely many zeros. -/
+theorem finite_zeroLocus_span_singleton_of_unique [Unique σ] {F : MvPolynomial σ k}
+    (hF : F ≠ 0) : (zeroLocus k (span {F})).Finite := by
+  have hF' : uniqueAlgEquiv k σ F ≠ 0 :=
+    (map_ne_zero_iff _ (uniqueAlgEquiv k σ).injective).2 hF
+  refine ((Polynomial.finite_setOfPred_isRoot hF').preimage
+    (f := fun a : σ → k ↦ a default)
+    (Function.Injective.injOn fun a b h ↦ funext fun i ↦ ?_)).subset fun a ha ↦ ?_
+  · rwa [Unique.eq_default i]
+  · rw [zeroLocus_span, Set.mem_ofPred_eq] at ha
+    have := ha F rfl
+    rw [aeval_def, Algebra.algebraMap_self, ← eval₂_uniqueAlgEquiv] at this
+    exact this
 
 section IsAlgClosed
 
@@ -226,6 +243,29 @@ theorem isPrime_vanishingIdeal_plane_iff [Infinite k] {V : Set (Fin 2 → k)} :
       exact Ideal.isPrime_bot
     · exact ⟨⟨_, (zeroLocus_vanishingIdeal_singleton x).symm⟩, inferInstance⟩
     · exact ⟨⟨_, rfl⟩, isPrime_vanishingIdeal_zeroLocus_of_infinite hF hinf⟩
+
+/-- **Irreducible algebraic subsets of the line.** Over an infinite field, an algebraic subset
+of `𝔸¹`, the functions on a one-point type `σ`, is irreducible, that is, has a prime ideal, if
+and only if it is `𝔸¹` or a point. -/
+theorem isPrime_vanishingIdeal_line_iff {σ : Type*} [Unique σ] [Infinite k] {V : Set (σ → k)} :
+    ((∃ I : Ideal (MvPolynomial σ k), V = zeroLocus k I) ∧ (vanishingIdeal k V).IsPrime) ↔
+      V = Set.univ ∨ ∃ x, V = {x} := by
+  refine ⟨fun ⟨⟨I, hVI⟩, hP⟩ => ?_, fun h => ?_⟩
+  · have hV : zeroLocus k (vanishingIdeal k V) = V := by
+      rw [hVI, ← zariskiClosure_apply, zariskiClosure_zeroLocus]
+    by_cases hbot : vanishingIdeal k V = ⊥
+    · left
+      rw [← hV, hbot, zeroLocus_bot, Set.top_eq_univ]
+    obtain ⟨G, hG, hG0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hbot
+    have hfin : V.Finite := (finite_zeroLocus_span_singleton_of_unique hG0).subset
+      (hV ▸ zeroLocus_anti_mono ((span_singleton_le_iff_mem _).2 hG))
+    obtain ⟨x, hx, -⟩ := exists_vanishingIdeal_eq_singleton_of_finite hfin hP
+    exact Or.inr ⟨x, by rw [← hV, hx, zeroLocus_vanishingIdeal_singleton]⟩
+  · rcases h with rfl | ⟨x, rfl⟩
+    · refine ⟨⟨⊥, by rw [zeroLocus_bot, Set.top_eq_univ]⟩, ?_⟩
+      rw [← Set.pi_univ, vanishingIdeal_pi_eq_bot fun _ => Set.infinite_univ]
+      exact Ideal.isPrime_bot
+    · exact ⟨⟨_, (zeroLocus_vanishingIdeal_singleton x).symm⟩, inferInstance⟩
 
 /-- **Reduced equations and irreducible components of affine hypersurfaces** (Fulton, §1.6,
 Corollaries 1–3, and §1.7, Corollary 3).

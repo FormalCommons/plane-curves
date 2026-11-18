@@ -32,7 +32,8 @@ dehomogenization.
 * `MvPolynomial.X_pow_mul_homogenize_add`: `X i ^ t * (f + g)* = X i ^ r * f* + X i ^ s * g*`
   for `s = deg f`, `r = deg g` and `t = r + s - deg (f + g)`.
 * `MvPolynomial.irreducible_dehomogenize_iff`: a form not divisible by `X i` is irreducible if and
-  only if its dehomogenization is.
+  only if its dehomogenization is; `MvPolynomial.irreducible_homogenize_totalDegree`: `f*` is
+  irreducible for irreducible `f`.
 * `MvPolynomial.isRelPrime_dehomogenize`: the dehomogenizations of relatively prime forms are
   relatively prime.
 * `MvPolynomial.homogenize_totalDegree_spec`: all of these together, with Tau Ceti's
@@ -182,6 +183,14 @@ theorem irreducible_dehomogenize_iff {F : MvPolynomial (Fin (n + 1)) R} {d : ℕ
     · rw [← hFF, hgk, homogenize_totalDegree_mul] at h
       exact (h.isUnit_or_isUnit rfl).imp (fun hu ↦ by simpa using hu.map (dehomogenize i))
         (fun hu ↦ by simpa using hu.map (dehomogenize i))
+
+/-- Over a ring without zero divisors, the homogenization `f* = homogenize i f.totalDegree f` of
+an irreducible polynomial is an irreducible form. -/
+theorem irreducible_homogenize_totalDegree {f : MvPolynomial (Fin n) R} (hf : Irreducible f) :
+    Irreducible (homogenize i f.totalDegree f) :=
+  (irreducible_dehomogenize_iff (isHomogeneous_homogenize i _ f)
+    (not_X_dvd_homogenize_totalDegree hf.ne_zero)).1
+    (by rwa [dehomogenize_homogenize_totalDegree])
 
 /-- Over a ring without zero divisors, the dehomogenizations of relatively prime forms are
 relatively prime: a common factor `h` of `F_*` and `G_*` gives the common factor `h*` of `F`

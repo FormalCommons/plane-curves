@@ -27,7 +27,8 @@ the same irreducible factors. These statements need no `NormalizationMonoid`, un
 * `Ideal.mem_radical_span_singleton_iff`, `Ideal.radical_span_singleton_eq_iff`,
   `Ideal.radical_span_singleton_eq_span`: the radical of a principal ideal.
 * `Ideal.IsPrime.exists_irreducible_dvd_mem`: a prime ideal containing `a ≠ 0` contains an
-  irreducible factor of `a`.
+  irreducible factor of `a`; `Ideal.IsPrime.eq_span_singleton_of_le`: a nonzero prime ideal inside
+  `(p)`, `p` irreducible, is `(p)`.
 -/
 
 public section
@@ -126,6 +127,15 @@ theorem IsPrime.exists_irreducible_dvd_mem {P : Ideal R} (hP : P.IsPrime) {a : R
   obtain ⟨p, hp, hpP⟩ := (hP.multiset_prod_mem_iff_exists_mem _).1 this
   exact ⟨p, UniqueFactorizationMonoid.irreducible_of_factor p hp,
     UniqueFactorizationMonoid.dvd_of_mem_factors hp, hpP⟩
+
+/-- In a unique factorization domain, a nonzero prime ideal contained in the principal ideal of
+an irreducible element `p` is `(p)`. -/
+theorem IsPrime.eq_span_singleton_of_le {P : Ideal R} (hP : P.IsPrime) (hP0 : P ≠ ⊥) {p : R}
+    (hp : Irreducible p) (h : P ≤ span {p}) : P = span {p} := by
+  obtain ⟨q, hqP, hq⟩ := hP.exists_mem_prime_of_ne_bot hP0
+  obtain ⟨c, hc⟩ := hp.dvd_symm (UniqueFactorizationMonoid.irreducible_iff_prime.2 hq)
+    (mem_span_singleton.1 (h hqP))
+  exact h.antisymm ((span_singleton_le_iff_mem P).2 (hc ▸ P.mul_mem_right c hqP))
 
 end Ideal
 
