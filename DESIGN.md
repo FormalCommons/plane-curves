@@ -127,9 +127,11 @@ creates it.
 ```
 PlaneCurves/
 ├── Algebra/
-│   └── MvPolynomial/
-│       ├── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
-│       └── SetVarZero.lean              setting X i to zero, X i ∣ p - p(X i = 0) (Q11)
+│   ├── MvPolynomial/
+│   │   ├── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
+│   │   └── SetVarZero.lean              setting X i to zero, X i ∣ p - p(X i = 0) (Q11)
+│   └── Polynomial/
+│       └── Bivariate.lean               coefficients and Y-degree of R[X][Y] ≃ R[X, Y] (R6)
 ├── RingTheory/
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
@@ -159,10 +161,8 @@ PlaneCurves/
 │   │   └── QuotientPiLocalization.lean  A/I ≅ ∏ A_𝔪/I A_𝔪 for A/I Artinian (A11)
 │   ├── DiscreteValuationRing/
 │   │   └── Colength.lean                order = colength, expansions (A12)
-│   ├── KrullDimension/
-│   │   └── TrdegOne.lean                domains of transcendence degree one (R3)
-│   └── Length/
-│       └── Index.lean                   ℓ(V/TV) = ℓ(W/TW) (V7)
+│   └── KrullDimension/
+│       └── TrdegOne.lean                domains of transcendence degree one (R3)
 ├── LinearAlgebra/
 │   └── Projectivization/
 │       ├── AffineChart.lean             hyperplane at infinity ≅ ℙⁿ⁻¹ (P1)
@@ -662,7 +662,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | V3 | `PlaneCurve/Place/Basic.lean`, `SimplePoint.lean` | `placesOver`, `ordForm`; **7-points** | V1, V2, L4 |
 | V4 | `PlaneCurve/Place/RationalMap.lean` | **7-ratmap** | V2, R7 |
 | V6 | `PlaneCurve/NonsingularModel/Normalization.lean` | **7-normalization** | V3, R1 |
-| V7 | `RingTheory/Length/Index.lean`, `FieldTheory/FunctionField/HolomorphyRing/Length.lean` | index lemma, `ℓ(𝒪_S/g) = Σ ord_Q g` | V1 |
+| V7 | `FieldTheory/FunctionField/HolomorphyRing/Length.lean` | `ℓ(𝒪_S/g) = Σ ord_Q g`; the index lemma is Tau Ceti's `TauCeti.length_quotient_range_restrict` | V1 |
 | V8 | `PlaneCurve/Place/IntersectionNumber.lean` | **7-intsum** | V6, V7, Q7, A12 |
 | V5 | `PlaneCurve/NonsingularModel/Basic.lean` | **7-model**; **7-classify** (existing, with plane-curve corollaries) | V3, V8 |
 
