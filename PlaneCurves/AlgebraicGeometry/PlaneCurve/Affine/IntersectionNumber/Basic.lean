@@ -318,12 +318,11 @@ theorem intersectionNumber_ne_top_iff :
   refine ⟨fun h H hH hF hG hHP => h ?_, fun h => ?_⟩
   · -- `𝒪 ⧸ (F, G)` maps onto `𝒪 ⧸ (H)`, of dimension one, hence of infinite length
     set 𝒪 := AffineSpace.localRing k P
-    have hH𝒪 : algebraMap _ 𝒪 H ∈ maximalIdeal 𝒪 := by
-      rw [← AffineSpace.localRing.evalAt_eq_zero_iff, AffineSpace.localRing.evalAt_algebraMap, hHP]
+    have hH𝒪 : algebraMap _ 𝒪 H ∈ maximalIdeal 𝒪 :=
+      AffineSpace.localRing.algebraMap_mem_maximalIdeal_iff.2 hHP
     have hHnz : algebraMap _ 𝒪 H ∈ nonZeroDivisors 𝒪 :=
       mem_nonZeroDivisors_of_ne_zero fun h0 => hH.ne_zero <|
-        IsLocalization.injective 𝒪 (vanishingIdeal k {P}).primeCompl_le_nonZeroDivisors
-          (h0.trans (map_zero _).symm)
+        AffineSpace.localRing.algebraMap_injective k P (h0.trans (map_zero _).symm)
     have hd : ringKrullDim 𝒪 = 2 := by
       rw [AffineSpace.localRing.ringKrullDim_eq, Nat.card_eq_fintype_card, Fintype.card_fin]
       rfl
