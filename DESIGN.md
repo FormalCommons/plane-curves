@@ -164,9 +164,10 @@ PlaneCurves/
 ├── FieldTheory/
 │   ├── PrimitiveElement/
 │   │   └── OneSeparable.lean            F(α, β) simple with only β separable (R8)
+│   ├── PurelyInseparable/
+│   │   └── Sup.lean                     L ⊔ M = ⊤ for K/L separable, K/M purely insep. (R8)
 │   └── FunctionField/
 │       ├── TwoGenerators.lean           K = k(x, y) (R5, R8)
-│       ├── PthPowerDegree.lean          [K : K^p] = p (R8)
 │       ├── ResidueRing.lean             residue rings of subrings of K (R2)
 │       ├── PlaneModel.lean              K ≅ k(F) for an irreducible plane F (R6)
 │       ├── RationalMap.lean             domination, rational maps of curves (R7)
@@ -612,7 +613,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | R5 | `FieldTheory/FunctionField/TwoGenerators.lean` | **var-twogen** for a separable `K/k(x)` | — |
 | R6 | `FieldTheory/FunctionField/PlaneModel.lean` | **var-plane** (with a separating `x`) | R5 |
 | R7 | `FieldTheory/FunctionField/RationalMap.lean` | **var-dominate**, **var-birational**, **var-finite** | R1, R3 |
-| R8 | `FieldTheory/PrimitiveElement/OneSeparable.lean`, `FieldTheory/FunctionField/PthPowerDegree.lean`, `FieldTheory/FunctionField/TwoGenerators.lean` | **var-twogen** (complete: any `x ∉ k`, any characteristic) | R5 |
+| R8 | `FieldTheory/PrimitiveElement/OneSeparable.lean`, `FieldTheory/PurelyInseparable/Sup.lean`, `FieldTheory/FunctionField/TwoGenerators.lean` | **var-twogen** (complete: any `x ∉ k`, any characteristic) | R5 |
 
 ### Stage 2: §§5.1–5.4, §7.1, and the nonsingular model of §7.5
 
