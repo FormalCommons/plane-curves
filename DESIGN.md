@@ -324,7 +324,9 @@ with their files.
   `leadingFormAt_eq_sum_pderiv` (order one), `leadingFormAt_mul`,
   `leadingFormAt_pow`, `leadingFormAt_prod` (domains), `leadingFormAt_smul`,
   `leadingFormAt_taylor`, `leadingFormAt_linearSubst`, `orderAt_linearSubst`
-  (invertible `M`), `orderAt_le_orderAt_comp` (Problem 3.8).
+  (invertible `M`), `orderAt_aeval_eq_of_isUnit_det` and
+  `leadingFormAt_aeval_of_isUnit_det` (Problem 3.8(b); 3.8(a) is Tau Ceti's
+  `MvPolynomial.orderAt_le_orderAt_aeval`).
 - **`MvPolynomial.polarDerivative (v) (F)`**: `∑ i, v i • pderiv i F`. API:
   homogeneity, linearity in `v`, behaviour under `linearSubst`.
 
