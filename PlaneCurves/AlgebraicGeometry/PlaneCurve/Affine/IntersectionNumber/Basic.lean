@@ -12,6 +12,7 @@ public import TauCeti.RingTheory.KrullDimension.Regular
 public import TauCeti.RingTheory.Length
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
+public import PlaneCurves.RingTheory.MvPolynomial.Factorization
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 
 /-!
@@ -109,25 +110,6 @@ theorem intersectProperlyAt_add_mul_iff :
     IntersectProperlyAt F (G + A * F) P ↔ IntersectProperlyAt F G P :=
   forall_congr' fun _ => imp_congr_right fun _ => imp_congr_right fun hF =>
     imp_congr_left (dvd_add_left (hF.mul_left A))
-
-/-- A nonzero polynomial is `F' U` with `U(P) ≠ 0` and every irreducible factor of `F'` vanishing
-at `P`. -/
-theorem exists_eq_mul_eval_ne_zero (P : Fin 2 → k) {F : MvPolynomial (Fin 2) k}
-    (hF : F ≠ 0) : ∃ F' U, F = F' * U ∧ eval P U ≠ 0 ∧
-      ∀ H, Irreducible H → H ∣ F' → eval P H = 0 := by
-  induction F using UniqueFactorizationMonoid.induction_on_prime with
-  | h₁ => exact absurd rfl hF
-  | h₂ u hu => exact ⟨1, u, (one_mul u).symm, (hu.map (eval P)).ne_zero,
-      fun H hH h => (hH.not_isUnit (isUnit_of_dvd_one h)).elim⟩
-  | h₃ a p ha hp ih =>
-    obtain ⟨F', U, rfl, hU, hF'⟩ := ih ha
-    by_cases hpP : eval P p = 0
-    · refine ⟨p * F', U, by ring, hU, fun H hH h => ?_⟩
-      rcases hH.prime.dvd_or_dvd h with h | h
-      · obtain ⟨c, rfl⟩ := (hH.associated_of_dvd hp.irreducible h).symm
-        simp [hpP]
-      · exact hF' H hH h
-    · exact ⟨F', p * U, by ring, by simpa [hpP] using hU, hF'⟩
 
 /-- If `F` and `G` intersect properly at `P` and `G` vanishes at `P`, then `F ≠ 0`. -/
 theorem IntersectProperlyAt.ne_zero_left (h : IntersectProperlyAt F G P) (hG : eval P G = 0) :
