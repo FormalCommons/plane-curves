@@ -137,6 +137,7 @@ PlaneCurves/
 │   │   └── GaussLemma.lean              relatively prime p, q ∈ R[X] give C r ∈ (p, q) (A6)
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
+│   │   ├── Taylor.lean                  the Taylor shift p ↦ p(X + a) as an AlgEquiv (A9)
 │   │   ├── LinearForm.lean              linear forms ∑ C (a i) * X i (P8)
 │   │   ├── Homogenize/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
@@ -148,7 +149,9 @@ PlaneCurves/
 │   │   │   ├── Basis.lean               bases of products of linear forms (A5)
 │   │   │   └── Ideal.lean               forms of degree ≥ m+n−1 in (A, B) (L8)
 │   │   ├── PowIdealOfVars.lean          k[X]/I_P^m and its dimension (A5)
+│   │   ├── LinearSubst.lean             invertible linear changes of variables as automorphisms
 │   │   ├── LeadingForm.lean             leading form at a point, products, substitutions (L1)
+│   │   ├── OrderAtDehomogenize.lean     order of a form on a line and in affine charts (Q1)
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
 │   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d (P3)
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
@@ -379,7 +382,10 @@ with their files.
   `𝒪_P/J𝒪_P ≅ 𝒪_P(k[X]/I)/J'` of §2.8 (from `Localization/Quotient.lean`).
 - **Affine varieties** are not a type: a variety is given by a prime ideal
   `I` (`Γ(V) = k[X] ⧸ I`, `k(V) = FractionRing Γ(V)`), its local rings by
-  `LocalSubring.ofPrime` in `k(V)` (`RationalFunction.lean`).
+  `LocalSubring.ofPrime` in `k(V)` (`RationalFunction.lean`):
+  `AffineSpace.functionField I` and `AffineSpace.localSubring P hI` for
+  `hI : I ≤ vanishingIdeal k {P}`, with the value map `evalAt`, the
+  isomorphism `quotientAlgEquiv` to `𝒪_P(𝔸ⁿ) ⧸ I 𝒪_P(𝔸ⁿ)`, and `map`.
 
 ### Projective space (`AlgebraicGeometry/ProjectiveSpace/`, `LinearAlgebra/Projectivization/`)
 
@@ -653,7 +659,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 
 | Part | Files | Content and milestones | Needs |
 |---|---|---|---|
-| Q1 | `PlaneCurve/Projective/Multiplicity.lean` | **5-mult** | L2, P1 |
+| Q1 | `PlaneCurve/Projective/Multiplicity.lean`, `RingTheory/MvPolynomial/OrderAtDehomogenize.lean` | **5-mult** | L2, P1 |
 | Q2 | `PlaneCurve/Projective/Singular.lean` | parts (a), (b) of **5-sing**; **5-nonsing** (bridge to Tau Ceti) | Q1 |
 | Q3 | `PlaneCurve/Projective/Tangent.lean` | part (d) of **5-sing**, Problem 5.6 | Q2 |
 | Q4 | `PlaneCurve/Projective/LocalRing.lean` | `localEquation`, `localIdeal` | P16, A3 |
