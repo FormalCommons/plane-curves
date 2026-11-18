@@ -6,8 +6,8 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
-public import TauCeti.RingTheory.MvPolynomial.LinearSubst
 public import TauCeti.RingTheory.MvPolynomial.OrderAt
+public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 
 /-!
 # The leading form of a polynomial at a point
@@ -246,12 +246,6 @@ theorem leadingFormAt_aeval
 section Square
 
 variable [Fintype σ] [DecidableEq σ]
-
-/-- A linear change of variables along a matrix with invertible determinant is injective. -/
-theorem linearSubst_injective {M : Matrix σ σ R} (hM : IsUnit M.det) :
-    Function.Injective (linearSubst M) := by
-  refine Function.LeftInverse.injective (g := linearSubst M⁻¹) fun q ↦ ?_
-  rw [← linearSubst_mul_apply, Matrix.mul_nonsing_inv _ hM, linearSubst_one, AlgHom.id_apply]
 
 omit [DecidableEq σ] in
 /-- The linear parts at `b` of a polynomial map `g` are the linear change of variables along its

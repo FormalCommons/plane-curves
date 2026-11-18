@@ -11,6 +11,7 @@ public import Mathlib.RingTheory.RegularLocalRing.Polynomial
 public import TauCeti.RingTheory.KrullDimension.FiniteType
 public import TauCeti.RingTheory.MvPolynomial.LinearSubst
 public import TauCeti.RingTheory.MvPolynomial.LocalOrder
+public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 public import PlaneCurves.RingTheory.Localization.Quotient
 
 /-!
@@ -442,16 +443,14 @@ theorem taylorEquiv_algebraMap (g : MvPolynomial σ k) :
 local ring at `P`. -/
 noncomputable def linearSubstEquiv [Fintype σ] [DecidableEq σ] (M : Matrix.GeneralLinearGroup σ k) :
     localRing k (M.1 *ᵥ P) ≃ₐ[k] localRing k P :=
-  mapEquiv (AlgEquiv.ofAlgHom (linearSubst M.1) (linearSubst M⁻¹.1)
-    (by rw [← linearSubst_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one, linearSubst_one])
-    (by rw [← linearSubst_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, linearSubst_one]))
-    fun g => eval_linearSubst _ _ g
+  mapEquiv (linearSubstAlgEquiv M) fun g => by
+    rw [linearSubstAlgEquiv_apply]; exact eval_linearSubst _ _ g
 
 @[simp]
 theorem linearSubstEquiv_algebraMap [Fintype σ] [DecidableEq σ] (M : Matrix.GeneralLinearGroup σ k)
     (g : MvPolynomial σ k) :
     linearSubstEquiv (P := P) M (algebraMap _ _ g) = algebraMap _ _ (linearSubst M.1 g) :=
-  mapEquiv_algebraMap _ _ g
+  by rw [← linearSubstAlgEquiv_apply]; exact mapEquiv_algebraMap _ _ g
 
 /-! #### Polynomial maps between subvarieties -/
 
@@ -609,17 +608,16 @@ noncomputable def quotientLinearSubstEquiv [Fintype σ] [DecidableEq σ]
     (M : Matrix.GeneralLinearGroup σ k) (I : Ideal (MvPolynomial σ k)) :
     (localRing k (M.1 *ᵥ P) ⧸ I.map (algebraMap _ (localRing k (M.1 *ᵥ P)))) ≃ₐ[k]
       localRing k P ⧸ (I.map (linearSubst M.1)).map (algebraMap _ (localRing k P)) :=
-  quotientMapEquiv (AlgEquiv.ofAlgHom (linearSubst M.1) (linearSubst M⁻¹.1)
-    (by rw [← linearSubst_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one, linearSubst_one])
-    (by rw [← linearSubst_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, linearSubst_one]))
-    (fun g => eval_linearSubst _ _ g) rfl
+  quotientMapEquiv (linearSubstAlgEquiv M)
+    (fun g => by rw [linearSubstAlgEquiv_apply]; exact eval_linearSubst _ _ g)
+    (by rw [← toAlgHom_linearSubstAlgEquiv]; rfl)
 
 @[simp]
 theorem quotientLinearSubstEquiv_algebraMap [Fintype σ] [DecidableEq σ]
     (M : Matrix.GeneralLinearGroup σ k) (I : Ideal (MvPolynomial σ k)) (g : MvPolynomial σ k) :
     quotientLinearSubstEquiv (P := P) M I (algebraMap _ _ g) =
       algebraMap _ _ (linearSubst M.1 g) :=
-  quotientMapEquiv_algebraMap _ _ _ g
+  by rw [← linearSubstAlgEquiv_apply]; exact quotientMapEquiv_algebraMap _ _ _ g
 
 end localRing
 

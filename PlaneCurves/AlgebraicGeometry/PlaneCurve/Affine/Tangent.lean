@@ -12,6 +12,7 @@ public import PlaneCurves.Algebra.BigOperators.Multiset
 public import PlaneCurves.Algebra.GroupWithZero.Associated
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Multiplicity
 public import PlaneCurves.RingTheory.MvPolynomial.BinaryForm.Basic
+public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 public import PlaneCurves.RingTheory.Multiplicity
 
 /-!
@@ -180,26 +181,6 @@ theorem tangentMultiplicity_smul {c : k} (hc : c ≠ 0) :
   exact multiplicity_eq_of_associated_right
     (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hc).map C))
 
-private theorem linearSubst_inv_linearSubst {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
-    (G : MvPolynomial (Fin 2) k) : linearSubst M⁻¹ (linearSubst M G) = G := by
-  rw [← AlgHom.comp_apply, ← linearSubst_mul, Matrix.mul_nonsing_inv _ hM, linearSubst_one,
-    AlgHom.id_apply]
-
-private theorem linearSubst_linearSubst_inv {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
-    (G : MvPolynomial (Fin 2) k) : linearSubst M (linearSubst M⁻¹ G) = G := by
-  rw [← AlgHom.comp_apply, ← linearSubst_mul, Matrix.nonsing_inv_mul _ hM, linearSubst_one,
-    AlgHom.id_apply]
-
-/-- An invertible linear substitution, as an algebra automorphism of `k[X, Y]`. -/
-private noncomputable def linearSubstAlgEquiv {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det) :
-    MvPolynomial (Fin 2) k ≃ₐ[k] MvPolynomial (Fin 2) k :=
-  AlgEquiv.ofAlgHom (linearSubst M) (linearSubst M⁻¹)
-    (AlgHom.ext (linearSubst_linearSubst_inv hM)) (AlgHom.ext (linearSubst_inv_linearSubst hM))
-
-private theorem linearSubstAlgEquiv_apply {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
-    (G : MvPolynomial (Fin 2) k) : linearSubstAlgEquiv hM G = linearSubst M G :=
-  rfl
-
 /-- An invertible linear change of coordinates preserves tangent multiplicities: the
 multiplicity of `L(M X)` as a tangent of `F(M X)` at `Q` is that of `L` as a tangent of `F` at
 `M Q`. -/
@@ -208,19 +189,23 @@ theorem tangentMultiplicity_linearSubst {M : Matrix (Fin 2) (Fin 2) k} (hM : IsU
     tangentMultiplicity (linearSubst M F) Q (linearSubst M L) =
       tangentMultiplicity F (M.mulVec Q) L := by
   rw [tangentMultiplicity_def, leadingFormAt_linearSubst hM]
-  exact multiplicity_map_eq (linearSubstAlgEquiv hM)
+  have h := multiplicity_map_eq (linearSubstAlgEquiv (Matrix.nonsingInvUnit M hM)) (a := L)
+    (b := F.leadingFormAt (M.mulVec Q))
+  rwa [linearSubstAlgEquiv_apply, linearSubstAlgEquiv_apply] at h
 
 /-- An invertible linear change of coordinates moves the tangents: `L(M X)` is tangent to
 `F(M X)` at `Q` exactly when `L` is tangent to `F` at `M Q`. -/
 theorem isTangentAt_linearSubst_iff {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
     (Q : Fin 2 → k) :
     IsTangentAt (linearSubst M F) Q (linearSubst M L) ↔ IsTangentAt F (M.mulVec Q) L := by
-  have hd := map_dvd_iff (linearSubstAlgEquiv hM) (a := L) (b := F.leadingFormAt (M.mulVec Q))
+  have hd := map_dvd_iff (linearSubstAlgEquiv (Matrix.nonsingInvUnit M hM)) (a := L)
+    (b := F.leadingFormAt (M.mulVec Q))
   rw [linearSubstAlgEquiv_apply, linearSubstAlgEquiv_apply] at hd
+  change linearSubst M L ∣ linearSubst M _ ↔ _ at hd
   rw [isTangentAt_def, isTangentAt_def, leadingFormAt_linearSubst hM, hd,
     map_ne_zero_iff _ (linearSubst_injective hM)]
   refine and_congr_left fun _ ↦ ⟨fun h ↦ ?_, fun h ↦ h.linearSubst M⟩
-  simpa [linearSubst_inv_linearSubst hM] using h.linearSubst M⁻¹
+  simpa [linearSubst_nonsing_inv_linearSubst hM] using h.linearSubst M⁻¹
 
 /-- At a simple point, the leading form is a tangent. -/
 theorem IsSimplePoint.isTangentAt_leadingFormAt (h : IsSimplePoint F P) :
