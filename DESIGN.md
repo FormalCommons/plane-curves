@@ -138,6 +138,7 @@ PlaneCurves/
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
 │   │   ├── Taylor.lean                  the Taylor shift p ↦ p(X + a) as an AlgEquiv (A9)
+│   │   ├── Factorization.lean           F = F' U, U(P) ≠ 0, irreducible factors of F' vanish at P
 │   │   ├── LinearForm.lean              linear forms ∑ C (a i) * X i (P8)
 │   │   ├── Homogenize/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
