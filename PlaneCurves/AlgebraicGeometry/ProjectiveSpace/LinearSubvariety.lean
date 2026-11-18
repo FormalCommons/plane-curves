@@ -7,7 +7,10 @@ module
 
 public import Mathlib.LinearAlgebra.Dual.Lemmas
 public import Mathlib.LinearAlgebra.Matrix.Dual
+public import Mathlib.LinearAlgebra.CrossProduct
+public import Mathlib.LinearAlgebra.Projectivization.Constructions
 public import Mathlib.LinearAlgebra.Projectivization.Subspace
+public import PlaneCurves.LinearAlgebra.Projectivization.LinearSubspace
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
 public import PlaneCurves.RingTheory.MvPolynomial.LinearForm
 public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
@@ -19,7 +22,8 @@ A linear subvariety of `ℙⁿ = ℙ k (Fin (n + 1) → k)` is the projectivizat
 `p.projectivization` of a subspace `p` of `kⁿ⁺¹`; a linear form is `∑ i, C (a i) * X i` for a
 coefficient vector `a`, with functional `dotProductEquiv k (Fin (n + 1)) a`. This file shows that
 the linear subvarieties are exactly the zero loci of linear forms, counts their dimension, and
-shows that a nonempty linear subvariety is a projective variety.
+shows that a nonempty linear subvariety is a projective variety. It then states changes of
+coordinates, general position and the lines of the plane in equations.
 
 ## Main results
 
@@ -35,10 +39,23 @@ shows that a nonempty linear subvariety is a projective variety.
 * `isPrime_vanishingIdeal_projectivization`, `zeroLocus_vanishingIdeal_projectivization`: over
   an infinite field, the ideal of a nonempty linear subvariety is prime, and the subvariety is
   its zero locus.
+* `exists_mulVecLin_map_eq_of_independent`, `exists_mulVecLin_map_eq`: a matrix change of
+  coordinates moves independent points, or one point, to any others.
+* `independent_iff_forall_not_subset_zeroLocus`: `n + 1` points are independent iff they are not
+  on a hyperplane.
+* `exists_linearSubst_sum_C_mul_X_eq_X`, `exists_preimage_map_zeroLocus_eq`: independent linear
+  forms can be made coordinates, and every linear subvariety of dimension `m` is carried to
+  `V(X (m + 1), …, X n)`.
+* `exists_sum_C_mul_X_forall_notMem_zeroLocus`,
+  `exists_sum_C_mul_X_mem_zeroLocus_forall_notMem_zeroLocus`, `setOf_mem_zeroLocus_sum_C_mul_X`:
+  hyperplanes missing finitely many points, and the hyperplanes through a point.
+* `zeroLocus_singleton_sum_C_mul_X_crossProduct`, `zeroLocus_pair_sum_C_mul_X`,
+  `single_one_mem_zeroLocus_sum_C_mul_X_iff`: in `ℙ²`, the line through two points, the point
+  of two lines, and the lines through `[0 : 1 : 0]`.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §4.2, Problems 4.11–4.13
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §4.2, Problems 4.11–4.15, 4.24 and 4.25
 -/
 
 public section
@@ -178,6 +195,247 @@ theorem isPrime_vanishingIdeal_projectivization [Infinite k] {p : Submodule k (F
   obtain ⟨v, hv, hv0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hp
   rw [← vanishingIdeal_cone ⟨mk k v hv0, hv⟩, cone_projectivization]
   exact isPrime_vanishingIdeal_submodule p
+
+/-! ### Coordinates -/
+
+/-- A point lies on the hyperplane `V(∑ i, a i X i)` iff `a ⬝ᵥ P.rep = 0`. -/
+theorem mem_zeroLocus_singleton_sum_C_mul_X_iff (a : Fin (n + 1) → k)
+    (P : ℙ k (Fin (n + 1) → k)) :
+    P ∈ zeroLocus {∑ i, C (a i) * X i} ↔ a ⬝ᵥ P.rep = 0 := by
+  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
+  simp [dotProduct]
+
+/-- A linear equivalence of `kⁿ⁺¹`, as a change of coordinates of `ℙⁿ`, is the map of a
+matrix. -/
+private theorem exists_mulVecLin_map_eq_linearEquiv
+    (e : (Fin (n + 1) → k) ≃ₗ[k] (Fin (n + 1) → k)) :
+    ∃ (M : Matrix (Fin (n + 1)) (Fin (n + 1)) k) (hM : Function.Injective M.mulVecLin),
+      ∀ x, map M.mulVecLin hM x = map (e : (Fin (n + 1) → k) →ₗ[k] Fin (n + 1) → k)
+        e.injective x := by
+  have h : (LinearMap.toMatrix' e.toLinearMap).mulVecLin = e.toLinearMap :=
+    Matrix.toLin'_toMatrix' _
+  exact ⟨_, by rw [h]; exact e.injective, fun x ↦ by congr⟩
+
+/-- **Moving independent points in coordinates.** Two finite families of independent points of
+`ℙⁿ` differ by a change of coordinates given by an invertible matrix. -/
+theorem exists_mulVecLin_map_eq_of_independent {ι : Type*} [Finite ι]
+    {p q : ι → ℙ k (Fin (n + 1) → k)} (hp : Independent p) (hq : Independent q) :
+    ∃ (M : Matrix (Fin (n + 1)) (Fin (n + 1)) k) (hM : Function.Injective M.mulVecLin),
+      ∀ i, map M.mulVecLin hM (p i) = q i := by
+  obtain ⟨e, he⟩ := exists_linearEquiv_map_eq_of_independent hp hq
+  obtain ⟨M, hM, hMe⟩ := exists_mulVecLin_map_eq_linearEquiv e
+  exact ⟨M, hM, fun i ↦ (hMe _).trans (he i)⟩
+
+/-- **Moving a point in coordinates.** Any point of `ℙⁿ` is carried to any other by a change of
+coordinates given by an invertible matrix. -/
+theorem exists_mulVecLin_map_eq (P Q : ℙ k (Fin (n + 1) → k)) :
+    ∃ (M : Matrix (Fin (n + 1)) (Fin (n + 1)) k) (hM : Function.Injective M.mulVecLin),
+      map M.mulVecLin hM P = Q := by
+  have hi : ∀ R : ℙ k (Fin (n + 1) → k), Independent fun _ : Unit ↦ R := fun R ↦
+    independent_iff.mpr (linearIndependent_unique_iff.mpr R.rep_ne_zero)
+  obtain ⟨M, hM, h⟩ := exists_mulVecLin_map_eq_of_independent (hi P) (hi Q)
+  exact ⟨M, hM, h ()⟩
+
+/-- **Points in general position, in equations.** `n + 1` points of `ℙⁿ` are independent iff
+they do not all lie on one hyperplane `V(∑ i, a i X i)`, `a ≠ 0`. -/
+theorem independent_iff_forall_not_subset_zeroLocus (p : Fin (n + 1) → ℙ k (Fin (n + 1) → k)) :
+    Independent p ↔
+      ∀ a : Fin (n + 1) → k, a ≠ 0 → ¬ Set.range p ⊆ zeroLocus {∑ i, C (a i) * X i} := by
+  set D := dotProductEquiv k (Fin (n + 1))
+  simp_rw [independent_iff_forall_dual p (by simp), Set.range_subset_iff,
+    mem_zeroLocus_singleton_sum_C_mul_X_iff]
+  refine ⟨fun h a ha hp ↦ ha (D.map_eq_zero_iff.mp (h (D a) fun i ↦ by simpa [D] using hp i)),
+    fun h f hf ↦ ?_⟩
+  by_contra hf0
+  refine h (D.symm f) (by simpa using hf0) fun i ↦ ?_
+  rw [← D.apply_symm_apply f] at hf
+  exact hf i
+
+
+/-- **Moving linear forms to coordinates.** Linearly independent linear forms
+`∑ i, a j i * X i` can be carried to distinct coordinates `X (τ j)` by one change of coordinates
+given by an invertible matrix. -/
+theorem exists_linearSubst_sum_C_mul_X_eq_X {ι : Type*} [Finite ι] {a : ι → Fin (n + 1) → k}
+    (ha : LinearIndependent k a) {τ : ι → Fin (n + 1)} (hτ : Function.Injective τ) :
+    ∃ M : Matrix (Fin (n + 1)) (Fin (n + 1)) k, Function.Injective M.mulVecLin ∧
+      ∀ j, linearSubst M (∑ i, C (a j i) * X i) = X (τ j) := by
+  classical
+  obtain ⟨e, he⟩ := ha.exists_linearEquiv_apply_eq
+    ((Pi.basisFun k (Fin (n + 1))).linearIndependent.comp τ hτ)
+  set N := LinearMap.toMatrix' e.toLinearMap
+  have hN : Function.Injective N.mulVec := by
+    rw [← Matrix.coe_mulVecLin, ← Matrix.toLin'_apply', Matrix.toLin'_toMatrix']
+    exact e.injective
+  refine ⟨N.transpose, ?_, fun j ↦ ?_⟩
+  · rw [Matrix.coe_mulVecLin, Matrix.mulVec_injective_iff_isUnit, Matrix.isUnit_transpose,
+      ← Matrix.mulVec_injective_iff_isUnit]
+    exact hN
+  · rw [linearSubst_sum_C_mul_X, Matrix.vecMul_transpose, LinearMap.toMatrix'_mulVec]
+    simp [he, Pi.single_apply]
+
+/-- **Normal form of a linear subvariety, in equations.** If the linear forms with coefficients
+in `s` have rank `n - m`, then a change of coordinates carries their zero locus to
+`V(X (m + 1), …, X n)`, the coordinate subvariety of dimension `m`. -/
+theorem exists_preimage_map_zeroLocus_eq (s : Set (Fin (n + 1) → k)) {m : ℕ}
+    (hm : finrank k (Submodule.span k s) + (m + 1) = n + 1) :
+    ∃ (M : Matrix (Fin (n + 1)) (Fin (n + 1)) k) (hM : Function.Injective M.mulVecLin),
+      map M.mulVecLin hM ⁻¹' zeroLocus ((fun a : Fin (n + 1) → k ↦ ∑ i, C (a i) * X i) '' s) =
+        zeroLocus (X '' {i : Fin (n + 1) | m < i}) := by
+  obtain ⟨r, hr⟩ : ∃ r, finrank k (Submodule.span k s) = r := ⟨_, rfl⟩
+  rw [hr] at hm
+  let b := Module.finBasisOfFinrankEq k (Submodule.span k s) hr
+  let a : Fin r → Fin (n + 1) → k := fun j ↦ b j
+  have ha : LinearIndependent k a :=
+    b.linearIndependent.map' (Submodule.span k s).subtype (Submodule.ker_subtype _)
+  have hspan : Submodule.span k (Set.range a) = Submodule.span k s := by
+    rw [show a = (Submodule.span k s).subtype ∘ b from rfl, Set.range_comp, Submodule.span_image,
+      b.span_eq, Submodule.map_subtype_top]
+  let τ : Fin r → Fin (n + 1) := fun j ↦ ⟨m + 1 + j, by omega⟩
+  have hτ : Function.Injective τ := fun i j h ↦ by
+    simp only [τ, Fin.mk.injEq] at h
+    exact Fin.ext (by omega)
+  have hrange : Set.range τ = {i : Fin (n + 1) | m < i} := by
+    ext i
+    refine ⟨?_, fun hi ↦ ⟨⟨i - (m + 1), ?_⟩, Fin.ext ?_⟩⟩
+    · rintro ⟨j, rfl⟩
+      simp only [Set.mem_ofPred_eq, τ]
+      omega
+    all_goals simp only [Set.mem_ofPred_eq, τ] at hi ⊢; omega
+  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X ha hτ
+  refine ⟨M, hM, ?_⟩
+  rw [zeroLocus_image_sum_C_mul_X s, ← hspan, ← zeroLocus_image_sum_C_mul_X,
+    ← zeroLocus_linearSubst, ← hrange, ← Set.range_comp, ← Set.range_comp, ← Set.range_comp]
+  congr 2
+  funext j
+  exact hMa j
+
+/-- **A hyperplane missing finitely many points, in equations.** Over an infinite field, for
+finitely many points of `ℙⁿ` there is a linear form `∑ i, a i X i`, `a ≠ 0`, vanishing at none
+of them. -/
+theorem exists_sum_C_mul_X_forall_notMem_zeroLocus [Infinite k]
+    {S : Set (ℙ k (Fin (n + 1) → k))} (hS : S.Finite) :
+    ∃ a : Fin (n + 1) → k, a ≠ 0 ∧ ∀ P ∈ S, P ∉ zeroLocus {∑ i, C (a i) * X i} := by
+  set D := dotProductEquiv k (Fin (n + 1))
+  obtain ⟨f, hf0, hf⟩ := exists_dual_forall_apply_rep_ne_zero hS
+  refine ⟨D.symm f, by simpa using hf0, fun P hP ↦ ?_⟩
+  rw [mem_zeroLocus_singleton_sum_C_mul_X_iff]
+  rw [← D.apply_symm_apply f] at hf
+  exact hf P hP
+
+/-- **A hyperplane through a point missing finitely many others, in equations.** Over an infinite
+field, for a point `P` of `ℙⁿ`, `n ≠ 0`, and finitely many points other than `P`, there is a
+linear form `∑ i, a i X i`, `a ≠ 0`, vanishing at `P` and at none of the others. For `n = 0` and
+`S = ∅` there is none: the only form vanishing at the point of `ℙ⁰` is `0`. -/
+theorem exists_sum_C_mul_X_mem_zeroLocus_forall_notMem_zeroLocus [Infinite k] (hn : n ≠ 0)
+    (P : ℙ k (Fin (n + 1) → k)) {S : Set (ℙ k (Fin (n + 1) → k))} (hS : S.Finite) (hP : P ∉ S) :
+    ∃ a : Fin (n + 1) → k, a ≠ 0 ∧ P ∈ zeroLocus {∑ i, C (a i) * X i} ∧
+      ∀ Q ∈ S, Q ∉ zeroLocus {∑ i, C (a i) * X i} := by
+  set D := dotProductEquiv k (Fin (n + 1))
+  obtain ⟨Q, -, hQ⟩ := exists_mem_projectivization_ne (L := ⊤)
+    (by rw [finrank_top, finrank_fin_fun]; omega) P
+  obtain ⟨f, hfP, hf⟩ := exists_dual_apply_rep_eq_zero_forall_ne_zero P (hS.insert Q)
+    (by simpa [not_or, Ne.symm hQ] using hP)
+  rw [← D.apply_symm_apply f] at hfP hf
+  refine ⟨D.symm f, fun h ↦ hf Q (Set.mem_insert _ _) (by simp [h]), ?_, fun R hR ↦ ?_⟩
+  · rw [mem_zeroLocus_singleton_sum_C_mul_X_iff]
+    exact hfP
+  · rw [mem_zeroLocus_singleton_sum_C_mul_X_iff]
+    exact hf R (Set.mem_insert_of_mem _ hR)
+
+/-- **The linear forms through a point.** The coefficient vectors `a` of the linear forms
+`∑ i, a i X i` vanishing at `P` form the kernel of `a ↦ P.rep ⬝ᵥ a`, a subspace of dimension `n`
+of `kⁿ⁺¹`. -/
+theorem setOf_mem_zeroLocus_sum_C_mul_X (P : ℙ k (Fin (n + 1) → k)) :
+    {a : Fin (n + 1) → k | P ∈ zeroLocus {∑ i, C (a i) * X i}} =
+      LinearMap.ker (dotProductEquiv k (Fin (n + 1)) P.rep) := by
+  ext a
+  simp [mem_zeroLocus_singleton_sum_C_mul_X_iff, dotProduct_comm]
+
+
+/-! ### The plane -/
+
+open scoped Matrix
+
+/-- **The line through two points, in equations.** In `ℙ²`, the line through two distinct points
+`[u]` and `[v]` is the zero locus of the linear form whose coefficients are `u ⨯₃ v`. -/
+theorem zeroLocus_singleton_sum_C_mul_X_crossProduct {u v : Fin 3 → k} (hu : u ≠ 0) (hv : v ≠ 0)
+    (h : mk k u hu ≠ mk k v hv) :
+    zeroLocus {∑ i, C ((u ⨯₃ v) i) * X i} =
+      ((mk k u hu).submodule ⊔ (mk k v hv).submodule).projectivization := by
+  have hw : u ⨯₃ v ≠ 0 := mt (mk_eq_mk_iff_crossProduct_eq_zero hu hv).mpr h
+  have hf : dotProductEquiv k (Fin (2 + 1)) (u ⨯₃ v) ≠ 0 := by simpa using hw
+  rw [zeroLocus_singleton_sum_C_mul_X]
+  refine congrArg
+    (fun p : Submodule k (Fin 3 → k) ↦ (p.projectivization : Set (ℙ k (Fin 3 → k)))) ?_
+  symm
+  refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
+  · rw [submodule_mk, submodule_mk, sup_le_iff, Submodule.span_singleton_le_iff_mem,
+      Submodule.span_singleton_le_iff_mem, LinearMap.mem_ker, LinearMap.mem_ker]
+    simp [dotProduct_comm _ u, dotProduct_comm _ v, dot_self_cross, dot_cross_self]
+  · have := Module.Dual.finrank_ker_add_one_of_ne_zero hf
+    rw [finrank_submodule_sup h]
+    rw [finrank_fin_fun] at this
+    exact (Nat.succ_injective this).symm
+
+/-- **Two lines of the plane meet in one point, in equations.** In `ℙ²`, the zero locus of two
+independent linear forms with coefficients `a` and `b` is the point `[a ⨯₃ b]`. -/
+theorem zeroLocus_pair_sum_C_mul_X {a b : Fin 3 → k} (h : LinearIndependent k ![a, b]) :
+    zeroLocus {∑ i, C (a i) * X i, ∑ i, C (b i) * X i} =
+      {mk k (a ⨯₃ b) (crossProduct_ne_zero_iff_linearIndependent.mpr h)} := by
+  have hw := crossProduct_ne_zero_iff_linearIndependent.mpr h
+  have h2 : finrank k (Submodule.span k {a, b}) = 2 := by
+    rw [← Matrix.range_cons_cons_empty a b ![], finrank_span_eq_card h]
+    simp
+  have hW : finrank k ((Submodule.span k {a, b}).map
+      (dotProductEquiv k (Fin 3)).toLinearMap).dualCoannihilator = 1 := by
+    have := Subspace.finrank_add_finrank_dualCoannihilator_eq
+      ((Submodule.span k {a, b}).map (dotProductEquiv k (Fin 3)).toLinearMap)
+    rw [LinearEquiv.finrank_map_eq, h2, finrank_fin_fun] at this
+    omega
+  have hle : (mk k (a ⨯₃ b) hw).submodule ≤ ((Submodule.span k {a, b}).map
+      (dotProductEquiv k (Fin 3)).toLinearMap).dualCoannihilator := by
+    rw [submodule_mk, Submodule.span_singleton_le_iff_mem, Submodule.mem_dualCoannihilator]
+    simp only [Submodule.mem_map, LinearEquiv.coe_coe, forall_exists_index, and_imp,
+      forall_apply_eq_imp_iff₂, dotProductEquiv_apply_apply]
+    intro c hc
+    induction hc using Submodule.span_induction with
+    | mem c hc =>
+      rcases hc with rfl | rfl
+      · exact dot_self_cross _ _
+      · exact dot_cross_self _ _
+    | zero => simp
+    | add c d _ _ hc hd => simp [add_dotProduct, hc, hd]
+    | smul t c _ hc => simp [smul_dotProduct, hc]
+  have heq := Submodule.eq_of_le_of_finrank_eq hle (by rw [finrank_submodule, hW])
+  rw [show ({∑ i, C (a i) * X i, ∑ i, C (b i) * X i} : Set (MvPolynomial (Fin 3) k)) =
+      (fun c : Fin 3 → k ↦ ∑ i, C (c i) * X i) '' {a, b} by simp,
+    zeroLocus_image_sum_C_mul_X, ← heq]
+  ext P
+  rw [Set.mem_singleton_iff, SetLike.mem_coe, Submodule.mem_projectivization_iff_submodule_le]
+  refine ⟨fun hP ↦ ?_, fun hP ↦ hP ▸ le_rfl⟩
+  rw [← submodule_injective.eq_iff]
+  exact Submodule.eq_of_le_of_finrank_eq hP (by rw [finrank_submodule, finrank_submodule])
+
+/-- **The lines through `[0 : 1 : 0]`.** In `ℙ²`, a linear form `∑ i, a i X i`, `a ≠ 0`, vanishes
+at `[0 : 1 : 0]` iff it is a nonzero multiple of `X 0 - λ X 2` for some `λ`, or of `X 2`. -/
+theorem single_one_mem_zeroLocus_sum_C_mul_X_iff (a : Fin 3 → k) (ha : a ≠ 0) :
+    mk k (Pi.single 1 1) (by simp) ∈ zeroLocus {∑ i, C (a i) * X i} ↔
+      (∃ c ≠ 0, ∃ l, ∑ i, C (a i) * X i = C c * (X 0 - C l * X 2)) ∨
+        ∃ c ≠ 0, ∑ i, C (a i) * X i = C c * X 2 := by
+  rw [mk_mem_zeroLocus_iff (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
+  simp only [Set.mem_singleton_iff, forall_eq]
+  constructor
+  · intro h
+    have h1 : a 1 = 0 := by simpa [Fin.sum_univ_three] using h
+    by_cases h0 : a 0 = 0
+    · have h2 : a 2 ≠ 0 := fun h2 ↦ ha (by ext i; fin_cases i <;> simp [h0, h1, h2])
+      exact Or.inr ⟨a 2, h2, by simp [Fin.sum_univ_three, h0, h1]⟩
+    · refine Or.inl ⟨a 0, h0, -(a 2 / a 0), ?_⟩
+      simp only [Fin.sum_univ_three, h1, map_zero, zero_mul, add_zero, map_neg]
+      rw [mul_sub, neg_mul, mul_neg, sub_neg_eq_add, ← mul_assoc, ← map_mul,
+        mul_div_cancel₀ _ h0]
+  · rintro (⟨c, -, l, hc⟩ | ⟨c, -, hc⟩) <;> simp [hc]
+
 
 end PlaneCurves.ProjectiveSpace
 
