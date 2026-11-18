@@ -112,7 +112,7 @@ theorem intersectProperlyAt_add_mul_iff :
 
 /-- A nonzero polynomial is `F' U` with `U(P) ≠ 0` and every irreducible factor of `F'` vanishing
 at `P`. -/
-private theorem exists_eq_mul_eval_ne_zero (P : Fin 2 → k) {F : MvPolynomial (Fin 2) k}
+theorem exists_eq_mul_eval_ne_zero (P : Fin 2 → k) {F : MvPolynomial (Fin 2) k}
     (hF : F ≠ 0) : ∃ F' U, F = F' * U ∧ eval P U ≠ 0 ∧
       ∀ H, Irreducible H → H ∣ F' → eval P H = 0 := by
   induction F using UniqueFactorizationMonoid.induction_on_prime with
