@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Hypersurface
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Factorization
 public import PlaneCurves.RingTheory.MvPolynomial.PDeriv
@@ -22,8 +23,9 @@ Let `F` and `G` be forms in `k[X, Y, Z]`.
   finitely many common zeros (§1.6, Proposition 2).
 * Over a perfect field, an irreducible form has a nonzero partial derivative, which it does not
   divide, and so only finitely many multiple points (Problem 5.8).
-* Over an algebraically closed field, two curves of positive degree always meet: this is Tau
-  Ceti's dimension theorem `MvPolynomial.exists_ne_zero_forall_aeval_eq_zero`.
+* Over an algebraically closed field, two curves of positive degree always meet: this is the
+  projective dimension theorem `PlaneCurves.ProjectiveSpace.zeroLocus_nonempty_of_card_le`,
+  for two forms in `ℙ²`.
 
 ## Main results
 
@@ -31,8 +33,6 @@ Let `F` and `G` be forms in `k[X, Y, Z]`.
   relatively prime forms `F`, `G`.
 * `PlaneCurves.Projective.finite_setOf_isMultiplePoint_of_irreducible`: an irreducible form over
   a perfect field has finitely many multiple points.
-* `PlaneCurves.Projective.zeroLocus_pair_nonempty`: two forms of positive degree over an
-  algebraically closed field have a common zero in `ℙ²`.
 * `PlaneCurves.Projective.finite_zeroLocus_pair_spec`: the three statements together.
 
 ## References
@@ -87,23 +87,6 @@ theorem finite_setOf_isMultiplePoint_of_irreducible [PerfectField k] (hF : F.IsH
   rintro f (rfl | rfl)
   exacts [h0, h1 i]
 
-/-- **Two projective plane curves meet.** Over an algebraically closed field, two forms of
-positive degree in `k[X, Y, Z]` have a common zero in `ℙ²`. -/
-theorem zeroLocus_pair_nonempty [IsAlgClosed k] (hF : F.IsHomogeneous m) (hm : m ≠ 0)
-    (hG : G.IsHomogeneous n) (hn : n ≠ 0) : (zeroLocus {F, G}).Nonempty := by
-  classical
-  obtain ⟨x, hx, hxs⟩ := exists_ne_zero_forall_aeval_eq_zero (K := k) (σ := Fin 3)
-    (s := {F, G}) ((Finset.card_insert_le _ _).trans_lt (by simp)) (by
-      simp only [Finset.mem_insert, Finset.mem_singleton]
-      rintro p (rfl | rfl)
-      · exact hF.coeff_eq_zero (by simpa using hm.symm)
-      · exact hG.coeff_eq_zero (by simpa using hn.symm))
-  refine ⟨mk k x hx, (mk_mem_zeroLocus_iff (forall_isHomogeneous_pair hF hG) x hx).2 ?_⟩
-  simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
-  rintro f (rfl | rfl)
-  · simpa [coe_aeval_eq_eval] using hxs f (by simp)
-  · simpa [coe_aeval_eq_eval] using hxs f (by simp)
-
 /- Positive degree is needed: the constant form `1` has no zeros. -/
 example : zeroLocus ({1, X 0} : Set (MvPolynomial (Fin 3) k)) = ∅ :=
   zeroLocus_eq_empty_of_one_mem (by simp)
@@ -116,7 +99,8 @@ example : zeroLocus ({1, X 0} : Set (MvPolynomial (Fin 3) k)) = ∅ :=
 2. If `F` is irreducible, some partial derivative of `F` is nonzero, and `F` has only finitely
    many multiple points. This holds over any perfect field
    (`finite_setOf_isMultiplePoint_of_irreducible`).
-3. If `F` and `G` have positive degree, they meet: `V(F) ∩ V(G) ≠ ∅`.
+3. If `F` and `G` have positive degree, they meet: `V(F) ∩ V(G) ≠ ∅`
+   (`PlaneCurves.ProjectiveSpace.zeroLocus_nonempty_of_card_le`).
 
 All three hold in every characteristic.
 
@@ -130,9 +114,12 @@ theorem finite_zeroLocus_pair_spec [IsAlgClosed k] (hF : F.IsHomogeneous m)
       zeroLocus ({F, G} : Set (MvPolynomial (Fin 3) k)) := by
     rw [← zeroLocus_union, Set.singleton_union]
   rw [hFG]
-  exact ⟨finite_zeroLocus_pair_of_isRelPrime hF hG,
+  refine ⟨finite_zeroLocus_pair_of_isRelPrime hF hG,
     fun h ↦ ⟨h.exists_pderiv_ne_zero, finite_setOf_isMultiplePoint_of_irreducible hF h⟩,
-    fun hm hn ↦ zeroLocus_pair_nonempty hF hm hG hn⟩
+    fun hm hn ↦ ?_⟩
+  classical
+  simpa using zeroLocus_nonempty_of_card_le (s := {F, G}) Finset.card_le_two
+    (by simp only [Finset.mem_insert, Finset.mem_singleton]; rintro f (rfl | rfl) <;> grind)
 
 end PlaneCurves.Projective
 
