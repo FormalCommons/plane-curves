@@ -23,6 +23,8 @@ by finitely many forms (Fulton, Proposition 1 of §4.2).
 
 * `Ideal.IsHomogeneous.exists_finset_span_eq`: a homogeneous ideal of a Noetherian graded ring
   is spanned by a finite set of homogeneous elements.
+* `Ideal.IsHomogeneous.span_setOf_isHomogeneous`: a homogeneous ideal of a polynomial ring is
+  spanned by the forms it contains.
 * `MvPolynomial.exists_finset_isHomogeneous_span_eq`: a homogeneous ideal of `MvPolynomial σ R`,
   for `σ` finite and `R` Noetherian, is spanned by finitely many forms.
 
@@ -90,6 +92,16 @@ theorem exists_finset_isHomogeneous_span_eq {I : Ideal (MvPolynomial σ R)}
       Ideal.span (s : Set (MvPolynomial σ R)) = I := by
   obtain ⟨s, hs, hspan⟩ := hI.exists_finset_span_eq
   exact ⟨s, fun f hf ↦ (hs f hf).imp fun d hd ↦ (mem_homogeneousSubmodule d f).mp hd, hspan⟩
+
+/-- A homogeneous ideal of a polynomial ring is spanned by the forms it contains. -/
+theorem _root_.Ideal.IsHomogeneous.span_setOf_isHomogeneous {σ R : Type*} [CommSemiring R]
+    {I : Ideal (MvPolynomial σ R)} (hI : I.IsHomogeneous (homogeneousSubmodule σ R)) :
+    Ideal.span {f | f ∈ I ∧ ∃ d, f.IsHomogeneous d} = I := by
+  refine le_antisymm (Ideal.span_le.2 fun f hf ↦ hf.1) fun f hf ↦ ?_
+  rw [← sum_homogeneousComponent f]
+  exact Ideal.sum_mem _ fun d _ ↦ Ideal.subset_span
+    ⟨homogeneousComponent_mem_of_mem hI hf d, d, homogeneousComponent_isHomogeneous d f⟩
+
 
 /-- Each graded piece of the quotient of a polynomial ring in finitely many variables over a
 field by a homogeneous ideal is finite-dimensional. -/
