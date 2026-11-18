@@ -12,12 +12,14 @@ public import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 
 Mathlib's `MvPolynomial.irreducible_of_totalDegree_eq_one` asks that the coefficients of a
 polynomial of total degree `1` have no common non-unit divisor. Over a field this always holds,
-so every polynomial of total degree `1` is irreducible.
+so every polynomial of total degree `1`, in particular every nonzero linear form, is irreducible.
 
 ## Main results
 
 * `MvPolynomial.irreducible_of_totalDegree_eq_one'`: over a field, a polynomial of total
   degree `1` is irreducible.
+* `MvPolynomial.irreducible_of_isHomogeneous_one`: over a field, a nonzero linear form, in any
+  number of variables, is irreducible.
 -/
 
 public section
@@ -33,6 +35,11 @@ theorem irreducible_of_totalDegree_eq_one' {p : MvPolynomial σ k}
   refine irreducible_of_totalDegree_eq_one hp fun x hx ↦ ?_
   obtain ⟨d, hd⟩ := ne_zero_iff.1 h₀
   exact (ne_zero_of_dvd_ne_zero hd (hx d)).isUnit
+
+/-- Over a field, a nonzero linear form, in any number of variables, is irreducible. -/
+theorem irreducible_of_isHomogeneous_one {L : MvPolynomial σ k}
+    (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) : Irreducible L :=
+  irreducible_of_totalDegree_eq_one' (hL.totalDegree hL₀)
 
 end MvPolynomial
 

@@ -142,7 +142,7 @@ PlaneCurves/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
 │   │   │   ├── Factorization.lean       Fulton's f*, F_*, Proposition 5 of §2.6 (A3)
 │   │   │   └── Ideal.lean               J*, primality, (F)* = (F*) (P13)
-│   │   ├── Irreducible.lean             total degree one over a field implies irreducible (A5)
+│   │   ├── Irreducible.lean             linear forms and total degree one over a field are irreducible (A5)
 │   │   ├── BinaryForm/
 │   │   │   ├── Basic.lean               binary forms split into linear forms (A4)
 │   │   │   ├── Basis.lean               bases of products of linear forms (A5)
