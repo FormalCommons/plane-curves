@@ -196,7 +196,7 @@ theorem vanishingIdeal_zeroLocus_singleton_of_degree_eq_one (hn : n ≠ 0) (hf :
     (vanishingIdeal (zeroLocus ({f} : Set (MvPolynomial (Fin (n + 1)) k)))).toIdeal =
       Ideal.span {f} :=
   vanishingIdeal_zeroLocus_singleton_of_squarefree hn hf
-    (hf.irreducible_of_degree_eq_one hf0).squarefree
+    (irreducible_of_totalDegree_eq_one' (hf.totalDegree hf0)).squarefree
 
 omit [IsAlgClosed k] in
 /-- The coordinate hyperplane `V(Xᵢ)` is the complement of the standard affine chart `Uᵢ`. -/
