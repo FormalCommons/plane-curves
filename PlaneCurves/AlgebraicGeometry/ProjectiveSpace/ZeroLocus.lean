@@ -42,11 +42,11 @@ correspondence of §4.2.
 * `mk_mem_zeroLocus_iff_mem_zeroLocus`: for a homogeneous ideal `I` and `v ≠ 0`, `[v] ∈ V(I)`
   exactly when `v` lies in the affine zero locus of `I`.
 * Problem 4.6: `isRadical_vanishingIdeal`, the Galois connections `gc_homogeneousIdeal` and
-  `gc_set`, `zeroLocus_sup`, `zeroLocus_iSup`, `zeroLocus_mul`, `zeroLocus_inf`,
-  `zeroLocus_empty`, `zeroLocus_univ`, `vanishingIdeal_empty`, `vanishingIdeal_univ`,
-  `zeroLocus_range_linearForms` and `vanishingIdeal_singleton` (a point is cut out by the linear
-  forms `aᵢXⱼ - aⱼXᵢ`, which span its ideal), `zeroLocus_vanishingIdeal_subset` and
-  `zeroLocus_vanishingIdeal_zeroLocus`.
+  `gc_set`, `zeroLocus_sup`, `zeroLocus_iSup`, `zeroLocus_radical`, `zeroLocus_mul`,
+  `zeroLocus_inf`, `zeroLocus_empty`, `zeroLocus_univ`, `vanishingIdeal_empty`,
+  `vanishingIdeal_univ`, `zeroLocus_range_linearForms` and `vanishingIdeal_singleton` (a point
+  is cut out by the linear forms `aᵢXⱼ - aⱼXᵢ`, which span its ideal),
+  `zeroLocus_vanishingIdeal_subset` and `zeroLocus_vanishingIdeal_zeroLocus`.
 * `isPrime_vanishingIdeal_singleton`: the ideal of a point is prime.
 * `cone_zeroLocus` and `vanishingIdeal_cone`: the cone over `V(I)` is the affine zero locus of
   `I`, and the affine ideal of the cone over a nonempty `X` is `I(X)`.
@@ -219,6 +219,14 @@ theorem zeroLocus_iSup {ι : Sort*} (I : ι → Ideal (MvPolynomial (Fin (n + 1)
     zeroLocus (↑(⨆ i, I i) : Set (MvPolynomial (Fin (n + 1)) k)) = ⋂ i, zeroLocus (I i) := by
   rw [← zeroLocus_iUnion, ← zeroLocus_span (⋃ _, _), Ideal.span_iUnion]
   simp only [Ideal.span_eq]
+
+/-- An ideal and its radical have the same zero locus. -/
+@[simp]
+theorem zeroLocus_radical (I : Ideal (MvPolynomial (Fin (n + 1)) k)) :
+    zeroLocus (I.radical : Set (MvPolynomial (Fin (n + 1)) k)) = zeroLocus I := by
+  refine (zeroLocus_anti_mono Ideal.le_radical).antisymm fun P hP v hv hvP f ⟨m, hm⟩ ↦ ?_
+  have := (mem_zeroLocus_iff.1 hP) v hv hvP _ hm
+  exact eq_zero_of_pow_eq_zero (by simpa using this)
 
 /-- Over an infinite field, a point is a zero of `S` exactly when it is a zero of every
 homogeneous component of every element of `S` (Fulton, Problem 4.2). -/
