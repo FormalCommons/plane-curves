@@ -153,6 +153,9 @@ PlaneCurves/
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
 │   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
+│   ├── Ideal/
+│   │   └── AssociatedGraded.lean        (Iⁿ : f) = Iⁿ⁻ᵐ, dim A/Iⁿ⁺¹ = dim A/Iⁿ + dim Iⁿ/Iⁿ⁺¹ (L5)
+│   ├── Length.lean                      lengths under ring isomorphisms, over a residue field (L5)
 │   ├── Regular/
 │   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (Q11)
 │   ├── GradedAlgebra/
@@ -605,7 +608,7 @@ Local properties of plane curves (Chapter 3):
 | L2 | `PlaneCurve/Affine/Multiplicity.lean`, `Tangent.lean` | **3-mult**, **3-product** | L1, A4 |
 | L3 | `PlaneCurve/Affine/MultiplePoint.lean` | **3-finite** | L2, A6 |
 | L4 | `PlaneCurve/Affine/LocalRing.lean` | **3-dvr** | L2, A9 |
-| L5 | `PlaneCurve/Affine/HilbertSamuel.lean` | **3-ring**, **3-embdim** | L2, A5, A9 |
+| L5 | `RingTheory/Ideal/AssociatedGraded.lean`, `RingTheory/Length.lean`, `PlaneCurve/Affine/HilbertSamuel.lean` | **3-ring**, **3-embdim** | L2, A5, A9 |
 | L6 | `Affine/IntersectionNumber/Basic.lean` | `IntersectProperlyAt`, `intersectionNumber`; **3-finvan** | A6, A9 |
 | L7 | `Affine/IntersectionNumber/Additivity.lean` | **3-add** | L6 |
 | L8 | `RingTheory/MvPolynomial/BinaryForm/Ideal.lean`, `Affine/IntersectionNumber/Multiplicity.lean` | **3-power**, **3-prodmult**, **3-tangency** | L2, L6, L7, A5 |
