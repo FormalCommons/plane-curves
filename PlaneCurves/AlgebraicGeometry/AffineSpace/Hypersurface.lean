@@ -10,6 +10,7 @@ public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 public import TauCeti.RingTheory.MvPolynomial.ZariskiClosure
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
+public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
 
 /-!
 # Affine hypersurfaces: reduced equations and irreducible components
@@ -61,15 +62,6 @@ namespace MvPolynomial
 
 variable {k σ : Type*} [Field k]
 
-/-- The zero locus of the ideal of a point is the point. -/
-@[simp]
-theorem zeroLocus_vanishingIdeal_singleton (P : σ → k) :
-    zeroLocus k (vanishingIdeal k {P}) = {P} := by
-  refine Set.Subset.antisymm (fun Q hQ => Set.mem_singleton_iff.2 (_root_.funext fun i => ?_))
-    (zeroLocus_vanishingIdeal_le _)
-  have := hQ (X i - C (P i)) (by simp)
-  simpa [sub_eq_zero] using this
-
 /-- The zero locus of `μ ∏ fᵢ^{eᵢ}`, for `μ ≠ 0` and exponents `eᵢ ≠ 0`, is the union of the
 zero loci of the `fᵢ`. -/
 theorem zeroLocus_span_singleton_C_mul_prod_pow {ι : Type*} (s : Finset ι)
@@ -81,18 +73,6 @@ theorem zeroLocus_span_singleton_C_mul_prod_pow {ι : Type*} (s : Finset ι)
     pow_eq_zero_iff', exists_prop]
   simp only [Algebra.algebraMap_self, RingHom.id_apply, hμ, false_or]
   exact exists_congr fun i => and_congr_right fun hi => and_iff_left (he i hi)
-
-/-- A finite set of points with prime ideal has the ideal of one of its points. -/
-theorem exists_vanishingIdeal_eq_singleton_of_finite {V : Set (σ → k)} (hV : V.Finite)
-    (hP : (vanishingIdeal k V).IsPrime) :
-    ∃ x, vanishingIdeal k V = vanishingIdeal k {x} ∧ x ∈ V := by
-  classical
-  have hVinf : vanishingIdeal k V = hV.toFinset.inf fun x => vanishingIdeal k {x} := by
-    ext f
-    simp [mem_vanishingIdeal_iff, Submodule.mem_finsetInf]
-  obtain ⟨x, hx, hxV⟩ := (hP.inf_le' (s := hV.toFinset)).1 hVinf.ge
-  rw [Set.Finite.mem_toFinset] at hx
-  exact ⟨x, le_antisymm (vanishingIdeal_anti_mono (Set.singleton_subset_iff.2 hx)) hxV, hx⟩
 
 /-- The irreducible components of `V(F)`: every subset of `V(F)` with prime ideal lies in
 `V(p)` for an irreducible factor `p` of `F`. -/
