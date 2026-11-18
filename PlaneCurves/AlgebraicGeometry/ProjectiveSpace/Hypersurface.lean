@@ -8,7 +8,8 @@ module
 public import Mathlib.Algebra.MvPolynomial.Nilpotent
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Nullstellensatz
 public import PlaneCurves.RingTheory.Ideal.Radical
-public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
+public import PlaneCurves.RingTheory.MvPolynomial.BinaryForm.Basis
+public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 public import TauCeti.LinearAlgebra.Projectivization.AffineChart
 public import TauCeti.RingTheory.MvPolynomial.CommonZero
 public import TauCeti.RingTheory.MvPolynomial.Homogeneous
@@ -142,9 +143,7 @@ theorem vanishingIdeal_zeroLocus_singleton_eq_span_prod {ι : Type*} (hn : n ≠
     (hm : ∀ i ∈ s, m i ≠ 0) (hd : (C c * ∏ i ∈ s, F i ^ m i).IsHomogeneous d) :
     (vanishingIdeal (zeroLocus ({C c * ∏ i ∈ s, F i ^ m i} :
       Set (MvPolynomial (Fin (n + 1)) k)))).toIdeal = Ideal.span {∏ i ∈ s, F i} := by
-  have hsq : Squarefree (∏ i ∈ s, F i) := Finset.squarefree_prod_of_pairwise_isCoprime
-    (fun i hi j hj hij ↦ (hF i hi).isRelPrime_iff_not_dvd.2 fun h ↦
-      hFF hi hj hij ((hF i hi).associated_of_dvd (hF j hj) h)) fun i hi ↦ (hF i hi).squarefree
+  have hsq := UniqueFactorizationMonoid.squarefree_prod_of_irreducible hF hFF
   have hu : IsUnit (C c : MvPolynomial (Fin (n + 1)) k) := (isUnit_iff_ne_zero.2 hc).map C
   rw [vanishingIdeal_zeroLocus_singleton hn hd]
   refine Ideal.radical_span_singleton_eq_of_dvd hsq.isRadical (m := s.sup m) ?_ ?_
