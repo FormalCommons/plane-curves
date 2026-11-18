@@ -13,16 +13,23 @@ more than a new namespace and copyright header.
 
 The design describes how the library is organized: its folders and files,
 its core definitions and their API, and which parts build on which. Follow
-it. `DESIGN.md`, once it exists, is its overview: the parts, their order, and
-where each milestone will be proved. A part can have a detailed design of its
-own, in `design/<part>.md`, which `DESIGN.md` links to.
+it. `DESIGN.md`, once it exists, is its overview: the parts, the folders each
+owns, which parts build on which, the definitions several parts share, and
+the part that proves each milestone. A part can have a detailed design of its
+own in `design/<part>.md`, `<part>` being its name in `DESIGN.md`; adding one
+does not change `DESIGN.md`. A part's design gives its files, its
+definitions with their API, its main results and their names, and what it
+uses from other parts.
 
 Designing is work like any other. A part that needs more design than the
-overview gives gets an issue of its own, whose pull request adds or changes
-the part's file under `design/`; the issues that build the part wait for it.
-If the design is wrong or incomplete, propose a change to it in an issue
-instead of working around it. Keep changes to `DESIGN.md` itself small, since
-every part shares it.
+overview gives gets an issue of its own, labelled `proposed`, whose pull
+request adds or changes the part's file under `design/`. The agent who writes
+or splits along `DESIGN.md` creates such issues, and so does an agent whose
+building issue finds the design insufficient: then, if the part's design
+issue is open, mark it as blocking the issue you work on and stop, so that
+your issue waits for it. If the design is wrong, propose a change to it in an
+issue, labelled `proposed`, instead of working around it. Keep changes to
+`DESIGN.md` itself small, since every part shares it.
 
 ## Building
 
@@ -172,7 +179,9 @@ line of a comment with `axiom`.
   instead of doing it inside your pull request. A refactor updates every use
   in the same pull request and deletes the old name, with no deprecated
   alias, wrapper or forwarding file. If it changes how the library is
-  organized, it updates the design too.
+  organized, it updates the design too. A change to a part's design that
+  existing code no longer fits is a refactor: one pull request changes
+  both.
 - **Leave the setup alone.** Do not change `lakefile.toml`,
   `lake-manifest.json`, `lean-toolchain`, `LICENSE` or anything under
   `.github/`, unless the issue you work on asks for it and a person in the
@@ -247,13 +256,16 @@ code, by the rules above:
 
 A pull request that adds or changes the design is reviewed like code. Check
 it against what the plan says about building the library and against the
-rest of the design. For `DESIGN.md`, check that every milestone has a place
-in it and that the order of the parts can be built from what exists; for a
-part's design, that it is clear enough to become issues of a few hundred
-lines each.
+rest of the design. For `DESIGN.md`, check that every milestone has a part
+and that the parts can be built in the order given from what exists. For a
+part's design, check that it fits the overview, defines nothing that
+Mathlib, Tau Ceti or the library already has, states its milestones as the
+plan, or `ERRATA.md`, does, and is clear enough to become issues of a few
+hundred lines each.
 
 ## Triage
 
-An issue for a part of the library must agree with the design and the plan,
-as `ERRATA.md` corrects it.
-If it does not, say where, and correct the issue or close it.
+An issue that builds a part of the library must agree with the design and
+the plan, as `ERRATA.md` corrects it. If it does not, say where, and correct
+the issue or close it. An issue that changes the design must say why the
+design is wrong or incomplete; check that reason.
