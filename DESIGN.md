@@ -379,6 +379,12 @@ with their files.
   API: `mem_vanishingIdeal_iff`, radical, the Galois connection with
   `zeroLocus`, `vanishingIdeal_singleton` (`= span {aᵢXⱼ − aⱼXᵢ}`, prime),
   `vanishingIdeal_cone`.
+  It is the largest homogeneous ideal vanishing on `X` (spanned by the forms
+  vanishing on `X`); over an infinite field it contains every polynomial
+  vanishing on `X`.
+- **`PlaneCurves.ProjectiveSpace.cone (X) : Set (Fin (n+1) → k)`**: the affine
+  cone, the lines of the points of `X` with the origin. API: `cone_zeroLocus`
+  (`C(V(I)) = ` the affine zero locus of homogeneous `I`, for `V(I) ≠ ∅`).
 - **`PlaneCurves.ProjectiveSpace.pointIdeal P`**: the homogeneous prime
   `vanishingIdeal {P}` with its `IsPrime` instance, and its image in a graded
   quotient `R ⧸ I` for `P ∈ zeroLocus I`.
