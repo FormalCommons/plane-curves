@@ -9,6 +9,7 @@ public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
 public import PlaneCurves.RingTheory.MvPolynomial.HomogeneousIdeal
 public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
+public import TauCeti.RingTheory.MvPolynomial.Ideal
 
 /-!
 # The projective Nullstellensatz
@@ -93,7 +94,7 @@ theorem zeroLocus_eq_empty_iff_idealOfVars_le_radical
   intro v hv
   by_cases hv0 : v = 0
   · subst hv0
-    rw [idealOfVars_eq_ker_eval_zero, RingHom.mem_ker] at hf
+    rw [← ker_constantCoeff, RingHom.mem_ker] at hf
     simpa using hf
   · have := (mk_mem_zeroLocus_iff_mem_zeroLocus hI v hv0).2 hv
     simp [h] at this
