@@ -7,6 +7,7 @@ module
 
 public import Mathlib.RingTheory.GradedAlgebra.Homogeneous.Ideal
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
+public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.RingTheory.Noetherian.Basic
 public import TauCeti.RingTheory.GradedAlgebra.Homogeneous.Quotient
 public import TauCeti.RingTheory.MvPolynomial.Finrank
@@ -27,6 +28,8 @@ by finitely many forms (Fulton, Proposition 1 of §4.2).
   spanned by the forms it contains.
 * `MvPolynomial.exists_finset_isHomogeneous_span_eq`: a homogeneous ideal of `MvPolynomial σ R`,
   for `σ` finite and `R` Noetherian, is spanned by finitely many forms.
+* `MvPolynomial.pow_idealOfVars_le_iff`: an ideal contains the `N`-th power of the ideal of the
+  variables exactly when it contains every form of degree at least `N`.
 
 ## Related results elsewhere
 
@@ -102,6 +105,31 @@ theorem _root_.Ideal.IsHomogeneous.span_setOf_isHomogeneous {σ R : Type*} [Comm
   exact Ideal.sum_mem _ fun d _ ↦ Ideal.subset_span
     ⟨homogeneousComponent_mem_of_mem hI hf d, d, homogeneousComponent_isHomogeneous d f⟩
 
+/-- A form of degree `d` lies in the `N`-th power of the ideal of the variables for `N ≤ d`. -/
+theorem IsHomogeneous.mem_pow_idealOfVars {σ R : Type*} [CommSemiring R]
+    {f : MvPolynomial σ R} {d N : ℕ} (hf : f.IsHomogeneous d) (hN : N ≤ d) :
+    f ∈ idealOfVars σ R ^ N := by
+  refine (mem_pow_idealOfVars_iff N f).2 fun x hx ↦ ?_
+  rw [Finsupp.degree_eq_weight_one]
+  exact hN.trans (hf (mem_support_iff.1 hx)).ge
+
+/-- An ideal contains the `N`-th power of the ideal of the variables exactly when it contains
+every form of degree at least `N`. -/
+theorem pow_idealOfVars_le_iff {σ R : Type*} [CommSemiring R] {I : Ideal (MvPolynomial σ R)}
+    (N : ℕ) :
+    idealOfVars σ R ^ N ≤ I ↔ ∀ d, N ≤ d → ∀ f : MvPolynomial σ R, f.IsHomogeneous d → f ∈ I := by
+  refine ⟨fun h d hd f hf ↦ h (hf.mem_pow_idealOfVars hd), fun h f hf ↦ ?_⟩
+  rw [← sum_homogeneousComponent f]
+  refine Ideal.sum_mem _ fun d _ ↦ ?_
+  by_cases hd : N ≤ d
+  · exact h d hd _ (homogeneousComponent_isHomogeneous d f)
+  · have : homogeneousComponent d f = 0 := by
+      ext x
+      rw [coeff_homogeneousComponent]
+      split_ifs with hx
+      · exact (mem_pow_idealOfVars_iff' N f).1 hf x (by omega)
+      · simp
+    simp [this]
 
 /-- Each graded piece of the quotient of a polynomial ring in finitely many variables over a
 field by a homogeneous ideal is finite-dimensional. -/
