@@ -13,6 +13,7 @@ public import TauCeti.RingTheory.MvPolynomial.LinearSubst
 public import TauCeti.RingTheory.MvPolynomial.LocalOrder
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 public import PlaneCurves.RingTheory.Localization.Quotient
+public import PlaneCurves.RingTheory.MvPolynomial.Taylor
 
 /-!
 # The local ring of affine space at a point
@@ -430,14 +431,12 @@ theorem mapEquiv_algebraMap (ψ : MvPolynomial τ k ≃ₐ[k] MvPolynomial σ k)
 variable (P) in
 /-- The Taylor shift `f ↦ f(X + P)` identifies `𝒪_P(𝔸ⁿ)` with the local ring at the origin. -/
 noncomputable def taylorEquiv : localRing k P ≃ₐ[k] localRing k (0 : σ → k) :=
-  mapEquiv (AlgEquiv.ofAlgHom (taylor P) (taylor (-P))
-    (algHom_ext fun i => by simp [taylor_X]) (algHom_ext fun i => by simp [taylor_X]))
-    fun g => by simp
+  mapEquiv (taylorAlgEquiv P) fun g => by simp
 
 @[simp]
 theorem taylorEquiv_algebraMap (g : MvPolynomial σ k) :
     taylorEquiv P (algebraMap _ _ g) = algebraMap _ _ (taylor P g) :=
-  mapEquiv_algebraMap _ _ g
+  (mapEquiv_algebraMap (taylorAlgEquiv P) _ g).trans (by rw [coe_taylorAlgEquiv])
 
 /-- An invertible linear substitution `f ↦ f(M X)` identifies the local ring at `M P` with the
 local ring at `P`. -/
@@ -593,14 +592,13 @@ the translate `V(I) - P`, whose ideal is the image of `I`. -/
 noncomputable def quotientTaylorEquiv (I : Ideal (MvPolynomial σ k)) :
     (localRing k P ⧸ I.map (algebraMap _ (localRing k P))) ≃ₐ[k]
       localRing k (0 : σ → k) ⧸ (I.map (taylor P)).map (algebraMap _ (localRing k 0)) :=
-  quotientMapEquiv (AlgEquiv.ofAlgHom (taylor P) (taylor (-P))
-    (algHom_ext fun i => by simp [taylor_X]) (algHom_ext fun i => by simp [taylor_X]))
-    (fun g => by simp) rfl
+  quotientMapEquiv (taylorAlgEquiv P) (fun g => by simp)
+    (by simp only [Ideal.map, coe_taylorAlgEquiv])
 
 @[simp]
 theorem quotientTaylorEquiv_algebraMap (I : Ideal (MvPolynomial σ k)) (g : MvPolynomial σ k) :
     quotientTaylorEquiv P I (algebraMap _ _ g) = algebraMap _ _ (taylor P g) :=
-  quotientMapEquiv_algebraMap _ _ _ g
+  (quotientMapEquiv_algebraMap (taylorAlgEquiv P) _ _ g).trans (by rw [coe_taylorAlgEquiv])
 
 /-- An invertible linear substitution `f ↦ f(M X)` identifies the local ring of `V(I)` at `M P`
 with the local ring at `P` of its preimage, whose ideal is the image of `I`. -/
