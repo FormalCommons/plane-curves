@@ -13,6 +13,7 @@ public import TauCeti.RingTheory.Length
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
 public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
+public import PlaneCurves.RingTheory.LocalRing.Length
 public import PlaneCurves.RingTheory.MvPolynomial.Factorization
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 
@@ -155,12 +156,11 @@ theorem intersectionNumber_eq_length_restrictScalars (P : Fin 2 → k)
     (F G : MvPolynomial (Fin 2) k) :
     intersectionNumber P F G = Module.length k (AffineSpace.localRing k P ⧸
       Ideal.span {algebraMap _ (AffineSpace.localRing k P) F, algebraMap _ _ G}) := by
-  rw [IsLocalRing.length_restrictScalars k (AffineSpace.localRing k P),
-    ← Module.length_eq_of_surjective (R := IsLocalRing.ResidueField k)
-      (M := IsLocalRing.ResidueField _)
-      residue_surjective,
-    (AffineSpace.localRing.residueFieldAlgEquiv k P).toLinearEquiv.length_eq,
-    Module.length_eq_finrank, Module.finrank_self, Nat.cast_one, mul_one, intersectionNumber_def]
+  rw [intersectionNumber_def]
+  refine (IsLocalRing.length_eq_length_of_surjective_algebraMap_residueField _ fun x ↦
+    ⟨AffineSpace.localRing.residueFieldAlgEquiv k P x, ?_⟩).symm
+  simpa using (AffineSpace.localRing.residueFieldAlgEquiv k P).symm.commutes
+    (AffineSpace.localRing.residueFieldAlgEquiv k P x) |>.symm
 
 /-- The intersection number is `(dim_k 𝒪_P(𝔸²) ⧸ (F, G))`, as an element of `ℕ∞`. -/
 theorem intersectionNumber_eq_rank (P : Fin 2 → k) (F G : MvPolynomial (Fin 2) k) :
@@ -303,12 +303,11 @@ theorem intersectionNumber_ne_top_iff :
   refine ⟨fun h H hH hF hG hHP => h ?_, fun h => ?_⟩
   · -- `𝒪 ⧸ (F, G)` maps onto `𝒪 ⧸ (H)`, of dimension one, hence of infinite length
     set 𝒪 := AffineSpace.localRing k P
-    have hH𝒪 : algebraMap _ 𝒪 H ∈ maximalIdeal 𝒪 := by
-      rw [← AffineSpace.localRing.evalAt_eq_zero_iff, AffineSpace.localRing.evalAt_algebraMap, hHP]
+    have hH𝒪 : algebraMap _ 𝒪 H ∈ maximalIdeal 𝒪 :=
+      AffineSpace.localRing.algebraMap_mem_maximalIdeal_iff.2 hHP
     have hHnz : algebraMap _ 𝒪 H ∈ nonZeroDivisors 𝒪 :=
       mem_nonZeroDivisors_of_ne_zero fun h0 => hH.ne_zero <|
-        IsLocalization.injective 𝒪 (vanishingIdeal k {P}).primeCompl_le_nonZeroDivisors
-          (h0.trans (map_zero _).symm)
+        AffineSpace.localRing.algebraMap_injective k P (h0.trans (map_zero _).symm)
     have hd : ringKrullDim 𝒪 = 2 := by
       rw [AffineSpace.localRing.ringKrullDim_eq, Nat.card_eq_fintype_card, Fintype.card_fin]
       rfl

@@ -18,7 +18,9 @@ proves the algebraic forms of parts (3) and (4) of Fulton's Proposition 10 of §
 finiteness of poles.
 
 * `Algebra.lift_trdeg_eq_of_isFractionRing`: `R` and `K` have the same transcendence degree
-  over `k`.
+  over `k`; so do two domains with isomorphic fraction fields
+  (`Algebra.lift_trdeg_eq_of_algEquiv_fractionRing`,
+  `Algebra.trdeg_le_one_of_algEquiv_fractionRing`).
 * `Ring.krullDimLE_one_of_trdeg_le_one`: a domain of transcendence degree at most one over `k`
   has Krull dimension at most one.
 * `Ideal.IsPrime.isMaximal_of_trdeg_fractionRing_le_one`: if `K` has transcendence degree at
@@ -38,7 +40,7 @@ finiteness of poles.
 
 public section
 
-universe u v
+universe u u' v v'
 
 variable {k : Type*} {R : Type u} [Field k] [CommRing R] [IsDomain R] [Algebra k R]
 
@@ -52,6 +54,30 @@ theorem lift_trdeg_eq_of_isFractionRing (K : Type v) [Field K] [Algebra R K] [Is
   have := IsLocalization.isAlgebraic K (nonZeroDivisors R)
   have h := lift_trdeg_add_eq k R K
   rwa [trdeg_eq_zero (R := R) (A := K), Cardinal.lift_zero, add_zero] at h
+
+/-- Two domains over a field `k` whose fraction fields are isomorphic as `k`-algebras have the
+same transcendence degree over `k`. -/
+theorem lift_trdeg_eq_of_algEquiv_fractionRing {R' : Type u'} [CommRing R'] [IsDomain R']
+    [Algebra k R'] {K : Type v} {K' : Type v'} [Field K] [Algebra R K] [IsFractionRing R K]
+    [Algebra k K] [IsScalarTower k R K] [Field K'] [Algebra R' K'] [IsFractionRing R' K']
+    [Algebra k K'] [IsScalarTower k R' K'] (φ : K ≃ₐ[k] K') :
+    Cardinal.lift.{u'} (trdeg k R) = Cardinal.lift.{u} (trdeg k R') := by
+  apply Cardinal.lift_injective.{max v v'}
+  have h := congrArg Cardinal.lift.{max u' v'} (lift_trdeg_eq_of_isFractionRing k R K)
+  have h' := congrArg Cardinal.lift.{max u v} (lift_trdeg_eq_of_isFractionRing k R' K')
+  have hφ := congrArg Cardinal.lift.{max u u'} φ.lift_trdeg_eq
+  simp only [Cardinal.lift_lift] at h h' hφ ⊢
+  exact h.trans (hφ.trans h'.symm)
+
+/-- If two domains over a field `k` have isomorphic fraction fields and one has transcendence
+degree at most one over `k`, so does the other. -/
+theorem trdeg_le_one_of_algEquiv_fractionRing {R' : Type u'} [CommRing R'] [IsDomain R']
+    [Algebra k R'] {K : Type v} {K' : Type v'} [Field K] [Algebra R K] [IsFractionRing R K]
+    [Algebra k K] [IsScalarTower k R K] [Field K'] [Algebra R' K'] [IsFractionRing R' K']
+    [Algebra k K'] [IsScalarTower k R' K'] (φ : K ≃ₐ[k] K') (h : trdeg k R' ≤ 1) :
+    trdeg k R ≤ 1 := by
+  rwa [← Cardinal.lift_le_one_iff.{_, u'},
+    lift_trdeg_eq_of_algEquiv_fractionRing (R := R) (R' := R') φ, Cardinal.lift_le_one_iff]
 
 end Algebra
 
