@@ -332,7 +332,7 @@ theorem mem_ofPrime_iff {A : Subring K} {P : Ideal A} [P.IsPrime] {x : K} :
 
 variable (K p) in
 /-- The image of a prime `p` of `R` in the image of `R` in its fraction field is prime. -/
-instance isPrime_map_rangeRestrict : (p.map (algebraMap R K).rangeRestrict).IsPrime :=
+instance _root_.Ideal.isPrime_map_rangeRestrict : (p.map (algebraMap R K).rangeRestrict).IsPrime :=
   Ideal.map_isPrime_of_surjective (algebraMap R K).rangeRestrict_surjective (by
     rw [RingHom.ker_rangeRestrict, (RingHom.injective_iff_ker_eq_bot _).1
       (IsFractionRing.injective R K)]
