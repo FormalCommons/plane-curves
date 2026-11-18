@@ -27,7 +27,8 @@ tangent lines at the point.
 * `MvPolynomial.leadingFormAt_eq_zero_iff`: the leading form vanishes only for `p = 0`.
 * `MvPolynomial.leadingFormAt_of_eval_ne_zero`: away from the zeros of `p` the leading form
   is the constant `p(a)`; `MvPolynomial.leadingFormAt_eq_sum_pderiv`: at a point of order one it
-  is the differential `∑ᵢ (∂p/∂Xᵢ)(a) Xᵢ`.
+  is the differential `∑ᵢ (∂p/∂Xᵢ)(a) Xᵢ`; `MvPolynomial.orderAt_eq_one_iff`: the order is one
+  exactly at the zeros of `p` where some partial derivative does not vanish.
 * `MvPolynomial.leadingFormAt_mul`, `MvPolynomial.leadingFormAt_pow`,
   `MvPolynomial.leadingFormAt_prod`: over a domain, the leading form is multiplicative.
 * `MvPolynomial.leadingFormAt_aeval`, `MvPolynomial.orderAt_aeval_eq`: if the leading form
@@ -119,6 +120,18 @@ theorem leadingFormAt_one (a : σ → R) : (1 : MvPolynomial σ R).leadingFormAt
 theorem leadingFormAt_eq_sum_pderiv [Fintype σ] (h : p.orderAt a = 1) :
     p.leadingFormAt a = ∑ i, eval a (pderiv i p) • X i := by
   rw [leadingFormAt_def, h, ENat.toNat_one, homogeneousComponent_one_taylor]
+
+/-- A polynomial has order one at `a` exactly when it vanishes at `a` and some partial
+derivative does not. -/
+theorem orderAt_eq_one_iff [Finite σ] :
+    p.orderAt a = 1 ↔ eval a p = 0 ∧ ∃ i, eval a (pderiv i p) ≠ 0 := by
+  have := Fintype.ofFinite σ
+  refine ⟨fun h ↦ ⟨orderAt_pos_iff.1 (by simp [h]), ?_⟩,
+    fun ⟨h0, i, hi⟩ ↦ orderAt_eq_one_of_eval_pderiv_ne_zero h0 hi⟩
+  by_contra! hd
+  have hp : p ≠ 0 := by rintro rfl; simp at h
+  apply leadingFormAt_ne_zero (a := a) hp
+  simp [leadingFormAt_eq_sum_pderiv h, hd]
 
 /-- The leading form of a Taylor shift is the leading form at the translated point. -/
 @[simp]
