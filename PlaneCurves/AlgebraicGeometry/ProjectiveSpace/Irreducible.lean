@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
+public import TauCeti.LinearAlgebra.Projectivization.Basic
 
 /-!
 # Projective varieties and irreducible components
@@ -30,6 +31,8 @@ induction of Theorem 2 of §1.5, run on homogeneous ideals. Everything holds ove
 * `exists_subset_of_subset_sUnion`: a set with prime ideal that lies in a finite union of
   algebraic sets lies in one of them.
 * `isPrime_vanishingIdeal_iff`: a nonempty algebraic set is irreducible iff its ideal is prime.
+* `nonempty_of_isPrime_vanishingIdeal`, `isPrime_vanishingIdeal_univ`: a projective variety is
+  nonempty, and `ℙⁿ` is one over an infinite field.
 * `existsUnique_irreducibleDecomposition`: every algebraic set is, uniquely, a finite union of
   projective varieties none of which lies in another.
 * `zeroLocus_vanishingIdeal_and_irreducibleDecomposition`: Fulton's description of projective
@@ -149,6 +152,26 @@ theorem vanishingIdeal_ne_top (hV : V.Nonempty) : (vanishingIdeal V).toIdeal ≠
     rw [← HomogeneousIdeal.mem_iff, h]
     exact Submodule.mem_top
   simpa using (mem_vanishingIdeal_iff_of_isHomogeneous (isHomogeneous_one _ _)).1 h1 P hP
+
+/-- A set whose ideal is prime is nonempty. -/
+theorem nonempty_of_isPrime_vanishingIdeal (hV : (vanishingIdeal V).toIdeal.IsPrime) :
+    V.Nonempty :=
+  Set.nonempty_iff_ne_empty.2 fun h ↦ hV.ne_top (by
+    rw [h, vanishingIdeal_empty, HomogeneousIdeal.toIdeal_top])
+
+/-- In `ℙ⁰`, a single point, every set with prime ideal is the whole space. -/
+theorem eq_univ_of_isPrime_vanishingIdeal_of_eq_zero (hn : n = 0)
+    (hV : (vanishingIdeal V).toIdeal.IsPrime) : V = Set.univ := by
+  subst hn
+  have : Subsingleton (ℙ k (Fin (0 + 1) → k)) :=
+    Projectivization.subsingleton_of_rank_le_one (by simp)
+  exact (nonempty_of_isPrime_vanishingIdeal hV).eq_univ
+
+/-- Over an infinite field, `ℙⁿ` is a projective variety: its ideal is `0`, which is prime. -/
+theorem isPrime_vanishingIdeal_univ [Infinite k] :
+    (vanishingIdeal (Set.univ : Set (ℙ k (Fin (n + 1) → k)))).toIdeal.IsPrime := by
+  rw [vanishingIdeal_univ, HomogeneousIdeal.toIdeal_bot]
+  exact Ideal.isPrime_bot
 
 /-- A set whose ideal is prime and which lies in a finite union of algebraic sets lies in one of
 them. -/

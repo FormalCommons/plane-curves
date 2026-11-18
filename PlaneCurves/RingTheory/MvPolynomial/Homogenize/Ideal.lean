@@ -33,9 +33,8 @@ The other statements of Fulton's part (a) are in Tau Ceti: a form `G` lies in `J
 * `Ideal.homogenization_radical_le`: `(rad J)* ⊆ rad (J*)`.
 * `Ideal.isPrime_homogenization_iff`: `J*` is prime if and only if `J` is.
 * `Ideal.homogenization_span_singleton`: `(F)* = (F*)` (Fulton's Problem 4.19).
-
-An example after them shows, for the twisted cubic, that generators of `J` need not homogenize
-to generators of `J*` (Fulton's Problem 4.20).
+* `Ideal.X_mul_X_sub_X_mul_X_mem_homogenization_and_notMem_span_homogenize`: for the twisted
+  cubic, generators of `J` need not homogenize to generators of `J*` (Fulton's Problem 4.20).
 
 ## References
 
@@ -163,7 +162,7 @@ theorem homogenization_span_singleton [NoZeroDivisors R] (F : MvPolynomial (Fin 
 /-- Fulton's Problem 4.20: generators of `J` need not homogenize to generators of `J*`. For the
 twisted cubic `J = (Y - X², Z - X³)` in `R[X, Y, Z]`, homogenized in the new last variable `W`,
 the form `ZW - XY` lies in `J*` but not in `((Y - X²)*, (Z - X³)*) = (YW - X², ZW² - X³)`. -/
-example [Nontrivial R] :
+theorem X_mul_X_sub_X_mul_X_mem_homogenization_and_notMem_span_homogenize [Nontrivial R] :
     (X 2 * X 3 - X 0 * X 1 : MvPolynomial (Fin 4) R) ∈
       (span {X 1 - X 0 ^ 2, X 2 - X 0 ^ 3}).homogenization 3 ∧
     (X 2 * X 3 - X 0 * X 1 : MvPolynomial (Fin 4) R) ∉ span
