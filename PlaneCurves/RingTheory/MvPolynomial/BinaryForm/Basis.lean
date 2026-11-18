@@ -6,9 +6,9 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-public import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 import Mathlib.Algebra.BigOperators.Associated
 public import TauCeti.RingTheory.MvPolynomial.Finrank
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 import Mathlib.Algebra.MvPolynomial.Nilpotent
 import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
@@ -22,8 +22,6 @@ of the forms of degree `d`.
 
 ## Main results
 
-* `MvPolynomial.irreducible_of_totalDegree_eq_one'`: over a field, a polynomial of total
-  degree `1` is irreducible.
 * `MvPolynomial.linearIndependent_prod_mul_prod`: the products `Aᵢ` are linearly independent.
 * `MvPolynomial.basisProdMulProd`: they form a basis of
   `homogeneousSubmodule (Fin 2) k d`, the forms of degree `d`.
@@ -40,14 +38,6 @@ namespace MvPolynomial
 open Finset
 
 variable {k : Type*} [Field k]
-
-/-- Over a field, a polynomial of total degree `1` is irreducible. -/
-theorem irreducible_of_totalDegree_eq_one' {σ : Type*} {p : MvPolynomial σ k}
-    (hp : p.totalDegree = 1) : Irreducible p := by
-  have h₀ : p ≠ 0 := by rintro rfl; simp at hp
-  refine irreducible_of_totalDegree_eq_one hp fun x hx ↦ ?_
-  obtain ⟨d, hd⟩ := ne_zero_iff.1 h₀
-  exact (ne_zero_of_dvd_ne_zero hd (hx d)).isUnit
 
 /-- The product `A_{i+1}` for `L₀, L₁, …` is `L₀` times the product `Aᵢ` for `L₁, L₂, …`. -/
 private lemma prod_mul_prod_succ (L M : ℕ → MvPolynomial (Fin 2) k) (d : ℕ) (i : Fin (d + 1)) :

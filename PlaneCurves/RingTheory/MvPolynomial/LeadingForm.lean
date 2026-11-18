@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+public import Mathlib.Algebra.MvPolynomial.Nilpotent
 public import TauCeti.RingTheory.MvPolynomial.OrderAt
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 import Mathlib.Algebra.MvPolynomial.CommRing
@@ -26,11 +27,16 @@ tangent lines at the point.
 
 ## Main results
 
-* `MvPolynomial.leadingFormAt_eq_zero_iff`: the leading form vanishes only for `p = 0`.
+* `MvPolynomial.leadingFormAt_eq_zero_iff`: the leading form vanishes only for `p = 0`;
+  `MvPolynomial.isUnit_leadingFormAt_iff`: over a domain it is a unit exactly when `p(a)` is.
+* `MvPolynomial.le_orderAt_iff_homogeneousComponent`: the order is at least `n` exactly when the
+  Taylor shift has no homogeneous components of degree below `n`.
 * `MvPolynomial.leadingFormAt_of_eval_ne_zero`: away from the zeros of `p` the leading form
   is the constant `p(a)`; `MvPolynomial.leadingFormAt_eq_sum_pderiv`: at a point of order one it
   is the differential `∑ᵢ (∂p/∂Xᵢ)(a) Xᵢ`; `MvPolynomial.orderAt_eq_one_iff`: the order is one
-  exactly at the zeros of `p` where some partial derivative does not vanish.
+  exactly at the zeros of `p` where some partial derivative does not vanish;
+  `MvPolynomial.two_le_orderAt_iff`: it is at least two exactly where `p` and all its partial
+  derivatives vanish.
 * `MvPolynomial.leadingFormAt_mul`, `MvPolynomial.leadingFormAt_pow`,
   `MvPolynomial.leadingFormAt_prod`: over a domain, the leading form is multiplicative.
 * `MvPolynomial.orderAt_mul_eq_one_iff`: over a domain, a product has order one exactly when
@@ -96,6 +102,25 @@ theorem orderAt_eq_of_homogeneousComponent_ne_zero {n : ℕ} (hn : n ≤ p.order
   · exact le_antisymm (hdn ▸ orderAt_le hd) hn
   · exact absurd rfl hd
 
+/-- `p` has order at least `n` at `a` exactly when the homogeneous components of degree less
+than `n` of its Taylor shift at `a` vanish. -/
+theorem le_orderAt_iff_homogeneousComponent {n : ℕ} :
+    n ≤ p.orderAt a ↔ ∀ i < n, homogeneousComponent i (taylor a p) = 0 := by
+  rw [le_orderAt_iff]
+  refine ⟨fun h i hi ↦ ?_, fun h d hd ↦ ?_⟩
+  · ext d
+    rw [coeff_homogeneousComponent]
+    split_ifs with hd
+    · exact h d (by rw [hd]; exact_mod_cast hi)
+    · simp
+  · simpa [coeff_homogeneousComponent] using
+      congr($(h d.degree (by exact_mod_cast hd)).coeff d)
+
+/-- The homogeneous components of the Taylor shift of `p` at `a` vanish below the order. -/
+theorem homogeneousComponent_taylor_eq_zero_of_lt {i : ℕ} (hi : i < p.orderAt a) :
+    homogeneousComponent i (taylor a p) = 0 :=
+  le_orderAt_iff_homogeneousComponent.1 (Order.add_one_le_of_lt hi) i (Nat.lt_succ_self i)
+
 /-- The leading form of `p` at `a` is zero only for `p = 0`. -/
 @[simp]
 theorem leadingFormAt_eq_zero_iff : p.leadingFormAt a = 0 ↔ p = 0 := by
@@ -142,6 +167,20 @@ theorem orderAt_eq_one_iff [Finite σ] :
   have hp : p ≠ 0 := by rintro rfl; simp at h
   apply leadingFormAt_ne_zero (a := a) hp
   simp [leadingFormAt_eq_sum_pderiv h, hd]
+
+/-- A polynomial has order at least two at `a` exactly when it and all its partial derivatives
+vanish at `a`. -/
+theorem two_le_orderAt_iff [Finite σ] :
+    2 ≤ p.orderAt a ↔ eval a p = 0 ∧ ∀ i, eval a (pderiv i p) = 0 := by
+  have h : 2 ≤ p.orderAt a ↔ 0 < p.orderAt a ∧ p.orderAt a ≠ 1 := by
+    generalize p.orderAt a = m
+    cases m using ENat.recTopCoe with
+    | top => simp
+    | coe m =>
+      norm_cast
+      omega
+  rw [h, orderAt_pos_iff, Ne, orderAt_eq_one_iff]
+  grind
 
 /-- The leading form of a Taylor shift is the leading form at the translated point. -/
 @[simp]
@@ -220,16 +259,6 @@ theorem IsHomogeneous.orderAt_zero {d : ℕ} (hp : p.IsHomogeneous d) (hp₀ : p
   rw [← hed]
   exact orderAt_le (by rwa [taylor_zero])
 
-/-- The Taylor coefficients of `p` at `a` of degree less than the order of `p` at `a` vanish. -/
-theorem homogeneousComponent_taylor_eq_zero_of_lt {i : ℕ} (hi : i < p.orderAt a) :
-    homogeneousComponent i (taylor a p) = 0 := by
-  ext d
-  simp only [coeff_homogeneousComponent, AddMonoidAlgebra.coeff_zero, Finsupp.coe_zero,
-    Pi.zero_apply]
-  split_ifs with h
-  · exact le_orderAt_iff.1 le_rfl d (by rwa [h])
-  · rfl
-
 end CommSemiring
 
 section CommRing
@@ -274,6 +303,21 @@ theorem orderAt_eq_and_leadingFormAt_eq_neg_of_orderAt_lt_orderAt_add
       (by rw [hc, neg_ne_zero]; exact leadingFormAt_ne_zero hp₀)
   refine ⟨hq, ?_⟩
   rw [leadingFormAt_def, hq, hc]
+
+/-- Over a domain, the leading form of `p` at `a` is a unit exactly when `p(a)` is: a unit is a
+form of degree zero. -/
+theorem isUnit_leadingFormAt_iff [IsDomain R] {p : MvPolynomial σ R}
+    {a : σ → R} : IsUnit (p.leadingFormAt a) ↔ IsUnit (eval a p) := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · have hp : p ≠ 0 := by rintro rfl; simp at h
+    have hd := (isHomogeneous_leadingFormAt p a).totalDegree (leadingFormAt_ne_zero hp)
+    rw [(isUnit_iff_totalDegree_of_isReduced.1 h).2] at hd
+    have h0 : p.orderAt a = 0 := by
+      rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hp), ← hd, Nat.cast_zero]
+    rw [leadingFormAt_of_eval_ne_zero (orderAt_eq_zero_iff.1 h0)] at h
+    simpa using h.map (constantCoeff (σ := σ) (R := R))
+  · rw [leadingFormAt_of_eval_ne_zero h.ne_zero]
+    exact h.map C
 
 /-- The degree-`m` component of the Taylor shift of `p(g)` at `b`, for `m` the order of `p` at
 the image point `a = g(b)`, is the leading form of `p` at `a` evaluated at the linear parts of

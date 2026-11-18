@@ -9,8 +9,8 @@ public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 public import Mathlib.LinearAlgebra.Dimension.Finite
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import PlaneCurves.RingTheory.MvPolynomial.HilbertFunction
 public import PlaneCurves.RingTheory.Regular.IsRelPrime
-public import TauCeti.RingTheory.GradedAlgebra.HilbertSeries.RegularSequence
 public import TauCeti.RingTheory.MvPolynomial.Finrank
 public import TauCeti.RingTheory.MvPolynomial.Homogeneous
 import Mathlib.Tactic.LinearCombination
@@ -70,31 +70,15 @@ private theorem ite_multichoose_two {d j : ℕ} (hj : j ≤ d + 1) :
     push_cast
     ring
 
-/-- The dimension count for a nonzero first form. -/
-private theorem finrank_quotientPiece_span_pair_fin_two_of_ne_zero
-    {A B : MvPolynomial (Fin 2) k} {m n t : ℕ}
-    (hA : A.IsHomogeneous m) (hB : B.IsHomogeneous n) (hA₀ : A ≠ 0) (hAB : IsRelPrime A B)
+/-- If `A` and `B` are relatively prime forms of degrees `m` and `n` in `k[X, Y]`, the degree-`t`
+piece of `k[X, Y]/(A, B)` is zero for every `t ≥ m + n - 1`. -/
+theorem finrank_quotientPiece_span_pair_fin_two {A B : MvPolynomial (Fin 2) k} {m n t : ℕ}
+    (hA : A.IsHomogeneous m) (hB : B.IsHomogeneous n) (hAB : IsRelPrime A B)
     (ht : m + n ≤ t + 1) :
     Module.finrank k (quotientPiece (homogeneousSubmodule (Fin 2) k) (Ideal.span {A, B}) t) =
       0 := by
-  have h := mk_finrank_quotientPiece_of_isWeaklyRegular (S := ℤ) (homogeneousSubmodule (Fin 2) k)
-    [(A, m), (B, n)] (by simpa [mem_homogeneousSubmodule] using ⟨hA, hB⟩)
-    (by simpa using hAB.isWeaklyRegular hA₀)
-  have hspan : Ideal.ofList ([(A, m), (B, n)].map Prod.fst) = Ideal.span {A, B} := by
-    simp only [List.map_cons, List.map_nil, Ideal.ofList, List.mem_cons, List.not_mem_nil,
-      or_false]
-    rfl
-  rw [hspan] at h
-  have hc := congrArg (PowerSeries.coeff t) h
-  simp only [List.map_cons, List.map_nil, List.prod_cons, List.prod_nil, mul_one,
-    PowerSeries.coeff_mk] at hc
-  have hexp : ∀ p : PowerSeries ℤ, p * ((1 - PowerSeries.X ^ m) * (1 - PowerSeries.X ^ n)) =
-      p - p * PowerSeries.X ^ m - p * PowerSeries.X ^ n + p * PowerSeries.X ^ (m + n) := by
-    intro p
-    ring
-  rw [hexp] at hc
-  simp only [map_add, map_sub, PowerSeries.coeff_mul_X_pow', PowerSeries.coeff_mk,
-    TauCeti.finrank_homogeneousSubmodule_eq_multichoose, Fintype.card_fin] at hc
+  have hc := finrank_quotientPiece_span_pair hA hB hAB t
+  simp only [Fintype.card_fin] at hc
   have h₀ := ite_multichoose_two (d := t) (j := 0) (by omega)
   have h₁ := ite_multichoose_two (d := t) (j := m) (by omega)
   have h₂ := ite_multichoose_two (d := t) (j := n) (by omega)
@@ -105,21 +89,6 @@ private theorem finrank_quotientPiece_span_pair_fin_two_of_ne_zero
     push_cast at h₀ h₃
     linear_combination hc + h₀ - h₁ - h₂ + h₃
   exact_mod_cast this
-
-/-- If `A` and `B` are relatively prime forms of degrees `m` and `n` in `k[X, Y]`, the degree-`t`
-piece of `k[X, Y]/(A, B)` is zero for every `t ≥ m + n - 1`. -/
-theorem finrank_quotientPiece_span_pair_fin_two {A B : MvPolynomial (Fin 2) k} {m n t : ℕ}
-    (hA : A.IsHomogeneous m) (hB : B.IsHomogeneous n) (hAB : IsRelPrime A B)
-    (ht : m + n ≤ t + 1) :
-    Module.finrank k (quotientPiece (homogeneousSubmodule (Fin 2) k) (Ideal.span {A, B}) t) =
-      0 := by
-  rcases eq_or_ne A 0 with rfl | hA₀
-  · have hB₀ : B ≠ 0 := by
-      rintro rfl
-      exact not_isUnit_zero (isRelPrime_zero_left.mp hAB)
-    rw [Set.pair_comm]
-    exact finrank_quotientPiece_span_pair_fin_two_of_ne_zero hB hA hB₀ hAB.symm (by omega)
-  · exact finrank_quotientPiece_span_pair_fin_two_of_ne_zero hA hB hA₀ hAB ht
 
 /-- If `A` and `B` are relatively prime forms of degrees `m` and `n` in `k[X, Y]`, every form of
 degree `t ≥ m + n - 1` lies in the ideal `(A, B)`. -/

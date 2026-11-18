@@ -144,6 +144,7 @@ PlaneCurves/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
 │   │   │   ├── Factorization.lean       Fulton's f*, F_*, Proposition 5 of §2.6 (A3)
 │   │   │   └── Ideal.lean               J*, primality, (F)* = (F*) (P13)
+│   │   ├── Irreducible.lean             linear forms and total degree one over a field are irreducible (A4)
 │   │   ├── BinaryForm/
 │   │   │   ├── Basic.lean               binary forms split into linear forms (A4)
 │   │   │   ├── Basis.lean               bases of products of linear forms (A5)
@@ -169,6 +170,8 @@ PlaneCurves/
 │   │   └── RegularFunctions.lean        ⋂ of localizations, R[1/f] (R1)
 │   ├── Artinian/
 │   │   └── QuotientPiLocalization.lean  A/I ≅ ∏ A_𝔪/I A_𝔪 for A/I Artinian (A11)
+│   ├── LocalRing/
+│   │   └── Length.lean                  ℓ_k = ℓ_B over a local k-algebra B with residue field k
 │   ├── DiscreteValuationRing/
 │   │   └── Colength.lean                order = colength, expansions (A12)
 │   ├── KrullDimension/
@@ -368,7 +371,9 @@ with their files.
   `regularFunctionsOn_univ` (`MaximalSpectrum.iInf_localization_eq_bot`),
   `antitone_regularFunctionsOn`, `regularFunctionsOn_basicOpen`
   (`= R[1/f]`). Finiteness of poles is R3's.
-- **Order = colength** (`DiscreteValuationRing/Colength.lean`) and
+- **Lengths over a local algebra with residue field k**
+  (`LocalRing/Length.lean`), **order = colength**
+  (`DiscreteValuationRing/Colength.lean`) and
   **Artinian decomposition** (`Artinian/QuotientPiLocalization.lean`) are
   statements about Mathlib's types and need no definitions.
 

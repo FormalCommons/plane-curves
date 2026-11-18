@@ -65,31 +65,16 @@ private theorem two_mul_ite_multichoose_three {d j : ℕ} (hj : j ≤ d + 2) :
   · obtain ⟨i, hi, rfl⟩ : ∃ i : ℕ, i < 2 ∧ j = d + 1 + i := ⟨j - d - 1, by omega, by omega⟩
     interval_cases i <;> push_cast <;> ring
 
-/-- Step 1 for a nonzero first form. -/
-private theorem finrank_quotientPiece_span_pair_fin_three_of_ne_zero
-    {F G : MvPolynomial (Fin 3) k} {m n d : ℕ}
-    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n) (hF₀ : F ≠ 0) (hFG : IsRelPrime F G)
+/-- **Step 1 of Fulton's proof of Bézout's theorem.** If `F` and `G` are coprime forms of degrees
+`m` and `n` in `k[X, Y, Z]`, then the degree-`d` piece of `k[X, Y, Z]/(F, G)` has dimension `mn`
+for every `d ≥ m + n - 2`. -/
+theorem finrank_quotientPiece_span_pair_fin_three {F G : MvPolynomial (Fin 3) k} {m n d : ℕ}
+    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n) (hFG : IsRelPrime F G)
     (hd : m + n ≤ d + 2) :
     Module.finrank k (quotientPiece (homogeneousSubmodule (Fin 3) k) (Ideal.span {F, G}) d) =
       m * n := by
-  have h := mk_finrank_quotientPiece_of_isWeaklyRegular (S := ℤ) (homogeneousSubmodule (Fin 3) k)
-    [(F, m), (G, n)] (by simpa [mem_homogeneousSubmodule] using ⟨hF, hG⟩)
-    (by simpa using hFG.isWeaklyRegular hF₀)
-  have hspan : Ideal.ofList ([(F, m), (G, n)].map Prod.fst) = Ideal.span {F, G} := by
-    simp only [List.map_cons, List.map_nil, Ideal.ofList, List.mem_cons, List.not_mem_nil,
-      or_false]
-    rfl
-  rw [hspan] at h
-  have hc := congrArg (PowerSeries.coeff d) h
-  simp only [List.map_cons, List.map_nil, List.prod_cons, List.prod_nil, mul_one,
-    PowerSeries.coeff_mk] at hc
-  have hexp : ∀ p : PowerSeries ℤ, p * ((1 - PowerSeries.X ^ m) * (1 - PowerSeries.X ^ n)) =
-      p - p * PowerSeries.X ^ m - p * PowerSeries.X ^ n + p * PowerSeries.X ^ (m + n) := by
-    intro p
-    ring
-  rw [hexp] at hc
-  simp only [map_add, map_sub, PowerSeries.coeff_mul_X_pow', PowerSeries.coeff_mk,
-    TauCeti.finrank_homogeneousSubmodule_eq_multichoose, Fintype.card_fin] at hc
+  have hc := finrank_quotientPiece_span_pair hF hG hFG d
+  simp only [Fintype.card_fin] at hc
   have h₀ := two_mul_ite_multichoose_three (d := d) (j := 0) (by omega)
   have h₁ := two_mul_ite_multichoose_three (d := d) (j := m) (by omega)
   have h₂ := two_mul_ite_multichoose_three (d := d) (j := n) (by omega)
@@ -101,22 +86,6 @@ private theorem finrank_quotientPiece_span_pair_fin_three_of_ne_zero
     push_cast at h₀ h₃
     linear_combination 2 * hc + h₀ - h₁ - h₂ + h₃
   exact_mod_cast this
-
-/-- **Step 1 of Fulton's proof of Bézout's theorem.** If `F` and `G` are coprime forms of degrees
-`m` and `n` in `k[X, Y, Z]`, then the degree-`d` piece of `k[X, Y, Z]/(F, G)` has dimension `mn`
-for every `d ≥ m + n - 2`. -/
-theorem finrank_quotientPiece_span_pair_fin_three {F G : MvPolynomial (Fin 3) k} {m n d : ℕ}
-    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n) (hFG : IsRelPrime F G)
-    (hd : m + n ≤ d + 2) :
-    Module.finrank k (quotientPiece (homogeneousSubmodule (Fin 3) k) (Ideal.span {F, G}) d) =
-      m * n := by
-  rcases eq_or_ne F 0 with rfl | hF₀
-  · have hG₀ : G ≠ 0 := by
-      rintro rfl
-      exact not_isUnit_zero (isRelPrime_zero_left.mp hFG)
-    rw [Set.pair_comm, mul_comm]
-    exact finrank_quotientPiece_span_pair_fin_three_of_ne_zero hG hF hG₀ hFG.symm (by omega)
-  · exact finrank_quotientPiece_span_pair_fin_three_of_ne_zero hF hG hF₀ hFG hd
 
 /-- **Step 2 of Fulton's proof of Bézout's theorem.** If the polynomials `F` and `G` stay coprime
 when the variable `X i` is set to zero, then multiplication by `X i` is injective on
