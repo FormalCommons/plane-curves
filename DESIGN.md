@@ -292,8 +292,9 @@ PlaneCurves/
         │   ├── Normalization.lean       finiteness of the normalization (V6)
         │   └── OrdinaryMultiplePoints.lean resolution by blowing up (B5)
         ├── QuadraticTransformation/
-        │   ├── Basic.lean               F^Q, proper transform F' (T2)
-        │   ├── Position.lean            good and excellent position (T3)
+        │   ├── Basic.lean               F^Q, proper transform F', good position (T2)
+        │   ├── Birational.lean          point map, C' as closure, k(C) ≅ k(C') (T2)
+        │   ├── Position.lean            excellent position (T3)
         │   ├── Singularities.lean       new singularities, g* (T3)
         │   ├── Resolution.lean          reduction to ordinary points (T4)
         │   └── NeighbouringSingularities.lean Noether's formula, global form (T5)
@@ -713,7 +714,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | B4 | `PlaneCurve/Affine/Blowup/IntersectionNumber.lean` | **7-noether-formula** (local form) | B2, V8 |
 | B5 | `PlaneCurve/NonsingularModel/OrdinaryMultiplePoints.lean` | **7-resolve** | V5, B3 |
 | T1 | `RingTheory/MvPolynomial/PolarDerivative.lean`, `Projective/TerriblePoint.lean` | **7-terrible** | Q13, L10 |
-| T2 | `QuadraticTransformation/Basic.lean` | **7-quadratic** | Q3 |
+| T2 | `QuadraticTransformation/Basic.lean`, `Birational.lean` | **7-quadratic** | Q3, Q5, P7 |
 | T3 | `QuadraticTransformation/Position.lean`, `Singularities.lean` | **7-quadratic-centre** (*large*) | T1, T2, B1, L5, L12, Q14, P9 |
 | T4 | `QuadraticTransformation/Resolution.lean` | **7-reduce** | T3 |
 | T5 | `QuadraticTransformation/NeighbouringSingularities.lean` | the global form of **7-noether-formula** | T4, B4, Q12 |
@@ -865,7 +866,7 @@ completes it, in `TwoGenerators.lean`, for every `x ∉ k`.
 | 7-blowup | Blowing up a plane curve at a point: strict transform, fibre and local finiteness | `PlaneCurve/Affine/Blowup/Chart.lean` (B2), with `Blowup/Basic.lean` (B1) |
 | 7-ordinary | Orders at the places over an ordinary multiple point | `PlaneCurve/Place/OrdinaryMultiplePoint.lean` (B3) |
 | 7-resolve | Resolution of a plane curve with only ordinary multiple points by blowing up | `PlaneCurve/NonsingularModel/OrdinaryMultiplePoints.lean` (B5) |
-| 7-quadratic | Proper transform of a plane curve under the standard quadratic transformation | `PlaneCurve/QuadraticTransformation/Basic.lean` (T2) |
+| 7-quadratic | Proper transform of a plane curve under the standard quadratic transformation | `PlaneCurve/QuadraticTransformation/Birational.lean` (T2), with `Basic.lean` |
 | 7-terrible | Terrible points and lines meeting a plane curve in n distinct points | `PlaneCurve/Projective/TerriblePoint.lean` (T1) |
 | 7-quadratic-centre | Quadratic transformation centred at a point and its new singularities | `PlaneCurve/QuadraticTransformation/Singularities.lean` (T3) |
 | 7-reduce | Reduction of a plane curve to ordinary multiple points by quadratic transformations | `PlaneCurve/QuadraticTransformation/Resolution.lean` (T4) |
