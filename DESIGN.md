@@ -138,6 +138,7 @@ PlaneCurves/
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
 │   │   ├── Taylor.lean                  the Taylor shift p ↦ p(X + a) as an AlgEquiv (A9)
+│   │   ├── Factorization.lean           F = F' U, U(P) ≠ 0, irreducible factors of F' vanish at P
 │   │   ├── LinearForm.lean              linear forms ∑ C (a i) * X i (P8)
 │   │   ├── Homogenize/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
@@ -156,6 +157,9 @@ PlaneCurves/
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
 │   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
+│   ├── Ideal/
+│   │   └── AssociatedGraded.lean        (Iⁿ : f) = Iⁿ⁻ᵐ, dim A/Iⁿ⁺¹ = dim A/Iⁿ + dim Iⁿ/Iⁿ⁺¹ (L5)
+│   ├── Length.lean                      Hilbert–Samuel lengths under ring isomorphisms (L5)
 │   ├── Regular/
 │   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (Q11)
 │   ├── GradedAlgebra/
@@ -357,13 +361,13 @@ with their files.
   `HomogeneousLocalization`): a `Field` instance on `AtPrime 𝒜 ⊥` for a
   graded domain, `mapId_injective`, `mem_range_mapId_iff`.
 - **Regular functions on a set of maximal ideals**
-  (`Localization/RegularFunctions.lean`): `PlaneCurves.regularFunctionsOn R U`,
-  the infimum over `m ∈ U` of `Localization.subalgebra.ofField K m.primeCompl`
-  in the fraction field `K` (Fulton's `Γ(U)`). API:
-  `mem_regularFunctionsOn_iff`, `regularFunctionsOn_univ`
-  (`MaximalSpectrum.iInf_localization_eq_bot`), antitonicity,
-  `regularFunctionsOn_basicOpen` (`= R[1/f]`), finiteness of poles for a
-  one-dimensional Noetherian domain.
+  (`Localization/RegularFunctions.lean`):
+  `PlaneCurves.regularFunctionsOn R K U`, the infimum over `m ∈ U` of
+  `Localization.subalgebra.ofField K m.primeCompl` in the fraction field `K`
+  (Fulton's `Γ(U)`). API: `mem_regularFunctionsOn_iff`,
+  `regularFunctionsOn_univ` (`MaximalSpectrum.iInf_localization_eq_bot`),
+  `antitone_regularFunctionsOn`, `regularFunctionsOn_basicOpen`
+  (`= R[1/f]`). Finiteness of poles is R3's.
 - **Order = colength** (`DiscreteValuationRing/Colength.lean`) and
   **Artinian decomposition** (`Artinian/QuotientPiLocalization.lean`) are
   statements about Mathlib's types and need no definitions.
@@ -611,7 +615,7 @@ Local properties of plane curves (Chapter 3):
 | L2 | `PlaneCurve/Affine/Multiplicity.lean`, `Tangent.lean` | **3-mult**, **3-product** | L1, A4 |
 | L3 | `PlaneCurve/Affine/MultiplePoint.lean` | **3-finite** | L2, A6 |
 | L4 | `PlaneCurve/Affine/LocalRing.lean` | **3-dvr** | L2, A9 |
-| L5 | `PlaneCurve/Affine/HilbertSamuel.lean` | **3-ring**, **3-embdim** | L2, A5, A9 |
+| L5 | `RingTheory/Ideal/AssociatedGraded.lean`, `RingTheory/Length.lean`, `PlaneCurve/Affine/HilbertSamuel.lean` | **3-ring**, **3-embdim** | L2, A5, A9 |
 | L6 | `Affine/IntersectionNumber/Basic.lean` | `IntersectProperlyAt`, `intersectionNumber`; **3-finvan** | A6, A9 |
 | L7 | `Affine/IntersectionNumber/Additivity.lean` | **3-add** | L6 |
 | L8 | `RingTheory/MvPolynomial/BinaryForm/Ideal.lean`, `Affine/IntersectionNumber/Multiplicity.lean` | **3-power**, **3-prodmult**, **3-tangency** | L2, L6, L7, A5 |
