@@ -33,6 +33,8 @@ dehomogenization.
   for `s = deg f`, `r = deg g` and `t = r + s - deg (f + g)`.
 * `MvPolynomial.irreducible_dehomogenize_iff`: a form not divisible by `X i` is irreducible if and
   only if its dehomogenization is.
+* `MvPolynomial.isRelPrime_dehomogenize`: the dehomogenizations of relatively prime forms are
+  relatively prime.
 * `MvPolynomial.homogenize_totalDegree_spec`: all of these together, with Tau Ceti's
   `MvPolynomial.IsHomogeneous.of_mul_left`, that the factors of a form are forms.
 
@@ -180,6 +182,21 @@ theorem irreducible_dehomogenize_iff {F : MvPolynomial (Fin (n + 1)) R} {d : ℕ
     · rw [← hFF, hgk, homogenize_totalDegree_mul] at h
       exact (h.isUnit_or_isUnit rfl).imp (fun hu ↦ by simpa using hu.map (dehomogenize i))
         (fun hu ↦ by simpa using hu.map (dehomogenize i))
+
+/-- Over a ring without zero divisors, the dehomogenizations of relatively prime forms are
+relatively prime: a common factor `h` of `F_*` and `G_*` gives the common factor `h*` of `F`
+and `G`. -/
+theorem isRelPrime_dehomogenize {F G : MvPolynomial (Fin (n + 1)) R} {m d : ℕ}
+    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous d) (h : IsRelPrime F G) :
+    IsRelPrime (dehomogenize i F) (dehomogenize i G) := by
+  have key {H : MvPolynomial (Fin (n + 1)) R} {e : ℕ} (hH : H.IsHomogeneous e)
+      {f : MvPolynomial (Fin n) R} (hf : f ∣ dehomogenize i H) :
+      homogenize i f.totalDegree f ∣ H := by
+    obtain ⟨g, hg⟩ := hf
+    rw [← X_pow_mul_homogenize_dehomogenize (i := i) hH, hg, homogenize_totalDegree_mul]
+    exact (dvd_mul_right _ _).mul_left _
+  intro f hfF hfG
+  simpa using (h (key hF hfF) (key hG hfG)).map (dehomogenize i)
 
 /-- Proposition 5 of §2.6 of Fulton's book and its corollary, for Fulton's homogenization
 `f* = homogenize i f.totalDegree f` and dehomogenization `F_* = dehomogenize i F` in any variable
