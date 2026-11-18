@@ -8,6 +8,7 @@ module
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 public import Mathlib.RingTheory.Jacobson.Ring
 public import Mathlib.RingTheory.LocalRing.LocalSubring
+public import PlaneCurves.AlgebraicGeometry.AffineSpace.RationalFunction
 public import PlaneCurves.RingTheory.KrullDimension.TrdegOne
 public import TauCeti.FieldTheory.FunctionField.Basic
 
@@ -31,6 +32,9 @@ with value `Q` when `𝒪_{P'}(C')` dominates `φ(𝒪_Q(C))`, in Mathlib's domi
 
 ## Main results
 
+* `LocalSubring.atPrime_eq_ofPrime`: `R_p` is Mathlib's `LocalSubring.ofPrime` of the image of `R`.
+* `PlaneCurves.AffineSpace.localSubring_eq_atPrime`: the local ring `𝒪_P(V)` of an affine variety
+  is `LocalSubring.atPrime` of its coordinate ring at the ideal of `P`.
 * `LocalSubring.le_iff_of_field`: domination of local subrings of a field in terms of inverses.
 * `LocalSubring.map_atPrime_le_iff`: `B` dominates `φ(R_p)` iff `p` is the centre of `B` on `R`.
 * `LocalSubring.IsCenter.isMaximal`: the centre of a local ring of a finitely generated domain
@@ -305,6 +309,50 @@ theorem eq_of_atPrime_le {q : Ideal R} [q.IsPrime] (h : atPrime K p ≤ atPrime 
   have hp := (map_atPrime_le_iff (p := p) (RingHom.id K) (B := atPrime K q)).1 (by rwa [map_id])
   have hq := (map_atPrime_le_iff (p := q) (RingHom.id K) (B := atPrime K q)).1 (by rw [map_id])
   exact hp.unique hq
+
+/-- The elements of Mathlib's `LocalSubring.ofPrime A P`, the localization of a subring `A` of
+a field at a prime `P`, are the fractions `a / s` with `a, s ∈ A` and `s ∉ P`. -/
+theorem mem_ofPrime_iff {A : Subring K} {P : Ideal A} [P.IsPrime] {x : K} :
+    x ∈ (ofPrime A P).toSubring ↔ ∃ a s : A, s ∉ P ∧ x = a * (s : K)⁻¹ := by
+  have key (a s : A) (hs : s ∉ P) : (a : K) = s * (a * (s : K)⁻¹) := by
+    have hs : (s : K) ≠ 0 := fun h ↦ hs (by
+      rw [show s = 0 from Subtype.ext h]; exact P.zero_mem)
+    rw [mul_comm (a : K), mul_inv_cancel_left₀ hs]
+  rw [ofPrime, range_toSubring]
+  constructor
+  · rintro ⟨y, rfl⟩
+    obtain ⟨⟨a, s, hs⟩, rfl⟩ := IsLocalization.mk'_surjective P.primeCompl y
+    refine ⟨a, s, hs, ?_⟩
+    rw [IsLocalization.lift_mk'_spec]
+    exact key a s hs
+  · rintro ⟨a, s, hs, rfl⟩
+    refine ⟨IsLocalization.mk' _ a (⟨s, hs⟩ : P.primeCompl), ?_⟩
+    rw [IsLocalization.lift_mk'_spec]
+    exact key a s hs
+
+variable (K p) in
+/-- The image of a prime `p` of `R` in the image of `R` in its fraction field is prime. -/
+instance isPrime_map_rangeRestrict : (p.map (algebraMap R K).rangeRestrict).IsPrime :=
+  Ideal.map_isPrime_of_surjective (algebraMap R K).rangeRestrict_surjective (by
+    rw [RingHom.ker_rangeRestrict, (RingHom.injective_iff_ker_eq_bot _).1
+      (IsFractionRing.injective R K)]
+    exact bot_le)
+
+variable (K p) in
+/-- `R_p` is Mathlib's `LocalSubring.ofPrime` of the image of `R` in `K`, at the image of `p`. -/
+theorem atPrime_eq_ofPrime :
+    atPrime K p = ofPrime (algebraMap R K).range (p.map (algebraMap R K).rangeRestrict) := by
+  refine toSubring_injective (Subring.ext fun x ↦ ?_)
+  rw [mem_atPrime_iff, mem_ofPrime_iff]
+  constructor
+  · rintro ⟨a, s, hs, rfl⟩
+    refine ⟨(algebraMap R K).rangeRestrict a, (algebraMap R K).rangeRestrict s,
+      fun h ↦ hs ?_, rfl⟩
+    obtain ⟨t, ht, hts⟩ := (Ideal.mem_map_iff_of_surjective _
+      (algebraMap R K).rangeRestrict_surjective).1 h
+    exact IsFractionRing.injective R K (congrArg Subtype.val hts) ▸ ht
+  · rintro ⟨⟨_, a, rfl⟩, ⟨_, s, rfl⟩, hs, rfl⟩
+    exact ⟨a, s, fun h ↦ hs (Ideal.mem_map_of_mem (algebraMap R K).rangeRestrict h), rfl⟩
 
 end atPrime
 
@@ -608,3 +656,29 @@ theorem rationalMap_dominating_or_constant (hK : IsFunctionField k K)
     exact .inr ⟨⟨_, hmax⟩, fun B p hp ↦ hp.eq_ker hmax⟩
 
 end PlaneCurves
+
+namespace PlaneCurves.AffineSpace
+
+open MvPolynomial
+
+variable {k : Type*} [Field k] {σ : Type*} {I : Ideal (MvPolynomial σ k)} [I.IsPrime]
+  (P : σ → k) (hI : I ≤ vanishingIdeal k {P})
+
+/-- The local ring `𝒪_P(V)` of an affine variety is the localization `Γ(V)_{𝔪_P}` in the sense
+of `LocalSubring.atPrime`, so the results on `atPrime` apply to it. -/
+theorem localSubring_eq_atPrime :
+    localSubring P hI =
+      LocalSubring.atPrime (functionField I) (RingHom.ker (coordinateEval P hI)) := by
+  refine LocalSubring.toSubring_injective (Subring.ext fun f ↦ ?_)
+  rw [mem_localSubring_iff, LocalSubring.mem_atPrime_iff]
+  constructor
+  · rintro ⟨a, b, hb, rfl⟩
+    exact ⟨_, _, by simpa [RingHom.mem_ker] using hb, div_eq_mul_inv _ _⟩
+  · rintro ⟨a, b, hb, rfl⟩
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective b
+    exact ⟨a, b, by simpa [RingHom.mem_ker] using hb, (div_eq_mul_inv _ _).symm⟩
+
+end PlaneCurves.AffineSpace
+
+end
