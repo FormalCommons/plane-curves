@@ -11,10 +11,25 @@ is meant to be used, by later work here, by other projects, and eventually as
 part of Tau Ceti or Mathlib. Write it so that moving it there needs little
 more than a new namespace and copyright header.
 
-`DESIGN.md`, once it exists, describes how the library is organized: its
-folders and files, its core definitions and their API, and which parts build
-on which. Follow it. If it is wrong or incomplete, propose a change to it
-(see *Refactors* below) instead of working around it.
+The design describes how the library is organized: its folders and files,
+its core definitions and their API, and which parts build on which. Follow
+it. `DESIGN.md`, once it exists, is its overview: the parts, the folders each
+owns, which parts build on which, the definitions several parts share, and
+the part that proves each milestone. A part can have a detailed design of its
+own in `design/<part>.md`, `<part>` being its name in `DESIGN.md`; adding one
+does not change `DESIGN.md`. A part's design gives its files, its
+definitions with their API, its main results and their names, and what it
+uses from other parts.
+
+Designing is work like any other. A part that needs more design than the
+overview gives gets an issue of its own, labelled `proposed`, whose pull
+request adds or changes the part's file under `design/`. The agent who writes
+or splits along `DESIGN.md` creates such issues, and so does an agent whose
+building issue finds the design insufficient: then, if the part's design
+issue is open, mark it as blocking the issue you work on and stop, so that
+your issue waits for it. If the design is wrong, propose a change to it in an
+issue, labelled `proposed`, instead of working around it. Keep changes to
+`DESIGN.md` itself small, since every part shares it.
 
 ## Building
 
@@ -130,7 +145,7 @@ line of a comment with `axiom`.
   exists. Where the plan says that a result exists in a library, do not
   reprove it.
 - **Definitions come with their API.** A new definition comes with the API
-  that `DESIGN.md` lists for it, and at least what makes it usable: how to
+  that the design gives it, and at least what makes it usable: how to
   build and use it (`foo_def`, `mem_foo_iff`, constructors and eliminators),
   how it behaves under the operations around it, `@[simp]` on lemmas that
   put terms in normal form, and `@[ext]` for a structure. A new predicate
@@ -164,7 +179,9 @@ line of a comment with `axiom`.
   instead of doing it inside your pull request. A refactor updates every use
   in the same pull request and deletes the old name, with no deprecated
   alias, wrapper or forwarding file. If it changes how the library is
-  organized, it updates `DESIGN.md` too.
+  organized, it updates the design too. A change to a part's design that
+  existing code no longer fits is a refactor: one pull request changes
+  both.
 - **Leave the setup alone.** Do not change `lakefile.toml`,
   `lake-manifest.json`, `lean-toolchain`, `LICENSE` or anything under
   `.github/`, unless the issue you work on asks for it and a person in the
@@ -227,7 +244,8 @@ code, by the rules above:
   main statements.
 - Its statements are as general as they naturally are, its definitions come
   with their API, and its supporting lemmas are public and placed by topic.
-- It fits `DESIGN.md`: the files, the definitions and the names it gives.
+- It fits the design (`DESIGN.md`, and the part's file under `design/`): the
+  files, the definitions and the names it gives.
 - A milestone's statement matches the plan, or is more general. If it is
   weaker or different, the pull request adds an entry to `ERRATA.md`. Check
   that the error is real, and that each change to the statement has a
@@ -236,13 +254,18 @@ code, by the rules above:
   `Part of` its issue, need not do the issue. Check the entry's evidence and
   the routes it lists, and that the file has no entry for that error yet.
 
-A pull request that adds or changes `DESIGN.md` is reviewed like code. Check
-it against what the plan says about building the library, that every
-milestone has a place in it, that each part is clear enough to become an
-issue, and that the order of the parts can be built from what exists.
+A pull request that adds or changes the design is reviewed like code. Check
+it against what the plan says about building the library and against the
+rest of the design. For `DESIGN.md`, check that every milestone has a part
+and that the parts can be built in the order given from what exists. For a
+part's design, check that it fits the overview, defines nothing that
+Mathlib, Tau Ceti or the library already has, states its milestones as the
+plan, or `ERRATA.md`, does, and is clear enough to become issues of a few
+hundred lines each.
 
 ## Triage
 
-An issue for a part of the library must agree with `DESIGN.md` and the plan,
-as `ERRATA.md` corrects it.
-If it does not, say where, and correct the issue or close it.
+An issue that builds a part of the library must agree with the design and
+the plan, as `ERRATA.md` corrects it. If it does not, say where, and correct
+the issue or close it. An issue that changes the design must say why the
+design is wrong or incomplete; check that reason.
