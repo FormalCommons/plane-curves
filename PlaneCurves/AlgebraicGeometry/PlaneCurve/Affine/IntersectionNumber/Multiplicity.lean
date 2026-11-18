@@ -6,9 +6,11 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Basic
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Tangent
 public import PlaneCurves.RingTheory.MvPolynomial.BinaryForm.Ideal
 public import PlaneCurves.RingTheory.MvPolynomial.LeadingForm
 public import TauCeti.RingTheory.MvPolynomial.LocalOrder
+import PlaneCurves.RingTheory.MvPolynomial.PowIdealOfVars
 import PlaneCurves.RingTheory.MvPolynomial.Taylor
 import Mathlib.Algebra.MvPolynomial.Nilpotent
 import Mathlib.Tactic.LinearCombination
@@ -34,6 +36,13 @@ when `A F + B G ∈ I_P ^ (m + n)` forces `A ∈ I_P ^ n` and `B ∈ I_P ^ m`; t
 `k[X, Y] ⧸ I_P ^ n × k[X, Y] ⧸ I_P ^ m → k[X, Y] ⧸ I_P ^ (m + n)`, `(A, B) ↦ A F + B G`, is
 injective.
 
+Property (5) itself follows Fulton's count. With `I = I_P` and `N = m + n`, the map
+`ψ : k[X, Y] ⧸ I ^ n × k[X, Y] ⧸ I ^ m → k[X, Y] ⧸ I ^ N`, `(A, B) ↦ A F + B G`, has cokernel
+`k[X, Y] ⧸ ((F, G) + I ^ N)`, whose dimension is therefore `m n + dim ker ψ`. This quotient is
+`𝒪_P ⧸ ((F, G) + 𝔪 ^ N)`, a quotient of `𝒪_P ⧸ (F, G)`, so `I(P, F ∩ G) ≥ m n`. If the leading
+forms are relatively prime, then `ψ` is injective by Lemma (b) and `𝔪 ^ N ⊆ (F, G)` by Lemma (a),
+so equality holds; if not, `ψ` is not injective and the inequality is strict.
+
 ## Main results
 
 * `PlaneCurves.Affine.intersectProperlyAt_of_isRelPrime_leadingFormAt`: curves with relatively
@@ -47,15 +56,29 @@ injective.
 * `PlaneCurves.Affine.exists_notMem_pow_of_not_isRelPrime_leadingFormAt`: if they are not, there
   are `A ∉ I_P ^ n` and `B` with `A F + B G ∈ I_P ^ (m + n)`.
 * `PlaneCurves.Affine.isRelPrime_leadingFormAt_iff_forall_mem_pow`: the two together.
+* `PlaneCurves.Affine.mul_le_finrank_quotient_span_pair_sup_pow`,
+  `PlaneCurves.Affine.finrank_quotient_span_pair_sup_pow_eq_mul_iff`: Fulton's dimension count,
+  `dim_k k[X, Y] ⧸ ((F, G) + I_P ^ (m + n)) ≥ m n`, with equality iff the leading forms are
+  relatively prime.
+* `PlaneCurves.Affine.mul_orderAt_le_intersectionNumber`: `I(P, F ∩ G) ≥ m_P(F) m_P(G)` for all
+  `F`, `G`, over any field.
+* `PlaneCurves.Affine.intersectionNumber_eq_mul_orderAt_iff`: for nonzero `F`, `G`, equality
+  holds iff the leading forms are relatively prime.
+* `PlaneCurves.Affine.intersectionNumber_eq_one_iff`: `I(P, F ∩ G) = 1` iff `P` is simple on both
+  curves with different tangents.
+* `PlaneCurves.Affine.isRelPrime_leadingFormAt_iff_not_exists_isTangentAt`: over an algebraically
+  closed field, relatively prime leading forms mean no common tangent.
+* `PlaneCurves.Affine.mul_orderAt_le_intersectionNumber_and_eq_iff`: property (5), over an
+  algebraically closed field.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, p. 39
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Property (5), pp. 37–39
 -/
 
 public section
 
-open MvPolynomial IsLocalRing Ideal
+open MvPolynomial IsLocalRing Ideal Module
 
 namespace PlaneCurves.Affine
 
@@ -303,6 +326,289 @@ theorem isRelPrime_leadingFormAt_iff_forall_mem_pow (hF : F ≠ 0) (hG : G ≠ 0
   by_contra hFG
   obtain ⟨A, B, hA, hAB⟩ := exists_notMem_pow_of_not_isRelPrime_leadingFormAt hF hG hFG
   exact hA (h A B hAB).1
+
+/-! ### Property (5) -/
+
+private theorem choose_two_add (a b : ℕ) :
+    (a + b + 1).choose 2 = (a + 1).choose 2 + (b + 1).choose 2 + a * b := by
+  induction b with
+  | zero => simp
+  | succ b ih =>
+    rw [show a + (b + 1) + 1 = a + b + 1 + 1 by ring, Nat.choose_succ_succ' (a + b + 1) 1, ih,
+      Nat.choose_succ_succ' (b + 1) 1, Nat.choose_one_right, Nat.choose_one_right]
+    ring
+
+variable (P) in
+/-- Multiplication by `F ∈ I_P ^ m`, as a `k`-linear map `k[X, Y] ⧸ I_P ^ n → k[X, Y] ⧸ I_P ^ r`
+for `r = m + n`. -/
+private noncomputable def mulQuot (F : MvPolynomial (Fin 2) k) {m : ℕ}
+    (hF : F ∈ vanishingIdeal k {P} ^ m) (n r : ℕ) (hr : m + n = r) :
+    (MvPolynomial (Fin 2) k ⧸ vanishingIdeal k {P} ^ n) →ₗ[k]
+      MvPolynomial (Fin 2) k ⧸ vanishingIdeal k {P} ^ r :=
+  ((vanishingIdeal k {P} ^ n).mapQ (vanishingIdeal k {P} ^ r)
+    (LinearMap.mulRight _ F) fun x hx ↦ by
+      rw [Submodule.mem_comap, LinearMap.mulRight_apply, ← hr, pow_add]
+      exact mul_comm F x ▸ Ideal.mul_mem_mul hF hx).restrictScalars k
+
+private theorem mulQuot_mk {m : ℕ} (hF : F ∈ vanishingIdeal k {P} ^ m) (n r : ℕ)
+    (hr : m + n = r) (A : MvPolynomial (Fin 2) k) :
+    mulQuot P F hF n r hr (Ideal.Quotient.mk _ A) = Ideal.Quotient.mk _ (A * F) :=
+  rfl
+
+variable (P) in
+/-- Fulton's map `ψ : k[X, Y] ⧸ I_P ^ n × k[X, Y] ⧸ I_P ^ m → k[X, Y] ⧸ I_P ^ (m + n)`,
+`(A, B) ↦ A F + B G`, for `F ∈ I_P ^ m` and `G ∈ I_P ^ n`. -/
+private noncomputable def mulAddMul {m n : ℕ} (hF : F ∈ vanishingIdeal k {P} ^ m)
+    (hG : G ∈ vanishingIdeal k {P} ^ n) :
+    (MvPolynomial (Fin 2) k ⧸ vanishingIdeal k {P} ^ n) ×
+        (MvPolynomial (Fin 2) k ⧸ vanishingIdeal k {P} ^ m) →ₗ[k]
+      MvPolynomial (Fin 2) k ⧸ vanishingIdeal k {P} ^ (m + n) :=
+  (mulQuot P F hF n (m + n) rfl).coprod (mulQuot P G hG m (m + n) (add_comm n m))
+
+private theorem mulAddMul_mk {m n : ℕ} (hF : F ∈ vanishingIdeal k {P} ^ m)
+    (hG : G ∈ vanishingIdeal k {P} ^ n) (A B : MvPolynomial (Fin 2) k) :
+    mulAddMul P hF hG (Ideal.Quotient.mk _ A, Ideal.Quotient.mk _ B) =
+      Ideal.Quotient.mk _ (A * F + B * G) := by
+  rw [map_add]
+  rfl
+
+private theorem range_mulAddMul {m n : ℕ} (hF : F ∈ vanishingIdeal k {P} ^ m)
+    (hG : G ∈ vanishingIdeal k {P} ^ n) :
+    LinearMap.range (mulAddMul P hF hG) =
+      ((Ideal.span {F, G}).map (Ideal.Quotient.mk (vanishingIdeal k {P} ^ (m + n)))).restrictScalars
+        k := by
+  ext x
+  rw [Submodule.restrictScalars_mem, Ideal.map_span, Set.image_pair, Ideal.mem_span_pair,
+    LinearMap.mem_range]
+  constructor
+  · rintro ⟨⟨a, b⟩, rfl⟩
+    obtain ⟨A, rfl⟩ := Ideal.Quotient.mk_surjective a
+    obtain ⟨B, rfl⟩ := Ideal.Quotient.mk_surjective b
+    exact ⟨Ideal.Quotient.mk _ A, Ideal.Quotient.mk _ B, by rw [mulAddMul_mk]; simp⟩
+  · rintro ⟨a, b, rfl⟩
+    obtain ⟨A, rfl⟩ := Ideal.Quotient.mk_surjective a
+    obtain ⟨B, rfl⟩ := Ideal.Quotient.mk_surjective b
+    exact ⟨(Ideal.Quotient.mk _ A, Ideal.Quotient.mk _ B), by rw [mulAddMul_mk]; simp⟩
+
+private theorem injective_mulAddMul_iff {m n : ℕ} (hF : F ∈ vanishingIdeal k {P} ^ m)
+    (hG : G ∈ vanishingIdeal k {P} ^ n) :
+    Function.Injective (mulAddMul P hF hG) ↔ ∀ A B : MvPolynomial (Fin 2) k,
+      A * F + B * G ∈ vanishingIdeal k {P} ^ (m + n) →
+        A ∈ vanishingIdeal k {P} ^ n ∧ B ∈ vanishingIdeal k {P} ^ m := by
+  rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+  constructor
+  · intro h A B hAB
+    have := h (Ideal.Quotient.mk _ A, Ideal.Quotient.mk _ B)
+      (by rw [mulAddMul_mk]; exact Ideal.Quotient.eq_zero_iff_mem.2 hAB)
+    simp only [Prod.mk_eq_zero, Ideal.Quotient.eq_zero_iff_mem] at this
+    exact this
+  · rintro h ⟨a, b⟩ hab
+    obtain ⟨A, rfl⟩ := Ideal.Quotient.mk_surjective a
+    obtain ⟨B, rfl⟩ := Ideal.Quotient.mk_surjective b
+    rw [mulAddMul_mk, Ideal.Quotient.eq_zero_iff_mem] at hab
+    simp only [Prod.mk_eq_zero, Ideal.Quotient.eq_zero_iff_mem]
+    exact h A B hab
+
+private theorem finrank_quotient_pow (r : ℕ) :
+    finrank k (MvPolynomial (Fin 2) k ⧸ vanishingIdeal k {P} ^ r) = (r + 1).choose 2 := by
+  rw [finrank_quotient_pow_vanishingIdeal_singleton P (.inr inferInstance), Fintype.card_fin]
+  rfl
+
+private theorem finrank_quotient_span_pair_sup_pow_eq {m n : ℕ}
+    (hF : F ∈ vanishingIdeal k {P} ^ m) (hG : G ∈ vanishingIdeal k {P} ^ n) :
+    finrank k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F, G} ⊔ vanishingIdeal k {P} ^ (m + n)) =
+      m * n + finrank k (LinearMap.ker (mulAddMul P hF hG)) := by
+  set J := Ideal.span {F, G}
+  set I := vanishingIdeal k {P} ^ (m + n)
+  have e : (MvPolynomial (Fin 2) k ⧸ J ⊔ I) ≃ₗ[k] _ ⧸ LinearMap.range (mulAddMul P hF hG) :=
+    ((Ideal.quotientEquivAlgOfEq k (sup_comm J I)).trans
+      (DoubleQuot.quotQuotEquivQuotSupₐ k I J).symm).toLinearEquiv.trans <|
+    (Submodule.Quotient.restrictScalarsEquiv k (J.map (Ideal.Quotient.mkₐ k I))).symm.trans
+      (Submodule.quotEquivOfEq _ _ (by exact (range_mulAddMul hF hG).symm))
+  have h₁ := (LinearMap.range (mulAddMul P hF hG)).finrank_quotient_add_finrank
+  have h₂ := LinearMap.finrank_range_add_finrank_ker (mulAddMul P hF hG)
+  rw [Module.finrank_prod, finrank_quotient_pow, finrank_quotient_pow] at h₂
+  rw [finrank_quotient_pow] at h₁
+  have h₃ := choose_two_add m n
+  rw [e.finrank_eq]
+  linarith
+
+/-- **Fulton's dimension count.** For `F ∈ I_P ^ m` and `G ∈ I_P ^ n`,
+`dim_k k[X, Y] ⧸ ((F, G) + I_P ^ (m + n)) ≥ m n`. -/
+theorem mul_le_finrank_quotient_span_pair_sup_pow {m n : ℕ}
+    (hF : F ∈ vanishingIdeal k {P} ^ m) (hG : G ∈ vanishingIdeal k {P} ^ n) :
+    m * n ≤
+      finrank k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F, G} ⊔ vanishingIdeal k {P} ^ (m + n)) := by
+  rw [finrank_quotient_span_pair_sup_pow_eq hF hG]
+  exact Nat.le_add_right _ _
+
+/-- **Fulton's dimension count, the equality case.** For nonzero `F`, `G` with orders `m`, `n`
+at `P`, `dim_k k[X, Y] ⧸ ((F, G) + I_P ^ (m + n)) = m n` iff the leading forms of `F` and `G` at
+`P` are relatively prime. -/
+theorem finrank_quotient_span_pair_sup_pow_eq_mul_iff (hF : F ≠ 0) (hG : G ≠ 0) :
+    finrank k (MvPolynomial (Fin 2) k ⧸
+        Ideal.span {F, G} ⊔ vanishingIdeal k {P} ^ ((F.orderAt P).toNat + (G.orderAt P).toNat)) =
+      (F.orderAt P).toNat * (G.orderAt P).toNat ↔
+      IsRelPrime (F.leadingFormAt P) (G.leadingFormAt P) := by
+  have hFm := (mem_pow_vanishingIdeal_singleton_iff F P _).2 (ENat.natCast_toNat_le_self _)
+  have hGn := (mem_pow_vanishingIdeal_singleton_iff G P _).2 (ENat.natCast_toNat_le_self _)
+  rw [finrank_quotient_span_pair_sup_pow_eq hFm hGn, Nat.add_eq_left, Submodule.finrank_eq_zero,
+    LinearMap.ker_eq_bot, injective_mulAddMul_iff,
+    isRelPrime_leadingFormAt_iff_forall_mem_pow hF hG]
+
+variable (P) in
+/-- `dim_k k[X, Y] ⧸ ((F, G) + I_P ^ r) ≤ I(P, F ∩ G)`: the quotient is a quotient of
+`𝒪_P(𝔸²) ⧸ (F, G)`, with equality when `𝔪_P ^ r ⊆ (F, G) 𝒪_P(𝔸²)`. -/
+theorem finrank_quotient_span_pair_sup_pow_le_intersectionNumber (F G : MvPolynomial (Fin 2) k)
+    (r : ℕ) :
+    (finrank k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F, G} ⊔ vanishingIdeal k {P} ^ r) : ℕ∞) ≤
+      intersectionNumber P F G := by
+  rw [← Module.length_eq_finrank, ← AffineSpace.localRing.length_quotient_map_sup_maximalIdeal_pow,
+    intersectionNumber_eq_length_restrictScalars, Ideal.map_span, Set.image_pair]
+  exact Module.length_le_of_surjective
+    (Ideal.Quotient.factorₐ k le_sup_left).toLinearMap
+    (Ideal.Quotient.factor_surjective le_sup_left)
+
+/-- If `𝔪_P ^ r ⊆ (F, G) 𝒪_P(𝔸²)`, then `I(P, F ∩ G) = dim_k k[X, Y] ⧸ ((F, G) + I_P ^ r)`. -/
+theorem finrank_quotient_span_pair_sup_pow_eq_intersectionNumber {r : ℕ}
+    (h : maximalIdeal (AffineSpace.localRing k P) ^ r ≤
+      Ideal.span {algebraMap _ (AffineSpace.localRing k P) F, algebraMap _ _ G}) :
+    (finrank k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F, G} ⊔ vanishingIdeal k {P} ^ r) : ℕ∞) =
+      intersectionNumber P F G := by
+  rw [← Module.length_eq_finrank, ← AffineSpace.localRing.length_quotient_map_sup_maximalIdeal_pow,
+    intersectionNumber_eq_length_restrictScalars, Ideal.map_span, Set.image_pair, sup_eq_left.2 h]
+
+/-- For nonzero `F`, `G`, `I(P, F ∩ G) ≥ m n` for the orders `m`, `n` at `P`, with equality iff
+the leading forms are relatively prime. -/
+private theorem mul_toNat_le_intersectionNumber_and_eq_iff (hF : F ≠ 0) (hG : G ≠ 0) :
+    (((F.orderAt P).toNat * (G.orderAt P).toNat : ℕ) : ℕ∞) ≤ intersectionNumber P F G ∧
+      (intersectionNumber P F G = ((F.orderAt P).toNat * (G.orderAt P).toNat : ℕ) ↔
+        IsRelPrime (F.leadingFormAt P) (G.leadingFormAt P)) := by
+  have hFm := (mem_pow_vanishingIdeal_singleton_iff F P _).2 (ENat.natCast_toNat_le_self _)
+  have hGn := (mem_pow_vanishingIdeal_singleton_iff G P _).2 (ENat.natCast_toNat_le_self _)
+  have hle := (Nat.cast_le.2 (mul_le_finrank_quotient_span_pair_sup_pow hFm hGn)).trans
+    (finrank_quotient_span_pair_sup_pow_le_intersectionNumber P F G _)
+  refine ⟨hle, fun h ↦ ?_, fun h ↦ ?_⟩
+  · rw [← finrank_quotient_span_pair_sup_pow_eq_mul_iff hF hG]
+    refine le_antisymm ?_ (mul_le_finrank_quotient_span_pair_sup_pow hFm hGn)
+    exact_mod_cast h ▸ finrank_quotient_span_pair_sup_pow_le_intersectionNumber P F G _
+  · rw [← finrank_quotient_span_pair_sup_pow_eq_intersectionNumber
+      (maximalIdeal_pow_le_span_pair h le_self_add),
+    (finrank_quotient_span_pair_sup_pow_eq_mul_iff hF hG).2 h]
+
+private theorem orderAt_mul_orderAt_zero_left_le (G : MvPolynomial (Fin 2) k) :
+    (0 : MvPolynomial (Fin 2) k).orderAt P * G.orderAt P ≤ intersectionNumber P 0 G := by
+  by_cases hG : eval P G = 0
+  · rw [intersectionNumber_zero_left_eq_top_iff.2 hG]
+    exact le_top
+  · rw [orderAt_eq_zero_iff.2 hG, mul_zero]
+    exact zero_le
+
+/-- **Intersection number and multiplicities.** `I(P, F ∩ G) ≥ m_P(F) m_P(G)`, over any field and
+for all `F`, `G`. -/
+theorem mul_orderAt_le_intersectionNumber (P : Fin 2 → k) (F G : MvPolynomial (Fin 2) k) :
+    F.orderAt P * G.orderAt P ≤ intersectionNumber P F G := by
+  rcases eq_or_ne F 0 with rfl | hF
+  · exact orderAt_mul_orderAt_zero_left_le G
+  rcases eq_or_ne G 0 with rfl | hG
+  · rw [mul_comm, intersectionNumber_comm]
+    exact orderAt_mul_orderAt_zero_left_le F
+  rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF),
+    ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG), ← Nat.cast_mul]
+  exact (mul_toNat_le_intersectionNumber_and_eq_iff hF hG).1
+
+/-- **The equality case of property (5)**, over any field: for nonzero `F` and `G`,
+`I(P, F ∩ G) = m_P(F) m_P(G)` iff the leading forms of `F` and `G` at `P` are relatively
+prime. -/
+theorem intersectionNumber_eq_mul_orderAt_iff (hF : F ≠ 0) (hG : G ≠ 0) :
+    intersectionNumber P F G = F.orderAt P * G.orderAt P ↔
+      IsRelPrime (F.leadingFormAt P) (G.leadingFormAt P) := by
+  rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF),
+    ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG), ← Nat.cast_mul]
+  exact (mul_toNat_le_intersectionNumber_and_eq_iff hF hG).2
+
+/-- At simple points of `F` and `G`, the leading forms are relatively prime iff they are not
+associated, that is, iff the tangents differ. -/
+theorem IsSimplePoint.isRelPrime_leadingFormAt_iff (hF : IsSimplePoint F P)
+    (hG : IsSimplePoint G P) :
+    IsRelPrime (F.leadingFormAt P) (G.leadingFormAt P) ↔
+      ¬Associated (F.leadingFormAt P) (G.leadingFormAt P) := by
+  have hFi := hF.isTangentAt_leadingFormAt.prime.irreducible
+  have hGi := hG.isTangentAt_leadingFormAt.prime.irreducible
+  rw [hFi.isRelPrime_iff_not_dvd]
+  exact not_congr ⟨fun h ↦ hFi.associated_of_dvd hGi h, Associated.dvd⟩
+
+/-- **Transversal intersection.** `I(P, F ∩ G) = 1` iff `P` is a simple point of `F` and of `G`
+and the tangents there differ, that is, the leading forms are not associated. -/
+theorem intersectionNumber_eq_one_iff :
+    intersectionNumber P F G = 1 ↔ IsSimplePoint F P ∧ IsSimplePoint G P ∧
+      ¬Associated (F.leadingFormAt P) (G.leadingFormAt P) := by
+  constructor
+  · intro h
+    have hprop : IntersectProperlyAt F G P := intersectionNumber_ne_top_iff.1 (by simp [h])
+    have hP : eval P F = 0 ∧ eval P G = 0 := by
+      have := mt intersectionNumber_eq_zero_iff.2 (by rw [h]; exact one_ne_zero)
+      push Not at this
+      exact this
+    have hF := hprop.ne_zero_left hP.2
+    have hG := hprop.ne_zero_right hP.1
+    obtain ⟨m, hm⟩ := ENat.ne_top_iff_exists.1 (orderAt_eq_top_iff.not.2 hF)
+    obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (orderAt_eq_top_iff.not.2 hG)
+    have hm1 := orderAt_pos_iff.2 hP.1
+    have hn1 := orderAt_pos_iff.2 hP.2
+    have hle := mul_orderAt_le_intersectionNumber P F G
+    rw [← hm, ← hn, h] at hle
+    rw [← hm] at hm1
+    rw [← hn] at hn1
+    norm_cast at hm1 hn1 hle
+    have hm' : m = 1 := by nlinarith
+    have hn' : n = 1 := by nlinarith
+    subst hm' hn'
+    have hFs := isSimplePoint_iff_orderAt_eq_one.2 hm.symm
+    have hGs := isSimplePoint_iff_orderAt_eq_one.2 hn.symm
+    refine ⟨hFs, hGs, (hFs.isRelPrime_leadingFormAt_iff hGs).1 ?_⟩
+    rw [← intersectionNumber_eq_mul_orderAt_iff hF hG, h, ← hm, ← hn]
+    rfl
+  · rintro ⟨hF, hG, h⟩
+    rw [← (hF.isRelPrime_leadingFormAt_iff hG), ← intersectionNumber_eq_mul_orderAt_iff hF.ne_zero
+      hG.ne_zero, isSimplePoint_iff_orderAt_eq_one.1 hF, isSimplePoint_iff_orderAt_eq_one.1 hG,
+      mul_one] at h
+    exact h
+
+section IsAlgClosed
+
+variable [IsAlgClosed k]
+
+/-- Over an algebraically closed field, the leading forms of `F ≠ 0` and `G` at `P` are
+relatively prime iff `F` and `G` have no common tangent at `P`. -/
+theorem isRelPrime_leadingFormAt_iff_not_exists_isTangentAt (hF : F ≠ 0) :
+    IsRelPrime (F.leadingFormAt P) (G.leadingFormAt P) ↔
+      ¬∃ L, IsTangentAt F P L ∧ IsTangentAt G P L := by
+  refine ⟨fun h ⟨L, hLF, hLG⟩ ↦ hLF.prime.not_isUnit (h hLF.dvd hLG.dvd), fun h ↦ ?_⟩
+  refine WfDvdMonoid.isRelPrime_of_no_irreducible_factors
+    (fun h0 ↦ leadingFormAt_ne_zero hF h0.1) fun p hp hpF hpG ↦ h ?_
+  obtain ⟨ε, hε, u, -, hu, heq⟩ := exists_leadingFormAt_eq_C_mul_prod (P := P) hF
+  rw [heq] at hpF
+  rcases hp.prime.dvd_or_dvd hpF with hpε | hpu
+  · exact (hp.not_isUnit (isUnit_of_dvd_unit hpε ((isUnit_iff_ne_zero.2 hε).map C))).elim
+  obtain ⟨L, hL, hpL⟩ := hp.prime.exists_mem_multiset_dvd hpu
+  have hLp := (hp.associated_of_dvd (hu L hL).prime.irreducible hpL).symm.dvd
+  exact ⟨L, hu L hL, isTangentAt_def.2 ⟨(hu L hL).isHomogeneous, (hu L hL).ne_zero, hLp.trans hpG⟩⟩
+
+/-- **Intersection number is at least the product of the multiplicities** (Fulton's property
+(5)). Let `k` be algebraically closed, `F`, `G` nonzero in `k[X, Y]` and `P ∈ k²`. Then
+`I(P, F ∩ G) ≥ m_P(F) m_P(G)`, with equality iff `F` and `G` have no tangent line in common at
+`P`.
+
+Milestone: *Intersection number is at least the product of the multiplicities*. -/
+theorem mul_orderAt_le_intersectionNumber_and_eq_iff (hF : F ≠ 0) (hG : G ≠ 0) :
+    F.orderAt P * G.orderAt P ≤ intersectionNumber P F G ∧
+      (intersectionNumber P F G = F.orderAt P * G.orderAt P ↔
+        ¬∃ L, IsTangentAt F P L ∧ IsTangentAt G P L) :=
+  ⟨mul_orderAt_le_intersectionNumber P F G, (intersectionNumber_eq_mul_orderAt_iff hF hG).trans
+    (isRelPrime_leadingFormAt_iff_not_exists_isTangentAt hF)⟩
+
+end IsAlgClosed
 
 end PlaneCurves.Affine
 
