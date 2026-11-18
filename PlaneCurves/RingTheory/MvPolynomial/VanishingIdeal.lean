@@ -73,8 +73,9 @@ theorem vanishingIdeal_singleton_eq_span (P : σ → k) :
   ext f
   simp
 
-/-- The ideal of a point `P ∈ kⁿ` is the kernel of evaluation at `P`. -/
-theorem vanishingIdeal_singleton_eq_ker (P : σ → k) :
+/-- The ideal of a point `P ∈ Kⁿ`, over an extension `K` of `k`, is the kernel of evaluation
+at `P`. -/
+theorem vanishingIdeal_singleton_eq_ker (P : σ → K) :
     vanishingIdeal k {P} = RingHom.ker (aeval (R := k) P) := by
   ext f
   simp
