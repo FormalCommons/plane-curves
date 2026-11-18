@@ -273,6 +273,17 @@ theorem mem_zeroLocus_iff_le_ker (hI : I.IsHomogeneous (homogeneousSubmodule (Fi
   rw [mem_zeroLocus_iff_eval_rep fun f (hf : f ∈ I ∧ _) ↦ hf.2]
   rfl
 
+/-- For a homogeneous ideal `I`, a point outside its zero locus is not a zero of some form of
+`I`. -/
+theorem exists_isHomogeneous_eval_rep_ne_zero_of_notMem_zeroLocus
+    (hI : I.IsHomogeneous (homogeneousSubmodule (Fin (n + 1)) k)) (hP : P ∉ zeroLocus I) :
+    ∃ (e : ℕ) (h : MvPolynomial (Fin (n + 1)) k), h.IsHomogeneous e ∧ h ∈ I ∧
+      eval P.rep h ≠ 0 := by
+  rw [← hI.span_setOf_isHomogeneous, zeroLocus_span,
+    mem_zeroLocus_iff_eval_rep fun f (hf : f ∈ I ∧ _) ↦ hf.2] at hP
+  obtain ⟨h, ⟨hI, e, he⟩, hP⟩ := not_forall₂.1 hP
+  exact ⟨e, h, he, hI, hP⟩
+
 /-- **The affine cone.** For a homogeneous ideal `I` and `v ≠ 0`, the class of `v` is a zero of
 `I` in `ℙⁿ` exactly when `v` is a zero of `I` in `𝔸ⁿ⁺¹`. -/
 theorem mk_mem_zeroLocus_iff_mem_zeroLocus
