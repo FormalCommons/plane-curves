@@ -379,7 +379,10 @@ with their files.
   `𝒪_P/J𝒪_P ≅ 𝒪_P(k[X]/I)/J'` of §2.8 (from `Localization/Quotient.lean`).
 - **Affine varieties** are not a type: a variety is given by a prime ideal
   `I` (`Γ(V) = k[X] ⧸ I`, `k(V) = FractionRing Γ(V)`), its local rings by
-  `LocalSubring.ofPrime` in `k(V)` (`RationalFunction.lean`).
+  `LocalSubring.ofPrime` in `k(V)` (`RationalFunction.lean`):
+  `AffineSpace.functionField I` and `AffineSpace.localSubring P hI` for
+  `hI : I ≤ vanishingIdeal k {P}`, with the value map `evalAt`, the
+  isomorphism `quotientAlgEquiv` to `𝒪_P(𝔸ⁿ) ⧸ I 𝒪_P(𝔸ⁿ)`, and `map`.
 
 ### Projective space (`AlgebraicGeometry/ProjectiveSpace/`, `LinearAlgebra/Projectivization/`)
 
