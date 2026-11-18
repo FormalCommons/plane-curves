@@ -7,6 +7,7 @@ module
 
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import TauCeti.RingTheory.MvPolynomial.LineRestriction
+public import PlaneCurves.Algebra.MvPolynomial.SetVarZero
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Additivity
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 public import PlaneCurves.RingTheory.MvPolynomial.Taylor
@@ -49,25 +50,13 @@ namespace PlaneCurves.Affine
 
 variable {k : Type*} [Field k] {a v : Fin 2 → k} {F : MvPolynomial (Fin 2) k}
 
-/-- `H - H(X, 0)` is divisible by `Y`. -/
-private theorem X_one_dvd_sub_aeval (H : MvPolynomial (Fin 2) k) :
-    X 1 ∣ H - aeval ![X 0, 0] H := by
-  induction H using MvPolynomial.induction_on with
-  | C c => simp
-  | add p q hp hq => rw [map_add, add_sub_add_comm]; exact dvd_add hp hq
-  | mul_X p n hp =>
-    rw [map_mul, aeval_X, show p * X n - aeval ![X 0, 0] p * ![X 0, 0] n =
-      (p - aeval ![X 0, 0] p) * X n + aeval ![X 0, 0] p * (X n - ![X 0, 0] n) by ring]
-    refine dvd_add (hp.mul_right _) (Dvd.dvd.mul_left ?_ _)
-    fin_cases n <;> simp
-
 /-- A change of coordinates of `𝔸²` that carries the line through `a` with direction `v` to the
 axis `Y = 0`, with `(t, 0) ↦ a + t v`. -/
 private theorem exists_algEquiv_line (hv : v ≠ 0) :
     ∃ (ψ : MvPolynomial (Fin 2) k ≃ₐ[k] MvPolynomial (Fin 2) k) (u : k), u ≠ 0 ∧
       (∀ (t : k) (g : MvPolynomial (Fin 2) k), eval ![t, 0] (ψ g) = eval (a + t • v) g) ∧
       ψ (C (v 1) * (X 0 - C (a 0)) - C (v 0) * (X 1 - C (a 1))) = C u * X 1 ∧
-      ∀ g : MvPolynomial (Fin 2) k, aeval ![(X 0 : MvPolynomial (Fin 2) k), 0] (ψ g) =
+      ∀ g : MvPolynomial (Fin 2) k, bind₁ (Function.update X 1 0) (ψ g) =
         Polynomial.aeval (X 0)
           (aeval (fun i ↦ Polynomial.C (a i) + Polynomial.C (v i) * Polynomial.X) g) := by
   obtain ⟨w, hw⟩ : ∃ w : Fin 2 → k, v 0 * w 1 - w 0 * v 1 ≠ 0 := by
@@ -92,7 +81,8 @@ private theorem exists_algEquiv_line (hv : v ≠ 0) :
     rw [hψ, eval_linearSubst, eval_taylor, hM]
   · simp only [map_sub, map_mul, hC, hX]
     ring
-  · have h : (aeval ![(X 0 : MvPolynomial (Fin 2) k), 0]).comp ψ.toAlgHom =
+  · have h : (bind₁ (Function.update (X : Fin 2 → MvPolynomial (Fin 2) k) 1 0)).comp
+        ψ.toAlgHom =
         (Polynomial.aeval (X 0)).comp
           (aeval fun i ↦ Polynomial.C (a i) + Polynomial.C (v i) * Polynomial.X) :=
       MvPolynomial.algHom_ext fun i ↦ by fin_cases i <;> simp [hX, add_comm]
@@ -105,7 +95,7 @@ theorem aeval_line_eq_zero_iff (hv : v ≠ 0) :
       C (v 1) * (X 0 - C (a 0)) - C (v 0) * (X 1 - C (a 1)) ∣ F := by
   refine ⟨fun h ↦ ?_, fun ⟨A, hA⟩ ↦ ?_⟩
   · obtain ⟨ψ, u, hu, -, hℓ, hG⟩ := exists_algEquiv_line (a := a) hv
-    have h1 := X_one_dvd_sub_aeval (ψ F)
+    have h1 := X_dvd_sub_bind₁_update_X_zero 1 (ψ F)
     rw [hG, h, map_zero, sub_zero] at h1
     have h2 : ψ (C (v 1) * (X 0 - C (a 0)) - C (v 0) * (X 1 - C (a 1))) ∣ ψ F := by
       rw [hℓ]
@@ -157,7 +147,7 @@ theorem intersectionNumber_line_eq_rootMultiplicity (hv : v ≠ 0)
         t := by
   obtain ⟨ψ, u, hu, hev, hℓ, hG⟩ := exists_algEquiv_line (a := a) hv
   set G := aeval (fun i ↦ Polynomial.C (a i) + Polynomial.C (v i) * Polynomial.X) F
-  obtain ⟨A, hA⟩ := X_one_dvd_sub_aeval (ψ F)
+  obtain ⟨A, hA⟩ := X_dvd_sub_bind₁_update_X_zero 1 (ψ F)
   obtain ⟨q, hq, hqt⟩ := G.exists_eq_pow_rootMultiplicity_mul_and_not_dvd hF t
   set e := G.rootMultiplicity t
   have hqt' : eval ![t, 0] (Polynomial.aeval (X 0) q) ≠ 0 := by
