@@ -7,7 +7,7 @@ working through [fc-worker](https://github.com/FormalCommons/fc-worker).
 The plan is the atlas
 [FormalCommons/plane-curves-atlas](https://github.com/FormalCommons/plane-curves-atlas):
 start at its front page, `atlas/README.md`. It follows Fulton's *Algebraic
-Curves* and states 100 milestones, which the library is to prove; the
+Curves* and states 96 milestones, which the library is to prove; the
 library itself is meant to be reusable, and to move into Tau Ceti or Mathlib
 later.
 
