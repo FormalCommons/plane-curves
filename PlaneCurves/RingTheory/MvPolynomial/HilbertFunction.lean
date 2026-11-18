@@ -6,19 +6,27 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.RingTheory.GradedAlgebra.Radical
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import PlaneCurves.RingTheory.MvPolynomial.HomogeneousIdeal
+public import PlaneCurves.RingTheory.Regular.IsRelPrime
 public import TauCeti.RingTheory.GradedAlgebra.HilbertSeries.RegularElement
+public import TauCeti.RingTheory.GradedAlgebra.HilbertSeries.RegularSequence
+public import TauCeti.RingTheory.MvPolynomial.Finrank
 import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.LinearCombination
 
 /-!
-# Graded pieces of the quotient of a polynomial ring by a form
+# Graded pieces of the quotient of a polynomial ring by one or two forms
 
 Let `k` be a field and `R = k[X_i : i ∈ σ]`, `σ` finite, graded by total degree. For a nonzero
 form `F` of degree `m`, multiplication by `F` gives an exact sequence
 `0 → R_n → R_{m+n} → (R/(F))_{m+n} → 0`, so that `dim (R/(F))_{m+n} = dim R_{m+n} - dim R_n`.
 In three variables this is Fulton's Problem 4.10: `dim (k[X,Y,Z]/(F))_d = dm - m(m-3)/2` for
 every `d ≥ m - 2`, a formula stated in `ℤ` since `m(m-3)` is negative for `m = 1, 2`.
+
+For relatively prime forms `A`, `B` of degrees `m`, `n`, the pair `A, B` is a regular sequence,
+and Tau Ceti's Hilbert series of a quotient by a homogeneous regular sequence gives
+`dim (R/(A, B))_t = dim R_t - dim R_{t-m} - dim R_{t-n} + dim R_{t-m-n}`.
 
 The file ends with the summary of the basic facts on homogeneous ideals of `R` and the graded
 quotients `R/I` (Fulton, §4.2), most of which are in Mathlib and Tau Ceti.
@@ -31,6 +39,8 @@ quotients `R/I` (Fulton, §4.2), most of which are in Mathlib and Tau Ceti.
   degree `m`, `dim (R/(F))_{m+n} + dim R_n = dim R_{m+n}`, with `dim R_n` the multichoose number.
 * `MvPolynomial.finrank_quotientPiece_span_singleton_fin_three`: `dim (k[X,Y,Z]/(F))_d =
   dm - m(m-3)/2` in `ℤ`, for every `d ≥ m - 2`.
+* `MvPolynomial.finrank_quotientPiece_span_pair`: for relatively prime forms `A`, `B` of degrees
+  `m`, `n`, `dim (R/(A, B))_t = dim R_t - dim R_{t-m} - dim R_{t-n} + dim R_{t-m-n}`.
 * `MvPolynomial.isHomogeneous_ideal_and_quotientPiece`: homogeneous ideals of `R` and the graded
   quotients `R/I`, parts (a)–(f).
 
@@ -101,6 +111,54 @@ theorem finrank_quotientPiece_span_singleton_fin_three {F : MvPolynomial (Fin 3)
     obtain ⟨j, hj⟩ : ∃ j : ℕ, j < 2 ∧ m = d + 1 + j := ⟨m - d - 1, by omega, by omega⟩
     obtain ⟨hj, rfl⟩ := hj
     interval_cases j <;> push_cast at ht ⊢ <;> linear_combination hR d - ht
+
+/-- The count for a nonzero first form. -/
+private theorem finrank_quotientPiece_span_pair_of_ne_zero [Fintype σ]
+    {A B : MvPolynomial σ k} {m n : ℕ} (hA : A.IsHomogeneous m) (hB : B.IsHomogeneous n)
+    (hA₀ : A ≠ 0) (hAB : IsRelPrime A B) (t : ℕ) :
+    (Module.finrank k (quotientPiece (homogeneousSubmodule σ k) (Ideal.span {A, B}) t) : ℤ) =
+      (Fintype.card σ).multichoose t -
+        (if m ≤ t then ((Fintype.card σ).multichoose (t - m) : ℤ) else 0) -
+        (if n ≤ t then ((Fintype.card σ).multichoose (t - n) : ℤ) else 0) +
+        (if m + n ≤ t then ((Fintype.card σ).multichoose (t - (m + n)) : ℤ) else 0) := by
+  have h := mk_finrank_quotientPiece_of_isWeaklyRegular (S := ℤ) (homogeneousSubmodule σ k)
+    [(A, m), (B, n)] (by simpa [mem_homogeneousSubmodule] using ⟨hA, hB⟩)
+    (by simpa using hAB.isWeaklyRegular hA₀)
+  have hspan : Ideal.ofList ([(A, m), (B, n)].map Prod.fst) = Ideal.span {A, B} := by
+    simp only [List.map_cons, List.map_nil, Ideal.ofList, List.mem_cons, List.not_mem_nil,
+      or_false]
+    rfl
+  rw [hspan] at h
+  have hc := congrArg (PowerSeries.coeff t) h
+  simp only [List.map_cons, List.map_nil, List.prod_cons, List.prod_nil, mul_one,
+    PowerSeries.coeff_mk] at hc
+  have hexp : ∀ p : PowerSeries ℤ, p * ((1 - PowerSeries.X ^ m) * (1 - PowerSeries.X ^ n)) =
+      p - p * PowerSeries.X ^ m - p * PowerSeries.X ^ n + p * PowerSeries.X ^ (m + n) := by
+    intro p
+    ring
+  rw [hexp] at hc
+  simpa only [map_add, map_sub, PowerSeries.coeff_mul_X_pow', PowerSeries.coeff_mk,
+    TauCeti.finrank_homogeneousSubmodule_eq_multichoose] using hc
+
+/-- **Graded pieces of the quotient by two relatively prime forms.** Let `A` and `B` be
+relatively prime forms of degrees `m` and `n` in finitely many variables, and `R_j` the forms of
+degree `j`. Then `dim (R/(A, B))_t = dim R_t - dim R_{t-m} - dim R_{t-n} + dim R_{t-m-n}`, where
+`dim R_j` is the number of monomials of degree `j`, read as `0` when `j < 0`. -/
+theorem finrank_quotientPiece_span_pair [Fintype σ] {A B : MvPolynomial σ k} {m n : ℕ}
+    (hA : A.IsHomogeneous m) (hB : B.IsHomogeneous n) (hAB : IsRelPrime A B) (t : ℕ) :
+    (Module.finrank k (quotientPiece (homogeneousSubmodule σ k) (Ideal.span {A, B}) t) : ℤ) =
+      (Fintype.card σ).multichoose t -
+        (if m ≤ t then ((Fintype.card σ).multichoose (t - m) : ℤ) else 0) -
+        (if n ≤ t then ((Fintype.card σ).multichoose (t - n) : ℤ) else 0) +
+        (if m + n ≤ t then ((Fintype.card σ).multichoose (t - (m + n)) : ℤ) else 0) := by
+  rcases eq_or_ne A 0 with rfl | hA₀
+  · have hB₀ : B ≠ 0 := by
+      rintro rfl
+      exact not_isUnit_zero (isRelPrime_zero_left.mp hAB)
+    rw [Set.pair_comm, finrank_quotientPiece_span_pair_of_ne_zero hB hA hB₀ hAB.symm, add_comm n]
+    ring
+  · exact finrank_quotientPiece_span_pair_of_ne_zero hA hB hA₀ hAB t
+
 /-- **Homogeneous ideals and graded quotients of the polynomial ring.** Let `k` be a field and
 `R = k[X_i : i ∈ σ]`, `σ` finite, graded by total degree.
 
