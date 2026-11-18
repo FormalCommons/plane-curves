@@ -357,13 +357,13 @@ with their files.
   `HomogeneousLocalization`): a `Field` instance on `AtPrime 𝒜 ⊥` for a
   graded domain, `mapId_injective`, `mem_range_mapId_iff`.
 - **Regular functions on a set of maximal ideals**
-  (`Localization/RegularFunctions.lean`): `PlaneCurves.regularFunctionsOn R U`,
-  the infimum over `m ∈ U` of `Localization.subalgebra.ofField K m.primeCompl`
-  in the fraction field `K` (Fulton's `Γ(U)`). API:
-  `mem_regularFunctionsOn_iff`, `regularFunctionsOn_univ`
-  (`MaximalSpectrum.iInf_localization_eq_bot`), antitonicity,
-  `regularFunctionsOn_basicOpen` (`= R[1/f]`), finiteness of poles for a
-  one-dimensional Noetherian domain.
+  (`Localization/RegularFunctions.lean`):
+  `PlaneCurves.regularFunctionsOn R K U`, the infimum over `m ∈ U` of
+  `Localization.subalgebra.ofField K m.primeCompl` in the fraction field `K`
+  (Fulton's `Γ(U)`). API: `mem_regularFunctionsOn_iff`,
+  `regularFunctionsOn_univ` (`MaximalSpectrum.iInf_localization_eq_bot`),
+  `antitone_regularFunctionsOn`, `regularFunctionsOn_basicOpen`
+  (`= R[1/f]`). Finiteness of poles is R3's.
 - **Order = colength** (`DiscreteValuationRing/Colength.lean`) and
   **Artinian decomposition** (`Artinian/QuotientPiLocalization.lean`) are
   statements about Mathlib's types and need no definitions.
