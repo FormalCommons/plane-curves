@@ -34,28 +34,6 @@ open Ideal
 
 variable {R A : Type*} [CommRing R] [CommRing A] [Algebra R A] {I J p : Ideal A} [p.IsPrime]
 
-namespace Ideal
-
-/-- For a prime `p` containing `I`, the image in `A ⧸ I` of the complement of `p` is the
-complement of the image of `p`. -/
-theorem algebraMapSubmonoid_primeCompl_quotient (hIp : I ≤ p)
-    [(p.map (Ideal.Quotient.mk I)).IsPrime] :
-    Algebra.algebraMapSubmonoid (A ⧸ I) p.primeCompl =
-      (p.map (Ideal.Quotient.mk I)).primeCompl := by
-  ext x
-  obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
-  simp only [Algebra.algebraMapSubmonoid, Submonoid.mem_map, mem_primeCompl_iff,
-    Quotient.algebraMap_eq]
-  rw [mem_map_iff_of_surjective _ Ideal.Quotient.mk_surjective]
-  constructor
-  · rintro ⟨b, hb, hba⟩ ⟨c, hc, hca⟩
-    rw [← hca, Quotient.eq] at hba
-    exact hb (by simpa using p.add_mem hc (hIp hba))
-  · intro h
-    exact ⟨a, fun ha => h ⟨a, ha, rfl⟩, rfl⟩
-
-end Ideal
-
 namespace Localization.AtPrime
 
 variable (I p) in
@@ -64,8 +42,12 @@ the image of `p`. -/
 theorem isLocalization_quotient (hIp : I ≤ p) [(p.map (Ideal.Quotient.mk I)).IsPrime] :
     IsLocalization.AtPrime (Localization.AtPrime p ⧸ I.map (algebraMap A (Localization.AtPrime p)))
       (p.map (Ideal.Quotient.mk I)) := by
+  have : (p.map (Ideal.Quotient.mk I)).LiesOver p :=
+    ⟨by rw [under_def, Quotient.algebraMap_eq, comap_map_of_surjective' _ Quotient.mk_surjective,
+      mk_ker, sup_eq_left.2 hIp]⟩
   unfold IsLocalization.AtPrime
-  rw [← algebraMapSubmonoid_primeCompl_quotient hIp]
+  rw [← algebraMapSubmonoid_primeCompl_of_liesOver_surjective (p.map (Ideal.Quotient.mk I)) p
+    Quotient.mk_surjective]
   infer_instance
 
 variable (R) in
