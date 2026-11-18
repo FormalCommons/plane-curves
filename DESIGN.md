@@ -158,7 +158,7 @@ PlaneCurves/
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
 │   ├── Ideal/
 │   │   └── AssociatedGraded.lean        (Iⁿ : f) = Iⁿ⁻ᵐ, dim A/Iⁿ⁺¹ = dim A/Iⁿ + dim Iⁿ/Iⁿ⁺¹ (L5)
-│   ├── Length.lean                      lengths under ring isomorphisms, over a residue field (L5)
+│   ├── Length.lean                      Hilbert–Samuel lengths under ring isomorphisms (L5)
 │   ├── Regular/
 │   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (Q11)
 │   ├── GradedAlgebra/

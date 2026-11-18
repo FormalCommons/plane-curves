@@ -9,6 +9,8 @@ public import TauCeti.RingTheory.RegularLocalRing.AssociatedGraded
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Multiplicity
 public import PlaneCurves.RingTheory.Ideal.AssociatedGraded
+public import PlaneCurves.RingTheory.DiscreteValuationRing.Colength
+public import PlaneCurves.RingTheory.MvPolynomial.Taylor
 public import PlaneCurves.RingTheory.Length
 public import PlaneCurves.RingTheory.MvPolynomial.PowIdealOfVars
 
@@ -28,7 +30,6 @@ Theorem 2 of §3.2. Its consequences are Theorem 2 of §3.2 and Problems 3.13 an
 The local ring of the curve is `𝒪_P(𝔸²) ⧸ (F)`, as in `DESIGN.md`; for irreducible `F` it is
 Fulton's `𝒪_P(F)` (`AffineSpace.localRing.quotient_iso`). The pieces `𝔪ⁿ / 𝔪ⁿ⁺¹` are Tau Ceti's
 `Ideal.GradedPiece`.
-
 
 ## Main results
 
@@ -68,10 +69,11 @@ instance finite_quotient_maximalIdeal_pow [Finite σ] (n : ℕ) :
     Module.Finite k (localRing k P ⧸ maximalIdeal (localRing k P) ^ n) := by
   have := Fintype.ofFinite σ
   refine .equiv (((Ideal.quotientEquivAlg (vanishingIdeal k {P} ^ n) (idealOfVars σ k ^ n)
-    (AlgEquiv.ofBijective (taylor P) ⟨taylor_injective P, fun g ↦ ⟨taylor (-P) g, by
-      simp [taylor_taylor]⟩⟩) ?_).symm.trans (quotientPowAlgEquiv P n)).toLinearEquiv)
+    (taylorAlgEquiv P) ?_).symm.trans (quotientPowAlgEquiv P n)).toLinearEquiv)
+  have h := map_taylor_vanishingIdeal_singleton P
+  rw [← toAlgHom_taylorAlgEquiv] at h
   rw [Ideal.map_pow]
-  exact congrArg (· ^ n) (map_taylor_vanishingIdeal_singleton P).symm
+  exact congrArg (· ^ n) h.symm
 
 /-- `dim_k 𝒪_P(𝔸ᵈ) ⧸ 𝔪 ^ n = (n + d - 1).choose d`, the dimension of `k[X₁, …, X_d] ⧸ I_P ^ n`. -/
 theorem finrank_quotient_maximalIdeal_pow [Fintype σ] [Nonempty σ] (n : ℕ) :
@@ -270,7 +272,8 @@ private theorem length_eq_finrank (hF : eval P F = 0) :
     exact ((quotientResidueFieldAlgEquiv P _ hI).symm.commutes c).symm
   refine ⟨hloc, fun n ↦ ?_⟩
   rw [← IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective,
-    IsLocalRing.length_eq_length_of_bijective k hres, Module.length_eq_finrank]
+    ← IsLocalRing.length_eq_length_of_surjective_algebraMap_residueField _ hres.2,
+    Module.length_eq_finrank]
 
 /-- **The multiplicity is determined by the local ring.** If `F(P) = 0`, `G(Q) = 0` and the local
 rings `𝒪_P(𝔸²) ⧸ (F)` and `𝒪_Q(𝔸²) ⧸ (G)` are isomorphic as rings, then `m_P(F) = m_Q(G)`. -/
@@ -368,8 +371,6 @@ private theorem exists_linearEquiv_gradedPiece_one_of_le {R V : Type*} [CommRing
   refine ⟨LinearMap.linearEquivOfInjective φ hinj hdim, fun v x hx ↦ ?_⟩
   rw [LinearMap.linearEquivOfInjective_apply]
   exact congrArg _ (Subtype.ext hx.symm)
-
-
 
 /-- **Problem 3.24(a).** If `m_0(F) ≥ 2`, the linear forms `aX + bY` map isomorphically onto
 `𝔪 / 𝔪²`, where `𝔪` is the image of the maximal ideal of `𝒪_0(𝔸²)` in `𝒪_0(𝔸²) ⧸ (F)`. -/
