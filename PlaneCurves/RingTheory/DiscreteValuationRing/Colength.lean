@@ -26,7 +26,9 @@ proves:
   `dim_k R/𝔪ⁿ = n`;
 * `IsDiscreteValuationRing.addVal_eq_coe_iff_span_singleton_eq`: `ord z = n ↔ (z) = 𝔪ⁿ`;
 * `IsDiscreteValuationRing.length_quotient_span_singleton_eq_addVal`: `ord z = dim_k R/(z)`,
-  as an equality in `ℕ∞` that also holds for `z = 0`, where both sides are `⊤`.
+  as an equality in `ℕ∞` that also holds for `z = 0`, where both sides are `⊤`;
+* `IsDiscreteValuationRing.existsUnique_and_finrank_and_addVal_eq_length`: all of these
+  together.
 
 Without the field `k`, the length forms `length_R R/𝔪ⁿ = n` and `length_R R/(z) = ord z` are
 Mathlib's `IsDiscreteValuationRing.length_quotient_pow_maximalIdeal` and `Ring.ord_eq_addVal`;
@@ -52,8 +54,8 @@ section LocalAlgebra
 
 variable {k B : Type*} [Field k] [CommRing B] [IsLocalRing B] [Algebra k B]
 
-/-- In a local algebra over a field `k`, an element of `k` lies in the maximal ideal only if it
-is zero. -/
+/-- In a local algebra over a field `k`, an element of `k` lies in the maximal ideal if and only
+if it is zero. -/
 @[simp]
 theorem IsLocalRing.algebraMap_mem_maximalIdeal_iff {c : k} :
     algebraMap k B c ∈ maximalIdeal B ↔ c = 0 := by
@@ -104,7 +106,7 @@ theorem addVal_eq_coe_iff_span_singleton_eq (z : R) (n : ℕ) :
   rw [hϖ.maximalIdeal_eq, span_singleton_pow, span_singleton_eq_span_singleton,
     ← addVal_eq_iff_associated, addVal_pow, addVal_uniformizer hϖ, nsmul_one]
 
-/-- In a discrete valuation ring, `𝔪ⁿ/𝔪ⁿ⁺¹` (written `𝔪ⁿ ⧸ 𝔪 • 𝔪ⁿ`, as in
+/-- In a discrete valuation ring, `𝔪ⁿ/𝔪ⁿ⁺¹` (written `𝔪ⁿ ⧸ 𝔪 • ⊤`, as in
 `Ideal.quotEquivPowQuotPowSucc`) has length one. -/
 theorem length_pow_maximalIdeal_quotient (n : ℕ) :
     Module.length R (↥(IsLocalRing.maximalIdeal R ^ n) ⧸
@@ -136,9 +138,7 @@ theorem finrank_quotient_pow_maximalIdeal
     length_quotient_pow_maximalIdeal, ENat.toNat_natCast]
 
 /-- **Order equals colength.** In a discrete valuation ring whose residue field is `k`, the
-order of `z` is `dim_k R/(z)`: `ℓ_k(R/(z)) = ord z` in `ℕ∞`, both sides being `⊤` for `z = 0`.
-
-Milestone: *Order equals colength in a discrete valuation ring with residue field k*. -/
+order of `z` is `dim_k R/(z)`: `ℓ_k(R/(z)) = ord z` in `ℕ∞`, both sides being `⊤` for `z = 0`. -/
 theorem length_quotient_span_singleton_eq_addVal
     (h : Function.Surjective (algebraMap k (ResidueField R))) (z : R) :
     Module.length k (R ⧸ span {z}) = addVal R z := by
@@ -154,7 +154,7 @@ theorem finrank_quotient_span_singleton
     ENat.natCast_toNat (by simpa [addVal_eq_top_iff] using hz)]
 
 /-- In a discrete valuation ring with uniformizer `t`, a sum `c₀ + c₁ t + ⋯ + cₙ₋₁ tⁿ⁻¹` with
-coefficients in a field `k ⊆ R` lies in `𝔪ⁿ` only if all the coefficients are zero. -/
+coefficients in a field `k ⊆ R` lies in `𝔪ⁿ` if and only if all the coefficients are zero. -/
 theorem sum_algebraMap_mul_pow_mem_maximalIdeal_pow_iff {t : R} (ht : Irreducible t) {n : ℕ}
     (c : Fin n → k) :
     ∑ i, algebraMap k R (c i) * t ^ (i : ℕ) ∈ IsLocalRing.maximalIdeal R ^ n ↔ c = 0 := by
@@ -217,6 +217,33 @@ theorem existsUnique_sub_sum_mem_maximalIdeal_pow
     simp only [Pi.sub_apply, map_sub, sub_mul, Finset.sum_sub_distrib]
     ring
   exact sub_eq_zero.mp ((sum_algebraMap_mul_pow_mem_maximalIdeal_pow_iff ht (d - c)).mp hz)
+
+/-- **Order equals colength.** Let `R` be a discrete valuation ring with maximal ideal `𝔪` and
+uniformizer `t`, whose residue field is `k`. Then:
+
+* (a) every `z ∈ R` has a unique `c ∈ k` with `z - c ∈ 𝔪`, and unique `c₀, …, cₙ₋₁ ∈ k` with
+  `z - (c₀ + c₁ t + ⋯ + cₙ₋₁ tⁿ⁻¹) ∈ 𝔪ⁿ`;
+* (b) `dim_k 𝔪ⁿ/𝔪ⁿ⁺¹ = 1` and `dim_k R/𝔪ⁿ = n`;
+* (c) `ord z = n` if and only if `(z) = 𝔪ⁿ`, and `ℓ_k(R/(z)) = ord z` in `ℕ∞` (both `⊤` for
+  `z = 0`), so that `dim_k R/(z) = ord z` for `z ≠ 0`.
+
+Milestone: *Order equals colength in a discrete valuation ring with residue field k*. -/
+theorem existsUnique_and_finrank_and_addVal_eq_length
+    (h : Function.Surjective (algebraMap k (ResidueField R))) {t : R} (ht : Irreducible t) :
+    ((∀ z : R, ∃! c : k, z - algebraMap k R c ∈ IsLocalRing.maximalIdeal R) ∧
+      ∀ (n : ℕ) (z : R), ∃! c : Fin n → k, z - ∑ i, algebraMap k R (c i) * t ^ (i : ℕ) ∈
+        IsLocalRing.maximalIdeal R ^ n) ∧
+    ((∀ n : ℕ, Module.finrank k (↥(IsLocalRing.maximalIdeal R ^ n) ⧸
+      (IsLocalRing.maximalIdeal R • ⊤ : Submodule R ↥(IsLocalRing.maximalIdeal R ^ n))) = 1) ∧
+      ∀ n : ℕ, Module.finrank k (R ⧸ IsLocalRing.maximalIdeal R ^ n) = n) ∧
+    ((∀ (z : R) (n : ℕ), addVal R z = n ↔ span {z} = IsLocalRing.maximalIdeal R ^ n) ∧
+      (∀ z : R, Module.length k (R ⧸ span {z}) = addVal R z) ∧
+      ∀ z : R, z ≠ 0 → (Module.finrank k (R ⧸ span {z}) : ℕ∞) = addVal R z) :=
+  ⟨⟨existsUnique_sub_algebraMap_mem_maximalIdeal h,
+      existsUnique_sub_sum_mem_maximalIdeal_pow h ht⟩,
+    ⟨finrank_pow_maximalIdeal_quotient h, finrank_quotient_pow_maximalIdeal h⟩,
+    ⟨addVal_eq_coe_iff_span_singleton_eq, length_quotient_span_singleton_eq_addVal h,
+      fun _ ↦ finrank_quotient_span_singleton h⟩⟩
 
 end Field
 
