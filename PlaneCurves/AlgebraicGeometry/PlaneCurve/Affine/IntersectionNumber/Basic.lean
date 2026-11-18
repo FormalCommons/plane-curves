@@ -12,6 +12,7 @@ public import TauCeti.RingTheory.KrullDimension.Regular
 public import TauCeti.RingTheory.Length
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
+public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 
 /-!
 # The local intersection number of two affine plane curves
@@ -128,16 +129,7 @@ private theorem exists_eq_mul_eval_ne_zero (P : Fin 2 → k) {F : MvPolynomial (
       · exact hF' H hH h
     · exact ⟨F', p * U, by ring, by simpa [hpP] using hU, hF'⟩
 
-/-- A nonzero polynomial vanishing at `P` has an irreducible factor vanishing at `P`. -/
-theorem exists_irreducible_dvd_eval_eq_zero (hF : F ≠ 0) (hP : eval P F = 0) :
-    ∃ H, Irreducible H ∧ H ∣ F ∧ eval P H = 0 := by
-  obtain ⟨F', U, rfl, hU, hF'⟩ := exists_eq_mul_eval_ne_zero P hF
-  have hF'P : eval P F' = 0 := by simpa [hU] using hP
-  obtain ⟨H, hH, hHF⟩ := WfDvdMonoid.exists_irreducible_factor
-    (fun h => (h.map (eval P)).ne_zero hF'P) (left_ne_zero_of_mul hF)
-  exact ⟨H, hH, hHF.mul_right U, hF' H hH hHF⟩
-
-/-- If `F` and `G` intersect properly at a common point `P`, then `F ≠ 0`. -/
+/-- If `F` and `G` intersect properly at `P` and `G` vanishes at `P`, then `F ≠ 0`. -/
 theorem IntersectProperlyAt.ne_zero_left (h : IntersectProperlyAt F G P) (hG : eval P G = 0) :
     F ≠ 0 := by
   rintro rfl
@@ -146,12 +138,13 @@ theorem IntersectProperlyAt.ne_zero_left (h : IntersectProperlyAt F G P) (hG : e
     have hL : (X 0 - C (P 0) : MvPolynomial (Fin 2) k) ≠ 0 := fun hL => by
       simpa using congr(eval (Function.update P 0 (P 0 + 1)) $hL)
     obtain ⟨H, hH, -, hHP⟩ :=
-      exists_irreducible_dvd_eval_eq_zero hL (by simp : eval P (X 0 - C (P 0)) = 0)
+      (RingHom.ker_isPrime (eval P)).exists_irreducible_dvd_mem hL (RingHom.mem_ker.2 (by simp))
     exact h H hH (dvd_zero H) (dvd_zero H) hHP
-  · obtain ⟨H, hH, hHG, hHP⟩ := exists_irreducible_dvd_eval_eq_zero hG0 hG
+  · obtain ⟨H, hH, hHG, hHP⟩ :=
+      (RingHom.ker_isPrime (eval P)).exists_irreducible_dvd_mem hG0 (RingHom.mem_ker.2 hG)
     exact h H hH (dvd_zero H) hHG hHP
 
-/-- If `F` and `G` intersect properly at a common point `P`, then `G ≠ 0`. -/
+/-- If `F` and `G` intersect properly at `P` and `F` vanishes at `P`, then `G ≠ 0`. -/
 theorem IntersectProperlyAt.ne_zero_right (h : IntersectProperlyAt F G P) (hF : eval P F = 0) :
     G ≠ 0 :=
   h.symm.ne_zero_left hF
