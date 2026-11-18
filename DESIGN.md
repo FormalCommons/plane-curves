@@ -148,6 +148,7 @@ PlaneCurves/
 │   │   │   └── Ideal.lean               forms of degree ≥ m+n−1 in (A, B) (L8)
 │   │   ├── PowIdealOfVars.lean          k[X]/I_P^m and its dimension (A5)
 │   │   ├── LeadingForm.lean             leading form at a point, products, substitutions (L1)
+│   │   ├── OrderAtDehomogenize.lean     order of a form on a line and in affine charts (Q1)
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
 │   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d (P3)
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
@@ -652,7 +653,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 
 | Part | Files | Content and milestones | Needs |
 |---|---|---|---|
-| Q1 | `PlaneCurve/Projective/Multiplicity.lean` | **5-mult** | L2, P1 |
+| Q1 | `PlaneCurve/Projective/Multiplicity.lean`, `RingTheory/MvPolynomial/OrderAtDehomogenize.lean` | **5-mult** | L2, P1 |
 | Q2 | `PlaneCurve/Projective/Singular.lean` | parts (a), (b) of **5-sing**; **5-nonsing** (bridge to Tau Ceti) | Q1 |
 | Q3 | `PlaneCurve/Projective/Tangent.lean` | part (d) of **5-sing**, Problem 5.6 | Q2 |
 | Q4 | `PlaneCurve/Projective/LocalRing.lean` | `localEquation`, `localIdeal` | P16, A3 |
