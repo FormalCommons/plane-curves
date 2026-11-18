@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.RingTheory.Ideal.Height
+public import Mathlib.RingTheory.Length
 public import Mathlib.RingTheory.LocalRing.ResidueField.Basic
 public import Mathlib.RingTheory.RegularLocalRing.Polynomial
 public import TauCeti.RingTheory.KrullDimension.FiniteType
@@ -52,6 +53,10 @@ map `𝒪_P(𝔸ⁿ) → k`, and describes its maximal ideal, its powers and its
 * `PlaneCurves.AffineSpace.localRing.algebraMap_mem_maximalIdeal_pow_iff`: a polynomial lies in
   `𝔪 ^ r` iff its order at `P` is at least `r`; `localRing.algebraMap_mem_maximalIdeal_iff`: it
   lies in `𝔪` iff it vanishes at `P`.
+* `PlaneCurves.AffineSpace.localRing.bijective_quotientMap_sup_maximalIdeal_pow`,
+  `PlaneCurves.AffineSpace.localRing.length_quotient_map_sup_maximalIdeal_pow`: for an ideal `J`
+  of `k[X]`, the natural map `k[X] ⧸ (J + I_P ^ r) → 𝒪_P ⧸ (J 𝒪_P + 𝔪 ^ r)` is bijective, so the
+  two have the same length over `k`.
 * `PlaneCurves.AffineSpace.localRing.quotient_iso`: local rings of subvarieties are quotients
   of the local ring of affine space. For ideals `I ≤ J ≤ I_P` it gives
   `𝒪_P ⧸ J 𝒪_P ≅ 𝒪_P(k[X] ⧸ I) ⧸ J' 𝒪_P(k[X] ⧸ I)`, from
@@ -234,6 +239,53 @@ theorem quotientPowAlgEquiv_mk (r : ℕ) (f : MvPolynomial σ k) :
     quotientPowAlgEquiv P r (Ideal.Quotient.mk _ f) = Ideal.Quotient.mk _ (algebraMap _ _ f) := by
   rw [quotientPowAlgEquiv_def, AlgEquiv.restrictScalars_apply,
     IsLocalization.AtPrime.equivQuotMaximalIdealPow_apply_mk]
+
+/-- A polynomial lies in `J 𝒪_P + 𝔪 ^ r` iff it lies in `J + I_P ^ r`. -/
+theorem algebraMap_mem_map_sup_maximalIdeal_pow_iff {J : Ideal (MvPolynomial σ k)} {r : ℕ}
+    {f : MvPolynomial σ k} :
+    algebraMap _ (localRing k P) f ∈
+        J.map (algebraMap _ (localRing k P)) ⊔ maximalIdeal (localRing k P) ^ r ↔
+      f ∈ J ⊔ vanishingIdeal k {P} ^ r := by
+  set e := quotientPowAlgEquiv P r
+  have hcomp : (Ideal.Quotient.mk (maximalIdeal (localRing k P) ^ r)).comp
+      (algebraMap (MvPolynomial σ k) (localRing k P)) =
+      (e : _ →+* _).comp (Ideal.Quotient.mk (vanishingIdeal k {P} ^ r)) :=
+    RingHom.ext fun f ↦ by simp [e]
+  have h := congr($hcomp f)
+  rw [RingHom.comp_apply, RingHom.comp_apply] at h
+  rw [← Ideal.mem_quotient_iff_mem_sup, ← Ideal.mem_quotient_iff_mem_sup, Ideal.map_map, hcomp,
+    ← Ideal.map_map, h]
+  exact Ideal.apply_mem_of_equiv_iff (f := e.toRingEquiv)
+
+variable (P) in
+/-- The polynomials in `J 𝒪_P + 𝔪 ^ r` are those of `J + I_P ^ r`. -/
+theorem comap_map_sup_maximalIdeal_pow (J : Ideal (MvPolynomial σ k)) (r : ℕ) :
+    (J.map (algebraMap _ (localRing k P)) ⊔ maximalIdeal (localRing k P) ^ r).comap
+      (algebraMap _ _) = J ⊔ vanishingIdeal k {P} ^ r :=
+  Ideal.ext fun _ ↦ algebraMap_mem_map_sup_maximalIdeal_pow_iff
+
+variable (P) in
+/-- The map `k[X] ⧸ (J + I_P ^ r) → 𝒪_P ⧸ (J 𝒪_P + 𝔪 ^ r)` is bijective. -/
+theorem bijective_quotientMap_sup_maximalIdeal_pow (J : Ideal (MvPolynomial σ k)) (r : ℕ) :
+    Function.Bijective (Ideal.quotientMap (J.map (algebraMap _ (localRing k P)) ⊔
+      maximalIdeal (localRing k P) ^ r) (algebraMap (MvPolynomial σ k) (localRing k P))
+      (comap_map_sup_maximalIdeal_pow P J r).ge) := by
+  refine ⟨Ideal.quotientMap_injective' (comap_map_sup_maximalIdeal_pow P J r).le, fun x ↦ ?_⟩
+  obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+  obtain ⟨g, hg⟩ := (quotientPowAlgEquiv P r).surjective (Ideal.Quotient.mk _ y)
+  obtain ⟨f, rfl⟩ := Ideal.Quotient.mk_surjective g
+  rw [quotientPowAlgEquiv_mk] at hg
+  exact ⟨Ideal.Quotient.mk _ f, Ideal.Quotient.eq.2 (Ideal.mem_sup_right (Ideal.Quotient.eq.1 hg))⟩
+
+variable (P) in
+/-- `k[X] ⧸ (J + I_P ^ r)` and `𝒪_P ⧸ (J 𝒪_P + 𝔪 ^ r)` have the same length over `k`. -/
+theorem length_quotient_map_sup_maximalIdeal_pow (J : Ideal (MvPolynomial σ k)) (r : ℕ) :
+    Module.length k
+        (localRing k P ⧸ J.map (algebraMap _ (localRing k P)) ⊔ maximalIdeal (localRing k P) ^ r) =
+      Module.length k (MvPolynomial σ k ⧸ J ⊔ vanishingIdeal k {P} ^ r) :=
+  (LinearEquiv.ofBijective (Ideal.quotientMapₐ _ (IsScalarTower.toAlgHom k _ (localRing k P))
+    (by exact (comap_map_sup_maximalIdeal_pow P J r).ge)).toLinearMap
+    (by exact bijective_quotientMap_sup_maximalIdeal_pow P J r)).length_eq.symm
 
 /-- **Local rings of a subvariety as quotients of the local ring of affine space.** Let `P ∈ kⁿ`
 with ideal `I_P`, `𝒪 = 𝒪_P(𝔸ⁿ)` and `𝔪` its maximal ideal.

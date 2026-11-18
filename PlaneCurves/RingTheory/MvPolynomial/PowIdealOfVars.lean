@@ -167,6 +167,19 @@ theorem finrank_quotient_pow_vanishingIdeal_singleton [Fintype σ] (P : σ → k
     simp only [Ideal.map, RingHom.coe_coe, coe_taylorAlgEquiv])).toLinearEquiv.finrank_eq,
     finrank_quotient_pow_idealOfVars h]
 
+/-- `k[X₁, …, Xₙ] ⧸ I_P ^ m` is finite-dimensional. -/
+instance [Finite σ] (P : σ → k) (m : ℕ) :
+    Module.Finite k (MvPolynomial σ k ⧸ vanishingIdeal k {P} ^ m) :=
+  .equiv (Ideal.quotientEquivAlg _ (idealOfVars σ k ^ m) (taylorAlgEquiv P) (by
+    rw [Ideal.map_pow, ← map_taylor_vanishingIdeal_singleton P]
+    simp only [Ideal.map, RingHom.coe_coe, coe_taylorAlgEquiv])).symm.toLinearEquiv
+
+/-- `k[X₁, …, Xₙ] ⧸ (J + I_P ^ m)` is finite-dimensional, as a quotient of `k[X] ⧸ I_P ^ m`. -/
+instance [Finite σ] (P : σ → k) (J : Ideal (MvPolynomial σ k)) (m : ℕ) :
+    Module.Finite k (MvPolynomial σ k ⧸ J ⊔ vanishingIdeal k {P} ^ m) :=
+  .of_surjective (Ideal.Quotient.factorₐ k le_sup_right).toLinearMap
+    (Ideal.Quotient.factor_surjective le_sup_right)
+
 /-- **Dimensions of spaces of forms and of `k[X] ⧸ I_P ^ m`.** Let `k` be a field and
 `I = (X₁, …, Xₙ)`.
 (a) The monomials of degree `d` form a basis of the forms of degree `d` in `n` variables, which
