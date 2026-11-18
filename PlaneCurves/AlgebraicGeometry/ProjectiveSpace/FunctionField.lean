@@ -46,6 +46,10 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
   `localSubringEquiv I P : varietyLocalRing I P ≃ₐ[k] localSubring I P`.
 * `PlaneCurves.ProjectiveSpace.functionField.toFractionRing I`: the embedding of `k(V)` into
   the fraction field of `R ⧸ I`.
+* `PlaneCurves.ProjectiveSpace.denominators z`, `denominatorIdeal z`: for `z ∈ k(V)`, the forms
+  `g ∉ I` with `z = f / g`, and the homogeneous ideal `J(z)` they span.
+* `PlaneCurves.ProjectiveSpace.poleSet z`: the pole set of `z ∈ k(V)`, the points `P ∈ V` with
+  `z ∉ 𝒪_P(V)`.
 
 ## Main results
 
@@ -61,6 +65,10 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
   maximal ideal iff moreover `f(P) = 0` for some such `f / g`.
 * `exists_algebraMap_notMem_range_toFractionRing`: `Γ_h(V) ⊄ k(V)` inside the fraction field of
   `Γ_h(V)`, when `V` is nonempty.
+* `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`.
+* `poleSet_eq_inter`: the pole set of `z` is `V(I) ∩ V(J(z))`, and
+  `poleSet_eq_zeroLocus_denominatorIdeal`: it is `V(J(z))`. So the pole set is algebraic
+  (`exists_poleSet_eq_zeroLocus`).
 
 ## References
 
@@ -581,6 +589,197 @@ theorem exists_algebraMap_notMem_range_toFractionRing
   exact IsLocalization.map_injective_of_injective' _ _
     (Rₘ := Localization.AtPrime (⊥ : Ideal (MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal)))
     (FractionRing _) hle zero_notMem_nonZeroDivisors (fun _ _ h ↦ h) hz
+
+/-! ### The pole set of a rational function -/
+
+variable {I} in
+/-- Two fractions `f / g` and `f' / g'` of forms are equal in `k(V)` iff `f g' - f' g ∈ I`. -/
+theorem functionField.mk_eq_mk_iff {d' : ℕ} {f g f' g' : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgI : g ∉ I)
+    (hf' : f'.IsHomogeneous d') (hg' : g'.IsHomogeneous d') (hgI' : g' ∉ I) :
+    functionField.mk hf hg hgI = functionField.mk hf' hg' hgI' ↔ f * g' - f' * g ∈ I := by
+  rw [functionField.mk_def, functionField.mk_def, HomogeneousLocalization.ext_iff_val,
+    HomogeneousLocalization.val_mk, HomogeneousLocalization.val_mk, Localization.mk_eq_mk_iff,
+    Localization.r_iff_exists]
+  change (∃ c : (⊥ : Ideal (MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal)).primeCompl,
+      (c : MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal) *
+        (Ideal.Quotient.mk I.toIdeal g' * Ideal.Quotient.mk I.toIdeal f) =
+      c * (Ideal.Quotient.mk I.toIdeal g * Ideal.Quotient.mk I.toIdeal f')) ↔ _
+  rw [← HomogeneousIdeal.mem_iff, ← Ideal.Quotient.eq, map_mul, map_mul,
+    mul_comm _ (Ideal.Quotient.mk _ g'),
+    mul_comm _ (Ideal.Quotient.mk _ g)]
+  refine ⟨fun ⟨c, hc⟩ ↦ mul_left_cancel₀ c.2 hc, fun h ↦ ⟨1, by rw [h]⟩⟩
+
+variable {I} in
+/-- The denominators of `z ∈ k(V)`: the forms `g ∉ I` such that `z = f / g` for some form `f` of
+the same degree. -/
+def denominators (z : functionField I) : Set (MvPolynomial (Fin (n + 1)) k) :=
+  {g | ∃ (d : ℕ) (f : MvPolynomial (Fin (n + 1)) k) (hf : f.IsHomogeneous d)
+    (hg : g.IsHomogeneous d) (hgI : g ∉ I), z = functionField.mk hf hg hgI}
+
+variable {I} in
+theorem denominators_def (z : functionField I) : denominators z =
+    {g | ∃ (d : ℕ) (f : MvPolynomial (Fin (n + 1)) k) (hf : f.IsHomogeneous d)
+      (hg : g.IsHomogeneous d) (hgI : g ∉ I), z = functionField.mk hf hg hgI} :=
+  (rfl)
+
+variable {I} {z : functionField I} {g : MvPolynomial (Fin (n + 1)) k}
+
+theorem mem_denominators_iff : g ∈ denominators z ↔
+    ∃ (d : ℕ) (f : MvPolynomial (Fin (n + 1)) k) (hf : f.IsHomogeneous d)
+      (hg : g.IsHomogeneous d) (hgI : g ∉ I), z = functionField.mk hf hg hgI := by
+  rw [denominators_def]
+  rfl
+
+/-- The denominator `g` of a fraction `f / g` is a denominator of it. -/
+theorem mem_denominators_mk {f : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
+    (hg : g.IsHomogeneous d) (hgI : g ∉ I) : g ∈ denominators (functionField.mk hf hg hgI) :=
+  mem_denominators_iff.2 ⟨d, f, hf, hg, hgI, rfl⟩
+
+/-- A denominator is a form. -/
+theorem exists_isHomogeneous_of_mem_denominators (hg : g ∈ denominators z) :
+    ∃ d, g.IsHomogeneous d := by
+  obtain ⟨d, -, -, hg, -⟩ := mem_denominators_iff.1 hg
+  exact ⟨d, hg⟩
+
+/-- A denominator does not lie in `I`. -/
+theorem notMem_of_mem_denominators (hg : g ∈ denominators z) : g ∉ I := by
+  obtain ⟨-, -, -, -, hgI, -⟩ := mem_denominators_iff.1 hg
+  exact hgI
+
+variable (z) in
+/-- Every element of `k(V)` has a denominator. -/
+theorem denominators_nonempty : (denominators z).Nonempty := by
+  obtain ⟨d, f, g, hf, hg, hgI, rfl⟩ := functionField.exists_eq_mk z
+  exact ⟨g, mem_denominators_mk hf hg hgI⟩
+
+variable (z) in
+/-- The ideal of denominators of `z ∈ k(V)`: the homogeneous ideal of `R` spanned by the forms
+`g ∉ I` with `z = f / g` for a form `f` of the same degree. -/
+def denominatorIdeal : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k) where
+  __ := Ideal.span (denominators z)
+  is_homogeneous' := Ideal.homogeneous_span _ _ fun _ hg ↦
+    (exists_isHomogeneous_of_mem_denominators hg).imp fun d hd ↦
+      (mem_homogeneousSubmodule d _).2 hd
+
+variable (z) in
+theorem denominatorIdeal_toIdeal :
+    (denominatorIdeal z).toIdeal = Ideal.span (denominators z) :=
+  (rfl)
+
+theorem subset_denominatorIdeal : denominators z ⊆ denominatorIdeal z := by
+  intro g hg
+  rw [SetLike.mem_coe, ← HomogeneousIdeal.mem_iff, denominatorIdeal_toIdeal]
+  exact Ideal.subset_span hg
+
+variable (z) in
+/-- The zero locus of the ideal of denominators is the common zero locus of the denominators. -/
+theorem zeroLocus_denominatorIdeal :
+    zeroLocus (denominatorIdeal z : Set (MvPolynomial (Fin (n + 1)) k)) =
+      zeroLocus (denominators z) := by
+  rw [← zeroLocus_span (denominators z), ← denominatorIdeal_toIdeal]
+  rfl
+
+/-- A point `P` is a common zero of the denominators of `z` iff each of them vanishes at the
+representative `P.rep`. -/
+theorem mem_zeroLocus_denominators_iff {P : ℙ k (Fin (n + 1) → k)} :
+    P ∈ zeroLocus (denominators z) ↔ ∀ g ∈ denominators z, eval P.rep g = 0 :=
+  mem_zeroLocus_iff_eval_rep fun _ ↦ exists_isHomogeneous_of_mem_denominators
+
+variable {P} in
+/-- An element of `k(V)` lies in `𝒪_P(V)` iff one of its denominators does not vanish at `P`. -/
+theorem mem_localSubring_iff_exists_mem_denominators :
+    z ∈ (localSubring I P).toSubring ↔ ∃ g ∈ denominators z, eval P.1.rep g ≠ 0 := by
+  rw [mem_localSubring_iff]
+  constructor
+  · rintro ⟨d, f, g, hf, hg, hgP, rfl⟩
+    exact ⟨g, mem_denominators_mk hf hg _, hgP⟩
+  · rintro ⟨g, hgz, hgP⟩
+    obtain ⟨d, f, hf, hg, hgI, rfl⟩ := mem_denominators_iff.1 hgz
+    exact ⟨d, f, g, hf, hg, hgP, rfl⟩
+
+variable (z) in
+/-- The pole set of `z ∈ k(V)`: the points `P ∈ V(I)` with `z ∉ 𝒪_P(V)`. -/
+def poleSet : Set (ℙ k (Fin (n + 1) → k)) :=
+  {P | ∃ hP : P ∈ zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)),
+    z ∉ (localSubring I ⟨P, hP⟩).toSubring}
+
+variable (z) in
+theorem poleSet_def : poleSet z =
+    {P | ∃ hP : P ∈ zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)),
+      z ∉ (localSubring I ⟨P, hP⟩).toSubring} :=
+  (rfl)
+
+theorem mem_poleSet_iff {P : ℙ k (Fin (n + 1) → k)} :
+    P ∈ poleSet z ↔ ∃ hP : P ∈ zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)),
+      z ∉ (localSubring I ⟨P, hP⟩).toSubring := by
+  rw [poleSet_def]
+  rfl
+
+variable (z) in
+/-- The pole set of `z ∈ k(V)` is the set of zeros of `I` at which every denominator of `z`
+vanishes. -/
+theorem poleSet_eq_inter : poleSet z = zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)) ∩
+    zeroLocus (denominatorIdeal z : Set (MvPolynomial (Fin (n + 1)) k)) := by
+  ext P
+  rw [mem_poleSet_iff, Set.mem_inter_iff, zeroLocus_denominatorIdeal,
+    mem_zeroLocus_denominators_iff]
+  simp only [mem_localSubring_iff_exists_mem_denominators, not_exists, not_and, not_not,
+    exists_prop]
+
+variable (z) in
+/-- The common zeros of the denominators of `z ∈ k(V)` lie in `V(I)`. -/
+theorem zeroLocus_denominatorIdeal_subset :
+    zeroLocus (denominatorIdeal z : Set (MvPolynomial (Fin (n + 1)) k)) ⊆
+      zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)) := by
+  -- If `z = f / g` with `g(P) = 0` and `h ∈ I` is a form of degree `e` with `h(P) ≠ 0`, then
+  -- `z = f g^e / (g^(e+1) + (h Xᵢ)^d)` for `Xᵢ(P) ≠ 0`, a denominator that does not vanish at `P`.
+  intro P hP
+  rw [zeroLocus_denominatorIdeal, mem_zeroLocus_denominators_iff] at hP
+  by_contra hPI
+  obtain ⟨e, h, he, hI, hhP⟩ :=
+    exists_isHomogeneous_eval_rep_ne_zero_of_notMem_zeroLocus I.isHomogeneous hPI
+  obtain ⟨i, hi⟩ := Function.ne_iff.1 P.rep_ne_zero
+  obtain ⟨d, f, g, hf, hg, hgI, rfl⟩ := functionField.exists_eq_mk z
+  have hgP := hP g (mem_denominators_mk hf hg hgI)
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · have hg0 : g ≠ 0 := fun h0 ↦ hgI (h0 ▸ zero_mem _)
+    have hC := totalDegree_eq_zero_iff_eq_C.1 (hg.totalDegree hg0)
+    rw [hC, eval_C] at hgP
+    exact hg0 (by rw [hC, hgP, C_0])
+  set h₁ := h * X i
+  have hh₁ : h₁ ∈ I := Ideal.mul_mem_right _ _ hI
+  have hpowI : h₁ ^ d ∈ I := Ideal.pow_mem_of_mem _ hh₁ d hd
+  have hnum : (f * g ^ e).IsHomogeneous (d * (e + 1)) := by
+    convert hf.mul (hg.pow e) using 1; ring
+  have hden : (g ^ (e + 1) + h₁ ^ d).IsHomogeneous (d * (e + 1)) := by
+    refine (hg.pow (e + 1)).add ?_
+    convert (he.mul (isHomogeneous_X k i)).pow d using 1; ring
+  have hdenI : g ^ (e + 1) + h₁ ^ d ∉ I := fun h' ↦
+    hgI (‹I.toIdeal.IsPrime›.mem_of_pow_mem (e + 1) ((Ideal.add_mem_iff_left _ hpowI).1 h'))
+  have hz : functionField.mk hf hg hgI = functionField.mk hnum hden hdenI := by
+    rw [functionField.mk_eq_mk_iff,
+      show f * (g ^ (e + 1) + h₁ ^ d) - f * g ^ e * g = f * h₁ ^ d by ring]
+    exact Ideal.mul_mem_left _ f hpowI
+  have hP' := hP _ (hz ▸ mem_denominators_mk hnum hden hdenI)
+  rw [map_add, map_pow, map_pow, hgP, map_mul, eval_X, zero_pow (Nat.succ_ne_zero e),
+    zero_add] at hP'
+  exact pow_ne_zero _ (mul_ne_zero hhP hi) hP'
+
+variable (z) in
+/-- **The pole set of a rational function is algebraic.** The pole set of `z ∈ k(V)` is the zero
+locus of the ideal of denominators of `z`. -/
+theorem poleSet_eq_zeroLocus_denominatorIdeal :
+    poleSet z = zeroLocus (denominatorIdeal z : Set (MvPolynomial (Fin (n + 1)) k)) := by
+  rw [poleSet_eq_inter, Set.inter_eq_right.2 (zeroLocus_denominatorIdeal_subset z)]
+
+variable (z) in
+/-- **The pole set of a rational function is algebraic.** The pole set of `z ∈ k(V)` is the zero
+locus of a set of forms. -/
+theorem exists_poleSet_eq_zeroLocus : ∃ S : Set (MvPolynomial (Fin (n + 1)) k),
+    (∀ f ∈ S, ∃ d, f.IsHomogeneous d) ∧ poleSet z = zeroLocus S :=
+  ⟨denominators z, fun _ ↦ exists_isHomogeneous_of_mem_denominators,
+    by rw [poleSet_eq_zeroLocus_denominatorIdeal, zeroLocus_denominatorIdeal]⟩
 
 end Variety
 
