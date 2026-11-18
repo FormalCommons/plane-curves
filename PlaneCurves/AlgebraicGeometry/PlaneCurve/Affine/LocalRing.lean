@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.RingTheory.DiscreteValuationRing.TFAE
+public import TauCeti.RingTheory.DiscreteValuationRing.Basic
 public import TauCeti.RingTheory.KrullDimension.Regular
 public import TauCeti.RingTheory.RegularLocalRing.Basic
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
@@ -171,27 +172,6 @@ theorem algebraMap_mem_maximalIdeal_sq_sup_span_iff (hF : eval P F = 0) :
     rw [this]
     exact Submodule.add_mem_sup hmem (mem_span_singleton'.2 ⟨_, rfl⟩)
 
-/-- Two linear forms are associated iff their coefficients are proportional. -/
-private theorem associated_sum_C_mul_X_iff {a b : Fin 2 → k} :
-    Associated (∑ i, C (a i) * X i : MvPolynomial (Fin 2) k) (∑ i, C (b i) * X i) ↔
-      ∃ c : k, c ≠ 0 ∧ ∀ i, a i = c * b i := by
-  have hsmul : ∀ (c : k) (b : Fin 2 → k),
-      C c * ∑ i, C (b i) * X i = ∑ i, C (c * b i) * (X i : MvPolynomial (Fin 2) k) :=
-    fun c b ↦ by simp only [Finset.mul_sum, map_mul, mul_assoc]
-  constructor
-  · rintro ⟨u, hu⟩
-    obtain ⟨r, hr, hru⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
-    have hr0 : r ≠ 0 := by rintro rfl; simp at hr
-    rw [hru, mul_comm, hsmul] at hu
-    have := sum_C_mul_X_injective hu
-    refine ⟨r⁻¹, inv_ne_zero hr0, fun i ↦ ?_⟩
-    rw [← congr_fun this i]
-    field_simp
-  · rintro ⟨c, hc, h⟩
-    rw [show (∑ i, C (a i) * X i : MvPolynomial (Fin 2) k) = C c * ∑ i, C (b i) * X i by
-      rw [hsmul]; simp_rw [h]]
-    exact associated_unit_mul_left _ _ ((IsUnit.mk0 c hc).map C)
-
 /-- At a simple point of `F`, a polynomial `G` smooth at `P` is tangent to `F` iff the
 differential of `G` at `P` is a multiple of that of `F`. -/
 theorem IsSimplePoint.isTangentAt_leadingFormAt_iff (hF : IsSimplePoint F P)
@@ -216,16 +196,12 @@ variable {R : Type*} [CommRing R] [IsRegularLocalRing R]
 private theorem natCast_le_ord_iff (hR : ringKrullDim R = 1) (n : ℕ) (x : R) :
     (n : ℕ∞) ≤ Ring.ord R x ↔ x ∈ maximalIdeal R ^ n := by
   have := IsRegularLocalRing.isDiscreteValuationRing_iff_ringKrullDim_eq_one.2 hR
-  rw [Ring.ord_eq_addVal, IsDiscreteValuationRing.mem_maximalIdeal_pow_iff_le_addVal]
+  rw [Ring.ord_eq_addVal, TauCeti.IsDiscreteValuationRing.mem_maximalIdeal_pow_iff_le_addVal]
 
 private theorem irreducible_iff_ord_eq_one (hR : ringKrullDim R = 1) (x : R) :
     Irreducible x ↔ Ring.ord R x = 1 := by
   have := IsRegularLocalRing.isDiscreteValuationRing_iff_ringKrullDim_eq_one.2 hR
-  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible R
-  rw [Ring.ord_eq_addVal, ← IsDiscreteValuationRing.addVal_uniformizer hϖ,
-    IsDiscreteValuationRing.addVal_eq_iff_associated]
-  exact ⟨fun h ↦ IsDiscreteValuationRing.associated_of_irreducible _ h hϖ,
-    fun h ↦ h.symm.irreducible hϖ⟩
+  rw [Ring.ord_eq_addVal, TauCeti.IsDiscreteValuationRing.addVal_eq_one_iff_irreducible]
 
 private theorem ord_zero_eq_top (hR : ringKrullDim R = 1) : Ring.ord R 0 = ⊤ := by
   have := IsRegularLocalRing.isDiscreteValuationRing_iff_ringKrullDim_eq_one.2 hR

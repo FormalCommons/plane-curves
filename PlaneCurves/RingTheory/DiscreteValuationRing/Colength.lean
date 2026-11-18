@@ -24,8 +24,7 @@ proves:
 * `IsDiscreteValuationRing.finrank_pow_maximalIdeal_quotient` and
   `IsDiscreteValuationRing.finrank_quotient_pow_maximalIdeal`: `dim_k 𝔪ⁿ/𝔪ⁿ⁺¹ = 1` and
   `dim_k R/𝔪ⁿ = n`;
-* `IsDiscreteValuationRing.addVal_eq_coe_iff_span_singleton_eq`: `ord z = n ↔ (z) = 𝔪ⁿ`, and
-  `IsDiscreteValuationRing.mem_maximalIdeal_pow_iff_le_addVal`: `z ∈ 𝔪ⁿ ↔ n ≤ ord z`;
+* `IsDiscreteValuationRing.addVal_eq_coe_iff_span_singleton_eq`: `ord z = n ↔ (z) = 𝔪ⁿ`;
 * `IsDiscreteValuationRing.length_quotient_span_singleton_eq_addVal`: `ord z = dim_k R/(z)`,
   as an equality in `ℕ∞` that also holds for `z = 0`, where both sides are `⊤`;
 * `IsDiscreteValuationRing.existsUnique_and_finrank_and_addVal_eq_length`: all of these
@@ -99,13 +98,6 @@ variable {R : Type*} [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
 theorem mem_maximalIdeal_pow_iff {t : R} (ht : Irreducible t) {n : ℕ} {x : R} :
     x ∈ IsLocalRing.maximalIdeal R ^ n ↔ t ^ n ∣ x := by
   rw [ht.maximalIdeal_eq, span_singleton_pow, mem_span_singleton]
-
-/-- In a discrete valuation ring, `x ∈ 𝔪ⁿ` if and only if `ord x ≥ n`. -/
-theorem mem_maximalIdeal_pow_iff_le_addVal {n : ℕ} {x : R} :
-    x ∈ IsLocalRing.maximalIdeal R ^ n ↔ (n : ℕ∞) ≤ addVal R x := by
-  obtain ⟨ϖ, hϖ⟩ := exists_irreducible R
-  rw [mem_maximalIdeal_pow_iff hϖ, ← addVal_le_iff_dvd, addVal_pow, addVal_uniformizer hϖ,
-    nsmul_one]
 
 /-- In a discrete valuation ring, `ord z = n` if and only if `(z) = 𝔪ⁿ`. -/
 theorem addVal_eq_coe_iff_span_singleton_eq (z : R) (n : ℕ) :
