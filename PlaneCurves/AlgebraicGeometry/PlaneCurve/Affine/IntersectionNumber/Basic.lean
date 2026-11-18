@@ -12,6 +12,7 @@ public import TauCeti.RingTheory.KrullDimension.Regular
 public import TauCeti.RingTheory.Length
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
+public import PlaneCurves.RingTheory.LocalRing.Length
 public import PlaneCurves.RingTheory.MvPolynomial.Factorization
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 
@@ -152,12 +153,11 @@ theorem intersectionNumber_eq_length_restrictScalars (P : Fin 2 → k)
     (F G : MvPolynomial (Fin 2) k) :
     intersectionNumber P F G = Module.length k (AffineSpace.localRing k P ⧸
       Ideal.span {algebraMap _ (AffineSpace.localRing k P) F, algebraMap _ _ G}) := by
-  rw [IsLocalRing.length_restrictScalars k (AffineSpace.localRing k P),
-    ← Module.length_eq_of_surjective (R := IsLocalRing.ResidueField k)
-      (M := IsLocalRing.ResidueField _)
-      residue_surjective,
-    (AffineSpace.localRing.residueFieldAlgEquiv k P).toLinearEquiv.length_eq,
-    Module.length_eq_finrank, Module.finrank_self, Nat.cast_one, mul_one, intersectionNumber_def]
+  rw [intersectionNumber_def]
+  refine (IsLocalRing.length_eq_length_of_surjective_algebraMap_residueField _ fun x ↦
+    ⟨AffineSpace.localRing.residueFieldAlgEquiv k P x, ?_⟩).symm
+  simpa using (AffineSpace.localRing.residueFieldAlgEquiv k P).symm.commutes
+    (AffineSpace.localRing.residueFieldAlgEquiv k P x) |>.symm
 
 /-- The intersection number is `(dim_k 𝒪_P(𝔸²) ⧸ (F, G))`, as an element of `ℕ∞`. -/
 theorem intersectionNumber_eq_rank (P : Fin 2 → k) (F G : MvPolynomial (Fin 2) k) :
