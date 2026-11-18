@@ -54,6 +54,32 @@ public section
 open Module
 open scoped LinearAlgebra.Projectivization
 
+namespace Module.Dual
+
+variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
+
+/-- `finrank K V` linear forms with no common zero other than `0` can be carried to any other
+such family by a change of coordinates: some linear automorphism `e` of `V` has
+`g i ∘ e = f i` for all `i`. -/
+theorem exists_linearEquiv_comp_eq [FiniteDimensional K V] {ι : Type*} [Fintype ι]
+    (hι : Fintype.card ι = finrank K V) {f g : ι → Dual K V}
+    (hf : ∀ v, (∀ i, f i v = 0) → v = 0) (hg : ∀ v, (∀ i, g i v = 0) → v = 0) :
+    ∃ e : V ≃ₗ[K] V, ∀ i, (g i).comp (e : V →ₗ[K] V) = f i := by
+  have hdim : finrank K V = finrank K (ι → K) := by rw [finrank_fintype_fun_eq_card, hι]
+  have hinj : ∀ h : ι → Dual K V, (∀ v, (∀ i, h i v = 0) → v = 0) →
+      Function.Injective (LinearMap.pi h) := fun h hh ↦ by
+    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    exact fun v hv ↦ hh v fun i ↦ congr_fun (LinearMap.mem_ker.mp hv) i
+  let Φf := LinearMap.linearEquivOfInjective _ (hinj f hf) hdim
+  let Φg := LinearMap.linearEquivOfInjective _ (hinj g hg) hdim
+  refine ⟨Φf.trans Φg.symm, fun i ↦ LinearMap.ext fun v ↦ ?_⟩
+  have h1 : ∀ w, Φg w i = g i w := fun w ↦ rfl
+  have h2 : Φf v i = f i v := rfl
+  change g i (Φg.symm (Φf v)) = f i v
+  rw [← h1, Φg.apply_symm_apply, h2]
+
+end Module.Dual
+
 namespace Projectivization
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
@@ -78,11 +104,8 @@ theorem hyperplane_eq_ker (φ : ℙ K (Dual K V)) : hyperplane φ = LinearMap.ke
 
 @[simp]
 theorem hyperplane_mk (f : Dual K V) (hf : f ≠ 0) : hyperplane (mk K f hf) = LinearMap.ker f := by
-  ext v
-  simp only [hyperplane_def, submodule_mk, Submodule.mem_dualCoannihilator,
-    Submodule.mem_span_singleton, forall_exists_index, forall_apply_eq_imp_iff,
-    LinearMap.smul_apply, smul_eq_mul, LinearMap.mem_ker]
-  exact ⟨fun h ↦ by simpa using h 1, fun h a ↦ by simp [h]⟩
+  obtain ⟨a, ha⟩ := exists_smul_eq_mk_rep K f hf
+  rw [hyperplane_eq_ker, ← ha, Units.smul_def, LinearMap.ker_smul _ _ a.ne_zero]
 
 theorem mem_hyperplane_iff (φ : ℙ K (Dual K V)) (v : V) : v ∈ hyperplane φ ↔ φ.rep v = 0 := by
   rw [hyperplane_eq_ker, LinearMap.mem_ker]
@@ -244,26 +267,6 @@ theorem mem_projectivization_iff_hyperplaneEquiv_symm_mem [FiniteDimensional K V
 
 /-! ### Frames of hyperplanes -/
 
-/-- `finrank K V` linear forms with no common zero other than `0` can be carried to any other
-such family by a change of coordinates: some linear automorphism `e` of `V` has
-`g i ∘ e = f i` for all `i`. -/
-theorem exists_linearEquiv_comp_eq [FiniteDimensional K V] {ι : Type*} [Fintype ι]
-    (hι : Fintype.card ι = finrank K V) {f g : ι → Dual K V}
-    (hf : ∀ v, (∀ i, f i v = 0) → v = 0) (hg : ∀ v, (∀ i, g i v = 0) → v = 0) :
-    ∃ e : V ≃ₗ[K] V, ∀ i, (g i).comp (e : V →ₗ[K] V) = f i := by
-  have hdim : finrank K V = finrank K (ι → K) := by rw [finrank_fintype_fun_eq_card, hι]
-  have hinj : ∀ h : ι → Dual K V, (∀ v, (∀ i, h i v = 0) → v = 0) →
-      Function.Injective (LinearMap.pi h) := fun h hh ↦ by
-    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
-    exact fun v hv ↦ hh v fun i ↦ congr_fun (LinearMap.mem_ker.mp hv) i
-  let Φf := LinearMap.linearEquivOfInjective _ (hinj f hf) hdim
-  let Φg := LinearMap.linearEquivOfInjective _ (hinj g hg) hdim
-  refine ⟨Φf.trans Φg.symm, fun i ↦ LinearMap.ext fun v ↦ ?_⟩
-  have h1 : ∀ w, Φg w i = g i w := fun w ↦ rfl
-  have h2 : Φf v i = f i v := rfl
-  change g i (Φg.symm (Φf v)) = f i v
-  rw [← h1, Φg.apply_symm_apply, h2]
-
 /-- **Hyperplanes in general position.** In a space of dimension `n + 1`, `n + 1` points of the
 dual are independent iff their hyperplanes have no common point. -/
 theorem independent_iff_iInter_hyperplane_eq_empty [FiniteDimensional K V] {ι : Type*}
@@ -303,7 +306,7 @@ theorem exists_linearEquiv_image_map_hyperplane_eq [FiniteDimensional K V] {ι :
     refine (Set.eq_empty_iff_forall_notMem.mp hχ) (mk K v hv0) (Set.mem_iInter.mpr fun i ↦ ?_)
     rw [SetLike.mem_coe, Submodule.mk_mem_projectivization_iff, mem_hyperplane_iff]
     exact hv i
-  obtain ⟨e, he⟩ := exists_linearEquiv_comp_eq hι (key φ hφ) (key ψ hψ)
+  obtain ⟨e, he⟩ := Module.Dual.exists_linearEquiv_comp_eq hι (key φ hφ) (key ψ hψ)
   refine ⟨e, fun i ↦ ?_⟩
   rw [Submodule.image_map_projectivization, hyperplane_eq_ker, hyperplane_eq_ker, ← he i,
     LinearMap.ker_comp, Submodule.map_comap_eq_of_surjective e.surjective]
@@ -337,7 +340,7 @@ theorem exists_linearEquiv_image_map_zeroLocus_sum_C_mul_X_eq
       refine (Set.eq_empty_iff_forall_notMem.mp hc) (mk k v hv0) (Set.mem_iInter.mpr fun i ↦ ?_)
       rw [zeroLocus_singleton_sum_C_mul_X, SetLike.mem_coe, Submodule.mk_mem_projectivization_iff]
       exact hv i
-  obtain ⟨e, he⟩ := exists_linearEquiv_comp_eq (by simp) (key a ha) (key b hb)
+  obtain ⟨e, he⟩ := Module.Dual.exists_linearEquiv_comp_eq (by simp) (key a ha) (key b hb)
   refine ⟨e, fun i ↦ ?_⟩
   rw [zeroLocus_singleton_sum_C_mul_X, zeroLocus_singleton_sum_C_mul_X,
     Submodule.image_map_projectivization, ← he i, LinearMap.ker_comp,
