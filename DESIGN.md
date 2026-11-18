@@ -534,15 +534,19 @@ with their files.
 
 ### Differentials (`FieldTheory/FunctionField/KaehlerDifferential.lean`)
 
-- **`PlaneCurves.kaehlerDifferentialDivisor (ω : Ω[K⁄k]) (hω : ω ≠ 0) : TauCeti.Divisor k K`**
-  for a perfect `k`: the Weil divisor of the image of `ω` under Tau Ceti's
+- **`PlaneCurves.kaehlerDifferentialDivisor hK hex (ω : Ω[K⁄k]) (hω : ω ≠ 0) : TauCeti.Divisor k K`**
+  for a perfect `k` (`hK : IsFunctionField k K`, `hex : IsIntegrallyClosedIn k K`): the Weil
+  divisor of the image of `ω` under Tau Ceti's
   `kaehlerDifferentialEquivWeilDifferentialOfSeparating`, at a separating
   element chosen from
   `TauCeti.IsFunctionField.exists_transcendental_and_isSeparable_adjoin_of_perfectField`.
-  API: independence of the separating element
-  (`kaehlerDifferentialEquivWeilDifferentialOfSeparating_eq`), the order at
-  `Q` is `ord_Q (ω / dt)` for a uniformizer `t`, `div (f • ω) = div f + div ω`,
-  the class is Tau Ceti's `canonicalClass`, and Riemann–Roch for it.
+  API: independence of the separating element (`kaehlerDifferentialDivisor_eq`), the order at
+  `Q` is `ord_Q (ω / dt)` for a uniformizer `t` (`coeff_kaehlerDifferentialDivisor`),
+  `div (f • ω) = div f + div ω` (`kaehlerDifferentialDivisor_smul`), the class is Tau Ceti's
+  `canonicalClass` (`divisorClass_kaehlerDifferentialDivisor`, and
+  `divisorClass_eq_canonicalClass_iff_exists_kaehlerDifferentialDivisor_eq` for
+  **8-differential**), and Riemann–Roch for it
+  (`isRiemannRochDivisor_kaehlerDifferentialDivisor`).
 
 ## Parts and their order
 
