@@ -9,6 +9,7 @@ public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.RingTheory.Nullstellensatz
 public import TauCeti.RingTheory.MvPolynomial.OrderAt
 public import PlaneCurves.RingTheory.MvPolynomial.BinaryForm.Basis
+public import PlaneCurves.RingTheory.MvPolynomial.Taylor
 import TauCeti.RingTheory.MvPolynomial.Ideal
 
 /-!
@@ -152,7 +153,7 @@ theorem map_taylor_vanishingIdeal_singleton (P : σ → k) :
     rw [mem_vanishingIdeal_singleton_iff, Ideal.mem_comap, ← ker_constantCoeff,
       RingHom.mem_ker, constantCoeff_taylor]
     exact Iff.rfl
-  rw [hker, Ideal.map_comap_of_surjective _ fun g ↦ ⟨taylor (-P) g, by simp [taylor_taylor]⟩]
+  rw [hker, Ideal.map_comap_of_surjective _ (taylor_surjective P)]
 
 /-- `k[X₁, …, Xₙ] ⧸ I_P ^ m`, for the ideal `I_P` of a point `P`, has dimension
 `(m + n - 1).choose n`, unless `m = n = 0` (when the quotient is `0` and the formula gives
@@ -161,11 +162,9 @@ theorem finrank_quotient_pow_vanishingIdeal_singleton [Fintype σ] (P : σ → k
     (h : m ≠ 0 ∨ Nonempty σ) :
     Module.finrank k (MvPolynomial σ k ⧸ vanishingIdeal k {P} ^ m) =
       (m + Fintype.card σ - 1).choose (Fintype.card σ) := by
-  let e : MvPolynomial σ k ≃ₐ[k] MvPolynomial σ k := AlgEquiv.ofBijective (taylor P)
-    ⟨taylor_injective P, fun g ↦ ⟨taylor (-P) g, by simp [taylor_taylor]⟩⟩
-  rw [(Ideal.quotientEquivAlg _ (idealOfVars σ k ^ m) e (by
-    rw [Ideal.map_pow]
-    exact congrArg (· ^ m) (map_taylor_vanishingIdeal_singleton P).symm)).toLinearEquiv.finrank_eq,
+  rw [(Ideal.quotientEquivAlg _ (idealOfVars σ k ^ m) (taylorAlgEquiv P) (by
+    rw [Ideal.map_pow, ← map_taylor_vanishingIdeal_singleton P]
+    simp only [Ideal.map, RingHom.coe_coe, coe_taylorAlgEquiv])).toLinearEquiv.finrank_eq,
     finrank_quotient_pow_idealOfVars h]
 
 /-- **Dimensions of spaces of forms and of `k[X] ⧸ I_P ^ m`.** Let `k` be a field and
