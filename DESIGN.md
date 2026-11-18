@@ -142,7 +142,8 @@ PlaneCurves/
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
 │   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d (P3)
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
-│   │   └── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
+│   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
+│   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
 │   ├── GradedAlgebra/
 │   │   └── HomogeneousLocalization.lean field of fractions of degree 0, mapId injective (P10)
 │   ├── Localization/
@@ -325,7 +326,9 @@ with their files.
   `leadingFormAt_eq_sum_pderiv` (order one), `leadingFormAt_mul`,
   `leadingFormAt_pow`, `leadingFormAt_prod` (domains), `leadingFormAt_smul`,
   `leadingFormAt_taylor`, `leadingFormAt_linearSubst`, `orderAt_linearSubst`
-  (invertible `M`), `orderAt_le_orderAt_comp` (Problem 3.8).
+  (invertible `M`), `orderAt_aeval_eq_of_isUnit_det` and
+  `leadingFormAt_aeval_of_isUnit_det` (Problem 3.8(b); 3.8(a) is Tau Ceti's
+  `MvPolynomial.orderAt_le_orderAt_aeval`).
 - **`MvPolynomial.polarDerivative (v) (F)`**: `∑ i, v i • pderiv i F`. API:
   homogeneity, linearity in `v`, behaviour under `linearSubst`.
 
@@ -634,7 +637,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |
 | Q15 | `Projective/GenericLine.lean` | **5-generic** | Q13 |
-| Q16 | `Projective/Hessian/Basic.lean` | the determinant of `TauCeti.hessian MvPolynomial.pderiv F`: homogeneity, covariance, the chart identity (*large*) | Q2 |
+| Q16 | `RingTheory/MvPolynomial/Hessian.lean`, `Projective/Hessian/Basic.lean` | the determinant of `TauCeti.hessian MvPolynomial.pderiv F`: homogeneity, covariance, the chart identity (*large*) | — |
 | Q17 | `Projective/Hessian/Flex.lean` | **5-hessian** | Q16, Q13 |
 | Q18 | `Projective/Conic.lean` | part (a) of **5-normal** | Q13 |
 | V1 | `FieldTheory/FunctionField/Place/AddValuation.lean` | `TauCeti.Place.addValuation` | — |
