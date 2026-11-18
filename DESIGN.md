@@ -164,8 +164,10 @@ PlaneCurves/
 │   │   └── QuotientPiLocalization.lean  A/I ≅ ∏ A_𝔪/I A_𝔪 for A/I Artinian (A11)
 │   ├── DiscreteValuationRing/
 │   │   └── Colength.lean                order = colength, expansions (A12)
-│   └── KrullDimension/
-│       └── TrdegOne.lean                domains of transcendence degree one (R3)
+│   ├── KrullDimension/
+│   │   └── TrdegOne.lean                domains of transcendence degree one (R3)
+│   └── UniqueFactorizationDomain/
+│       └── Radical.lean                 radicals of principal ideals, no normalization (A7)
 ├── LinearAlgebra/
 │   ├── FiniteDimensional/
 │   │   └── Lemmas.lean                  extending linear equivalences, hyperplanes (P8)
@@ -591,7 +593,7 @@ Affine varieties (Chapters 1–2):
 | A4 | `RingTheory/MvPolynomial/BinaryForm/Basic.lean` | **aff-binary** | — |
 | A5 | `RingTheory/MvPolynomial/BinaryForm/Basis.lean`, `PowIdealOfVars.lean` | **aff-dim** | A1, A4 |
 | A6 | `Algebra/Polynomial/Bivariate.lean`, `RingTheory/Polynomial/GaussLemma.lean`, `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
-| A7 | `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
+| A7 | `RingTheory/UniqueFactorizationDomain/Radical.lean`, `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
 | A8 | `AffineSpace/FiniteZeroLocus.lean` | **aff-finite** | A1 |
 | A9 | `RingTheory/Localization/Quotient.lean`, `AffineSpace/LocalRing.lean` | `AffineSpace.localRing`; **aff-quotient**; parts (a)–(c), (e) of **aff-local** | A1 |
 | A10 | `AffineSpace/RationalFunction.lean` | **aff-local** (complete) | A9 |
