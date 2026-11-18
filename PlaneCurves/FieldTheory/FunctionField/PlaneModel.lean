@@ -56,16 +56,6 @@ namespace PlaneCurves
 
 variable {k K : Type*} [Field k] [Field K] [Algebra k K]
 
-/-- The degree of `K` over `k(x)`, for `x` transcendental over `k`, is its degree over `k(X)`,
-with `X` acting as `x`. -/
-private theorem finrank_ratFunc_eq {x : K} (hx : Transcendental k x) :
-    letI := TauCeti.ratFuncAlgebraOfTranscendental hx
-    Module.finrank (RatFunc k) K = Module.finrank k⟮x⟯ K := by
-  let _ := TauCeti.ratFuncAlgebraOfTranscendental hx
-  refine Algebra.finrank_eq_of_equiv_equiv (RatFunc.algEquivOfTranscendental x hx).toRingEquiv
-    (RingEquiv.refl K) (RingHom.ext fun r ↦ ?_)
-  simp [TauCeti.algebraMap_ratFuncAlgebraOfTranscendental_apply]
-
 /-- **The plane equation of a pair of generators.** Let `K = k(x, y)` with `x` transcendental
 over `k` and `K` finite over `k(x)`. Then there is an irreducible `F ∈ k[X, Y]` of degree
 `[K : k(x)]` in `Y` such that the polynomials vanishing at `(x, y)` are exactly the multiples of
@@ -84,7 +74,9 @@ theorem exists_irreducible_ker_aeval_eq_span_singleton {x y : K} (hx : Transcend
   have hint : IsIntegral (RatFunc k) y := Algebra.IsIntegral.isIntegral y
   set G := minpoly (RatFunc k) y
   have hdeg : G.natDegree = Module.finrank k⟮x⟯ K := by
-    rw [← finrank_ratFunc_eq hx, ← finrank_top', ← htop, adjoin.finrank hint]
+    rw [← TauCeti.algebraMap_ratFuncAlgebraOfTranscendental_X hx,
+      TauCeti.finrank_adjoin_algebraMap_X,
+      ← finrank_top', ← htop, adjoin.finrank hint]
   -- Clear the denominators of `G` and take the primitive part `q ∈ k[X][Y]`: its image in
   -- `k(X)[Y]` is a nonzero multiple of `G`.
   set p := IsLocalization.integerNormalization (nonZeroDivisors (Polynomial k)) G
