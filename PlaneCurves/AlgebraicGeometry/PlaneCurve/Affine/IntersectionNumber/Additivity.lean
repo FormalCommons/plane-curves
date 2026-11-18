@@ -60,8 +60,7 @@ theorem IntersectProperlyAt.mk_algebraMap_mem_nonZeroDivisors (h : IntersectProp
   obtain ⟨⟨q, t⟩, rfl⟩ := IsLocalization.mk'_surjective S b
   rw [mul_comm, IsLocalization.mul_mk'_eq_mk'_of_mul, IsLocalization.mul_mk'_eq_mk'_of_mul,
     IsLocalization.mk'_eq_iff_eq] at hb
-  have hpoly := IsLocalization.injective 𝒪
-    (vanishingIdeal k {P}).primeCompl_le_nonZeroDivisors hb
+  have hpoly := AffineSpace.localRing.algebraMap_injective k P hb
   have hdvd : F' ∣ p * (H * t) := ⟨U * q * s, by linear_combination hpoly⟩
   have hrel : IsRelPrime F' (H * t) := by
     refine WfDvdMonoid.isRelPrime_of_no_irreducible_factors
