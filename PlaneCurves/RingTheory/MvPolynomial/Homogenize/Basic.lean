@@ -29,6 +29,8 @@ polynomials of total degree at most `N`. Fulton's `f*` is `homogenize i f.totalD
 * `MvPolynomial.dehomogenize_homogenize`, `MvPolynomial.homogenize_dehomogenize`: homogenization
   and dehomogenization are inverse to each other on polynomials of total degree at most `N` and
   forms of degree `N`.
+* `MvPolynomial.eval_insertNth_zero_homogenize`: setting `X i` to zero in the homogenization to
+  degree `N` leaves the homogeneous component of degree `N`.
 * `MvPolynomial.homogenize_mul`, `MvPolynomial.homogenize_succ`: homogenization is multiplicative,
   and raising the degree multiplies by `X i`.
 * `MvPolynomial.rename_blockHomogenize`, `MvPolynomial.homogenize_uniqueAlgEquiv_symm`: comparison
@@ -97,6 +99,16 @@ theorem homogenize_X {N : ℕ} (hN : N ≠ 0) (j : Fin n) :
     homogenize i N (X j : MvPolynomial (Fin n) R) = X (i.succAbove j) * X i ^ (N - 1) := by
   rw [X, homogenize_monomial, ite_eq_left (by simpa [Nat.one_le_iff_ne_zero] using hN)]
   simp [X]
+
+/-- Setting `X i` to zero in the homogenization to degree `N` leaves the homogeneous component of
+degree `N`: `f*(a₀, …, 0, …, aₙ₋₁) = f_N(a)`, the `0` in place `i`. -/
+theorem eval_insertNth_zero_homogenize (a : Fin n → R) (f : MvPolynomial (Fin n) R) :
+    eval (Fin.insertNth i 0 a) (homogenize i N f) = eval a (homogeneousComponent N f) := by
+  rw [homogenize_def, map_sum, Finset.sum_eq_single_of_mem N (Finset.self_mem_range_succ N)]
+  · simp [← rename_homogeneousComponent, eval_rename, Function.comp_def]
+  · intro j hj hjN
+    have : 0 < N - j := by grind
+    simp [zero_pow this.ne']
 
 variable {i N}
 
