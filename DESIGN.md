@@ -128,7 +128,8 @@ creates it.
 PlaneCurves/
 ├── Algebra/
 │   ├── MvPolynomial/
-│   │   └── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
+│   │   ├── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
+│   │   └── SetVarZero.lean              setting X i to zero, X i ∣ p - p(X i = 0) (Q11)
 │   └── Polynomial/
 │       └── Bivariate.lean               coefficients and Y-degree of R[X][Y] ≃ R[X, Y] (R6)
 ├── RingTheory/
@@ -149,6 +150,8 @@ PlaneCurves/
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
 │   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
+│   ├── Regular/
+│   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (Q11)
 │   ├── GradedAlgebra/
 │   │   └── HomogeneousLocalization.lean field of fractions of degree 0, mapId injective (P10)
 │   ├── Localization/
@@ -646,7 +649,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q8 | `PlaneCurve/Projective/Finiteness.lean` | **5-finite** | Q2, A3, A6 |
 | Q9 | `Projective/LinearSystem/Basic.lean` | `linearSystem`; parts (a), (b) of **5-linsys** | Q1, Q3, P8 |
 | Q10 | `Projective/LinearSystem/Independence.lean` | **5-linsys** (complete) | Q9 |
-| Q11 | `RingTheory/MvPolynomial/QuotientSpanPair.lean` | Steps 1–2 of Bézout's proof | P3 |
+| Q11 | `RingTheory/MvPolynomial/QuotientSpanPair.lean`, `RingTheory/Regular/IsRelPrime.lean`, `Algebra/MvPolynomial/SetVarZero.lean` | Steps 1–2 of Bézout's proof | P3 |
 | Q12 | `Projective/Bezout/Basic.lean` | **5-bezout** | Q7, Q8, Q11, L11, P8 |
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |
