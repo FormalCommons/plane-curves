@@ -103,8 +103,8 @@ theorem finrank_add_finrank_span_of_zeroLocus_eq {s : Set (Fin (n + 1) → k)}
   omega
 
 /-- **Linear subvarieties are zero loci of linear forms.** For every subspace `p` of `kⁿ⁺¹`
-there is a set `s` of
-`n + 1 - dim p` coefficient vectors whose linear forms have zero locus `p.projectivization`. -/
+there is a set `s` of `n + 1 - dim p` coefficient vectors whose linear forms have zero locus
+`p.projectivization`. -/
 theorem exists_finset_zeroLocus_image_sum_C_mul_X_eq (p : Submodule k (Fin (n + 1) → k)) :
     ∃ s : Finset (Fin (n + 1) → k), s.card + finrank k p = n + 1 ∧
       zeroLocus ((fun a : Fin (n + 1) → k ↦ ∑ i, C (a i) * X i) '' ↑s) = p.projectivization := by
