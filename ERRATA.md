@@ -4,8 +4,8 @@ Errors found in the plan and in the sources it cites while formalizing them,
 and what the library does about each. `AGENTS.md` says when to add an entry.
 
 There is a section for each page of the plan, in the plan's order, headed
-with the page's file name, such as `## 01-local-properties.md`, and
-`## Other sources` last, for errors in sources that no page covers. Add a
+with the page's path in the atlas, such as
+`## atlas/01-local-properties.md`, and `## Other sources` last, for errors in sources that no page covers. Add a
 missing section in its place in that order. Within a section, entries go in
 alphabetical order of their titles, with a blank line between them, so that
 two pull requests conflict only when their entries land in the same place.
@@ -24,3 +24,19 @@ Each entry has this form:
   failed.
 - **Issue:** #<number>.
 ```
+
+## auxiliary/affine-varieties.md
+
+## atlas/01-local-properties.md
+
+## auxiliary/projective-varieties.md
+
+## atlas/02-projective-plane-curves.md
+
+## auxiliary/varieties-and-rational-maps.md
+
+## atlas/03-resolution-of-singularities.md
+
+## atlas/04-riemann-roch.md
+
+## Other sources

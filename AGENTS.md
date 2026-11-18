@@ -30,21 +30,21 @@ minutes.
 
 ## Layout and names
 
-- The library is under `Project/`, in the namespace `Project`. Its folders
-  are Mathlib's top-level areas, such as `Project/Algebra/` or
-  `Project/Geometry/`, and below them, topics. Use one file per topic. When
-  `Foo.lean` gets a sibling `FooBar.lean`, make a folder instead:
-  `Foo/Basic.lean` and `Foo/Bar.lean`.
+- The library is under `PlaneCurves/`, in the namespace `PlaneCurves`. Its
+  folders are Mathlib's top-level areas, such as `PlaneCurves/Algebra/` or
+  `PlaneCurves/AlgebraicGeometry/`, and below them, topics. Use one file per
+  topic. When `Foo.lean` gets a sibling `FooBar.lean`, make a folder
+  instead: `Foo/Basic.lean` and `Foo/Bar.lean`.
 - Name files and declarations after the mathematics, never after a milestone,
   an issue or a pull request. Follow Mathlib's naming conventions; a name
   never claims more than the statement (`_iff` only for an iff).
 - A declaration about an existing Lean, Mathlib or Tau Ceti notion, one
   that dot notation on that type would find, goes in that type's namespace,
   such as `Matrix.trace_foo`, so that it can move upstream without a rename.
-  Declarations about this library's own definitions go in `Project`.
+  Declarations about this library's own definitions go in `PlaneCurves`.
 - No file imports the whole library. `lake build` builds every file under
-  `Project/` by itself (the `globs` in `lakefile.toml`), so a new file needs
-  no import anywhere else. Do not add a file that imports the others.
+  `PlaneCurves/` by itself (the `globs` in `lakefile.toml`), so a new file
+  needs no import anywhere else. Do not add a file that imports the others.
 - A new file has at most 1000 lines. No file may have more than 1500 (the
   build fails).
 
@@ -61,7 +61,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.LinearAlgebra.Matrix.Trace
-public import Project.Algebra.Foo.Basic
+public import PlaneCurves.Algebra.Foo.Basic
 
 /-!
 # Title
@@ -75,11 +75,11 @@ What the file contains: its main definitions and results.
 
 public section
 
-namespace Project
+namespace PlaneCurves
 
 …
 
-end Project
+end PlaneCurves
 
 end
 ```
@@ -215,9 +215,9 @@ Besides building, check each main theorem of the pull request with
 `#print axioms`, in a scratch file that you do not commit:
 
 ```lean
-import Project.Foo
+import PlaneCurves.Foo
 
-#print axioms Project.foo_bar
+#print axioms PlaneCurves.foo_bar
 ```
 
 Run it with `lake env lean Scratch.lean`. Then check that it is good library
