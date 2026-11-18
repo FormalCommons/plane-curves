@@ -137,6 +137,7 @@ PlaneCurves/
 │   │   └── GaussLemma.lean              relatively prime p, q ∈ R[X] give C r ∈ (p, q) (A6)
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
+│   │   ├── LinearForm.lean              linear forms ∑ C (a i) * X i (P8)
 │   │   ├── Homogenize/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
 │   │   │   ├── Factorization.lean       Fulton's f*, F_*, Proposition 5 of §2.6 (A3)
@@ -166,6 +167,8 @@ PlaneCurves/
 │   └── KrullDimension/
 │       └── TrdegOne.lean                domains of transcendence degree one (R3)
 ├── LinearAlgebra/
+│   ├── FiniteDimensional/
+│   │   └── Lemmas.lean                  extending linear equivalences, hyperplanes (P8)
 │   └── Projectivization/
 │       ├── AffineChart.lean             hyperplane at infinity ≅ ℙⁿ⁻¹ (P1)
 │       ├── LinearSubspace.lean          linear subvarieties, lines, general position (P8)
@@ -199,6 +202,7 @@ PlaneCurves/
     │   ├── Nullstellensatz.lean         projective Nullstellensatz (P5)
     │   ├── Irreducible.lean             varieties, components (P6)
     │   ├── Hypersurface.lean            I(V(F)), hypersurfaces, hyperplanes (P7)
+    │   ├── LinearSubvariety.lean        zero loci of linear forms, coordinates (P8)
     │   ├── FunctionField.lean           k(V), 𝒪_P(ℙⁿ), 𝒪_P(V), values, poles (P11)
     │   ├── ChangeOfCoordinates.lean     V^T and the induced isomorphisms (P12)
     │   ├── ProjectiveClosure.lean       V*, V_*, Proposition 3 of §4.3 (P14)
@@ -380,6 +384,11 @@ with their files.
   `Projectivization.affineChart` (`LinearAlgebra/Projectivization/AffineChart.lean`);
   the library adds `Projectivization.insertZero i : ℙ K (Fin n → K) → ℙ K (Fin (n+1) → K)`
   with `range_insertZero` (`= (affineOpen i)ᶜ`).
+- **Linear subvarieties** have no definition: they are Mathlib's
+  `Submodule.projectivization p`, of dimension `m` when
+  `finrank K p = m + 1`; lines have `finrank 2`, hyperplanes are
+  `(LinearMap.ker f).projectivization` for `f ≠ 0`, and linear forms are
+  `∑ i, C (a i) * X i` (see [`design/P8.md`](design/P8.md)).
 - **`PlaneCurves.ProjectiveSpace.zeroLocus (S) : Set (ℙ k (Fin (n+1) → k))`**:
   the points at whose representatives every element of `S` vanishes, in the
   every-vector convention. API: `mk_mem_zeroLocus_iff` (one representative
@@ -614,7 +623,7 @@ Projective varieties (Chapter 4), beside Chapter 3:
 | P5 | `ProjectiveSpace/Nullstellensatz.lean` | parts (1)–(3) of **proj-null** | P4 |
 | P6 | `ProjectiveSpace/Irreducible.lean` | **proj-sets** (complete) | P4 |
 | P7 | `ProjectiveSpace/Hypersurface.lean` | **proj-null** (complete) | P5, P6, A3 |
-| P8 | `LinearAlgebra/Projectivization/LinearSubspace.lean` | parts (a)–(e), (h), (i) of **proj-linear** | P4 |
+| P8 | `LinearAlgebra/Projectivization/LinearSubspace.lean`, `LinearAlgebra/FiniteDimensional/Lemmas.lean`, `RingTheory/MvPolynomial/LinearForm.lean`, `ProjectiveSpace/LinearSubvariety.lean` | parts (a)–(e), (h), (i) of **proj-linear** ([`design/P8.md`](design/P8.md)) | P4 |
 | P9 | `LinearAlgebra/Projectivization/Duality.lean` | **proj-linear** (complete) | P8 |
 | P10 | `RingTheory/GradedAlgebra/HomogeneousLocalization.lean` | field instance, `mapId_injective` | — |
 | P11 | `ProjectiveSpace/FunctionField.lean` | `pointIdeal`, `localRing`, `functionField`, `localSubring`; parts (a)–(c) of **proj-coord** | P5, P6, P10 |
