@@ -154,7 +154,7 @@ PlaneCurves/
 │   │   ├── LeadingForm.lean             leading form at a point, products, substitutions (L1)
 │   │   ├── OrderAtDehomogenize.lean     order of a form on a line and in affine charts (Q1)
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
-│   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d (P3)
+│   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d, dim (k[x]/(A, B))_t (P3)
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
 │   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
@@ -162,7 +162,7 @@ PlaneCurves/
 │   │   └── AssociatedGraded.lean        (Iⁿ : f) = Iⁿ⁻ᵐ, dim A/Iⁿ⁺¹ = dim A/Iⁿ + dim Iⁿ/Iⁿ⁺¹ (L5)
 │   ├── Length.lean                      Hilbert–Samuel lengths under ring isomorphisms (L5)
 │   ├── Regular/
-│   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (Q11)
+│   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (P3)
 │   ├── GradedAlgebra/
 │   │   └── HomogeneousLocalization.lean field of fractions of degree 0, mapId injective (P10)
 │   ├── Localization/
@@ -623,7 +623,7 @@ Local properties of plane curves (Chapter 3):
 | L5 | `RingTheory/Ideal/AssociatedGraded.lean`, `RingTheory/Length.lean`, `PlaneCurve/Affine/HilbertSamuel.lean` | **3-ring**, **3-embdim** | L2, A5, A9 |
 | L6 | `Affine/IntersectionNumber/Basic.lean` | `IntersectProperlyAt`, `intersectionNumber`; **3-finvan** | A6, A9 |
 | L7 | `Affine/IntersectionNumber/Additivity.lean` | **3-add** | L6 |
-| L8 | `RingTheory/MvPolynomial/BinaryForm/Ideal.lean`, `Affine/IntersectionNumber/Multiplicity.lean` | **3-power**, **3-prodmult**, **3-tangency** | L2, L6, L7, A5 |
+| L8 | `RingTheory/MvPolynomial/BinaryForm/Ideal.lean`, `Affine/IntersectionNumber/Multiplicity.lean` | **3-power**, **3-prodmult**, **3-tangency** | L2, L6, L7, A5, P3 |
 | L9 | `Affine/IntersectionNumber/Uniqueness.lean` | **3-axioms** | L7, L8 |
 | L10 | `Affine/IntersectionNumber/SimplePoint.lean`, `Line.lean` | **3-order**, **3-line** | L4, L7 |
 | L11 | `Affine/IntersectionNumber/Sum.lean` | **3-sum** | L6, A11 |
@@ -635,7 +635,7 @@ Projective varieties (Chapter 4), beside Chapter 3:
 |---|---|---|---|
 | P1 | `LinearAlgebra/Projectivization/AffineChart.lean` | **proj-charts** (part (c); the rest exists) | — |
 | P2 | `RingTheory/MvPolynomial/HomogeneousIdeal.lean` | parts (a), (e) of **proj-ideals** | — |
-| P3 | `RingTheory/MvPolynomial/HilbertFunction.lean` | **proj-ideals** (complete, part (f) in `ℤ`) | P2 |
+| P3 | `RingTheory/MvPolynomial/HilbertFunction.lean`, `RingTheory/Regular/IsRelPrime.lean` | **proj-ideals** (complete, part (f) in `ℤ`); `dim (k[x]/(A, B))_t` for relatively prime forms | P2 |
 | P4 | `ProjectiveSpace/ZeroLocus.lean` | `zeroLocus`, `vanishingIdeal`; parts (a)–(c) of **proj-sets** | P2 |
 | P5 | `ProjectiveSpace/Nullstellensatz.lean` | parts (1)–(3) of **proj-null** | P4 |
 | P6 | `ProjectiveSpace/Irreducible.lean` | **proj-sets** (complete) | P4 |
@@ -677,7 +677,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q8 | `PlaneCurve/Projective/Finiteness.lean` | **5-finite** | Q2, A3, A6 |
 | Q9 | `Projective/LinearSystem/Basic.lean` | `linearSystem`; parts (a), (b) of **5-linsys** | Q1, Q3, P8 |
 | Q10 | `Projective/LinearSystem/Independence.lean` | **5-linsys** (complete) | Q9 |
-| Q11 | `RingTheory/MvPolynomial/QuotientSpanPair.lean`, `RingTheory/Regular/IsRelPrime.lean`, `Algebra/MvPolynomial/SetVarZero.lean` | Steps 1–2 of Bézout's proof | P3 |
+| Q11 | `RingTheory/MvPolynomial/QuotientSpanPair.lean`, `Algebra/MvPolynomial/SetVarZero.lean` | Steps 1–2 of Bézout's proof | P3 |
 | Q12 | `Projective/Bezout/Basic.lean` | **5-bezout** | Q7, Q8, Q11, L11, P8 |
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |
