@@ -8,7 +8,7 @@ module
 public import Mathlib.Algebra.MvPolynomial.Nilpotent
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Nullstellensatz
 public import PlaneCurves.RingTheory.Ideal.Radical
-public import PlaneCurves.RingTheory.MvPolynomial.BinaryForm.Basis
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 public import TauCeti.LinearAlgebra.Projectivization.AffineChart
 public import TauCeti.RingTheory.MvPolynomial.CommonZero
