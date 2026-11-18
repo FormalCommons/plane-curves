@@ -127,8 +127,10 @@ creates it.
 ```
 PlaneCurves/
 ├── Algebra/
-│   └── MvPolynomial/
-│       └── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
+│   ├── MvPolynomial/
+│   │   └── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
+│   └── Polynomial/
+│       └── Bivariate.lean               coefficients and Y-degree of R[X][Y] ≃ R[X, Y] (R6)
 ├── RingTheory/
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
