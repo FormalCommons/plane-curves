@@ -127,9 +127,13 @@ creates it.
 ```
 PlaneCurves/
 ├── Algebra/
+│   ├── Polynomial/
+│   │   └── Bivariate.lean               equivMvPolynomial on constants C r (A6)
 │   └── MvPolynomial/
 │       └── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
 ├── RingTheory/
+│   ├── Polynomial/
+│   │   └── GaussLemma.lean              relatively prime p, q ∈ R[X] give C r ∈ (p, q) (A6)
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
 │   │   ├── Homogenize/
@@ -573,7 +577,7 @@ Affine varieties (Chapters 1–2):
 | A3 | `RingTheory/MvPolynomial/Homogenize/Factorization.lean` | **aff-hom** | A2 |
 | A4 | `RingTheory/MvPolynomial/BinaryForm/Basic.lean` | **aff-binary** | — |
 | A5 | `RingTheory/MvPolynomial/BinaryForm/Basis.lean`, `PowIdealOfVars.lean` | **aff-dim** | A1, A4 |
-| A6 | `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
+| A6 | `Algebra/Polynomial/Bivariate.lean`, `RingTheory/Polynomial/GaussLemma.lean`, `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
 | A7 | `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
 | A8 | `AffineSpace/FiniteZeroLocus.lean` | **aff-finite** | A1 |
 | A9 | `RingTheory/Localization/Quotient.lean`, `AffineSpace/LocalRing.lean` | `AffineSpace.localRing`; **aff-quotient**; parts (a)–(c), (e) of **aff-local** | A1 |
