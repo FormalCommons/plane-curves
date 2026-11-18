@@ -8,6 +8,7 @@ module
 public import Mathlib.RingTheory.LocalRing.LocalSubring
 public import Mathlib.RingTheory.Nullstellensatz
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
+public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
 
 /-!
 # Rational functions and local rings of an affine variety
@@ -61,18 +62,6 @@ public section
 
 open MvPolynomial IsLocalRing Ideal
 
-namespace MvPolynomial
-
-/-- An ideal vanishes at `x` iff `x` lies in its zero locus. -/
-theorem le_vanishingIdeal_singleton_iff {k : Type*} [Field k] {σ : Type*}
-    {I : Ideal (MvPolynomial σ k)} {x : σ → k} :
-    I ≤ vanishingIdeal k {x} ↔ x ∈ zeroLocus k I := by
-  rw [mem_zeroLocus_iff]
-  exact ⟨fun h p hp => (mem_vanishingIdeal_singleton_iff _ _).1 (h hp),
-    fun h p hp => (mem_vanishingIdeal_singleton_iff _ _).2 (h p hp)⟩
-
-end MvPolynomial
-
 namespace PlaneCurves.AffineSpace
 
 variable {k : Type*} [Field k] {σ : Type*}
@@ -123,6 +112,13 @@ noncomputable def rangeEval :
   (coordinateEval P hI).toRingHom.comp (RingEquiv.ofBijective _
     ⟨fun _ _ h => IsFractionRing.injective _ (functionField I) (congrArg Subtype.val h),
       RingHom.rangeRestrict_surjective _⟩).symm.toRingHom
+
+omit [I.IsPrime] in
+theorem rangeEval_def : rangeEval P hI =
+    (coordinateEval P hI).toRingHom.comp (RingEquiv.ofBijective _
+      ⟨fun _ _ h => IsFractionRing.injective _ (functionField I) (congrArg Subtype.val h),
+        RingHom.rangeRestrict_surjective _⟩).symm.toRingHom :=
+  (rfl)
 
 omit [I.IsPrime] in
 theorem rangeEval_rangeRestrict (a : MvPolynomial σ k ⧸ I) :
