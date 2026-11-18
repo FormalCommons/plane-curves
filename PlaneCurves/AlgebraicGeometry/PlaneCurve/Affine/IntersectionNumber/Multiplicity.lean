@@ -66,6 +66,8 @@ so equality holds; if not, `ψ` is not injective and the inequality is strict.
   holds iff the leading forms are relatively prime.
 * `PlaneCurves.Affine.intersectionNumber_eq_one_iff`: `I(P, F ∩ G) = 1` iff `P` is simple on both
   curves with different tangents.
+* `PlaneCurves.Affine.isTangentAt_iff_orderAt_lt_intersectionNumber`: a line `L(X - P) = 0`
+  through `P` is tangent to `F` at `P` iff `I(P, F ∩ L(X - P)) > m_P(F)`, over any field.
 * `PlaneCurves.Affine.isRelPrime_leadingFormAt_iff_not_exists_isTangentAt`: over an algebraically
   closed field, relatively prime leading forms mean no common tangent.
 * `PlaneCurves.Affine.mul_orderAt_le_intersectionNumber_and_eq_iff`: property (5), over an
@@ -73,7 +75,8 @@ so equality holds; if not, `ψ` is not injective and the inequality is strict.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Property (5), pp. 37–39
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Property (5), pp. 37–39, and Problem 3.19,
+  p. 40
 -/
 
 public section
@@ -574,6 +577,29 @@ theorem intersectionNumber_eq_one_iff :
       hG.ne_zero, isSimplePoint_iff_orderAt_eq_one.1 hF, isSimplePoint_iff_orderAt_eq_one.1 hG,
       mul_one] at h
     exact h
+
+/-- **Tangency of a line detected by the intersection number** (Fulton, Problem 3.19). Let `F` be
+a nonzero polynomial in `k[X, Y]`, `P ∈ k²`, and `L` a nonzero linear form, so that
+`L(X - P) = 0` is a line through `P`. Then `L` is tangent to `F` at `P` iff
+`I(P, F ∩ L(X - P)) > m_P(F)`. This covers the degenerate cases: if the line is a component of
+`F`, then `I = ∞` and it is tangent; if `P ∉ F`, then `I = 0 = m_P(F)` and it is not.
+
+Milestone: *Tangency of a line detected by the intersection number*. -/
+theorem isTangentAt_iff_orderAt_lt_intersectionNumber {L : MvPolynomial (Fin 2) k} (hF : F ≠ 0)
+    (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) :
+    IsTangentAt F P L ↔ F.orderAt P < intersectionNumber P F (taylor (-P) L) := by
+  have hℓ : taylor (-P) L ≠ 0 := taylor_eq_zero.not.2 hL₀
+  have hord : (taylor (-P) L).orderAt P = 1 := by
+    rw [orderAt_taylor, add_neg_cancel, hL.orderAt_zero hL₀, Nat.cast_one]
+  have hlead : (taylor (-P) L).leadingFormAt P = L := by
+    rw [leadingFormAt_taylor, add_neg_cancel, hL.leadingFormAt_zero]
+  have hle := mul_orderAt_le_intersectionNumber P F (taylor (-P) L)
+  have heq := intersectionNumber_eq_mul_orderAt_iff (P := P) hF hℓ
+  rw [hord, mul_one] at hle heq
+  rw [hlead, isRelPrime_comm, (irreducible_of_isHomogeneous_one hL hL₀).isRelPrime_iff_not_dvd]
+    at heq
+  rw [hle.lt_iff_ne, ne_comm, Ne, heq, not_not, isTangentAt_def]
+  exact ⟨fun h ↦ h.2.2, fun h ↦ ⟨hL, hL₀, h⟩⟩
 
 section IsAlgClosed
 

@@ -46,6 +46,7 @@ tangent lines at the point.
   at most one, in every characteristic (Problem 5.6 of Fulton, in affine space).
 * `MvPolynomial.IsHomogeneous.orderAt_zero`: a nonzero form of degree `d` has order `d` at the
   origin.
+* `MvPolynomial.IsHomogeneous.leadingFormAt_zero`: a form is its own leading form at the origin.
 * `MvPolynomial.orderAt_taylor_sub_leadingFormAt`: `p(X + a)` minus the leading form has order
   greater than that of `p` at `a`.
 * `MvPolynomial.orderAt_eq_and_leadingFormAt_eq_neg_of_orderAt_lt_orderAt_add`: if `p + q` has
@@ -283,6 +284,14 @@ theorem IsHomogeneous.orderAt_zero {d : ℕ} (hp : p.IsHomogeneous d) (hp₀ : p
     exact he (hp.coeff_eq_zero h)
   rw [← hed]
   exact orderAt_le (by rwa [taylor_zero])
+
+/-- A form is its own leading form at the origin. -/
+theorem IsHomogeneous.leadingFormAt_zero {d : ℕ} (hp : p.IsHomogeneous d) :
+    p.leadingFormAt 0 = p := by
+  rcases eq_or_ne p 0 with rfl | hp₀
+  · exact MvPolynomial.leadingFormAt_zero 0
+  rw [leadingFormAt_def, hp.orderAt_zero hp₀, ENat.toNat_natCast, taylor_zero]
+  exact homogeneousComponent_of_mem ((mem_homogeneousSubmodule _ _).2 hp) |>.trans (ite_eq_left rfl)
 
 end CommSemiring
 
