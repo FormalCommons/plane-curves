@@ -147,6 +147,7 @@ PlaneCurves/
 │   │   │   ├── Basis.lean               bases of products of linear forms (A5)
 │   │   │   └── Ideal.lean               forms of degree ≥ m+n−1 in (A, B) (L8)
 │   │   ├── PowIdealOfVars.lean          k[X]/I_P^m and its dimension (A5)
+│   │   ├── LinearSubst.lean             invertible linear changes of variables as automorphisms
 │   │   ├── LeadingForm.lean             leading form at a point, products, substitutions (L1)
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
 │   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d (P3)
