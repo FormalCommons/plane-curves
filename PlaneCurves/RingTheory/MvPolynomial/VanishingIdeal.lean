@@ -33,6 +33,7 @@ describes it and the algebraic sets around it.
   that is `1` at one of them and `0` at the others.
 * `MvPolynomial.zeroLocus_sup`, `MvPolynomial.zeroLocus_inf`,
   `MvPolynomial.vanishingIdeal_union`: algebraic sets under sums, intersections and unions.
+* `MvPolynomial.zeroLocus_vanishingIdeal_zeroLocus`: a zero locus is an algebraic set.
 * `MvPolynomial.isPrime_vanishingIdeal_submodule`: over an infinite field, the ideal of a linear
   subspace of `kⁿ` is prime.
 
@@ -190,6 +191,12 @@ theorem zeroLocus_inf (I J : Ideal (MvPolynomial σ k)) :
   obtain ⟨⟨f, hf, hfx⟩, ⟨g, hg, hgx⟩⟩ := h
   exact mul_ne_zero hfx hgx <| by
     simpa using (mem_zeroLocus_iff.1 hx) (f * g) ⟨I.mul_mem_right g hf, J.mul_mem_left f hg⟩
+
+/-- A zero locus is an algebraic set: `V(I(V(J))) = V(J)`. -/
+@[simp]
+theorem zeroLocus_vanishingIdeal_zeroLocus (J : Ideal (MvPolynomial σ k)) :
+    zeroLocus K (vanishingIdeal k (zeroLocus K J)) = zeroLocus K J :=
+  (zeroLocus_vanishingIdeal_galoisConnection (k := k) (K := K) (σ := σ)).l_u_l_eq_l J
 
 /-- The ideal of a union of sets is the intersection of their ideals. -/
 theorem vanishingIdeal_union (A B : Set (σ → K)) :
