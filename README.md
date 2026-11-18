@@ -15,7 +15,7 @@ later.
 - `DESIGN.md`: the design's overview, once a pull request adds it: the
   parts of the library, the order they are built in, and the part that
   proves each milestone. A part can have a detailed design of its own in
-  `design/<part>.md`, which the overview links to.
+  `design/<part>.md`, `<part>` being its name in `DESIGN.md`.
 - [ERRATA.md](ERRATA.md): errors found in the atlas and in Fulton's book, and
   how the library corrects them.
 
