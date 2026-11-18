@@ -35,6 +35,9 @@ tangent lines at the point.
   `MvPolynomial.leadingFormAt_prod`: over a domain, the leading form is multiplicative.
 * `MvPolynomial.orderAt_mul_eq_one_iff`: over a domain, a product has order one exactly when
   one factor has order one and the other order zero.
+* `MvPolynomial.leadingFormAt_rename`: leading forms commute with injective renamings.
+* `MvPolynomial.orderAt_sub_one_le_orderAt_pderiv`: a partial derivative lowers the order by
+  at most one, in every characteristic (Problem 5.6 of Fulton, in affine space).
 * `MvPolynomial.leadingFormAt_aeval`, `MvPolynomial.orderAt_aeval_eq`: if the leading form
   of `p` at `g(b)`, evaluated at the linear parts of `g` at `b`, is nonzero, then it is the
   leading form of `p(g)` at `b`, and the orders agree.
@@ -46,7 +49,7 @@ tangent lines at the point.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.1
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.1, §5.1 (Problem 5.6)
 -/
 
 public section
@@ -208,6 +211,28 @@ theorem leadingFormAt_prod [NoZeroDivisors R] {ι : Type*} (p : ι → MvPolynom
   induction s using Finset.induction_on with
   | empty => simp
   | insert i s hi ih => rw [Finset.prod_insert hi, Finset.prod_insert hi, leadingFormAt_mul, ih]
+
+/-- Renaming the variables along an injective map commutes with leading forms, with the point
+pulled back along the renaming. -/
+theorem leadingFormAt_rename {f : σ → τ} (hf : Function.Injective f) (p : MvPolynomial σ R)
+    (b : τ → R) : (rename f p).leadingFormAt b = rename f (p.leadingFormAt (b ∘ f)) := by
+  rw [leadingFormAt_def, leadingFormAt_def, orderAt_rename hf, taylor_rename,
+    rename_homogeneousComponent]
+
+/-- **A partial derivative lowers the order by at most one.** If `p` has order at least `n + 1`
+at `a`, then `∂p/∂Xᵢ` has order at least `n` there, over every commutative semiring. -/
+theorem le_orderAt_pderiv {n : ℕ∞} (h : n + 1 ≤ p.orderAt a) (i : σ) :
+    n ≤ (pderiv i p).orderAt a := by
+  rw [orderAt_def] at h ⊢
+  rw [← pderiv_taylor, ← MvPowerSeries.pderiv_coe]
+  exact MvPowerSeries.le_order_pderiv h i
+
+/-- `ord_a(∂p/∂Xᵢ) ≥ ord_a(p) - 1`, over every commutative semiring (with `ord_a(0) = ⊤`). -/
+theorem orderAt_sub_one_le_orderAt_pderiv (p : MvPolynomial σ R) (a : σ → R) (i : σ) :
+    p.orderAt a - 1 ≤ (pderiv i p).orderAt a := by
+  rcases eq_or_ne (p.orderAt a) 0 with h | h
+  · simp [h]
+  exact le_orderAt_pderiv (by rw [tsub_add_cancel_of_le (Order.one_le_iff_ne_zero.2 h)]) i
 
 end CommSemiring
 
