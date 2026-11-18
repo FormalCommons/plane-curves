@@ -7,6 +7,9 @@ module
 
 public import Mathlib.RingTheory.Nullstellensatz
 
+import Mathlib.Algebra.MvPolynomial.Funext
+import Mathlib.Algebra.MvPolynomial.Monad
+
 /-!
 # The ideal of a point and separating polynomials
 
@@ -23,6 +26,8 @@ describes it and the algebraic sets around it.
   that is `1` at one of them and `0` at the others.
 * `MvPolynomial.zeroLocus_sup`, `MvPolynomial.zeroLocus_inf`,
   `MvPolynomial.vanishingIdeal_union`: algebraic sets under sums, intersections and unions.
+* `MvPolynomial.isPrime_vanishingIdeal_submodule`: over an infinite field, the ideal of a linear
+  subspace of `kⁿ` is prime.
 
 ## References
 
@@ -144,6 +149,40 @@ theorem zeroLocus_inf (I J : Ideal (MvPolynomial σ k)) :
 theorem vanishingIdeal_union (A B : Set (σ → K)) :
     vanishingIdeal k (A ∪ B) = vanishingIdeal k A ⊓ vanishingIdeal k B :=
   (zeroLocus_vanishingIdeal_galoisConnection (k := k) (K := K) (σ := σ)).u_inf
+
+
+/-- Over an infinite field, the ideal of a linear subspace `p` of `kⁿ` is prime: parametrizing
+`p` by a basis identifies it with the kernel of a substitution into a polynomial ring. -/
+theorem isPrime_vanishingIdeal_submodule [Finite σ] [Infinite k] (p : Submodule k (σ → k)) :
+    (vanishingIdeal k (p : Set (σ → k))).IsPrime := by
+  have := Fintype.ofFinite σ
+  set b := Module.finBasis k p
+  let φ : MvPolynomial σ k →ₐ[k] MvPolynomial (Fin (Module.finrank k p)) k :=
+    aeval fun i ↦ ∑ j, C ((b j : σ → k) i) * X j
+  have hφ (f : MvPolynomial σ k) (y : Fin (Module.finrank k p) → k) :
+      eval y (φ f) = eval (∑ j, y j • (b j : σ → k)) f := by
+    change aeval y (bind₁ _ f) = aeval (∑ j, y j • (b j : σ → k)) f
+    rw [aeval_bind₁]
+    congr 2
+    funext i
+    simp [Finset.sum_apply, mul_comm]
+  have hker : vanishingIdeal k (p : Set (σ → k)) = RingHom.ker φ := by
+    ext f
+    rw [mem_vanishingIdeal_iff, RingHom.mem_ker]
+    constructor
+    · intro h
+      refine MvPolynomial.funext fun y ↦ ?_
+      rw [hφ, map_zero]
+      exact h _ (Submodule.sum_mem _ fun j _ ↦ Submodule.smul_mem _ _ (b j).2)
+    · intro h x hx
+      have hx' : x = ∑ j, b.repr ⟨x, hx⟩ j • (b j : σ → k) := by
+        simpa only [Submodule.coe_sum, Submodule.coe_smul] using
+          (congrArg Subtype.val (b.sum_repr ⟨x, hx⟩)).symm
+      rw [hx']
+      change eval _ f = 0
+      rw [← hφ, h, map_zero]
+  rw [hker]
+  exact RingHom.ker_isPrime _
 
 end MvPolynomial
 
