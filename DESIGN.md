@@ -158,8 +158,10 @@ PlaneCurves/
 │   │   └── Colength.lean                order = colength, expansions (A12)
 │   ├── KrullDimension/
 │   │   └── TrdegOne.lean                domains of transcendence degree one (R3)
-│   └── Length/
-│       └── Index.lean                   ℓ(V/TV) = ℓ(W/TW) (V7)
+│   ├── Length/
+│   │   └── Index.lean                   ℓ(V/TV) = ℓ(W/TW) (V7)
+│   └── UniqueFactorizationDomain/
+│       └── Radical.lean                 radicals of principal ideals, no normalization (A7)
 ├── LinearAlgebra/
 │   └── Projectivization/
 │       ├── AffineChart.lean             hyperplane at infinity ≅ ℙⁿ⁻¹ (P1)
@@ -574,7 +576,7 @@ Affine varieties (Chapters 1–2):
 | A4 | `RingTheory/MvPolynomial/BinaryForm/Basic.lean` | **aff-binary** | — |
 | A5 | `RingTheory/MvPolynomial/BinaryForm/Basis.lean`, `PowIdealOfVars.lean` | **aff-dim** | A1, A4 |
 | A6 | `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
-| A7 | `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
+| A7 | `RingTheory/UniqueFactorizationDomain/Radical.lean`, `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
 | A8 | `AffineSpace/FiniteZeroLocus.lean` | **aff-finite** | A1 |
 | A9 | `RingTheory/Localization/Quotient.lean`, `AffineSpace/LocalRing.lean` | `AffineSpace.localRing`; **aff-quotient**; parts (a)–(c), (e) of **aff-local** | A1 |
 | A10 | `AffineSpace/RationalFunction.lean` | **aff-local** (complete) | A9 |
