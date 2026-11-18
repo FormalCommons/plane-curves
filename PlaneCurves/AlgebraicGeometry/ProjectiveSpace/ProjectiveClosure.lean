@@ -6,7 +6,8 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.Algebra.MvPolynomial.Funext
-public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Hypersurface
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Irreducible
 public import PlaneCurves.LinearAlgebra.Projectivization.AffineChart
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Ideal
 public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
@@ -51,6 +52,14 @@ Following Fulton (§4.3), this file defines
   in nor, over an infinite field, contains the hyperplane at infinity (Proposition 3 (6)).
 * `projectiveClosure_zeroLocus`, `projectiveClosure_zeroLocus_span_singleton`: over an
   algebraically closed field, `V(J)* = V(J*)`, and in particular `V(F)* = V(F*)`.
+* `projectiveClosure_affinePart`: a projective variety `W` not contained in the hyperplane at
+  infinity satisfies `(W_*)* = W` (Proposition 3 (7)), over any field; then
+  `vanishingIdeal_affinePart` (`I(W_*) = I(W)_*`) and `isPrime_vanishingIdeal_affinePart`.
+* `affinePart_ne_univ`, `projectiveClosure_affinePart_sUnion`, `affinePart_sUnion_ne_univ`:
+  (7) for finite unions of projective varieties, none contained in (and, for `W_* ≠ 𝔸ⁿ` over an
+  infinite field, none containing) the hyperplane at infinity.
+* `projectiveClosureEquiv`: `V ↦ V*` is a bijection from affine varieties to projective
+  varieties not contained in the hyperplane at infinity, with inverse `W ↦ W_*`.
 
 ## Implementation notes
 
@@ -380,6 +389,158 @@ theorem projectiveClosure_zeroLocus_span_singleton [IsAlgClosed k] (F : MvPolyno
       zeroLocus {homogenize i F.totalDegree F} := by
   rw [projectiveClosure_zeroLocus, ← coe_toIdeal,
     Ideal.homogenization_span_singleton, zeroLocus_span]
+/-! ### Affine parts of projective varieties -/
+
+/-- The hyperplane at infinity `(affineOpen i)ᶜ = V(Xᵢ)` is algebraic. -/
+theorem zeroLocus_vanishingIdeal_compl_affineOpen (i : Fin (n + 1)) :
+    zeroLocus (vanishingIdeal (affineOpen (K := k) i)ᶜ : Set (MvPolynomial (Fin (n + 1)) k)) =
+      (affineOpen i)ᶜ := by
+  rw [← zeroLocus_singleton_X]
+  exact zeroLocus_vanishingIdeal_zeroLocus_of_isHomogeneous fun f hf ↦
+    ⟨1, (Set.mem_singleton_iff.1 hf) ▸ isHomogeneous_X k i⟩
+
+/-- The affine part of a set is an affine algebraic set. -/
+@[simp]
+theorem zeroLocus_vanishingIdeal_affinePart (W : Set (ℙ k (Fin (n + 1) → k))) :
+    MvPolynomial.zeroLocus k (MvPolynomial.vanishingIdeal k (affinePart i W)) = affinePart i W := by
+  rw [affinePart_def, MvPolynomial.zeroLocus_vanishingIdeal_zeroLocus]
+
+/-- `φᵢ(W_*) ⊆ W` for an algebraic set `W ⊆ ℙⁿ`. -/
+theorem image_affinePart_subset {W : Set (ℙ k (Fin (n + 1) → k))}
+    (hW : zeroLocus (vanishingIdeal W) = W) : (affineChart i).symm '' affinePart i W ⊆ W := by
+  rintro _ ⟨a, ha, rfl⟩
+  exact (mem_affinePart_iff hW).1 ha
+
+/-- `(W_*)* ⊆ W` for an algebraic set `W ⊆ ℙⁿ`. -/
+theorem projectiveClosure_affinePart_subset {W : Set (ℙ k (Fin (n + 1) → k))}
+    (hW : zeroLocus (vanishingIdeal W) = W) : projectiveClosure i (affinePart i W) ⊆ W :=
+  (projectiveClosure_subset_iff hW).2 (image_affinePart_subset hW)
+
+/-- Every set `W ⊆ ℙⁿ` lies in `(W_*)*` together with the hyperplane at infinity. -/
+theorem subset_projectiveClosure_affinePart_union (W : Set (ℙ k (Fin (n + 1) → k))) :
+    W ⊆ projectiveClosure i (affinePart i W) ∪ (affineOpen i)ᶜ := by
+  intro P hP
+  by_cases hU : P ∈ affineOpen i
+  · have hP' : (affineChart i).symm (affineChart i P) = P :=
+      (affineChart i).left_inv (by rwa [affineChart_source])
+    refine Or.inl (hP' ▸ image_subset_projectiveClosure _ ⟨_, ?_, rfl⟩)
+    rw [affinePart_eq_preimage, Set.mem_preimage, hP']
+    exact subset_zeroLocus_vanishingIdeal W hP
+  · exact Or.inr hU
+
+/-- **Fulton, §4.3, Proposition 3 (7).** A projective variety `W` not contained in the
+hyperplane at infinity is the projective closure of its affine part: `(W_*)* = W`. -/
+theorem projectiveClosure_affinePart {W : Set (ℙ k (Fin (n + 1) → k))}
+    (hW : zeroLocus (vanishingIdeal W) = W) (hp : (vanishingIdeal W).toIdeal.IsPrime)
+    (h : ¬ W ⊆ (affineOpen i)ᶜ) : projectiveClosure i (affinePart i W) = W :=
+  (projectiveClosure_affinePart_subset hW).antisymm <|
+    (subset_or_subset_of_subset_union hp (projectiveClosure_zeroLocus_vanishingIdeal _)
+      (zeroLocus_vanishingIdeal_compl_affineOpen i)
+      (subset_projectiveClosure_affinePart_union W)).resolve_right h
+
+/-- For a projective variety `W` not contained in the hyperplane at infinity, `I(W_*)* = I(W)`. -/
+theorem homogenization_vanishingIdeal_affinePart {W : Set (ℙ k (Fin (n + 1) → k))}
+    (hW : zeroLocus (vanishingIdeal W) = W) (hp : (vanishingIdeal W).toIdeal.IsPrime)
+    (h : ¬ W ⊆ (affineOpen i)ᶜ) :
+    (MvPolynomial.vanishingIdeal k (affinePart i W)).homogenization i = vanishingIdeal W := by
+  rw [← vanishingIdeal_projectiveClosure, projectiveClosure_affinePart hW hp h]
+
+/-- **The ideal of the affine part.** For a projective variety `W` not contained in the
+hyperplane at infinity, `I(W_*) = I(W)_*`. -/
+theorem vanishingIdeal_affinePart {W : Set (ℙ k (Fin (n + 1) → k))}
+    (hW : zeroLocus (vanishingIdeal W) = W) (hp : (vanishingIdeal W).toIdeal.IsPrime)
+    (h : ¬ W ⊆ (affineOpen i)ᶜ) :
+    MvPolynomial.vanishingIdeal k (affinePart i W) =
+      (vanishingIdeal W).toIdeal.map (dehomogenize i) := by
+  rw [← homogenization_vanishingIdeal_affinePart hW hp h, Ideal.map_dehomogenize_homogenization]
+
+/-- The affine part of a projective variety `W` not contained in the hyperplane at infinity has
+a prime ideal: with `zeroLocus_vanishingIdeal_affinePart`, it is an affine variety. -/
+theorem isPrime_vanishingIdeal_affinePart {W : Set (ℙ k (Fin (n + 1) → k))}
+    (hW : zeroLocus (vanishingIdeal W) = W) (hp : (vanishingIdeal W).toIdeal.IsPrime)
+    (h : ¬ W ⊆ (affineOpen i)ᶜ) : (MvPolynomial.vanishingIdeal k (affinePart i W)).IsPrime :=
+  Ideal.IsPrime.of_homogenization (i := i) (by
+    rwa [homogenization_vanishingIdeal_affinePart hW hp h])
+
+/-- Over an infinite field, the affine part of a projective variety that neither lies in nor
+contains the hyperplane at infinity is not all of `𝔸ⁿ`. -/
+theorem affinePart_ne_univ [Infinite k] {W : Set (ℙ k (Fin (n + 1) → k))}
+    (hW : zeroLocus (vanishingIdeal W) = W) (hp : (vanishingIdeal W).toIdeal.IsPrime)
+    (h : ¬ W ⊆ (affineOpen i)ᶜ) (h' : ¬ (affineOpen i)ᶜ ⊆ W) : affinePart i W ≠ Set.univ := by
+  intro hu
+  refine h' ?_
+  rw [← projectiveClosure_affinePart hW hp h, hu, projectiveClosure_univ]
+  exact Set.subset_univ _
+
+/-- The affine part of a finite union is the union of the affine parts. -/
+theorem affinePart_sUnion {C : Set (Set (ℙ k (Fin (n + 1) → k)))} (hC : C.Finite) :
+    affinePart i (⋃₀ C) = ⋃₀ (affinePart i '' C) := by
+  induction C, hC using Set.Finite.induction_on with
+  | empty => simp
+  | insert _ _ ih => rw [Set.sUnion_insert, Set.image_insert_eq, Set.sUnion_insert,
+      affinePart_union, ih]
+
+/-- **Fulton, §4.3, Proposition 3 (7)**, for a finite union `W` of projective varieties, none
+contained in the hyperplane at infinity: `(W_*)* = W`. -/
+theorem projectiveClosure_affinePart_sUnion {C : Set (Set (ℙ k (Fin (n + 1) → k)))}
+    (hC : C.Finite)
+    (hCW : ∀ W ∈ C, zeroLocus (vanishingIdeal W) = W ∧ (vanishingIdeal W).toIdeal.IsPrime)
+    (hCH : ∀ W ∈ C, ¬ W ⊆ (affineOpen i)ᶜ) :
+    projectiveClosure i (affinePart i (⋃₀ C)) = ⋃₀ C := by
+  rw [affinePart_sUnion hC, projectiveClosure_sUnion (hC.image _), Set.image_image]
+  exact congrArg _ ((Set.image_congr fun W hW ↦
+    projectiveClosure_affinePart (hCW W hW).1 (hCW W hW).2 (hCH W hW)).trans (Set.image_id C))
+
+/-- **Fulton, §4.3, Proposition 3 (7)**, the condition `W_* ≠ 𝔸ⁿ`. Over an infinite field, a
+finite union `W` of projective varieties, none of which lies in or contains the hyperplane at
+infinity, has `W_* ≠ 𝔸ⁿ`. -/
+theorem affinePart_sUnion_ne_univ [Infinite k] {C : Set (Set (ℙ k (Fin (n + 1) → k)))}
+    (hC : C.Finite)
+    (hCW : ∀ W ∈ C, zeroLocus (vanishingIdeal W) = W ∧ (vanishingIdeal W).toIdeal.IsPrime)
+    (hCH : ∀ W ∈ C, ¬ W ⊆ (affineOpen i)ᶜ) (hCH' : ∀ W ∈ C, ¬ (affineOpen i)ᶜ ⊆ W) :
+    affinePart i (⋃₀ C) ≠ Set.univ := by
+  intro hu
+  have hsub : (Set.univ : Set (ℙ k (Fin (n + 1) → k))) ⊆ ⋃₀ C := by
+    rw [← projectiveClosure_affinePart_sUnion hC hCW hCH, hu, projectiveClosure_univ]
+  have hp : (vanishingIdeal (Set.univ : Set (ℙ k (Fin (n + 1) → k)))).toIdeal.IsPrime := by
+    rw [vanishingIdeal_univ, HomogeneousIdeal.toIdeal_bot]
+    exact Ideal.isPrime_bot
+  obtain ⟨W, hWC, hW⟩ := exists_subset_of_subset_sUnion hp hC (fun W hW ↦ (hCW W hW).1) hsub
+  exact hCH' W hWC ((Set.subset_univ _).trans hW)
+
+/-! ### The correspondence -/
+
+variable (i) in
+/-- **Affine and projective varieties.** `V ↦ V*` is a bijection from the affine varieties in
+`𝔸ⁿ` to the projective varieties in `ℙⁿ` not contained in the hyperplane at infinity
+`(affineOpen i)ᶜ`, with inverse `W ↦ W_*`. -/
+noncomputable def projectiveClosureEquiv :
+    {V : Set (Fin n → k) // MvPolynomial.zeroLocus k (MvPolynomial.vanishingIdeal k V) = V ∧
+      (MvPolynomial.vanishingIdeal k V).IsPrime} ≃
+    {W : Set (ℙ k (Fin (n + 1) → k)) // zeroLocus (vanishingIdeal W) = W ∧
+      (vanishingIdeal W).toIdeal.IsPrime ∧ ¬ W ⊆ (affineOpen i)ᶜ} where
+  toFun V := ⟨projectiveClosure i V.1, projectiveClosure_zeroLocus_vanishingIdeal V.1,
+    isPrime_vanishingIdeal_projectiveClosure V.2.2,
+    not_projectiveClosure_subset_compl_affineOpen <| Set.nonempty_iff_ne_empty.2 fun h ↦
+      V.2.2.ne_top (by rw [h, MvPolynomial.vanishingIdeal_empty])⟩
+  invFun W := ⟨affinePart i W.1, zeroLocus_vanishingIdeal_affinePart W.1,
+    isPrime_vanishingIdeal_affinePart W.2.1 W.2.2.1 W.2.2.2⟩
+  left_inv V := Subtype.ext (affinePart_projectiveClosure V.2.1)
+  right_inv W := Subtype.ext (projectiveClosure_affinePart W.2.1 W.2.2.1 W.2.2.2)
+
+@[simp]
+theorem projectiveClosureEquiv_apply
+    (V : {V : Set (Fin n → k) // MvPolynomial.zeroLocus k (MvPolynomial.vanishingIdeal k V) = V ∧
+      (MvPolynomial.vanishingIdeal k V).IsPrime}) :
+    (projectiveClosureEquiv i V : Set (ℙ k (Fin (n + 1) → k))) = projectiveClosure i V :=
+  (rfl)
+
+@[simp]
+theorem projectiveClosureEquiv_symm_apply
+    (W : {W : Set (ℙ k (Fin (n + 1) → k)) // zeroLocus (vanishingIdeal W) = W ∧
+      (vanishingIdeal W).toIdeal.IsPrime ∧ ¬ W ⊆ (affineOpen i)ᶜ}) :
+    ((projectiveClosureEquiv i).symm W : Set (Fin n → k)) = affinePart i W :=
+  (rfl)
 
 end PlaneCurves.ProjectiveSpace
 
