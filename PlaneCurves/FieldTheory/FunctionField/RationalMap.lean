@@ -26,14 +26,14 @@ with value `Q` when `𝒪_{P'}(C')` dominates `φ(𝒪_Q(C))`, in Mathlib's domi
 
 * `LocalSubring.atPrime K p`: the localization `R_p` of a domain `R` at a prime `p`, as a local
   subring of the fraction field `K`.
-* `LocalSubring.IsCentre B ψ p`: `ψ : R →+* L` maps `R` into the local subring `B` of the field
+* `LocalSubring.IsCenter B ψ p`: `ψ : R →+* L` maps `R` into the local subring `B` of the field
   `L`, and `p` is the preimage of the maximal ideal of `B`.
 
 ## Main results
 
 * `LocalSubring.le_iff_of_field`: domination of local subrings of a field in terms of inverses.
 * `LocalSubring.map_atPrime_le_iff`: `B` dominates `φ(R_p)` iff `p` is the centre of `B` on `R`.
-* `LocalSubring.IsCentre.isMaximal`: the centre of a local ring of a finitely generated domain
+* `LocalSubring.IsCenter.isMaximal`: the centre of a local ring of a finitely generated domain
   at a maximal ideal is a maximal ideal.
 * `LocalSubring.finite_setOf_not_forall_mem_atPrime`: a rational map to an affine variety is
   defined at all but finitely many points of a curve.
@@ -124,7 +124,7 @@ theorem map_symm_map {k : Type*} [CommRing k] [Algebra k L] [Algebra k L'] (φ :
 
 end Field
 
-section IsCentre
+section IsCenter
 
 variable {R L : Type*} [CommRing R] [Field L]
 
@@ -133,62 +133,62 @@ variable {R L : Type*} [CommRing R] [Field L]
 maximal ideal of `B`: `a ∉ p` iff `ψ a` is a unit of `B`. Geometrically, `B` is the local ring of
 a point `P'`, `ψ` a rational map to the affine variety of `R`, and the map is defined at `P'`,
 with value the point of `p`. -/
-def IsCentre (B : LocalSubring L) (ψ : R →+* L) (p : Ideal R) : Prop :=
+def IsCenter (B : LocalSubring L) (ψ : R →+* L) (p : Ideal R) : Prop :=
   ∀ a : R, ψ a ∈ B.toSubring ∧ (a ∉ p ↔ ψ a ≠ 0 ∧ (ψ a)⁻¹ ∈ B.toSubring)
 
-theorem isCentre_def (B : LocalSubring L) (ψ : R →+* L) (p : Ideal R) :
-    B.IsCentre ψ p ↔
+theorem isCenter_def (B : LocalSubring L) (ψ : R →+* L) (p : Ideal R) :
+    B.IsCenter ψ p ↔
       ∀ a : R, ψ a ∈ B.toSubring ∧ (a ∉ p ↔ ψ a ≠ 0 ∧ (ψ a)⁻¹ ∈ B.toSubring) :=
   Iff.rfl
 
 variable {B : LocalSubring L} {ψ : R →+* L} {p q : Ideal R}
 
 /-- A local subring with a centre on `R` contains the image of `R`. -/
-theorem IsCentre.mem (h : B.IsCentre ψ p) (a : R) : ψ a ∈ B.toSubring := (h a).1
+theorem IsCenter.mem (h : B.IsCenter ψ p) (a : R) : ψ a ∈ B.toSubring := (h a).1
 
 /-- An element of `R` lies outside the centre iff its image is a unit of the local subring. -/
-theorem IsCentre.notMem_iff (h : B.IsCentre ψ p) (a : R) :
+theorem IsCenter.notMem_iff (h : B.IsCenter ψ p) (a : R) :
     a ∉ p ↔ ψ a ≠ 0 ∧ (ψ a)⁻¹ ∈ B.toSubring :=
   (h a).2
 
 /-- The centre is unique. -/
-theorem IsCentre.unique (hp : B.IsCentre ψ p) (hq : B.IsCentre ψ q) : p = q := by
+theorem IsCenter.unique (hp : B.IsCenter ψ p) (hq : B.IsCenter ψ q) : p = q := by
   ext a
   exact not_iff_not.1 ((hp.notMem_iff a).trans (hq.notMem_iff a).symm)
 
 /-- If `ψ` maps `R` into `B`, the preimage of the maximal ideal of `B` is the centre. -/
-theorem isCentre_comap (h : ∀ a, ψ a ∈ B.toSubring) :
-    B.IsCentre ψ ((maximalIdeal B.toSubring).comap (ψ.codRestrict _ h)) := fun a ↦
+theorem isCenter_comap (h : ∀ a, ψ a ∈ B.toSubring) :
+    B.IsCenter ψ ((maximalIdeal B.toSubring).comap (ψ.codRestrict _ h)) := fun a ↦
   ⟨h a, by
     rw [Ideal.mem_comap, mem_maximalIdeal, mem_nonunits_iff, not_not]
     exact Subring.isUnit_mk_iff (h a)⟩
 
 /-- `B` has a centre on `R` iff `ψ` maps `R` into `B`. -/
-theorem exists_isCentre_iff : (∃ p, B.IsCentre ψ p) ↔ ∀ a, ψ a ∈ B.toSubring :=
-  ⟨fun ⟨_, h⟩ ↦ h.mem, fun h ↦ ⟨_, isCentre_comap h⟩⟩
+theorem exists_isCenter_iff : (∃ p, B.IsCenter ψ p) ↔ ∀ a, ψ a ∈ B.toSubring :=
+  ⟨fun ⟨_, h⟩ ↦ h.mem, fun h ↦ ⟨_, isCenter_comap h⟩⟩
 
 /-- The centre is the preimage of the maximal ideal. -/
-theorem IsCentre.eq_comap (hp : B.IsCentre ψ p) :
+theorem IsCenter.eq_comap (hp : B.IsCenter ψ p) :
     p = (maximalIdeal B.toSubring).comap (ψ.codRestrict _ hp.mem) :=
-  hp.unique (isCentre_comap _)
+  hp.unique (isCenter_comap _)
 
 /-- The centre is a prime ideal. -/
-theorem IsCentre.isPrime (hp : B.IsCentre ψ p) : p.IsPrime := by
+theorem IsCenter.isPrime (hp : B.IsCenter ψ p) : p.IsPrime := by
   rw [hp.eq_comap]
   exact Ideal.comap_isPrime _ _
 
 /-- The kernel of `ψ` lies in the centre. -/
-theorem IsCentre.ker_le (hp : B.IsCentre ψ p) : RingHom.ker ψ ≤ p := fun a ha ↦ by
+theorem IsCenter.ker_le (hp : B.IsCenter ψ p) : RingHom.ker ψ ≤ p := fun a ha ↦ by
   by_contra h
   exact ((hp.notMem_iff a).1 h).1 ha
 
 /-- If the kernel of `ψ` is a maximal ideal, it is the centre of every local subring with a
 centre: a rational map with this kernel is constant. -/
-theorem IsCentre.eq_ker (hp : B.IsCentre ψ p) (hk : (RingHom.ker ψ).IsMaximal) :
+theorem IsCenter.eq_ker (hp : B.IsCenter ψ p) (hk : (RingHom.ker ψ).IsMaximal) :
     p = RingHom.ker ψ :=
   (hk.eq_of_le hp.isPrime.ne_top hp.ker_le).symm
 
-end IsCentre
+end IsCenter
 
 section atPrime
 
@@ -260,7 +260,7 @@ theorem atPrime_toSubring_eq_top (hp : p = ⊥) : (atPrime K p).toSubring = ⊤ 
 fraction field of `R` to a field. A local subring `B` of `L` dominates `φ(R_p)` iff `p` is the
 centre of `B` on `R`. -/
 theorem map_atPrime_le_iff {L : Type*} [Field L] (φ : K →+* L) {B : LocalSubring L} :
-    (atPrime K p).map φ ≤ B ↔ B.IsCentre (φ.comp (algebraMap R K)) p := by
+    (atPrime K p).map φ ≤ B ↔ B.IsCenter (φ.comp (algebraMap R K)) p := by
   rw [le_iff_of_field]
   constructor
   · rintro ⟨hle, hinv⟩ a
@@ -342,8 +342,8 @@ theorem algebraMap_mem_atPrime_of_tower (p : Ideal R') [p.IsPrime] (c : k) :
 be a finitely generated `k`-domain with fraction field `K'`, `m'` a maximal ideal of `R'`, and
 `ψ : R →ₐ[k] K'`. If `p` is the centre of `R'_{m'}` on `R`, then `p` is maximal: the value of a
 rational map at a point is a point. -/
-theorem IsCentre.isMaximal [Algebra.FiniteType k R'] {m' : Ideal R'} [m'.IsMaximal]
-    {ψ : R →ₐ[k] K'} {p : Ideal R} (hp : (atPrime K' m').IsCentre (ψ : R →+* K') p) :
+theorem IsCenter.isMaximal [Algebra.FiniteType k R'] {m' : Ideal R'} [m'.IsMaximal]
+    {ψ : R →ₐ[k] K'} {p : Ideal R} (hp : (atPrime K' m').IsCenter (ψ : R →+* K') p) :
     p.IsMaximal := by
   let B := (atPrime K' m').toSubring
   let := Ideal.Quotient.field m'
@@ -387,12 +387,12 @@ theorem forall_mem_atPrime_iff_of_adjoin_eq_top {ι : Type*} {y : ι → R}
 /-- **Existence of the value.** Let `R'` be a finitely generated `k`-domain, `m'` a maximal ideal
 of `R'`, and `ψ : R →ₐ[k] K'`. Then `R'_{m'}` has a centre on `R` that is a maximal ideal iff `ψ`
 maps `R` into `R'_{m'}`. -/
-theorem exists_isCentre_maximalSpectrum_iff [Algebra.FiniteType k R'] {m' : Ideal R'}
+theorem exists_isCenter_maximalSpectrum_iff [Algebra.FiniteType k R'] {m' : Ideal R'}
     [m'.IsMaximal] {ψ : R →ₐ[k] K'} :
-    (∃ Q : MaximalSpectrum R, (atPrime K' m').IsCentre (ψ : R →+* K') Q.asIdeal) ↔
+    (∃ Q : MaximalSpectrum R, (atPrime K' m').IsCenter (ψ : R →+* K') Q.asIdeal) ↔
       ∀ a, ψ a ∈ (atPrime K' m').toSubring := by
   refine ⟨fun ⟨_, h⟩ ↦ h.mem, fun h ↦ ?_⟩
-  obtain ⟨p, hp⟩ := (exists_isCentre_iff (ψ := (ψ : R →+* K'))).2 h
+  obtain ⟨p, hp⟩ := (exists_isCenter_iff (ψ := (ψ : R →+* K'))).2 h
   exact ⟨⟨p, hp.isMaximal⟩, hp⟩
 
 /-- **The domain of a rational map is cofinite.** Let `R` be a finitely generated `k`-algebra and
@@ -459,7 +459,7 @@ theorem dominatingRationalMap_spec [Algebra.FiniteType k R] [Algebra.FiniteType 
     (hy : Algebra.adjoin k (Set.range y) = ⊤) :
     (∀ (P : MaximalSpectrum R') (Q : MaximalSpectrum R),
       (atPrime K Q.asIdeal).map (φ : K →+* K') ≤ atPrime K' P.asIdeal ↔
-        (atPrime K' P.asIdeal).IsCentre ((φ : K →+* K').comp (algebraMap R K)) Q.asIdeal) ∧
+        (atPrime K' P.asIdeal).IsCenter ((φ : K →+* K').comp (algebraMap R K)) Q.asIdeal) ∧
     (∀ (P : MaximalSpectrum R') (Q₁ Q₂ : MaximalSpectrum R),
       (atPrime K Q₁.asIdeal).map (φ : K →+* K') ≤ atPrime K' P.asIdeal →
       (atPrime K Q₂.asIdeal).map (φ : K →+* K') ≤ atPrime K' P.asIdeal → Q₁ = Q₂) ∧
@@ -475,7 +475,7 @@ theorem dominatingRationalMap_spec [Algebra.FiniteType k R] [Algebra.FiniteType 
       (∃ Q : MaximalSpectrum R, (atPrime K Q.asIdeal).map (φ : K →+* K') ≤
         atPrime K' P.asIdeal) ↔ ∀ a, ψ a ∈ (atPrime K' P.asIdeal).toSubring := by
     simp_rw [key]
-    exact exists_isCentre_maximalSpectrum_iff (ψ := ψ)
+    exact exists_isCenter_maximalSpectrum_iff (ψ := ψ)
   refine ⟨key, fun P Q₁ Q₂ h₁ h₂ ↦ MaximalSpectrum.ext (((key P Q₁).1 h₁).unique
     ((key P Q₂).1 h₂)), fun P ↦ (hex P).trans (forall_mem_atPrime_iff_of_adjoin_eq_top hy ψ _),
     ?_⟩
@@ -486,12 +486,13 @@ theorem dominatingRationalMap_spec [Algebra.FiniteType k R] [Algebra.FiniteType 
 coordinate rings `R` and `R'`. For all but finitely many points `P` of the curve of `R'`, there is
 a point `Q` of the curve of `R` whose local ring `φ` maps onto that of `P`. -/
 theorem finite_compl_setOf_exists_map_atPrime_eq [Algebra.FiniteType k R]
-    [Algebra.FiniteType k R'] (hR : Algebra.trdeg k R ≤ 1) (hR' : Algebra.trdeg k R' ≤ 1)
+    [Algebra.FiniteType k R'] (hR' : Algebra.trdeg k R' ≤ 1)
     (φ : K ≃ₐ[k] K') :
     {P : MaximalSpectrum R' | ∃ Q : MaximalSpectrum R,
       (atPrime K Q.asIdeal).map (φ : K →+* K') = atPrime K' P.asIdeal}ᶜ.Finite := by
   have := Algebra.FiniteType.isNoetherianRing k R'
   have := Ring.krullDimLE_one_of_trdeg_le_one hR'
+  have hR : Algebra.trdeg k R ≤ 1 := Algebra.trdeg_le_one_of_algEquiv_fractionRing φ hR'
   let ψ : R →ₐ[k] K' := (φ : K →ₐ[k] K').comp (IsScalarTower.toAlgHom k R K)
   let ψ' : R' →ₐ[k] K := (φ.symm : K' →ₐ[k] K).comp (IsScalarTower.toAlgHom k R' K')
   let D : Set (MaximalSpectrum R) := {Q | ∀ b, ψ' b ∈ (atPrime K Q.asIdeal).toSubring}
@@ -515,13 +516,13 @@ theorem finite_compl_setOf_exists_map_atPrime_eq [Algebra.FiniteType k R]
   by_contra hcon
   simp only [Set.mem_union, Set.mem_iUnion, not_or, not_exists] at hcon
   obtain ⟨hPD, hfibP⟩ := hcon
-  obtain ⟨Q, hQ⟩ := exists_isCentre_maximalSpectrum_iff.2 (not_not.1 hPD)
+  obtain ⟨Q, hQ⟩ := exists_isCenter_maximalSpectrum_iff.2 (not_not.1 hPD)
   have hle : (atPrime K Q.asIdeal).map (φ : K →+* K') ≤ atPrime K' P.asIdeal :=
     (map_atPrime_le_iff _).2 hQ
   have hQD : Q ∈ D := by
     by_contra hQD
     exact hfibP Q hQD hle
-  obtain ⟨P', hP'⟩ := exists_isCentre_maximalSpectrum_iff.2 hQD
+  obtain ⟨P', hP'⟩ := exists_isCenter_maximalSpectrum_iff.2 hQD
   have hle' : (atPrime K' P'.asIdeal).map (φ.symm : K' →+* K) ≤ atPrime K Q.asIdeal :=
     (map_atPrime_le_iff _).2 hP'
   have h1 := (map_mono (φ : K →+* K') hle').trans hle
@@ -532,16 +533,18 @@ theorem finite_compl_setOf_exists_map_atPrime_eq [Algebra.FiniteType k R]
   have h2 := map_mono (φ : K →+* K') hle'
   rwa [show ((atPrime K' P'.asIdeal).map (φ.symm : K' →+* K)).map (φ : K →+* K') =
     atPrime K' P'.asIdeal from map_symm_map φ.symm _] at h2
+
 /-- **Birational equivalence is isomorphism of function fields** (curve form). Let `R`, `R'` be
-finitely generated `k`-domains of transcendence degree at most one, the coordinate rings of affine
-curves `C` and `C'`, with fraction fields `K = k(C)` and `K' = k(C')`, and let
-`φ : K ≃ₐ[k] K'` be an isomorphism of `k`-algebras (a birational equivalence). There are cofinite
-sets `U` of points of `C` and `U'` of points of `C'` (maximal ideals) and a bijection
-`e : U' ≃ U` such that `φ` maps `𝒪_{e P}(C)` onto `𝒪_P(C')` for every `P ∈ U'`.
+finitely generated `k`-domains, the coordinate rings of affine curves `C` and `C'` (`R'` of
+transcendence degree at most one, hence also `R`), with fraction fields `K = k(C)` and
+`K' = k(C')`, and let `φ : K ≃ₐ[k] K'` be an isomorphism of `k`-algebras (a birational
+equivalence). There are cofinite sets `U` of points of `C` and `U'` of points of `C'` (maximal
+ideals) and a bijection `e : U' ≃ U` such that `φ` maps `𝒪_{e P}(C)` onto `𝒪_P(C')` for every
+`P ∈ U'`.
 
 Milestone: *Birational equivalence is isomorphism of function fields*. -/
 theorem birational_spec [Algebra.FiniteType k R] [Algebra.FiniteType k R']
-    (hR : Algebra.trdeg k R ≤ 1) (hR' : Algebra.trdeg k R' ≤ 1) (φ : K ≃ₐ[k] K') :
+    (hR' : Algebra.trdeg k R' ≤ 1) (φ : K ≃ₐ[k] K') :
     ∃ (U : Set (MaximalSpectrum R)) (U' : Set (MaximalSpectrum R')), Uᶜ.Finite ∧ U'ᶜ.Finite ∧
       ∃ e : U' ≃ U, ∀ P : U',
         (atPrime K (e P).1.asIdeal).map (φ : K →+* K') = atPrime K' P.1.asIdeal := by
@@ -571,8 +574,9 @@ theorem birational_spec [Algebra.FiniteType k R] [Algebra.FiniteType k R']
       have hP' := (hiff _ _).1 hP
       exact ⟨⟨P, _, hP'⟩, Subtype.ext (hQ (Exists.choose_spec (p := fun Q : MaximalSpectrum R ↦
         (atPrime K Q.asIdeal).map (φ : K →+* K') = atPrime K' P.asIdeal) ⟨_, hP'⟩) hP')⟩
-  refine ⟨U, U', finite_compl_setOf_exists_map_atPrime_eq hR' hR φ.symm,
-    finite_compl_setOf_exists_map_atPrime_eq hR hR' φ, Equiv.ofBijective f hf,
+  have hR : Algebra.trdeg k R ≤ 1 := Algebra.trdeg_le_one_of_algEquiv_fractionRing φ hR'
+  refine ⟨U, U', finite_compl_setOf_exists_map_atPrime_eq hR φ.symm,
+    finite_compl_setOf_exists_map_atPrime_eq hR' φ, Equiv.ofBijective f hf,
     fun P ↦ P.2.choose_spec⟩
 
 /-- **Rational maps between curves are constant or finite.** Let `R` be a `k`-domain, the
@@ -587,7 +591,7 @@ theorem rationalMap_dominating_or_constant (hK : IsFunctionField k K)
     (hK' : IsFunctionField k K') (ψ : R →ₐ[k] K') :
     (∃ φ : K →ₐ[k] K', φ.comp (IsScalarTower.toAlgHom k R K) = ψ ∧ (φ : K →+* K').Finite) ∨
       ∃ Q : MaximalSpectrum R, ∀ (B : LocalSubring K') (p : Ideal R),
-        B.IsCentre (ψ : R →+* K') p → p = Q.asIdeal := by
+        B.IsCenter (ψ : R →+* K') p → p = Q.asIdeal := by
   by_cases hinj : Function.Injective ψ
   · refine .inl ⟨IsFractionRing.liftAlgHom (K := K) hinj, ?_, ?_⟩
     · ext a
