@@ -28,6 +28,8 @@ submonoids. This file adds:
   For the homogeneous coordinate ring of a projective variety it is the function field.
 * `HomogeneousLocalization.algebraMap_notMem_range_val`: a nonzero homogeneous element of nonzero
   degree is not a fraction of degree zero.
+* `HomogeneousLocalization.map_algebraMap`: the map induced by a graded ring hom that commutes
+  with the algebra maps from `R` fixes the image of `R`.
 * `HomogeneousLocalization.lift`: for a submonoid `S` of non-zero-divisors and a ring hom
   `φ : A →+* K` to a field that does not vanish on the homogeneous elements of `S`, the ring hom
   sending `f / g` to `φ f / φ g` (`HomogeneousLocalization.lift_mk`). For a graded `R`-algebra
@@ -271,6 +273,19 @@ theorem toRingHom_liftAlgHom (hS : S ≤ nonZeroDivisors A) (φ : A →ₐ[R] K)
     (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) :
     (liftAlgHom 𝒜 hS φ hφ : HomogeneousLocalization 𝒜 S →+* K) = lift 𝒜 hS φ.toRingHom hφ :=
   (rfl)
+
+/-- The map of homogeneous localizations induced by a graded ring hom `g` that commutes with the
+algebra maps from `R` sends the image of `r : R` to the image of `r`. -/
+theorem map_algebraMap {B : Type*} [CommRing B] [Algebra R B] {ℬ : ι → Submodule R B}
+    [GradedAlgebra ℬ] {Q : Submonoid B} (g : 𝒜 →+*ᵍ ℬ)
+    (hg : ∀ r : R, g (algebraMap R A r) = algebraMap R B r) (h : S ≤ Q.comap g) (r : R) :
+    map g h (algebraMap R (HomogeneousLocalization 𝒜 S) r) =
+      algebraMap R (HomogeneousLocalization ℬ Q) r := by
+  change map g h (mk ⟨0, algebraMap R (𝒜 0) r, 1, one_mem S⟩) =
+    mk ⟨0, algebraMap R (ℬ 0) r, 1, one_mem Q⟩
+  rw [map_mk]
+  congr 1
+  ext <;> simp [hg]
 
 end HomogeneousLocalization
 

@@ -7,6 +7,8 @@ module
 
 public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+public import Mathlib.RingTheory.GradedAlgebra.RingHom
+public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 public import TauCeti.RingTheory.MvPolynomial.LinearSubst
 
 /-!
@@ -20,6 +22,8 @@ the change of variables along `M⁻¹`.
 
 * `MvPolynomial.linearSubstAlgEquiv M`: for `M` in `GL σ R`, the change of variables along `M`
   as an `R`-algebra automorphism of `MvPolynomial σ R`.
+* `MvPolynomial.linearSubstGradedRingHom M`: the change of variables along any square matrix `M`,
+  as a graded ring hom for the grading of `MvPolynomial σ R` by total degree.
 
 ## Main results
 
@@ -82,6 +86,20 @@ theorem linearSubstAlgEquiv_symm_apply (M : Matrix.GeneralLinearGroup σ R)
 @[simp]
 theorem toAlgHom_linearSubstAlgEquiv (M : Matrix.GeneralLinearGroup σ R) :
     (linearSubstAlgEquiv M : MvPolynomial σ R →ₐ[R] MvPolynomial σ R) = linearSubst M.1 :=
+  (rfl)
+
+/-- The change of variables along a square matrix `M`, as a graded ring hom: it sends forms of
+degree `d` to forms of degree `d`. -/
+noncomputable def linearSubstGradedRingHom (M : Matrix σ σ R) :
+    homogeneousSubmodule σ R →+*ᵍ homogeneousSubmodule σ R where
+  toRingHom := (linearSubst M).toRingHom
+  map_mem hp := (mem_homogeneousSubmodule _ _).2 <|
+    ((mem_homogeneousSubmodule _ _).1 hp).linearSubst M
+
+omit [DecidableEq σ] in
+@[simp]
+theorem coe_linearSubstGradedRingHom (M : Matrix σ σ R) :
+    ⇑(linearSubstGradedRingHom M) = ⇑(linearSubst M) :=
   (rfl)
 
 end CommSemiring
