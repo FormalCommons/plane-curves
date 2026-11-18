@@ -5,9 +5,12 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Algebra.MvPolynomial.Funext
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
+public import PlaneCurves.LinearAlgebra.Projectivization.AffineChart
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Ideal
 public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
+public import TauCeti.RingTheory.MvPolynomial.Homogeneous
 public import TauCeti.RingTheory.MvPolynomial.ZariskiClosure
 
 /-!
@@ -39,6 +42,15 @@ Following Fulton (§4.3), this file defines
 * `projectiveClosure_injOn`, `projectiveClosure_union`, `projectiveClosure_biUnion`,
   `projectiveClosure_empty`, `projectiveClosure_univ`: `V ↦ V*` is injective on algebraic sets
   and preserves finite unions, `∅` and, over an infinite field, `𝔸ⁿ`.
+* `isPrime_vanishingIdeal_projectiveClosure`, `projectiveClosure_nonempty`: the projective
+  closure of an affine variety is a projective variety (Proposition 3 (3)).
+* `projectiveClosure_irreducibleDecomposition`: the closures of the members of an irreducible
+  decomposition of `V` form one of `V*` (Proposition 3 (4)).
+* `not_projectiveClosure_subset_compl_affineOpen`,
+  `compl_affineOpen_not_subset_projectiveClosure`: for `∅ ≠ V ⊊ 𝔸ⁿ` algebraic, `V*` neither lies
+  in nor, over an infinite field, contains the hyperplane at infinity (Proposition 3 (6)).
+* `projectiveClosure_zeroLocus`, `projectiveClosure_zeroLocus_span_singleton`: over an
+  algebraically closed field, `V(J)* = V(J*)`, and in particular `V(F)* = V(F*)`.
 
 ## Implementation notes
 
@@ -249,6 +261,13 @@ theorem projectiveClosure_biUnion {ι : Type*} (s : Finset ι) (V : ι → Set (
   | insert j s _ ih => rw [Finset.set_biUnion_insert, Finset.set_biUnion_insert,
       projectiveClosure_union, ih]
 
+theorem projectiveClosure_sUnion {C : Set (Set (Fin n → k))} (hC : C.Finite) :
+    projectiveClosure i (⋃₀ C) = ⋃₀ (projectiveClosure i '' C) := by
+  induction C, hC using Set.Finite.induction_on with
+  | empty => simp
+  | insert _ _ ih => rw [Set.sUnion_insert, Set.image_insert_eq, Set.sUnion_insert,
+      projectiveClosure_union, ih]
+
 /-- Over an infinite field, the projective closure of `𝔸ⁿ` is `ℙⁿ`. -/
 @[simp]
 theorem projectiveClosure_univ [Infinite k] :
@@ -258,6 +277,109 @@ theorem projectiveClosure_univ [Infinite k] :
       (s := fun _ : Fin n ↦ (Set.univ : Set k)) fun _ ↦ Set.infinite_univ
   rw [projectiveClosure_def, h, Ideal.homogenization_bot, HomogeneousIdeal.coe_bot]
   exact zeroLocus_singleton_zero
+
+/-! ### Closures of affine varieties -/
+
+/-- The projective closure of a nonempty set is nonempty. -/
+theorem projectiveClosure_nonempty {V : Set (Fin n → k)} (hV : V.Nonempty) :
+    (projectiveClosure i V).Nonempty :=
+  (hV.image _).mono (image_subset_projectiveClosure V)
+
+/-- `I(V*)` is prime exactly when `I(V)` is. -/
+theorem isPrime_vanishingIdeal_projectiveClosure_iff {V : Set (Fin n → k)} :
+    (vanishingIdeal (projectiveClosure i V)).toIdeal.IsPrime ↔
+      (MvPolynomial.vanishingIdeal k V).IsPrime := by
+  rw [vanishingIdeal_projectiveClosure, Ideal.isPrime_homogenization_iff]
+
+/-- **Fulton, §4.3, Proposition 3 (3).** If `I(V)` is prime, so is `I(V*)`: with
+`projectiveClosure_zeroLocus_vanishingIdeal` and `projectiveClosure_nonempty`, the projective
+closure of an affine variety is a projective variety. -/
+theorem isPrime_vanishingIdeal_projectiveClosure {V : Set (Fin n → k)}
+    (h : (MvPolynomial.vanishingIdeal k V).IsPrime) :
+    (vanishingIdeal (projectiveClosure i V)).toIdeal.IsPrime :=
+  isPrime_vanishingIdeal_projectiveClosure_iff.2 h
+
+/-- **Fulton, §4.3, Proposition 3 (4).** If `C` is an irreducible decomposition of an affine
+algebraic set `V` (a finite set of affine varieties, none contained in another, with union `V`),
+then the projective closures of its members form an irreducible decomposition of `V*`, in the
+form of `existsUnique_irreducibleDecomposition`. -/
+theorem projectiveClosure_irreducibleDecomposition {V : Set (Fin n → k)}
+    {C : Set (Set (Fin n → k))} (hC : C.Finite)
+    (hCW : ∀ W ∈ C, MvPolynomial.zeroLocus k (MvPolynomial.vanishingIdeal k W) = W ∧
+      (MvPolynomial.vanishingIdeal k W).IsPrime)
+    (hCU : ⋃₀ C = V) (hCi : ∀ W ∈ C, ∀ W' ∈ C, W ⊆ W' → W = W') :
+    (projectiveClosure i '' C).Finite ∧
+      (∀ W ∈ projectiveClosure i '' C,
+        zeroLocus (vanishingIdeal W : Set (MvPolynomial (Fin (n + 1)) k)) = W ∧
+          (vanishingIdeal W).toIdeal.IsPrime) ∧
+      ⋃₀ (projectiveClosure i '' C) = projectiveClosure i V ∧
+      ∀ W ∈ projectiveClosure i '' C, ∀ W' ∈ projectiveClosure i '' C, W ⊆ W' → W = W' := by
+  refine ⟨hC.image _, ?_, by rw [← hCU, projectiveClosure_sUnion hC], ?_⟩
+  · rintro _ ⟨W, hW, rfl⟩
+    exact ⟨projectiveClosure_zeroLocus_vanishingIdeal W,
+      isPrime_vanishingIdeal_projectiveClosure (hCW W hW).2⟩
+  · rintro _ ⟨W, hW, rfl⟩ _ ⟨W', hW', rfl⟩ h
+    rw [hCi W hW W' hW' ((projectiveClosure_subset_projectiveClosure_iff (hCW W' hW').1).1 h)]
+
+/-- **Fulton, §4.3, Proposition 3 (6)**, first half. The projective closure of a nonempty set,
+such as an affine variety, does not lie in the hyperplane at infinity `(affineOpen i)ᶜ`. -/
+theorem not_projectiveClosure_subset_compl_affineOpen {V : Set (Fin n → k)} (hV : V.Nonempty) :
+    ¬ projectiveClosure i V ⊆ (affineOpen i)ᶜ := by
+  obtain ⟨a, ha⟩ := hV
+  refine fun h ↦ h (image_subset_projectiveClosure V ⟨a, ha, rfl⟩) ?_
+  rw [← affineChart_source]
+  exact (affineChart i).map_target (by simp [affineChart_target])
+
+/-- **Fulton, §4.3, Proposition 3 (6)**, second half. Over an infinite field, the projective
+closure of a nonempty algebraic set `V ⊊ 𝔸ⁿ` does not contain the hyperplane at infinity
+`(affineOpen i)ᶜ`. -/
+theorem compl_affineOpen_not_subset_projectiveClosure [Infinite k] {V : Set (Fin n → k)}
+    (hV : MvPolynomial.zeroLocus k (MvPolynomial.vanishingIdeal k V) = V)
+    (hne : V ≠ Set.univ) (hne' : V.Nonempty) :
+    ¬ (affineOpen i)ᶜ ⊆ projectiveClosure i V := by
+  obtain ⟨f, hf, hf0⟩ : ∃ f ∈ MvPolynomial.vanishingIdeal k V, f ≠ 0 := by
+    by_contra! h
+    refine hne ?_
+    rw [← hV, (Submodule.eq_bot_iff _).2 h, MvPolynomial.zeroLocus_bot]
+    rfl
+  obtain ⟨a, ha⟩ : ∃ a, eval a (homogeneousComponent f.totalDegree f) ≠ 0 := by
+    by_contra! h
+    exact homogeneousComponent_totalDegree_ne_zero f hf0 (MvPolynomial.funext fun a ↦ by simp [h])
+  have hN : f.totalDegree ≠ 0 := by
+    intro h0
+    obtain ⟨b, hb⟩ := hne'
+    have := MvPolynomial.mem_vanishingIdeal_iff.1 hf b hb
+    rw [totalDegree_eq_zero_iff_eq_C.1 h0] at this hf0
+    simp_all
+  have ha0 : a ≠ 0 := by
+    rintro rfl
+    simp [eval_zero, constantCoeff_eq, coeff_homogeneousComponent, Ne.symm hN] at ha
+  intro h
+  have hP := h (insertZero_notMem_affineOpen i (mk k a ha0))
+  rw [insertZero_mk, projectiveClosure_def, ← coe_toIdeal,
+    mk_mem_zeroLocus_iff_mem_zeroLocus (HomogeneousIdeal.isHomogeneous _)] at hP
+  have := MvPolynomial.mem_zeroLocus_iff.1 hP _ (Ideal.homogenize_mem_homogenization (i := i) hf)
+  rw [aeval_eq_eval, eval_insertNth_zero_homogenize] at this
+  exact ha this
+
+/-- Over an algebraically closed field, the projective closure of the zero locus of an ideal `J`
+is the zero locus of its homogenization: `V(J)* = V(J*)`. -/
+theorem projectiveClosure_zeroLocus [IsAlgClosed k] (J : Ideal (MvPolynomial (Fin n) k)) :
+    projectiveClosure i (MvPolynomial.zeroLocus k J) = zeroLocus (J.homogenization i : Set _) := by
+  rw [projectiveClosure_def, MvPolynomial.vanishingIdeal_zeroLocus_eq_radical]
+  refine (zeroLocus_anti_mono (Ideal.homogenization_mono J.le_radical)).antisymm ?_
+  have := zeroLocus_anti_mono
+    (SetLike.coe_subset_coe.2 (Ideal.homogenization_radical_le (i := i) J))
+  rwa [← coe_toIdeal, HomogeneousIdeal.coe_radical, zeroLocus_radical, coe_toIdeal] at this
+
+/-- **`V(F)* = V(F*)`.** Over an algebraically closed field, the projective closure of the
+hypersurface `V(F) ⊆ 𝔸ⁿ` is the zero locus of the homogenization
+`F* = homogenize i F.totalDegree F`. -/
+theorem projectiveClosure_zeroLocus_span_singleton [IsAlgClosed k] (F : MvPolynomial (Fin n) k) :
+    projectiveClosure i (MvPolynomial.zeroLocus k (Ideal.span {F})) =
+      zeroLocus {homogenize i F.totalDegree F} := by
+  rw [projectiveClosure_zeroLocus, ← coe_toIdeal,
+    Ideal.homogenization_span_singleton, zeroLocus_span]
 
 end PlaneCurves.ProjectiveSpace
 
