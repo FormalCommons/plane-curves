@@ -9,6 +9,7 @@ public import Mathlib.RingTheory.LocalRing.LocalSubring
 public import Mathlib.RingTheory.LocalRing.ResidueField.Basic
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
 public import PlaneCurves.RingTheory.GradedAlgebra.HomogeneousLocalization
+public import TauCeti.RingTheory.GradedAlgebra.HomogeneousLocalization.Dehomogenization
 
 /-!
 # Function field and local rings of projective space and of a homogeneous prime
@@ -263,21 +264,6 @@ instance isPrime_quotientPointIdeal : (quotientPointIdeal I P).toIdeal.IsPrime :
   rw [Ideal.mk_ker]
   exact (mem_zeroLocus_iff_le_pointIdeal I).1 P.2
 
-variable {I} in
-/-- The class of a form in the homogeneous coordinate ring `R ⧸ I`, as an element of a graded
-piece. -/
-theorem mk_mem_quotientGrading {f : MvPolynomial (Fin (n + 1)) k}
-    (hf : f.IsHomogeneous d) : Ideal.Quotient.mk I.toIdeal f ∈ I.quotientGrading d :=
-  TauCeti.GradedAlgebra.mk_mem_quotientPiece _ _ ((mem_homogeneousSubmodule d f).2 hf)
-
-variable {I} in
-/-- Every element of a graded piece of `R ⧸ I` is the class of a form of that degree. -/
-theorem exists_isHomogeneous_mk_eq {x : MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal}
-    (hx : x ∈ I.quotientGrading d) :
-    ∃ f : MvPolynomial (Fin (n + 1)) k, f.IsHomogeneous d ∧ Ideal.Quotient.mk I.toIdeal f = x := by
-  obtain ⟨f, hf, rfl⟩ := (TauCeti.GradedAlgebra.mem_quotientPiece_iff _ _).1 hx
-  exact ⟨f, (mem_homogeneousSubmodule d f).1 hf, rfl⟩
-
 /-! ### The local ring at a point -/
 
 /-- The local ring `𝒪_P(V)` of `V = V(I)` at a zero `P` of the homogeneous ideal `I`: the ring of
@@ -297,14 +283,15 @@ variable {I P}
 /-- The element `f / g` of `𝒪_P(V)`, for forms `f`, `g` of the same degree with `g(P) ≠ 0`. -/
 noncomputable def mk {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
     (hg : g.IsHomogeneous d) (hgP : eval P.1.rep g ≠ 0) : varietyLocalRing I P :=
-  HomogeneousLocalization.mk ⟨d, ⟨_, mk_mem_quotientGrading hf⟩, ⟨_, mk_mem_quotientGrading hg⟩,
+  HomogeneousLocalization.mk ⟨d, ⟨_, I.mk_mem_quotientGrading hf⟩,
+    ⟨_, I.mk_mem_quotientGrading hg⟩,
     fun h ↦ hgP ((mk_mem_quotientPointIdeal_iff_of_isHomogeneous hg).1 h)⟩
 
 theorem mk_def {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
     (hg : g.IsHomogeneous d) (hgP : eval P.1.rep g ≠ 0) :
     mk (I := I) hf hg hgP =
-      HomogeneousLocalization.mk ⟨d, ⟨_, mk_mem_quotientGrading hf⟩,
-        ⟨_, mk_mem_quotientGrading hg⟩,
+      HomogeneousLocalization.mk ⟨d, ⟨_, I.mk_mem_quotientGrading hf⟩,
+        ⟨_, I.mk_mem_quotientGrading hg⟩,
         fun h ↦ hgP ((mk_mem_quotientPointIdeal_iff_of_isHomogeneous hg).1 h)⟩ :=
   (rfl)
 
@@ -314,8 +301,8 @@ theorem exists_eq_mk (z : varietyLocalRing I P) :
     ∃ (d : ℕ) (f g : MvPolynomial (Fin (n + 1)) k) (hf : f.IsHomogeneous d)
       (hg : g.IsHomogeneous d) (hgP : eval P.1.rep g ≠ 0), z = mk hf hg hgP := by
   obtain ⟨⟨d, ⟨_, hx⟩, ⟨_, hy⟩, hden⟩, rfl⟩ := HomogeneousLocalization.mk_surjective z
-  obtain ⟨f, hf, rfl⟩ := exists_isHomogeneous_mk_eq hx
-  obtain ⟨g, hg, rfl⟩ := exists_isHomogeneous_mk_eq hy
+  obtain ⟨f, hf, rfl⟩ := I.exists_isHomogeneous_mk_eq hx
+  obtain ⟨g, hg, rfl⟩ := I.exists_isHomogeneous_mk_eq hy
   exact ⟨d, f, g, hf, hg, fun h ↦ hden ((mk_mem_quotientPointIdeal_iff_of_isHomogeneous hg).2 h),
     rfl⟩
 
@@ -324,7 +311,7 @@ theorem liftₐ_ne_zero ⦃i : ℕ⦄ ⦃x : MvPolynomial (Fin (n + 1)) k ⧸ I.
     (hx : x ∈ I.quotientGrading i) (hxP : x ∈ (quotientPointIdeal I P).toIdeal.primeCompl) :
     Ideal.Quotient.liftₐ I.toIdeal (aeval P.1.rep) (fun _ h ↦
       (mem_zeroLocus_iff_le_ker I.isHomogeneous).1 P.2 h) x ≠ 0 := by
-  obtain ⟨g, hg, rfl⟩ := exists_isHomogeneous_mk_eq hx
+  obtain ⟨g, hg, rfl⟩ := I.exists_isHomogeneous_mk_eq hx
   change aeval P.1.rep g ≠ 0
   rw [aeval_eq_eval]
   exact fun h ↦ hxP ((mk_mem_quotientPointIdeal_iff_of_isHomogeneous hg).2 h)
@@ -350,15 +337,16 @@ variable {I} in
 `g ∉ I`. -/
 noncomputable def functionField.mk {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
     (hg : g.IsHomogeneous d) (hgI : g ∉ I) : functionField I :=
-  HomogeneousLocalization.mk ⟨d, ⟨_, mk_mem_quotientGrading hf⟩, ⟨_, mk_mem_quotientGrading hg⟩,
+  HomogeneousLocalization.mk ⟨d, ⟨_, I.mk_mem_quotientGrading hf⟩,
+    ⟨_, I.mk_mem_quotientGrading hg⟩,
     fun h ↦ hgI (Ideal.Quotient.eq_zero_iff_mem.1 h)⟩
 
 variable {I} in
 theorem functionField.mk_def {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
     (hg : g.IsHomogeneous d) (hgI : g ∉ I) :
     functionField.mk hf hg hgI =
-      HomogeneousLocalization.mk ⟨d, ⟨_, mk_mem_quotientGrading hf⟩,
-        ⟨_, mk_mem_quotientGrading hg⟩, fun h ↦ hgI (Ideal.Quotient.eq_zero_iff_mem.1 h)⟩ :=
+      HomogeneousLocalization.mk ⟨d, ⟨_, I.mk_mem_quotientGrading hf⟩,
+        ⟨_, I.mk_mem_quotientGrading hg⟩, fun h ↦ hgI (Ideal.Quotient.eq_zero_iff_mem.1 h)⟩ :=
   (rfl)
 
 variable {I} in
@@ -367,8 +355,8 @@ theorem functionField.exists_eq_mk (z : functionField I) :
     ∃ (d : ℕ) (f g : MvPolynomial (Fin (n + 1)) k) (hf : f.IsHomogeneous d)
       (hg : g.IsHomogeneous d) (hgI : g ∉ I), z = functionField.mk hf hg hgI := by
   obtain ⟨⟨d, ⟨_, hx⟩, ⟨_, hy⟩, hden⟩, rfl⟩ := HomogeneousLocalization.mk_surjective z
-  obtain ⟨f, hf, rfl⟩ := exists_isHomogeneous_mk_eq hx
-  obtain ⟨g, hg, rfl⟩ := exists_isHomogeneous_mk_eq hy
+  obtain ⟨f, hf, rfl⟩ := I.exists_isHomogeneous_mk_eq hx
+  obtain ⟨g, hg, rfl⟩ := I.exists_isHomogeneous_mk_eq hy
   exact ⟨d, f, g, hf, hg, fun h ↦ hden (Ideal.Quotient.eq_zero_iff_mem.2 h), rfl⟩
 
 namespace varietyLocalRing
@@ -424,23 +412,18 @@ theorem isUnit_iff_evalAt_ne_zero {z : varietyLocalRing I P} : IsUnit z ↔ eval
   rw [Ne, ← RingHom.mem_ker, ker_evalAt, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff, not_not]
 
 variable (I P) in
-/-- The elements of `R ⧸ I` outside the ideal of `P` are nonzero. -/
-theorem primeCompl_le_bot :
-    (quotientPointIdeal I P).toIdeal.primeCompl ≤
-      (⊥ : Ideal (MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal)).primeCompl :=
-  fun _ hx h0 ↦ hx ((Ideal.mem_bot.1 h0) ▸ zero_mem _)
-
-variable (I P) in
 /-- The inclusion of `𝒪_P(V)` into the function field `k(V)`, sending `f / g` to `f / g`. -/
 noncomputable def toFunctionField : varietyLocalRing I P →ₐ[k] functionField I where
   __ := HomogeneousLocalization.mapId I.quotientGrading
-    (primeCompl_le_bot I P)
+    ((quotientPointIdeal I P).toIdeal.primeCompl_le_nonZeroDivisors.trans
+      Ideal.primeCompl_bot.ge)
   commutes' _ := rfl
 
 variable (I P) in
 theorem toRingHom_toFunctionField : (toFunctionField I P : varietyLocalRing I P →+* _) =
     HomogeneousLocalization.mapId I.quotientGrading
-      (primeCompl_le_bot I P) :=
+      ((quotientPointIdeal I P).toIdeal.primeCompl_le_nonZeroDivisors.trans
+        Ideal.primeCompl_bot.ge) :=
   (rfl)
 
 @[simp]
@@ -453,7 +436,8 @@ theorem toFunctionField_mk {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomoge
 variable (I P) in
 /-- The inclusion of `𝒪_P(V)` into `k(V)` is injective. -/
 theorem toFunctionField_injective : Function.Injective (toFunctionField I P) :=
-  HomogeneousLocalization.mapId_atPrime_bot_injective _ (primeCompl_le_bot I P)
+  HomogeneousLocalization.mapId_atPrime_bot_injective _
+    ((quotientPointIdeal I P).toIdeal.primeCompl_le_nonZeroDivisors.trans Ideal.primeCompl_bot.ge)
 
 end varietyLocalRing
 
@@ -592,7 +576,7 @@ theorem exists_algebraMap_notMem_range_toFractionRing
       (S := Localization.AtPrime (⊥ : Ideal (MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal))) hle] at hz
   refine HomogeneousLocalization.algebraMap_notMem_range_val
     (Ideal.primeCompl_le_nonZeroDivisors _) one_ne_zero
-    (mk_mem_quotientGrading (isHomogeneous_X k i))
+    (I.mk_X_mem_quotientGrading i)
     (fun h ↦ hXI (Ideal.Quotient.eq_zero_iff_mem.1 h)) ⟨z, ?_⟩
   exact IsLocalization.map_injective_of_injective' _ _
     (Rₘ := Localization.AtPrime (⊥ : Ideal (MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal)))
