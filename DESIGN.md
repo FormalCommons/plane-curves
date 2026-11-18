@@ -589,13 +589,8 @@ Affine varieties (Chapters 1–2):
 | A3 | `RingTheory/MvPolynomial/Homogenize/Factorization.lean` | **aff-hom** | A2 |
 | A4 | `RingTheory/MvPolynomial/BinaryForm/Basic.lean` | **aff-binary** | — |
 | A5 | `RingTheory/MvPolynomial/BinaryForm/Basis.lean`, `PowIdealOfVars.lean` | **aff-dim** | A1, A4 |
-<<<<<<< HEAD
-| A6 | `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
-| A7 | `RingTheory/UniqueFactorizationDomain/Radical.lean`, `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
-=======
 | A6 | `Algebra/Polynomial/Bivariate.lean`, `RingTheory/Polynomial/GaussLemma.lean`, `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
-| A7 | `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
->>>>>>> origin/main
+| A7 | `RingTheory/UniqueFactorizationDomain/Radical.lean`, `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
 | A8 | `AffineSpace/FiniteZeroLocus.lean` | **aff-finite** | A1 |
 | A9 | `RingTheory/Localization/Quotient.lean`, `AffineSpace/LocalRing.lean` | `AffineSpace.localRing`; **aff-quotient**; parts (a)–(c), (e) of **aff-local** | A1 |
 | A10 | `AffineSpace/RationalFunction.lean` | **aff-local** (complete) | A9 |
