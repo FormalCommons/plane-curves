@@ -113,19 +113,18 @@ theorem dehomogenize_homogenize {f : MvPolynomial (Fin n) R} (hf : f.totalDegree
   intro j _ hj
   exact homogeneousComponent_eq_zero _ _ (by simpa [Nat.lt_succ_iff] using hj)
 
-/-- A form of degree `N` is the homogenization to degree `N` of its dehomogenization. -/
+/-- A form `F` of degree `N` whose dehomogenization is `f` equals `homogenize i N f`. -/
 theorem eq_homogenize_of_isHomogeneous {F : MvPolynomial (Fin (n + 1)) R}
-    {f : MvPolynomial (Fin n) R}
-    (hF : F.IsHomogeneous N) (hf : f.totalDegree ≤ N) (h : dehomogenize i F = f) :
-    F = homogenize i N f :=
-  dehomogenize_injOn i N hF (isHomogeneous_homogenize i N f) (by simp [h, hf])
+    {f : MvPolynomial (Fin n) R} (hF : F.IsHomogeneous N) (h : dehomogenize i F = f) :
+    F = homogenize i N f := by
+  have hf : f.totalDegree ≤ N := h ▸ (totalDegree_dehomogenize_le i F).trans hF.totalDegree_le
+  exact dehomogenize_injOn i N hF (isHomogeneous_homogenize i N f) (by simp [h, hf])
 
 /-- A form of degree `N` is the homogenization to degree `N` of its dehomogenization. -/
 @[simp]
 theorem homogenize_dehomogenize {F : MvPolynomial (Fin (n + 1)) R} (hF : F.IsHomogeneous N) :
     homogenize i N (dehomogenize i F) = F :=
-  (eq_homogenize_of_isHomogeneous hF
-    ((totalDegree_dehomogenize_le i F).trans hF.totalDegree_le) rfl).symm
+  (eq_homogenize_of_isHomogeneous hF rfl).symm
 
 theorem homogenize_eq_zero_iff {f : MvPolynomial (Fin n) R} (hf : f.totalDegree ≤ N) :
     homogenize i N f = 0 ↔ f = 0 :=
@@ -136,15 +135,14 @@ theorem homogenize_mul {M : ℕ} {f g : MvPolynomial (Fin n) R} (hf : f.totalDeg
     (hg : g.totalDegree ≤ N) :
     homogenize i (M + N) (f * g) = homogenize i M f * homogenize i N g :=
   (eq_homogenize_of_isHomogeneous ((isHomogeneous_homogenize i M f).mul
-    (isHomogeneous_homogenize i N g)) ((totalDegree_mul f g).trans (add_le_add hf hg))
+    (isHomogeneous_homogenize i N g))
     (by simp [dehomogenize_homogenize hf, dehomogenize_homogenize hg])).symm
 
 /-- Homogenizing to a degree `M` larger than the total degree bound `N` multiplies the
 homogenization to degree `N` by `X i ^ (M - N)`. -/
 theorem homogenize_of_le {M : ℕ} {f : MvPolynomial (Fin n) R} (hf : f.totalDegree ≤ N)
     (hNM : N ≤ M) : homogenize i M f = X i ^ (M - N) * homogenize i N f := by
-  refine (eq_homogenize_of_isHomogeneous ?_ (hf.trans hNM) (by simp [dehomogenize_homogenize hf]))
-    |>.symm
+  refine (eq_homogenize_of_isHomogeneous ?_ (by simp [dehomogenize_homogenize hf])).symm
   simpa [Nat.sub_add_cancel hNM] using (isHomogeneous_X_pow i (M - N)).mul
     (isHomogeneous_homogenize i N f)
 
