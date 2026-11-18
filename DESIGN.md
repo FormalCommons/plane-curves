@@ -165,7 +165,7 @@ PlaneCurves/
 │   ├── PrimitiveElement/
 │   │   └── OneSeparable.lean            F(α, β) simple with only β separable (R8)
 │   └── FunctionField/
-│       ├── TwoGenerators.lean           K = k(x, y) (R5)
+│       ├── TwoGenerators.lean           K = k(x, y) (R5, R8)
 │       ├── PthPowerDegree.lean          [K : K^p] = p (R8)
 │       ├── ResidueRing.lean             residue rings of subrings of K (R2)
 │       ├── PlaneModel.lean              K ≅ k(F) for an irreducible plane F (R6)
@@ -241,8 +241,9 @@ PlaneCurves/
         │   ├── Conic.lean               irreducible conics (Q18)
         │   ├── Center.lean              centre of a valuation ring on a plane curve (V2)
         │   ├── IntersectionCycle.lean   F • G as a zero-cycle (N1)
-        │   ├── Noether.lean             Max Noether's fundamental theorem (N1)
-        │   ├── NoetherConditions.lean   local criteria, residual corollary (N2)
+        │   ├── Noether/
+        │   │   ├── Basic.lean           Max Noether's fundamental theorem (N1)
+        │   │   └── Conditions.lean      local criteria, residual corollary (N2)
         │   ├── Pascal.lean              Pascal and Pappus (N4)
         │   └── TerriblePoint.lean       terrible points, lines in n points (T1)
         ├── Cubic/
@@ -471,9 +472,12 @@ with their files.
   `r : ℙ k (Fin 3 → k) →₀ ℕ`: forms of degree `d` with `r P ≤ mult F P`. API:
   `mem_linearSystem`, `finrank_linearSystem_ge`, `finrank_linearSystem_eq`,
   behaviour under `linearSubst`.
-- **`hessian F`**: `(Matrix.of fun i j ↦ pderiv i (pderiv j F)).det`;
-  `IsFlex F P`, `IsOrdinaryFlex F P`. API: homogeneity, covariance
-  (`(det M)^2`), the identity relating `h` to `f`, `g` in a chart.
+- **The Hessian** has no new definition: it is
+  `(TauCeti.hessian MvPolynomial.pderiv F).det`, the determinant of Tau
+  Ceti's Hessian matrix (`TauCeti/RingTheory/LocalRing/Hessian.lean`, with
+  `hessian_apply`). New: `IsFlex F P`, `IsOrdinaryFlex F P`. API, stated for
+  that determinant: homogeneity, covariance (`(det M)^2`), the identity
+  relating `h` to `f`, `g` in a chart.
 - **`IsCenter F R P`, `center F Q`**: for a valuation subring `R` of a field
   `L` with `ψ : functionField F →ₐ[k] L`, `R` dominates `ψ (localSubring F P)`;
   `center F Q` is the unique such point for a place `Q`. API:
@@ -608,7 +612,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | R5 | `FieldTheory/FunctionField/TwoGenerators.lean` | **var-twogen** for a separable `K/k(x)` | — |
 | R6 | `FieldTheory/FunctionField/PlaneModel.lean` | **var-plane** (with a separating `x`) | R5 |
 | R7 | `FieldTheory/FunctionField/RationalMap.lean` | **var-dominate**, **var-birational**, **var-finite** | R1, R3 |
-| R8 | `FieldTheory/PrimitiveElement/OneSeparable.lean`, `FieldTheory/FunctionField/PthPowerDegree.lean` | **var-twogen** (complete: any `x ∉ k`, any characteristic) | R5 |
+| R8 | `FieldTheory/PrimitiveElement/OneSeparable.lean`, `FieldTheory/FunctionField/PthPowerDegree.lean`, `FieldTheory/FunctionField/TwoGenerators.lean` | **var-twogen** (complete: any `x ∉ k`, any characteristic) | R5 |
 
 ### Stage 2: §§5.1–5.4, §7.1, and the nonsingular model of §7.5
 
@@ -629,7 +633,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |
 | Q15 | `Projective/GenericLine.lean` | **5-generic** | Q13 |
-| Q16 | `Projective/Hessian/Basic.lean` | `hessian`, covariance, the chart identity (*large*) | Q2 |
+| Q16 | `Projective/Hessian/Basic.lean` | the determinant of `TauCeti.hessian MvPolynomial.pderiv F`: homogeneity, covariance, the chart identity (*large*) | Q2 |
 | Q17 | `Projective/Hessian/Flex.lean` | **5-hessian** | Q16, Q13 |
 | Q18 | `Projective/Conic.lean` | part (a) of **5-normal** | Q13 |
 | V1 | `FieldTheory/FunctionField/Place/AddValuation.lean` | `TauCeti.Place.addValuation` | — |
@@ -645,8 +649,8 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 
 | Part | Files | Content and milestones | Needs |
 |---|---|---|---|
-| N1 | `Projective/IntersectionCycle.lean`, `Projective/Noether.lean` | `intersectionCycle`; **5-noether** | Q12, Q5, A11 |
-| N2 | `Projective/NoetherConditions.lean` | **5-noether-local** | N1, L4, L8 |
+| N1 | `Projective/IntersectionCycle.lean`, `Projective/Noether/Basic.lean` | `intersectionCycle`; **5-noether** | Q12, Q5, A11 |
+| N2 | `Projective/Noether/Conditions.lean` | **5-noether-local** | N1, L4, L8 |
 | N3 | `PlaneCurve/Cubic/Residual.lean` | **5-residual**, **5-ninth** | N2, Q14 |
 | N4 | `PlaneCurve/Projective/Pascal.lean` | **5-pascal**, **5-pappus** | N3 |
 | N5 | `PlaneCurve/Cubic/NormalForm.lean` | **5-normal** (complete) | Q18, Q14, Q17 |
@@ -775,8 +779,8 @@ before it; its docstring carries the milestone line.
 | 5-normal | Projective normal forms of irreducible conics and cubics (Weierstrass form) | `PlaneCurve/Cubic/NormalForm.lean` (N5), with `Projective/Conic.lean` (Q18) |
 | 5-bound | Bound on the multiple points of an irreducible plane curve | `PlaneCurve/Projective/MultiplePoints.lean` (Q14) |
 | 5-generic | Generic lines through a point meet an irreducible curve in distinct points | `PlaneCurve/Projective/GenericLine.lean` (Q15) |
-| 5-noether | Max Noether's fundamental theorem | `PlaneCurve/Projective/Noether.lean` (N1) |
-| 5-noether-local | Local criteria for Noether's conditions and the residual intersection corollary | `PlaneCurve/Projective/NoetherConditions.lean` (N2) |
+| 5-noether | Max Noether's fundamental theorem | `PlaneCurve/Projective/Noether/Basic.lean` (N1) |
+| 5-noether-local | Local criteria for Noether's conditions and the residual intersection corollary | `PlaneCurve/Projective/Noether/Conditions.lean` (N2) |
 | 5-residual | Residual points of a conic on a cubic are collinear | `PlaneCurve/Cubic/Residual.lean` (N3) |
 | 5-pascal | Pascal's theorem for a hexagon inscribed in an irreducible conic | `PlaneCurve/Projective/Pascal.lean` (N4) |
 | 5-pappus | Pappus's theorem | `PlaneCurve/Projective/Pascal.lean` (N4) |
