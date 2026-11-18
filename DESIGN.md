@@ -171,7 +171,8 @@ PlaneCurves/
 │   ├── Artinian/
 │   │   └── QuotientPiLocalization.lean  A/I ≅ ∏ A_𝔪/I A_𝔪 for A/I Artinian (A11)
 │   ├── LocalRing/
-│   │   └── Length.lean                  ℓ_k = ℓ_B over a local k-algebra B with residue field k
+│   │   ├── Length.lean                  ℓ_k = ℓ_B over a local k-algebra B with residue field k
+│   │   └── LocalSubring.lean            local subrings of a field: domination, ofPrime
 │   ├── DiscreteValuationRing/
 │   │   └── Colength.lean                order = colength, expansions (A12)
 │   ├── KrullDimension/

@@ -5,7 +5,7 @@ Authors: The FormalCommons contributors
 -/
 module
 
-public import Mathlib.RingTheory.LocalRing.LocalSubring
+public import PlaneCurves.RingTheory.LocalRing.LocalSubring
 public import Mathlib.RingTheory.Nullstellensatz
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
@@ -149,26 +149,18 @@ theorem algebraMap_mk_ne_zero {b : MvPolynomial σ k} (hb : eval P b ≠ 0) :
 theorem mem_localSubring_iff {f : functionField I} :
     f ∈ (localSubring P hI).toSubring ↔ ∃ a b : MvPolynomial σ k, eval P b ≠ 0 ∧
       f = algebraMap _ _ (Ideal.Quotient.mk I a) / algebraMap _ _ (Ideal.Quotient.mk I b) := by
-  rw [localSubring_def, LocalSubring.ofPrime, LocalSubring.range_toSubring]
+  rw [localSubring_def, LocalSubring.mem_ofPrime_iff]
   constructor
-  · rintro ⟨y, rfl⟩
-    obtain ⟨⟨⟨_, a, rfl⟩, ⟨⟨_, b, rfl⟩, hb⟩⟩, rfl⟩ := IsLocalization.mk'_surjective
-      (RingHom.ker (rangeEval P hI)).primeCompl y
+  · rintro ⟨⟨_, a, rfl⟩, ⟨_, b, rfl⟩, hb, rfl⟩
     obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
     obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective b
-    have hb : eval P b ≠ 0 := by
-      simpa [Ideal.primeCompl, RingHom.mem_ker] using
-        (rangeEval_rangeRestrict P hI (Ideal.Quotient.mk I b)).symm.trans_ne hb
-    refine ⟨a, b, hb, ?_⟩
-    rw [IsLocalization.lift_mk'_spec]
-    exact (mul_div_cancel₀ _ (algebraMap_mk_ne_zero hI hb)).symm
+    refine ⟨a, b, fun h ↦ hb ?_, (div_eq_mul_inv _ _).symm⟩
+    exact RingHom.mem_ker.2 ((rangeEval_rangeRestrict P hI _).trans (by simpa using h))
   · rintro ⟨a, b, hb, rfl⟩
-    refine ⟨IsLocalization.mk' _ ((algebraMap _ (functionField I)).rangeRestrict
-      (Ideal.Quotient.mk I a)) (⟨(algebraMap _ (functionField I)).rangeRestrict
-      (Ideal.Quotient.mk I b), ?_⟩ : (RingHom.ker (rangeEval P hI)).primeCompl), ?_⟩
-    · simpa [Ideal.primeCompl, RingHom.mem_ker, rangeEval_rangeRestrict] using hb
-    · rw [IsLocalization.lift_mk'_spec]
-      exact (mul_div_cancel₀ _ (algebraMap_mk_ne_zero hI hb)).symm
+    refine ⟨(algebraMap _ (functionField I)).rangeRestrict (Ideal.Quotient.mk I a),
+      (algebraMap _ (functionField I)).rangeRestrict (Ideal.Quotient.mk I b), ?_, ?_⟩
+    · simpa [RingHom.mem_ker, rangeEval_rangeRestrict] using hb
+    · exact div_eq_mul_inv _ _
 
 theorem algebraMap_mem_localSubring (a : MvPolynomial σ k ⧸ I) :
     algebraMap _ (functionField I) a ∈ (localSubring P hI).toSubring :=
