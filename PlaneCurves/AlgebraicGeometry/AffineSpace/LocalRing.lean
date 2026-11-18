@@ -30,6 +30,14 @@ map `𝒪_P(𝔸ⁿ) → k`, and describes its maximal ideal, its powers and its
   shift (`localRing.taylorEquiv`) and by invertible linear substitutions
   (`localRing.linearSubstEquiv`).
 * `PlaneCurves.AffineSpace.localRing.quotientPowAlgEquiv`: `k[X] ⧸ I_P ^ r ≅ 𝒪_P ⧸ 𝔪 ^ r`.
+* `PlaneCurves.AffineSpace.localRing.quotientEvalAt`,
+  `PlaneCurves.AffineSpace.localRing.quotientResidueFieldAlgEquiv`: the value map of the local
+  ring `𝒪_P(V) = 𝒪_P ⧸ I 𝒪_P` of `V = V(I) ∋ P`, and its residue field `k`.
+* `PlaneCurves.AffineSpace.localRing.quotientMap`,
+  `PlaneCurves.AffineSpace.localRing.quotientMapEquiv`: the local homomorphism `𝒪_Q(W) → 𝒪_P(V)`
+  induced by a polynomial map `V → W` sending `P` to `Q`, and the isomorphisms
+  `𝒪_Q(V) ≅ 𝒪_P(V^T)` induced by the Taylor shift (`localRing.quotientTaylorEquiv`) and by
+  invertible linear substitutions (`localRing.quotientLinearSubstEquiv`).
 
 ## Main results
 
@@ -46,6 +54,11 @@ map `𝒪_P(𝔸ⁿ) → k`, and describes its maximal ideal, its powers and its
   `𝒪_P ⧸ J 𝒪_P ≅ 𝒪_P(k[X] ⧸ I) ⧸ J' 𝒪_P(k[X] ⧸ I)`, from
   `Localization.AtPrime.quotientMapAlgEquiv`.
 * `PlaneCurves.AffineSpace.localRing.isDomain_quotient`: the local ring of a variety is a domain.
+* `PlaneCurves.AffineSpace.localRing.ker_quotientEvalAt`: the kernel of the value map of
+  `𝒪_P(V)` is its maximal ideal.
+* `PlaneCurves.AffineSpace.localRing.isLocalHom_quotientMap`,
+  `PlaneCurves.AffineSpace.localRing.quotientMap_unique`: the map induced by a polynomial map is
+  local, and is the unique `k`-algebra map extending it.
 
 ## References
 
@@ -235,7 +248,7 @@ theorem quotient_iso (I J : Ideal (MvPolynomial σ k)) (hIJ : I ≤ J)
             (J.map (Ideal.Quotient.mk I)).map (algebraMap _ _),
         ∀ f, e (Ideal.Quotient.mk _ (algebraMap _ _ f)) =
           Ideal.Quotient.mk _ (algebraMap _ _ (Ideal.Quotient.mk I f)) :=
-  have := isPrime_map_quotientMk (hIJ.trans hJ)
+  have := isPrime_map_quotientMk_of_isPrime (hIJ.trans hJ)
   ⟨map_vanishingIdeal_pow, fun r => ⟨quotientPowAlgEquiv P r, quotientPowAlgEquiv_mk r⟩, this,
     ⟨Localization.AtPrime.quotientAlgEquiv k (hIJ.trans hJ),
       Localization.AtPrime.quotientAlgEquiv_algebraMap_mk _⟩,
@@ -247,8 +260,95 @@ theorem quotient_iso (I J : Ideal (MvPolynomial σ k)) (hIJ : I ≤ J)
 theorem isDomain_quotient (I : Ideal (MvPolynomial σ k)) [I.IsPrime]
     (hI : I ≤ vanishingIdeal k {P}) :
     IsDomain (localRing k P ⧸ I.map (algebraMap _ (localRing k P))) :=
-  have := isPrime_map_quotientMk hI
+  have := isPrime_map_quotientMk_of_isPrime hI
   MulEquiv.isDomain _ (Localization.AtPrime.quotientAlgEquiv k hI).symm.toRingEquiv.toMulEquiv
+
+/-! #### The value map of `𝒪_P(V)` -/
+
+/-- For `P ∈ V(I)`, the ideal `I 𝒪_P(𝔸ⁿ)` lies in the maximal ideal. -/
+theorem map_le_maximalIdeal {I : Ideal (MvPolynomial σ k)} (hI : I ≤ vanishingIdeal k {P}) :
+    I.map (algebraMap _ (localRing k P)) ≤ maximalIdeal (localRing k P) :=
+  map_vanishingIdeal (k := k) (P := P) ▸ map_mono hI
+
+/-- For `P ∈ V(I)`, the local ring `𝒪_P(V(I)) = 𝒪_P(𝔸ⁿ) ⧸ I 𝒪_P(𝔸ⁿ)` is a local ring. -/
+theorem isLocalRing_quotient {I : Ideal (MvPolynomial σ k)} (hI : I ≤ vanishingIdeal k {P}) :
+    IsLocalRing (localRing k P ⧸ I.map (algebraMap _ (localRing k P))) :=
+  have : Nontrivial (localRing k P ⧸ I.map (algebraMap _ (localRing k P))) :=
+    Ideal.Quotient.nontrivial_iff.2 (ne_top_of_le_ne_top (maximalIdeal.isMaximal _).ne_top
+      (map_le_maximalIdeal hI))
+  .of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
+
+variable (P) in
+/-- The value `f(P)` of an element `f` of `𝒪_P(V(I)) = 𝒪_P(𝔸ⁿ) ⧸ I 𝒪_P(𝔸ⁿ)`, for `P ∈ V(I)`, as a
+`k`-algebra map to `k`. -/
+noncomputable def quotientEvalAt (I : Ideal (MvPolynomial σ k))
+    (hI : I ≤ vanishingIdeal k {P}) :
+    localRing k P ⧸ I.map (algebraMap _ (localRing k P)) →ₐ[k] k :=
+  Ideal.Quotient.liftₐ _ (evalAt k P) fun _ ha => evalAt_eq_zero_iff.2 (map_le_maximalIdeal hI ha)
+
+theorem quotientEvalAt_def (I : Ideal (MvPolynomial σ k)) (hI : I ≤ vanishingIdeal k {P}) :
+    quotientEvalAt P I hI = Ideal.Quotient.liftₐ _ (evalAt k P)
+      fun _ ha => evalAt_eq_zero_iff.2 (map_le_maximalIdeal hI ha) :=
+  (rfl)
+
+@[simp]
+theorem quotientEvalAt_mk {I : Ideal (MvPolynomial σ k)} (hI : I ≤ vanishingIdeal k {P})
+    (f : localRing k P) :
+    quotientEvalAt P I hI (Ideal.Quotient.mk _ f) = evalAt k P f :=
+  (rfl)
+
+@[simp]
+theorem quotientEvalAt_algebraMap {I : Ideal (MvPolynomial σ k)}
+    (hI : I ≤ vanishingIdeal k {P}) (f : MvPolynomial σ k) :
+    quotientEvalAt P I hI (algebraMap _ _ f) = eval P f :=
+  (quotientEvalAt_mk hI _).trans (evalAt_algebraMap f)
+
+theorem quotientEvalAt_surjective {I : Ideal (MvPolynomial σ k)}
+    (hI : I ≤ vanishingIdeal k {P}) : Function.Surjective (quotientEvalAt P I hI) :=
+  fun a => ⟨_, (quotientEvalAt_algebraMap hI (C a)).trans (eval_C a)⟩
+
+/-- An element of `𝒪_P(V(I))` is a unit iff its value at `P` is not zero. -/
+theorem isUnit_iff_quotientEvalAt_ne_zero {I : Ideal (MvPolynomial σ k)}
+    (hI : I ≤ vanishingIdeal k {P}) {f : localRing k P ⧸ I.map (algebraMap _ (localRing k P))} :
+    IsUnit f ↔ quotientEvalAt P I hI f ≠ 0 := by
+  refine ⟨fun h => ((h.map (quotientEvalAt P I hI)).ne_zero), fun h => ?_⟩
+  obtain ⟨f, rfl⟩ := Ideal.Quotient.mk_surjective f
+  rw [quotientEvalAt_mk, Ne, evalAt_eq_zero_iff] at h
+  exact (notMem_maximalIdeal.1 h).map _
+
+/-- The kernel of the value map `𝒪_P(V(I)) → k` is the maximal ideal. -/
+theorem ker_quotientEvalAt {I : Ideal (MvPolynomial σ k)} (hI : I ≤ vanishingIdeal k {P})
+    [IsLocalRing (localRing k P ⧸ I.map (algebraMap _ (localRing k P)))] :
+    RingHom.ker (quotientEvalAt P I hI) =
+      maximalIdeal (localRing k P ⧸ I.map (algebraMap _ (localRing k P))) := by
+  ext f
+  rw [RingHom.mem_ker, mem_maximalIdeal, mem_nonunits_iff, isUnit_iff_quotientEvalAt_ne_zero hI,
+    not_not]
+
+variable (P) in
+/-- The residue field of `𝒪_P(V(I))`, for `P ∈ V(I)`, is `k`, by the value map. -/
+noncomputable def quotientResidueFieldAlgEquiv (I : Ideal (MvPolynomial σ k))
+    (hI : I ≤ vanishingIdeal k {P})
+    [IsLocalRing (localRing k P ⧸ I.map (algebraMap _ (localRing k P)))] :
+    ResidueField (localRing k P ⧸ I.map (algebraMap _ (localRing k P))) ≃ₐ[k] k :=
+  (quotientEquivAlgOfEq k (ker_quotientEvalAt hI).symm).trans
+    (quotientKerAlgEquivOfSurjective (quotientEvalAt_surjective hI))
+
+theorem quotientResidueFieldAlgEquiv_def (I : Ideal (MvPolynomial σ k))
+    (hI : I ≤ vanishingIdeal k {P})
+    [IsLocalRing (localRing k P ⧸ I.map (algebraMap _ (localRing k P)))] :
+    quotientResidueFieldAlgEquiv P I hI =
+      (quotientEquivAlgOfEq k (ker_quotientEvalAt hI).symm).trans
+        (quotientKerAlgEquivOfSurjective (quotientEvalAt_surjective hI)) :=
+  (rfl)
+
+@[simp]
+theorem quotientResidueFieldAlgEquiv_residue {I : Ideal (MvPolynomial σ k)}
+    (hI : I ≤ vanishingIdeal k {P})
+    [IsLocalRing (localRing k P ⧸ I.map (algebraMap _ (localRing k P)))]
+    (f : localRing k P ⧸ I.map (algebraMap _ (localRing k P))) :
+    quotientResidueFieldAlgEquiv P I hI (residue _ f) = quotientEvalAt P I hI f :=
+  quotientKerAlgEquivOfSurjective_mk (quotientEvalAt_surjective hI) f
 
 end localRing
 
@@ -352,6 +452,174 @@ theorem linearSubstEquiv_algebraMap [Fintype σ] [DecidableEq σ] (M : Matrix.Ge
     (g : MvPolynomial σ k) :
     linearSubstEquiv (P := P) M (algebraMap _ _ g) = algebraMap _ _ (linearSubst M.1 g) :=
   mapEquiv_algebraMap _ _ g
+
+/-! #### Polynomial maps between subvarieties -/
+
+/-- A polynomial map sending `V(I)` into `V(J)` and `P` to `Q`, given by `ψ : k[Y] → k[X]` with
+`(ψ g)(P) = g(Q)` and `J ≤ ψ⁻¹(I)`, maps `J 𝒪_Q(𝔸ᵐ)` into `I 𝒪_P(𝔸ⁿ)`. -/
+theorem map_le_comap_map (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) :
+    J.map (algebraMap _ (localRing k Q)) ≤
+      (I.map (algebraMap _ (localRing k P))).comap (map ψ h) := by
+  rw [map_le_iff_le_comap]
+  intro g hg
+  rw [mem_comap, mem_comap, map_algebraMap]
+  exact mem_map_of_mem _ (hJI hg)
+
+/-- The homomorphism `𝒪_Q(W) → 𝒪_P(V)` induced by a polynomial map `V → W` sending `P` to `Q`,
+for `V = V(I)` and `W = V(J)`: it is given by `ψ : k[Y] → k[X]` with `(ψ g)(P) = g(Q)` and
+`J ≤ ψ⁻¹(I)`. -/
+noncomputable def quotientMap (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) :
+    localRing k Q ⧸ J.map (algebraMap _ (localRing k Q)) →ₐ[k]
+      localRing k P ⧸ I.map (algebraMap _ (localRing k P)) :=
+  quotientMapₐ _ (map ψ h) (map_le_comap_map ψ h hJI)
+
+theorem quotientMap_def (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) :
+    quotientMap ψ h hJI = quotientMapₐ _ (map ψ h) (map_le_comap_map ψ h hJI) :=
+  (rfl)
+
+@[simp]
+theorem quotientMap_mk (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) (f : localRing k Q) :
+    quotientMap ψ h hJI (Ideal.Quotient.mk _ f) = Ideal.Quotient.mk _ (map ψ h f) :=
+  (rfl)
+
+@[simp]
+theorem quotientMap_algebraMap (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) (g : MvPolynomial τ k) :
+    quotientMap ψ h hJI (algebraMap _ _ g) = algebraMap _ _ (ψ g) :=
+  congrArg (Ideal.Quotient.mk _) (map_algebraMap ψ h g)
+
+/-- If `P ∈ V(I)` and `J ≤ ψ⁻¹(I)`, then `Q ∈ V(J)`. -/
+theorem le_vanishingIdeal_of_le_comap (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) (hI : I ≤ vanishingIdeal k {P}) :
+    J ≤ vanishingIdeal k {Q} :=
+  comap_vanishingIdeal ψ h ▸ hJI.trans (comap_mono hI)
+
+/-- The map induced by a polynomial map respects values: `(φ̃ f)(P) = f(Q)`. -/
+@[simp]
+theorem quotientEvalAt_quotientMap (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) (hI : I ≤ vanishingIdeal k {P})
+    (f : localRing k Q ⧸ J.map (algebraMap _ (localRing k Q))) :
+    quotientEvalAt P I hI (quotientMap ψ h hJI f) =
+      quotientEvalAt Q J (le_vanishingIdeal_of_le_comap ψ h hJI hI) f := by
+  obtain ⟨f, rfl⟩ := Ideal.Quotient.mk_surjective f
+  simp
+
+/-- For `P ∈ V(I)`, the map `𝒪_Q(W) → 𝒪_P(V)` induced by a polynomial map is a local
+homomorphism. -/
+theorem isLocalHom_quotientMap (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ) (hI : I ≤ vanishingIdeal k {P}) :
+    IsLocalHom (quotientMap ψ h hJI) :=
+  ⟨fun f hf => by
+    rw [isUnit_iff_quotientEvalAt_ne_zero hI, quotientEvalAt_quotientMap _ _ _ hI] at hf
+    exact (isUnit_iff_quotientEvalAt_ne_zero _).2 hf⟩
+
+/-- The map `𝒪_Q(W) → 𝒪_P(V)` induced by a polynomial map is the unique `k`-algebra map
+extending it. -/
+theorem quotientMap_unique (ψ : MvPolynomial τ k →ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : J ≤ I.comap ψ)
+    (φ : localRing k Q ⧸ J.map (algebraMap _ (localRing k Q)) →ₐ[k]
+      localRing k P ⧸ I.map (algebraMap _ (localRing k P)))
+    (hφ : ∀ g, φ (Ideal.Quotient.mk _ (algebraMap _ _ g)) =
+      Ideal.Quotient.mk _ (algebraMap _ _ (ψ g))) :
+    φ = quotientMap ψ h hJI :=
+  Ideal.Quotient.algHom_ext _ <| AlgHom.toRingHom_injective <|
+    IsLocalization.ringHom_ext (vanishingIdeal k {Q}).primeCompl <|
+      RingHom.ext fun g => (hφ g).trans (quotientMap_algebraMap ψ h hJI g).symm
+
+/-- A polynomial isomorphism `ψ` sending `P` to `Q` carries `J 𝒪_Q(𝔸ᵐ)` to `ψ(J) 𝒪_P(𝔸ⁿ)`. -/
+theorem map_map_algebraMap (ψ : MvPolynomial τ k ≃ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) (J : Ideal (MvPolynomial τ k)) :
+    (J.map ψ).map (algebraMap _ (localRing k P)) =
+      (J.map (algebraMap _ (localRing k Q))).map (mapEquiv ψ h : _ →+* _) := by
+  rw [Ideal.map_map]
+  refine (Ideal.map_map (ψ : MvPolynomial τ k →+* MvPolynomial σ k) _).trans ?_
+  congr 1
+  exact RingHom.ext fun g => (mapEquiv_algebraMap ψ h g).symm
+
+/-- The isomorphism `𝒪_Q(W) ≅ 𝒪_P(V)` induced by a polynomial isomorphism sending `P` to `Q`
+and `V = V(I)` onto `W = V(J)`: it is given by `ψ : k[Y] ≃ k[X]` with `(ψ g)(P) = g(Q)` and
+`I = ψ(J)`. -/
+noncomputable def quotientMapEquiv (ψ : MvPolynomial τ k ≃ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : I = J.map ψ) :
+    (localRing k Q ⧸ J.map (algebraMap _ (localRing k Q))) ≃ₐ[k]
+      localRing k P ⧸ I.map (algebraMap _ (localRing k P)) :=
+  quotientEquivAlg _ _ (mapEquiv ψ h) (hJI ▸ map_map_algebraMap ψ h J)
+
+theorem quotientMapEquiv_def (ψ : MvPolynomial τ k ≃ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : I = J.map ψ) :
+    quotientMapEquiv ψ h hJI =
+      quotientEquivAlg _ _ (mapEquiv ψ h) (hJI ▸ map_map_algebraMap ψ h J) :=
+  (rfl)
+
+@[simp]
+theorem quotientMapEquiv_mk (ψ : MvPolynomial τ k ≃ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : I = J.map ψ) (f : localRing k Q) :
+    quotientMapEquiv ψ h hJI (Ideal.Quotient.mk _ f) = Ideal.Quotient.mk _ (mapEquiv ψ h f) :=
+  (rfl)
+
+@[simp]
+theorem quotientMapEquiv_algebraMap (ψ : MvPolynomial τ k ≃ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : I = J.map ψ) (g : MvPolynomial τ k) :
+    quotientMapEquiv ψ h hJI (algebraMap _ _ g) = algebraMap _ _ (ψ g) :=
+  congrArg (Ideal.Quotient.mk _) (mapEquiv_algebraMap ψ h g)
+
+/-- The isomorphism `𝒪_Q(W) ≅ 𝒪_P(V)` underlies the map `𝒪_Q(W) → 𝒪_P(V)`. -/
+theorem coe_quotientMapEquiv (ψ : MvPolynomial τ k ≃ₐ[k] MvPolynomial σ k)
+    (h : ∀ g, eval P (ψ g) = eval Q g) {J : Ideal (MvPolynomial τ k)}
+    {I : Ideal (MvPolynomial σ k)} (hJI : I = J.map ψ) :
+    (quotientMapEquiv ψ h hJI : _ →ₐ[k] _) =
+      quotientMap ψ.toAlgHom h (hJI ▸ le_comap_map (f := ψ.toAlgHom)) :=
+  (quotientMap_unique _ _ _ _ fun g => quotientMapEquiv_algebraMap ψ h hJI g)
+
+variable (P) in
+/-- The Taylor shift `f ↦ f(X + P)` identifies `𝒪_P(V(I))` with the local ring at the origin of
+the translate `V(I) - P`, whose ideal is the image of `I`. -/
+noncomputable def quotientTaylorEquiv (I : Ideal (MvPolynomial σ k)) :
+    (localRing k P ⧸ I.map (algebraMap _ (localRing k P))) ≃ₐ[k]
+      localRing k (0 : σ → k) ⧸ (I.map (taylor P)).map (algebraMap _ (localRing k 0)) :=
+  quotientMapEquiv (AlgEquiv.ofAlgHom (taylor P) (taylor (-P))
+    (algHom_ext fun i => by simp [taylor_X]) (algHom_ext fun i => by simp [taylor_X]))
+    (fun g => by simp) rfl
+
+@[simp]
+theorem quotientTaylorEquiv_algebraMap (I : Ideal (MvPolynomial σ k)) (g : MvPolynomial σ k) :
+    quotientTaylorEquiv P I (algebraMap _ _ g) = algebraMap _ _ (taylor P g) :=
+  quotientMapEquiv_algebraMap _ _ _ g
+
+/-- An invertible linear substitution `f ↦ f(M X)` identifies the local ring of `V(I)` at `M P`
+with the local ring at `P` of its preimage, whose ideal is the image of `I`. -/
+noncomputable def quotientLinearSubstEquiv [Fintype σ] [DecidableEq σ]
+    (M : Matrix.GeneralLinearGroup σ k) (I : Ideal (MvPolynomial σ k)) :
+    (localRing k (M.1 *ᵥ P) ⧸ I.map (algebraMap _ (localRing k (M.1 *ᵥ P)))) ≃ₐ[k]
+      localRing k P ⧸ (I.map (linearSubst M.1)).map (algebraMap _ (localRing k P)) :=
+  quotientMapEquiv (AlgEquiv.ofAlgHom (linearSubst M.1) (linearSubst M⁻¹.1)
+    (by rw [← linearSubst_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one, linearSubst_one])
+    (by rw [← linearSubst_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, linearSubst_one]))
+    (fun g => eval_linearSubst _ _ g) rfl
+
+@[simp]
+theorem quotientLinearSubstEquiv_algebraMap [Fintype σ] [DecidableEq σ]
+    (M : Matrix.GeneralLinearGroup σ k) (I : Ideal (MvPolynomial σ k)) (g : MvPolynomial σ k) :
+    quotientLinearSubstEquiv (P := P) M I (algebraMap _ _ g) =
+      algebraMap _ _ (linearSubst M.1 g) :=
+  quotientMapEquiv_algebraMap _ _ _ g
 
 end localRing
 

@@ -18,7 +18,6 @@ the image of `p` in `A ⧸ I`, a prime ideal. Localization at `p` commutes with 
 
 ## Main results
 
-* `Ideal.isPrime_map_quotientMk`: the image of a prime `p ⊇ I` in `A ⧸ I` is prime.
 * `Localization.AtPrime.isLocalization_quotient`: `A_p ⧸ I A_p` is a localization of `A ⧸ I`
   at the image of `p`.
 * `Localization.AtPrime.quotientAlgEquiv`: `(A ⧸ I)_{p'} ≃ₐ A_p ⧸ I A_p`.
@@ -36,10 +35,6 @@ open Ideal
 variable {R A : Type*} [CommRing R] [CommRing A] [Algebra R A] {I J p : Ideal A} [p.IsPrime]
 
 namespace Ideal
-
-/-- The image of a prime `p` containing `I` in `A ⧸ I` is prime. -/
-theorem isPrime_map_quotientMk (hIp : I ≤ p) : (p.map (Ideal.Quotient.mk I)).IsPrime :=
-  map_isPrime_of_surjective Ideal.Quotient.mk_surjective (by simpa using hIp)
 
 /-- For a prime `p` containing `I`, the image in `A ⧸ I` of the complement of `p` is the
 complement of the image of `p`. -/
