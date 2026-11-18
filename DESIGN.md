@@ -156,10 +156,8 @@ PlaneCurves/
 │   │   └── QuotientPiLocalization.lean  A/I ≅ ∏ A_𝔪/I A_𝔪 for A/I Artinian (A11)
 │   ├── DiscreteValuationRing/
 │   │   └── Colength.lean                order = colength, expansions (A12)
-│   ├── KrullDimension/
-│   │   └── TrdegOne.lean                domains of transcendence degree one (R3)
-│   └── Length/
-│       └── Index.lean                   ℓ(V/TV) = ℓ(W/TW) (V7)
+│   └── KrullDimension/
+│       └── TrdegOne.lean                domains of transcendence degree one (R3)
 ├── LinearAlgebra/
 │   └── Projectivization/
 │       ├── AffineChart.lean             hyperplane at infinity ≅ ℙⁿ⁻¹ (P1)
@@ -659,7 +657,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | V3 | `PlaneCurve/Place/Basic.lean`, `SimplePoint.lean` | `placesOver`, `ordForm`; **7-points** | V1, V2, L4 |
 | V4 | `PlaneCurve/Place/RationalMap.lean` | **7-ratmap** | V2, R7 |
 | V6 | `PlaneCurve/NonsingularModel/Normalization.lean` | **7-normalization** | V3, R1 |
-| V7 | `RingTheory/Length/Index.lean`, `FieldTheory/FunctionField/HolomorphyRing/Length.lean` | index lemma, `ℓ(𝒪_S/g) = Σ ord_Q g` | V1 |
+| V7 | `FieldTheory/FunctionField/HolomorphyRing/Length.lean` | `ℓ(𝒪_S/g) = Σ ord_Q g`; the index lemma is Tau Ceti's `TauCeti.length_quotient_range_restrict` | V1 |
 | V8 | `PlaneCurve/Place/IntersectionNumber.lean` | **7-intsum** | V6, V7, Q7, A12 |
 | V5 | `PlaneCurve/NonsingularModel/Basic.lean` | **7-model**; **7-classify** (existing, with plane-curve corollaries) | V3, V8 |
 
