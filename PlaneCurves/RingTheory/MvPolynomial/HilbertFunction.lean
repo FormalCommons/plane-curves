@@ -35,6 +35,8 @@ quotients `R/I` (Fulton, §4.2), most of which are in Mathlib and Tau Ceti.
 
 * `Nat.two_mul_multichoose_three`: `2 * multichoose 3 d = (d + 2)(d + 1)`, twice the number
   of monomials of degree `d` in three variables.
+* `MvPolynomial.finrank_homogeneousSubmodule_fin_three`: the forms of degree `d` in three
+  variables have dimension `(d + 1)(d + 2)/2`.
 * `MvPolynomial.finrank_quotientPiece_span_singleton_add_multichoose`: for a nonzero form `F` of
   degree `m`, `dim (R/(F))_{m+n} + dim R_n = dim R_{m+n}`, with `dim R_n` the multichoose number.
 * `MvPolynomial.finrank_quotientPiece_span_singleton_fin_three`: `dim (k[X,Y,Z]/(F))_d =
@@ -68,6 +70,15 @@ namespace MvPolynomial
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {σ k : Type*} [Field k]
+
+/-- Over a field, the forms of degree `d` in three variables form a space of dimension
+`(d + 1)(d + 2)/2`. -/
+theorem finrank_homogeneousSubmodule_fin_three (d : ℕ) :
+    Module.finrank k (homogeneousSubmodule (Fin 3) k d) = (d + 1) * (d + 2) / 2 := by
+  rw [TauCeti.finrank_homogeneousSubmodule_eq_multichoose, Fintype.card_fin]
+  have := Nat.two_mul_multichoose_three d
+  rw [mul_comm (d + 1)]
+  omega
 
 /-- A nonzero form `F` of degree `m` in finitely many variables lowers the dimension of the
 degree-`m + n` piece by that of the degree-`n` piece: `dim (R/(F))_{m+n} + dim R_n = dim R_{m+n}`,

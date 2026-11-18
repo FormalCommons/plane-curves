@@ -10,7 +10,7 @@ public import PlaneCurves.RingTheory.MvPolynomial.HilbertFunction
 public import PlaneCurves.RingTheory.MvPolynomial.PowIdealOfVars
 public import Mathlib.LinearAlgebra.Dimension.RankNullity
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-public import PlaneCurves.LinearAlgebra.Projectivization.Map
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ChangeOfCoordinates
 
 /-!
 # Linear systems of plane curves with assigned multiple points
@@ -86,6 +86,7 @@ theorem mem_linearSystem {r : ℙ k (Fin 3 → k) →₀ ℕ} :
     F ∈ linearSystem d r ↔ F.IsHomogeneous d ∧ ∀ P, (r P : ℕ∞) ≤ mult F P :=
   Iff.rfl
 
+/-- The linear system `V(d; r)` consists of forms of degree `d`. -/
 theorem linearSystem_le_homogeneousSubmodule (d : ℕ) (r : ℙ k (Fin 3 → k) →₀ ℕ) :
     linearSystem d r ≤ homogeneousSubmodule (Fin 3) k d :=
   fun _ hF ↦ (mem_homogeneousSubmodule _ _).2 hF.1
@@ -128,7 +129,8 @@ theorem linearSubst_mem_linearSystem_iff {M : Matrix (Fin 3) (Fin 3) k}
   rw [mem_linearSystem, mem_linearSystem, hhom]
   refine and_congr_right fun hF ↦ ?_
   simp only [Finsupp.comapDomain_apply, mult_linearSubst hF hM]
-  exact ((map_surjective _ hM (LinearMap.injective_iff_surjective.1 hM)).forall
+  exact ((ProjectiveSpace.bijective_map_mulVecLin
+    (Matrix.GeneralLinearGroup.mkOfDetNeZero M hdet.ne_zero)).2.forall
     (p := fun P ↦ (r P : ℕ∞) ≤ mult F P)).symm
 
 /- The cubic `X² Z` has multiplicity at least `2` at `[0 : 1 : 0]`, so it lies in the linear
@@ -202,18 +204,6 @@ private theorem chartConditions_surjective (i : Fin 3) (a : Fin 2 → k) {n : �
   rw [neg_neg] at this
   rw [LinearMap.domRestrict_apply, chartConditions_apply, hdq, this,
     restrictSupportEquivQuotientPowIdealOfVars_apply]
-
-private theorem finrank_quotient_pow_idealOfVars_fin_two (n : ℕ) :
-    finrank k (MvPolynomial (Fin 2) k ⧸ idealOfVars (Fin 2) k ^ n) = n * (n + 1) / 2 := by
-  rw [finrank_quotient_pow_idealOfVars (Or.inr inferInstance), Fintype.card_fin,
-    Nat.choose_two_right, show n + 2 - 1 = n + 1 by omega, Nat.add_sub_cancel, mul_comm]
-
-private theorem finrank_homogeneousSubmodule_fin_three (d : ℕ) :
-    finrank k (homogeneousSubmodule (Fin 3) k d) = (d + 1) * (d + 2) / 2 := by
-  rw [finrank_homogeneousSubmodule_eq_multichoose, Fintype.card_fin]
-  have := Nat.two_mul_multichoose_three d
-  rw [mul_comm (d + 1)]
-  omega
 
 /-! ### Dimension counts -/
 
