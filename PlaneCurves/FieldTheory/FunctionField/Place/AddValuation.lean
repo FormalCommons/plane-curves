@@ -58,12 +58,15 @@ of `Q`. -/
 noncomputable def addValuation : AddValuation K (WithTop ℤ) :=
   Q.valuation.addVal
 
+/-- The defining equation of `Place.addValuation`. -/
 theorem addValuation_def : Q.addValuation = Q.valuation.addVal :=
   (rfl)
 
+/-- The order of `z` is `WithZero.negLog` of its valuation. -/
 theorem addValuation_apply (z : K) : Q.addValuation z = WithZero.negLog (Q.valuation z) := by
   rw [addValuation_def, Valuation.addVal_apply]
 
+/-- `z` has finite order `n` exactly when its valuation is `exp (-n)`. -/
 theorem addValuation_eq_coe_iff {z : K} {n : ℤ} :
     Q.addValuation z = n ↔ Q.valuation z = WithZero.exp (-n) := by
   rw [addValuation_def, Valuation.addVal_eq_coe]
@@ -78,6 +81,7 @@ theorem addValuation_of_ne_zero {z : K} (hz : z ≠ 0) : Q.addValuation z = Q.or
 theorem addValuation_eq_top_iff {z : K} : Q.addValuation z = ⊤ ↔ z = 0 := by
   rw [addValuation_apply, WithZero.negLog_eq_top, map_eq_zero]
 
+/-- Exactly the nonzero elements have finite order. -/
 theorem addValuation_ne_top_iff {z : K} : Q.addValuation z ≠ ⊤ ↔ z ≠ 0 :=
   (Q.addValuation_eq_top_iff).not
 
