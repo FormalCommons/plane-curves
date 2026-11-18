@@ -7,9 +7,9 @@ module
 
 public import Mathlib.Algebra.Polynomial.Splits
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
-public import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import TauCeti.Algebra.Polynomial.Homogenize
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 
 /-!
 # Binary forms split into linear forms
@@ -104,15 +104,8 @@ theorem irreducible_C_mul_X_add_C_mul_X {a b : K} (h : (a, b) ≠ (0, 0)) :
     simp [coeff_X, Finsupp.single_eq_single_iff]
   have hne : (C a * X 0 + C b * X 1 : MvPolynomial (Fin 2) K) ≠ 0 := fun h0 ↦
     h (by simp only [h0] at ha hb; simp [← ha, ← hb])
-  refine irreducible_of_totalDegree_eq_one ?_ fun x hx ↦ ?_
-  · exact (((isHomogeneous_C _ a).mul (isHomogeneous_X K 0)).add
-      ((isHomogeneous_C _ b).mul (isHomogeneous_X K 1))).totalDegree hne
-  · refine isUnit_iff_ne_zero.2 fun hx0 ↦ h ?_
-    have h0 := hx (Finsupp.single 0 1)
-    have h1 := hx (Finsupp.single 1 1)
-    rw [ha, hx0, zero_dvd_iff] at h0
-    rw [hb, hx0, zero_dvd_iff] at h1
-    rw [h0, h1]
+  exact irreducible_of_totalDegree_eq_one'
+    (((isHomogeneous_C_mul_X a 0).add (isHomogeneous_C_mul_X b 1)).totalDegree hne)
 
 /-- Over a field, the linear factors of a binary form are unique up to order and nonzero scalars:
 if `ε ∏ᵢ (aᵢ X + bᵢ Y) = ε' ∏ⱼ (a'ⱼ X + b'ⱼ Y)` with `ε, ε' ≠ 0` and all linear forms nonzero, the
