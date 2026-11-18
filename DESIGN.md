@@ -126,6 +126,9 @@ creates it.
 
 ```
 PlaneCurves/
+├── Algebra/
+│   └── MvPolynomial/
+│       └── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
 ├── RingTheory/
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
@@ -142,7 +145,8 @@ PlaneCurves/
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
 │   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d (P3)
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
-│   │   └── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
+│   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
+│   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
 │   ├── GradedAlgebra/
 │   │   └── HomogeneousLocalization.lean field of fractions of degree 0, mapId injective (P10)
 │   ├── Localization/
@@ -282,7 +286,10 @@ PlaneCurves/
         │   ├── Basic.lean               genus formula (D9)
         │   ├── VirtualGenus.lean        g ≤ g* (D10)
         │   └── Examples.lean            a curve of genus 2 (D10)
-        ├── CanonicalDivisor.lean        canonical divisors from adjoints (D12)
+        ├── CanonicalDivisor/
+        │   ├── Basic.lean               canonical classes from adjoints, effective canonical divisors (D12)
+        │   ├── Position.lean            IsTransversePosition, existence of such coordinates (D12)
+        │   └── Differential.lean        dx/f_y and its divisor, holomorphic differentials (D12)
         └── RiemannRoch.lean             plane form of Riemann–Roch (D13)
 ```
 
@@ -324,7 +331,9 @@ with their files.
   `leadingFormAt_eq_sum_pderiv` (order one), `leadingFormAt_mul`,
   `leadingFormAt_pow`, `leadingFormAt_prod` (domains), `leadingFormAt_smul`,
   `leadingFormAt_taylor`, `leadingFormAt_linearSubst`, `orderAt_linearSubst`
-  (invertible `M`), `orderAt_le_orderAt_comp` (Problem 3.8).
+  (invertible `M`), `orderAt_aeval_eq_of_isUnit_det` and
+  `leadingFormAt_aeval_of_isUnit_det` (Problem 3.8(b); 3.8(a) is Tau Ceti's
+  `MvPolynomial.orderAt_le_orderAt_aeval`).
 - **`MvPolynomial.polarDerivative (v) (F)`**: `∑ i, v i • pderiv i F`. API:
   homogeneity, linearity in `v`, behaviour under `linearSubst`.
 
@@ -633,7 +642,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |
 | Q15 | `Projective/GenericLine.lean` | **5-generic** | Q13 |
-| Q16 | `Projective/Hessian/Basic.lean` | the determinant of `TauCeti.hessian MvPolynomial.pderiv F`: homogeneity, covariance, the chart identity (*large*) | Q2 |
+| Q16 | `RingTheory/MvPolynomial/Hessian.lean`, `Projective/Hessian/Basic.lean` | the determinant of `TauCeti.hessian MvPolynomial.pderiv F`: homogeneity, covariance, the chart identity (*large*) | — |
 | Q17 | `Projective/Hessian/Flex.lean` | **5-hessian** | Q16, Q13 |
 | Q18 | `Projective/Conic.lean` | part (a) of **5-normal** | Q13 |
 | V1 | `FieldTheory/FunctionField/Place/AddValuation.lean` | `TauCeti.Place.addValuation` | — |
@@ -692,7 +701,7 @@ D1–D3 need only Tau Ceti and can start at once; D4 needs only stage 2.
 | D9 | `PlaneCurve/Genus/Basic.lean` | **8-genus** | D8, D2 |
 | D10 | `PlaneCurve/Genus/VirtualGenus.lean`, `Examples.lean` | **8-virtual** | D9, T4, D3 |
 | D11 | `PlaneCurve/Cubic/GenusOne.lean` | **8-genus01** (complete) | D9, D3, N5, N7 |
-| D12 | `PlaneCurve/CanonicalDivisor.lean` | **8-canonical** (*large*) | D1, D9, B3, T1 |
+| D12 | `PlaneCurve/CanonicalDivisor/Basic.lean`, `Position.lean`, `Differential.lean`; `Algebra/MvPolynomial/Derivation.lean` | **8-canonical** (*large*) | D1, D9, B3, T1 |
 | D13 | `PlaneCurve/RiemannRoch.lean` | **8-rr**, **8-independence** | D12, D2 |
 
 The order departs from the atlas's stages only in placing D1–D3 at the
@@ -841,7 +850,7 @@ completes it, in `TwoGenerators.lean`, for every `x ∉ k`.
 | 8-virtual | Genus bound by the virtual genus of a plane curve | `PlaneCurve/Genus/VirtualGenus.lean` (D10) |
 | 8-genus01 | Curves of genus zero and one and their plane models | `PlaneCurve/Cubic/GenusOne.lean` (D11), with `FieldTheory/FunctionField/Rational.lean` (D3) |
 | 8-differential | Order and divisor of a differential on the nonsingular model | `FieldTheory/FunctionField/KaehlerDifferential.lean` (D1) |
-| 8-canonical | Canonical divisors of a plane curve are cut out by adjoints of degree n − 3 | `PlaneCurve/CanonicalDivisor.lean` (D12) |
+| 8-canonical | Canonical divisors of a plane curve are cut out by adjoints of degree n − 3 | `PlaneCurve/CanonicalDivisor/Differential.lean` (D12) |
 | 8-reduction | Noether's reduction lemma | `FieldTheory/FunctionField/RiemannRoch.lean` (D2) |
 | 8-rr | Riemann–Roch theorem for the nonsingular model of a plane curve | `PlaneCurve/RiemannRoch.lean` (D13), with the function-field form in `FieldTheory/FunctionField/KaehlerDifferential.lean` (D1) |
 | 8-independence | Independence of adjoint conditions in degree at least n − 3 | `PlaneCurve/RiemannRoch.lean` (D13) |
