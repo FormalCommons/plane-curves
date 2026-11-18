@@ -13,11 +13,13 @@ public import Mathlib.Algebra.MvPolynomial.Degrees
 
 Mathlib's `Polynomial.Bivariate.equivMvPolynomial` identifies `R[X][Y]` with
 `MvPolynomial (Fin 2) R`, the inner variable `X` becoming `X 0` and the outer variable `Y`
-becoming `X 1`. This file computes the coefficients of the image and shows that the degree in
-`Y` is the degree in the variable `X 1`.
+becoming `X 1`. This file computes the image of a constant and the coefficients of the image,
+and shows that the degree in `Y` is the degree in the variable `X 1`.
 
 ## Main results
 
+* `Polynomial.Bivariate.equivMvPolynomial_C`: `equivMvPolynomial` sends a constant `C r`, for
+  `r ∈ R[X]`, to `r(X₀)`.
 * `Polynomial.Bivariate.coeff_equivMvPolynomial`: the coefficient of `X 0 ^ i * X 1 ^ j` in the
   image of `p` is the coefficient of `X ^ i` in the coefficient of `Y ^ j` of `p`.
 * `Polynomial.Bivariate.degreeOf_one_equivMvPolynomial`: the degree in `X 1` of the image of `p`
@@ -29,6 +31,15 @@ public section
 namespace Polynomial.Bivariate
 
 variable {R : Type*} [CommSemiring R]
+
+/-- The isomorphism `R[X][Y] ≃ R[X₀, X₁]` sends a constant `C r`, for `r ∈ R[X]`, to `r(X₀)`. -/
+@[simp]
+theorem equivMvPolynomial_C (r : R[X]) :
+    equivMvPolynomial R (C r) = aeval (MvPolynomial.X 0) r := by
+  induction r using Polynomial.induction_on' with
+  | add p q hp hq => simp [hp, hq]
+  | monomial n a =>
+    simp [← C_mul_X_pow_eq_monomial, MvPolynomial.algebraMap_eq]
 
 /-- The coefficient of the monomial `m` in the polynomial in two variables given by
 `p ∈ R[X][Y]` is the coefficient of `X ^ m 0` in the coefficient of `Y ^ m 1` of `p`. -/
