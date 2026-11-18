@@ -12,8 +12,7 @@ library itself is meant to be reusable, and to move into Tau Ceti or Mathlib
 later.
 
 - [AGENTS.md](AGENTS.md): how the library is written and reviewed.
-- `DESIGN.md`: how the library is organized, once the first pull request
-  adds it.
+- [DESIGN.md](DESIGN.md): how the library is organized.
 - [ERRATA.md](ERRATA.md): errors found in the atlas and in Fulton's book, and
   how the library corrects them.
 
