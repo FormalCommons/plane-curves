@@ -95,6 +95,14 @@ theorem associated_leadingForm_mk (hF : F.IsHomogeneous d) (v : Fin 3 → k) (hv
   rw [leadingForm_def, ← hc, Units.smul_def]
   exact hF.associated_leadingFormAt_smul c.isUnit v
 
+/-- A point of the chart `Xᵢ ≠ 0` is the class of `Fin.insertNth i 1 a`, where `a` are its chart
+coordinates. -/
+private theorem eq_mk_insertNth_affineChart {i : Fin 3} (hP : P ∈ affineOpen i) :
+    P = mk k (Fin.insertNth (α := fun _ ↦ k) i 1 (affineChart i P))
+      (Fin.insertNth_one_ne_zero i _) := by
+  rw [← affineChart_symm_apply]
+  exact ((affineChart i).left_inv (by rwa [affineChart_source])).symm
+
 /-- **The leading form in an affine chart.** If `P` lies in the chart `Xᵢ ≠ 0`, with chart
 coordinates `a`, the leading form of a form `F` at `P` is, up to a nonzero scalar, the leading
 form of the dehomogenization `F_(i)` at `a`, with `Yⱼ` replaced by `X (i.succAbove j) - aⱼ Xᵢ`. -/
@@ -103,12 +111,8 @@ theorem associated_leadingForm_affine (hF : F.IsHomogeneous d) {i : Fin 3}
     Associated (leadingForm F P)
       (aeval (fun j ↦ X (i.succAbove j) - C (affineChart i P j) * X i)
         ((dehomogenize i F).leadingFormAt (affineChart i P))) := by
-  have hP' : P = mk k (Fin.insertNth (α := fun _ ↦ k) i 1 (affineChart i P))
-      (Fin.insertNth_one_ne_zero i _) := by
-    rw [← affineChart_symm_apply]
-    exact ((affineChart i).left_inv (by rwa [affineChart_source])).symm
   rw [← hF.leadingFormAt_insertNth]
-  conv_lhs => rw [hP']
+  conv_lhs => rw [eq_mk_insertNth_affineChart hP]
   exact associated_leadingForm_mk hF _ _
 
 /-! ### Linear forms in an affine chart -/
@@ -249,23 +253,13 @@ theorem IsTangentAt.eval_rep_eq_zero (h : IsTangentAt F P L) : eval P.rep F = 0 
   exact (irreducible_of_isHomogeneous_one h.1 h.2.1).not_isUnit
     (isUnit_of_dvd_unit h.2.2.2 ((isUnit_iff_ne_zero.2 hP).map C))
 
-/-- A form vanishes at the representative of `[v]` exactly when it vanishes at `v`. -/
-private theorem eval_rep_mk_eq_zero_iff (hL : L.IsHomogeneous d) (v : Fin 3 → k) (hv : v ≠ 0) :
-    eval (mk k v hv).rep L = 0 ↔ eval v L = 0 := by
-  obtain ⟨c, hc⟩ := exists_smul_eq_mk_rep k v hv
-  rw [← hc, Units.smul_def, hL.eval_smul, mul_eq_zero, or_iff_right (pow_ne_zero _ c.ne_zero)]
-
 /-- A form vanishes at `P.rep` exactly when it vanishes at the point `Fin.insertNth i 1 a` of the
 chart `Xᵢ = 1` corresponding to `P`. -/
 private theorem eval_rep_eq_zero_iff_affine (hL : L.IsHomogeneous d) {i : Fin 3}
     (hP : P ∈ affineOpen i) :
     eval P.rep L = 0 ↔ eval (Fin.insertNth (α := fun _ ↦ k) i 1 (affineChart i P)) L = 0 := by
-  have hP' : P = mk k (Fin.insertNth (α := fun _ ↦ k) i 1 (affineChart i P))
-      (Fin.insertNth_one_ne_zero i _) := by
-    rw [← affineChart_symm_apply]
-    exact ((affineChart i).left_inv (by rwa [affineChart_source])).symm
-  conv_lhs => rw [hP']
-  exact eval_rep_mk_eq_zero_iff hL _ _
+  conv_lhs => rw [eq_mk_insertNth_affineChart hP]
+  exact hL.eval_rep_mk_eq_zero_iff _
 
 /-- **Tangent lines in an affine chart.** If `P` lies in the chart `Xᵢ ≠ 0`, with chart
 coordinates `a`, a linear form `L` vanishing at `P` is tangent to the form `F` at `P` exactly
@@ -393,7 +387,7 @@ theorem mult_eq_and_isTangentAt_iff_of_eq_sum {G : ℕ → MvPolynomial (Fin 2) 
       map_ne_zero_iff _ (rename_injective _ Fin.succAbove_right_injective),
       hassoc.dvd_iff_dvd_right, ← hren, aeval_chart_dvd_iff]
     refine ⟨fun ⟨h1, h2, _, h3⟩ ↦ ⟨h1, h2, h3⟩, fun ⟨h1, h2, h3⟩ ↦ ⟨h1, h2, ?_, h3⟩⟩
-    rw [hren, eval_rep_mk_eq_zero_iff (h1.rename_isHomogeneous), hv, eval_rename,
+    rw [hren, h1.rename_isHomogeneous.eval_rep_mk_eq_zero_iff _, hv, eval_rename,
       Fin.insertNth_comp_succAbove, eval_zero]
     exact h1.coeff_eq_zero (by simp)
   · rw [tangentMultiplicity_def, multiplicity_eq_of_associated_right hassoc, ← hren,
