@@ -60,17 +60,9 @@ noncomputable section
 
 open MvPolynomial Projectivization
 open scoped LinearAlgebra.Projectivization Matrix
+open Matrix (mulVec_injective_of_isUnit)
 
 attribute [local instance] MvPolynomial.gradedAlgebra
-
-namespace Matrix.GeneralLinearGroup
-
-/-- An invertible matrix acts injectively on column vectors. -/
-theorem injective_mulVecLin {ι K : Type*} [Fintype ι] [DecidableEq ι] [Field K]
-    (M : GL ι K) : Function.Injective (M : Matrix ι ι K).mulVecLin :=
-  Matrix.mulVec_injective_iff_isUnit.2 (Units.isUnit M)
-
-end Matrix.GeneralLinearGroup
 
 namespace PlaneCurves.ProjectiveSpace
 
@@ -81,24 +73,25 @@ variable {k : Type*} [Field k] {n : ℕ} (M : GL (Fin (n + 1)) k)
 /-- The projective change of coordinates `M⁻¹` undoes `M`. -/
 @[simp]
 theorem map_inv_map_mulVecLin (P : ℙ k (Fin (n + 1) → k)) :
-    map (M⁻¹).1.mulVecLin (M⁻¹).injective_mulVecLin
-      (map M.1.mulVecLin M.injective_mulVecLin P) = P := by
+    map (M⁻¹).1.mulVecLin (mulVec_injective_of_isUnit (M⁻¹).isUnit)
+      (map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) P) = P := by
   induction P using Projectivization.ind with | h v hv =>
-  simp only [map_mk, Matrix.mulVecLin_apply, Matrix.mulVec_mulVec]
+  erw [map_mk]
+  simp only [Matrix.mulVecLin_apply, Matrix.mulVec_mulVec]
   congr 1
   rw [← Units.val_mul, inv_mul_cancel, Units.val_one, Matrix.one_mulVec]
 
 /-- The projective change of coordinates `M` undoes `M⁻¹`. -/
 @[simp]
 theorem map_map_inv_mulVecLin (P : ℙ k (Fin (n + 1) → k)) :
-    map M.1.mulVecLin M.injective_mulVecLin
-      (map (M⁻¹).1.mulVecLin (M⁻¹).injective_mulVecLin P) =
+    map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit)
+      (map (M⁻¹).1.mulVecLin (mulVec_injective_of_isUnit (M⁻¹).isUnit) P) =
       P := by
   simpa using map_inv_map_mulVecLin M⁻¹ P
 
 /-- A projective change of coordinates is a bijection of `ℙⁿ`. -/
 theorem bijective_map_mulVecLin :
-    Function.Bijective (map M.1.mulVecLin M.injective_mulVecLin) :=
+    Function.Bijective (map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit)) :=
   Function.bijective_iff_has_inverse.2 ⟨_, map_inv_map_mulVecLin M, map_map_inv_mulVecLin M⟩
 
 /-- A form vanishes after the change of coordinates `M` at `Q` iff it vanishes at `T(Q)`, where
@@ -106,12 +99,12 @@ theorem bijective_map_mulVecLin :
 theorem eval_rep_linearSubst_eq_zero_iff {f : MvPolynomial (Fin (n + 1)) k} {d : ℕ}
     (hf : f.IsHomogeneous d) (Q : ℙ k (Fin (n + 1) → k)) :
     eval Q.rep (linearSubst M.1 f) = 0 ↔
-      eval (map M.1.mulVecLin M.injective_mulVecLin Q).rep f = 0 := by
+      eval (map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q).rep f = 0 := by
   have hv : M.1 *ᵥ Q.rep ≠ 0 := fun h ↦
-    Q.rep_ne_zero (M.injective_mulVecLin (by simpa using h))
+    Q.rep_ne_zero ((mulVec_injective_of_isUnit M.isUnit) (by simpa using h))
   rw [eval_linearSubst, ← mem_pointIdeal_mk_iff_of_isHomogeneous hf hv,
     ← mem_pointIdeal_iff_of_isHomogeneous hf]
-  conv_rhs => rw [← Q.mk_rep, map_mk]
+  conv_rhs => rw [← Q.mk_rep]; erw [map_mk]
   rfl
 
 /-! ### The ideal of `V^T` -/
@@ -192,9 +185,9 @@ instance [I.toIdeal.IsPrime] : (linearSubstIdeal M I).toIdeal.IsPrime :=
 under the projective change of coordinates `T` of `M`. -/
 theorem zeroLocus_linearSubstIdeal :
     zeroLocus (linearSubstIdeal M I : Set (MvPolynomial (Fin (n + 1)) k)) =
-      map M.1.mulVecLin M.injective_mulVecLin ⁻¹'
+      map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) ⁻¹'
         zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)) := by
-  rw [← zeroLocus_linearSubst M.1 M.injective_mulVecLin]
+  rw [← zeroLocus_linearSubst M.1 (mulVec_injective_of_isUnit M.isUnit)]
   change zeroLocus ((linearSubstIdeal M I).toIdeal : Set (MvPolynomial (Fin (n + 1)) k)) = _
   rw [linearSubstIdeal_toIdeal, Ideal.map, zeroLocus_span]
   rfl
@@ -202,11 +195,11 @@ theorem zeroLocus_linearSubstIdeal :
 /-- **`I(T⁻¹(X)) = I(X)^T`.** The ideal of the preimage of `X ⊆ ℙⁿ` under the projective change
 of coordinates `T` of `M` is the image of the ideal of `X`. -/
 theorem vanishingIdeal_preimage_map_mulVecLin (X : Set (ℙ k (Fin (n + 1) → k))) :
-    vanishingIdeal (map M.1.mulVecLin M.injective_mulVecLin ⁻¹' X) =
+    vanishingIdeal (map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) ⁻¹' X) =
       linearSubstIdeal M (vanishingIdeal X) := by
   refine le_antisymm ?_ ?_
   · have h := (linearSubstIdeal_le_iff (M := M⁻¹)
-      (I := vanishingIdeal (map M.1.mulVecLin M.injective_mulVecLin ⁻¹' X))
+      (I := vanishingIdeal (map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) ⁻¹' X))
       (J := vanishingIdeal X))
     rw [inv_inv] at h
     refine h.1 ?_
@@ -223,8 +216,9 @@ theorem vanishingIdeal_preimage_map_mulVecLin (X : Set (ℙ k (Fin (n + 1) → k
 /-- **`V` is algebraic iff `V^T` is.** A set `V ⊆ ℙⁿ` is the zero locus of its ideal iff its
 preimage `V^T = T⁻¹(V)` under the projective change of coordinates `T` of `M` is. -/
 theorem zeroLocus_vanishingIdeal_preimage_map_mulVecLin_eq_iff (V : Set (ℙ k (Fin (n + 1) → k))) :
-    zeroLocus (vanishingIdeal (map M.1.mulVecLin M.injective_mulVecLin ⁻¹' V) :
-        Set (MvPolynomial (Fin (n + 1)) k)) = map M.1.mulVecLin M.injective_mulVecLin ⁻¹' V ↔
+    zeroLocus (vanishingIdeal (map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) ⁻¹' V) :
+        Set (MvPolynomial (Fin (n + 1)) k)) =
+        map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) ⁻¹' V ↔
       zeroLocus (vanishingIdeal V : Set (MvPolynomial (Fin (n + 1)) k)) = V := by
   rw [vanishingIdeal_preimage_map_mulVecLin, zeroLocus_linearSubstIdeal]
   exact (bijective_map_mulVecLin M).2.preimage_injective.eq_iff
@@ -232,7 +226,8 @@ theorem zeroLocus_vanishingIdeal_preimage_map_mulVecLin_eq_iff (V : Set (ℙ k (
 /-- **`V` is irreducible iff `V^T` is.** The ideal of `V ⊆ ℙⁿ` is prime iff the ideal of its
 preimage `V^T = T⁻¹(V)` under the projective change of coordinates `T` of `M` is. -/
 theorem isPrime_vanishingIdeal_preimage_map_mulVecLin_iff (V : Set (ℙ k (Fin (n + 1) → k))) :
-    (vanishingIdeal (map M.1.mulVecLin M.injective_mulVecLin ⁻¹' V)).toIdeal.IsPrime ↔
+    (vanishingIdeal
+        (map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) ⁻¹' V)).toIdeal.IsPrime ↔
       (vanishingIdeal V).toIdeal.IsPrime := by
   rw [vanishingIdeal_preimage_map_mulVecLin, isPrime_linearSubstIdeal_iff]
 
@@ -356,7 +351,6 @@ theorem functionField.linearSubstEquiv_mk {d : ℕ} {f g : MvPolynomial (Fin (n 
   congr 1
   ext <;> simp
 
-
 variable {M I} in
 /-- The inverse of `k(V) ≅ k(V^T)` sends `f / g` to `f^(T⁻¹) / g^(T⁻¹)`. -/
 theorem functionField.linearSubstEquiv_symm_mk {d : ℕ} {f g : MvPolynomial (Fin (n + 1)) k}
@@ -381,7 +375,7 @@ variable {M I} {P : zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k))}
 /-- **`𝒪_P(V) ≅ 𝒪_Q(V^T)` for `T(Q) = P`.** The isomorphism `k(V) ≅ k(V^T)` carries the local
 ring of `V` at `P` onto the local ring of `V^T` at `Q`, when `T(Q) = P`. -/
 theorem map_localSubring_linearSubstEquiv
-    (hQP : map M.1.mulVecLin M.injective_mulVecLin Q.1 = P.1) :
+    (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q.1 = P.1) :
     (localSubring I P).map (functionField.linearSubstEquiv M I : functionField I →+* _) =
       localSubring (linearSubstIdeal M I) Q := by
   refine LocalSubring.toSubring_injective (Subring.ext fun z ↦ ?_)
@@ -405,33 +399,19 @@ theorem map_localSubring_linearSubstEquiv
 
 variable (M I) in
 /-- The isomorphism `𝒪_P(V) ≅ 𝒪_Q(V^T)`, for `T(Q) = P`, induced by `k(V) ≅ k(V^T)`. -/
-def localSubring.linearSubstEquiv (hQP : map M.1.mulVecLin M.injective_mulVecLin Q.1 = P.1) :
-    (localSubring I P).toSubring ≃ₐ[k] (localSubring (linearSubstIdeal M I) Q).toSubring where
-  toFun z := ⟨functionField.linearSubstEquiv M I z, by
-    rw [← map_localSubring_linearSubstEquiv hQP, LocalSubring.map_toSubring]
-    exact Subring.mem_map.2 ⟨_, z.2, rfl⟩⟩
-  invFun z := ⟨(functionField.linearSubstEquiv M I).symm z, by
-    have hz : (z : functionField (linearSubstIdeal M I)) ∈
-        ((localSubring I P).map
-          (functionField.linearSubstEquiv M I : functionField I →+* _)).toSubring := by
-      rw [map_localSubring_linearSubstEquiv hQP]
-      exact z.2
-    obtain ⟨y, hy, hyz⟩ := Subring.mem_map.1 hz
-    rw [← hyz]
-    simpa using hy⟩
-  left_inv z := Subtype.ext ((functionField.linearSubstEquiv M I).symm_apply_apply
-    (z : functionField I))
-  right_inv z := Subtype.ext ((functionField.linearSubstEquiv M I).apply_symm_apply
-    (z : functionField (linearSubstIdeal M I)))
-  map_mul' y z := Subtype.ext (map_mul (functionField.linearSubstEquiv M I)
-    (y : functionField I) z)
-  map_add' y z := Subtype.ext (map_add (functionField.linearSubstEquiv M I)
-    (y : functionField I) z)
-  commutes' a := Subtype.ext ((functionField.linearSubstEquiv M I).commutes a)
+def localSubring.linearSubstEquiv
+    (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q.1 = P.1) :
+    (localSubring I P).toSubring ≃ₐ[k] (localSubring (linearSubstIdeal M I) Q).toSubring :=
+  AlgEquiv.ofRingEquiv
+    (f := ((functionField.linearSubstEquiv M I).toRingEquiv.subringMap).trans
+      (RingEquiv.subringCongr (by
+        rw [← map_localSubring_linearSubstEquiv hQP, LocalSubring.map_toSubring]; rfl)))
+    (fun a ↦ Subtype.ext ((functionField.linearSubstEquiv M I).commutes a))
 
 @[simp]
 theorem coe_localSubring_linearSubstEquiv
-    (hQP : map M.1.mulVecLin M.injective_mulVecLin Q.1 = P.1) (z : (localSubring I P).toSubring) :
+    (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q.1 = P.1)
+    (z : (localSubring I P).toSubring) :
     (localSubring.linearSubstEquiv M I hQP z : functionField (linearSubstIdeal M I)) =
       functionField.linearSubstEquiv M I z :=
   (rfl)
@@ -491,22 +471,24 @@ theorem functionField_localSubring_and_linearSubstEquiv :
       (∀ f ∈ S, ∃ d, f.IsHomogeneous d) ∧ poleSet z = zeroLocus S) ∧
     -- (d)
     ∀ N : GL (Fin (n + 1)) k,
-      Function.Bijective (map N.1.mulVecLin N.injective_mulVecLin) ∧
+      Function.Bijective (map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit)) ∧
       (∀ S : Set (MvPolynomial (Fin (n + 1)) k),
         zeroLocus (linearSubst N.1 '' S) =
-          map N.1.mulVecLin N.injective_mulVecLin ⁻¹' zeroLocus S) ∧
+          map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) ⁻¹' zeroLocus S) ∧
       (∀ X : Set (ℙ k (Fin (n + 1) → k)),
-        vanishingIdeal (map N.1.mulVecLin N.injective_mulVecLin ⁻¹' X) =
+        vanishingIdeal (map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) ⁻¹' X) =
           linearSubstIdeal N (vanishingIdeal X)) ∧
       (∀ V : Set (ℙ k (Fin (n + 1) → k)),
-        (zeroLocus (vanishingIdeal (map N.1.mulVecLin N.injective_mulVecLin ⁻¹' V) :
-            Set (MvPolynomial (Fin (n + 1)) k)) = map N.1.mulVecLin N.injective_mulVecLin ⁻¹' V ↔
+        (zeroLocus (vanishingIdeal (map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) ⁻¹' V) :
+            Set (MvPolynomial (Fin (n + 1)) k)) =
+            map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) ⁻¹' V ↔
           zeroLocus (vanishingIdeal V : Set (MvPolynomial (Fin (n + 1)) k)) = V) ∧
-        ((vanishingIdeal (map N.1.mulVecLin N.injective_mulVecLin ⁻¹' V)).toIdeal.IsPrime ↔
+        ((vanishingIdeal
+            (map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) ⁻¹' V)).toIdeal.IsPrime ↔
           (vanishingIdeal V).toIdeal.IsPrime) ∧
-        ((map N.1.mulVecLin N.injective_mulVecLin ⁻¹' V).Nonempty ↔ V.Nonempty)) ∧
+        ((map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) ⁻¹' V).Nonempty ↔ V.Nonempty)) ∧
       zeroLocus (linearSubstIdeal N I : Set (MvPolynomial (Fin (n + 1)) k)) =
-        map N.1.mulVecLin N.injective_mulVecLin ⁻¹'
+        map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) ⁻¹'
           zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)) ∧
       (∀ f : MvPolynomial (Fin (n + 1)) k, coordinateRingLinearSubstEquiv N I
         (Ideal.Quotient.mk _ f) = Ideal.Quotient.mk _ (linearSubst N.1 f)) ∧
@@ -520,7 +502,7 @@ theorem functionField_localSubring_and_linearSubstEquiv :
             (by rwa [linearSubst_mem_linearSubstIdeal_iff])) ∧
       ∀ (P : zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)))
         (Q : zeroLocus (linearSubstIdeal N I : Set (MvPolynomial (Fin (n + 1)) k))),
-        map N.1.mulVecLin N.injective_mulVecLin Q.1 = P.1 →
+        map N.1.mulVecLin (mulVec_injective_of_isUnit N.isUnit) Q.1 = P.1 →
           (localSubring I P).map
               (functionField.linearSubstEquiv N I : functionField I →+* _) =
             localSubring (linearSubstIdeal N I) Q ∧
@@ -531,7 +513,8 @@ theorem functionField_localSubring_and_linearSubstEquiv :
     fun _ ↦ ⟨fun _ ↦ mem_localSubring_iff, fun _ ↦ mem_maximalIdeal_localSubring_iff,
       fun _ hv hvP _ _ _ hf hg hgP ↦ varietyLocalRing.evalAt_mk hv hvP hf hg hgP⟩,
     exists_poleSet_eq_zeroLocus,
-    fun N ↦ ⟨bijective_map_mulVecLin N, zeroLocus_linearSubst N.1 N.injective_mulVecLin,
+    fun N ↦ ⟨bijective_map_mulVecLin N,
+      zeroLocus_linearSubst N.1 (mulVec_injective_of_isUnit N.isUnit),
       vanishingIdeal_preimage_map_mulVecLin N,
       fun V ↦ ⟨zeroLocus_vanishingIdeal_preimage_map_mulVecLin_eq_iff N V,
         isPrime_vanishingIdeal_preimage_map_mulVecLin_iff N V,
