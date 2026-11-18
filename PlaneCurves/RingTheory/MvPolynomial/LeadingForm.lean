@@ -8,6 +8,8 @@ module
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 public import TauCeti.RingTheory.MvPolynomial.OrderAt
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
+import Mathlib.Algebra.MvPolynomial.CommRing
+import Mathlib.Tactic.LinearCombination
 
 /-!
 # The leading form of a polynomial at a point
@@ -33,6 +35,12 @@ tangent lines at the point.
   `MvPolynomial.leadingFormAt_prod`: over a domain, the leading form is multiplicative.
 * `MvPolynomial.orderAt_mul_eq_one_iff`: over a domain, a product has order one exactly when
   one factor has order one and the other order zero.
+* `MvPolynomial.IsHomogeneous.orderAt_zero`: a nonzero form of degree `d` has order `d` at the
+  origin.
+* `MvPolynomial.orderAt_taylor_sub_leadingFormAt`: `p(X + a)` minus the leading form has order
+  greater than that of `p` at `a`.
+* `MvPolynomial.orderAt_eq_and_leadingFormAt_eq_neg_of_orderAt_lt_orderAt_add`: if `p + q` has
+  larger order than `p`, the leading forms of `p` and `q` cancel.
 * `MvPolynomial.leadingFormAt_aeval`, `MvPolynomial.orderAt_aeval_eq`: if the leading form
   of `p` at `g(b)`, evaluated at the linear parts of `g` at `b`, is nonzero, then it is the
   leading form of `p(g)` at `b`, and the orders agree.
@@ -193,11 +201,79 @@ theorem leadingFormAt_prod [NoZeroDivisors R] {ι : Type*} (p : ι → MvPolynom
   | empty => simp
   | insert i s hi ih => rw [Finset.prod_insert hi, Finset.prod_insert hi, leadingFormAt_mul, ih]
 
+/-- A form of degree `d` has order at least `d` at the origin. -/
+theorem IsHomogeneous.natCast_le_orderAt_zero {d : ℕ} (hp : p.IsHomogeneous d) :
+    (d : ℕ∞) ≤ p.orderAt 0 := by
+  rw [le_orderAt_iff]
+  intro e he
+  rw [taylor_zero]
+  exact hp.coeff_eq_zero (by exact_mod_cast he.ne)
+
+/-- A nonzero form of degree `d` has order `d` at the origin. -/
+theorem IsHomogeneous.orderAt_zero {d : ℕ} (hp : p.IsHomogeneous d) (hp₀ : p ≠ 0) :
+    p.orderAt 0 = d := by
+  refine le_antisymm ?_ hp.natCast_le_orderAt_zero
+  obtain ⟨e, he⟩ := ne_zero_iff.1 hp₀
+  have hed : e.degree = d := by
+    by_contra h
+    exact he (hp.coeff_eq_zero h)
+  rw [← hed]
+  exact orderAt_le (by rwa [taylor_zero])
+
+/-- The Taylor coefficients of `p` at `a` of degree less than the order of `p` at `a` vanish. -/
+theorem homogeneousComponent_taylor_eq_zero_of_lt {i : ℕ} (hi : i < p.orderAt a) :
+    homogeneousComponent i (taylor a p) = 0 := by
+  ext d
+  simp only [coeff_homogeneousComponent, AddMonoidAlgebra.coeff_zero, Finsupp.coe_zero,
+    Pi.zero_apply]
+  split_ifs with h
+  · exact le_orderAt_iff.1 le_rfl d (by rwa [h])
+  · rfl
+
 end CommSemiring
 
 section CommRing
 
 variable [CommRing R]
+
+/-- Removing the leading form from the Taylor shift `p(X + a)` leaves only terms of degree
+greater than the order of `p` at `a`. -/
+theorem orderAt_taylor_sub_leadingFormAt (p : MvPolynomial σ R) (a : σ → R) :
+    ((p.orderAt a).toNat + 1 : ℕ∞) ≤ (taylor a p - p.leadingFormAt a).orderAt 0 := by
+  rw [le_orderAt_iff]
+  intro d hd
+  rw [taylor_zero, coeff_sub, leadingFormAt_def, coeff_homogeneousComponent]
+  split_ifs with h
+  · exact sub_self _
+  · rw [sub_zero]
+    have hd' : d.degree < (p.orderAt a).toNat := by
+      have : d.degree < (p.orderAt a).toNat + 1 := by exact_mod_cast hd
+      omega
+    exact le_orderAt_iff.1 le_rfl d
+      ((Nat.cast_lt.2 hd').trans_le (ENat.natCast_toNat_le_self _))
+
+/-- If `p + q` has larger order at `a` than `p`, the leading forms of `p` and `q` cancel: `q`
+has the order of `p` at `a`, and the negative of its leading form. -/
+theorem orderAt_eq_and_leadingFormAt_eq_neg_of_orderAt_lt_orderAt_add
+    {p q : MvPolynomial σ R} {a : σ → R} (h : p.orderAt a < (p + q).orderAt a) :
+    q.orderAt a = p.orderAt a ∧ q.leadingFormAt a = -p.leadingFormAt a := by
+  have hp : p.orderAt a ≠ ⊤ := h.ne_top
+  have hp₀ : p ≠ 0 := orderAt_eq_top_iff.not.1 hp
+  have hle : p.orderAt a ≤ q.orderAt a := by
+    have := min_orderAt_le_orderAt_add (p + q) (-p) a
+    rwa [orderAt_neg, show p + q + -p = q by ring, min_eq_right h.le] at this
+  have hc : homogeneousComponent (p.orderAt a).toNat (taylor a q) = -p.leadingFormAt a := by
+    have := homogeneousComponent_taylor_eq_zero_of_lt (p := p + q)
+      (i := (p.orderAt a).toNat) (by rwa [ENat.natCast_toNat hp])
+    rw [map_add, map_add] at this
+    rw [leadingFormAt_def]
+    linear_combination this
+  have hq : q.orderAt a = p.orderAt a := by
+    rw [← ENat.natCast_toNat hp]
+    exact orderAt_eq_of_homogeneousComponent_ne_zero (by rwa [ENat.natCast_toNat hp])
+      (by rw [hc, neg_ne_zero]; exact leadingFormAt_ne_zero hp₀)
+  refine ⟨hq, ?_⟩
+  rw [leadingFormAt_def, hq, hc]
 
 /-- The degree-`m` component of the Taylor shift of `p(g)` at `b`, for `m` the order of `p` at
 the image point `a = g(b)`, is the leading form of `p` at `a` evaluated at the linear parts of
