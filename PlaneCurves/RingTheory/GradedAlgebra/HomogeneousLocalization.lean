@@ -6,6 +6,8 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.RingTheory.GradedAlgebra.HomogeneousLocalization
+public import Mathlib.Tactic.LinearCombination
+public import TauCeti.RingTheory.GradedAlgebra.HomogeneousLocalization.Basic
 
 /-!
 # Homogeneous localization of a graded domain
@@ -24,6 +26,11 @@ submonoids. This file adds:
   ring of fractions `f / g` of homogeneous elements of equal degree with `g ≠ 0`, is a field.
   The inverse of `f / g` is `g / f` (`HomogeneousLocalization.mk_inv`).
   For the homogeneous coordinate ring of a projective variety it is the function field.
+* `HomogeneousLocalization.lift`: for a submonoid `S` of non-zero-divisors and a ring hom
+  `φ : A →+* K` to a field that does not vanish on the homogeneous elements of `S`, the ring hom
+  sending `f / g` to `φ f / φ g` (`HomogeneousLocalization.lift_mk`). For a graded `R`-algebra
+  and an `R`-algebra hom `φ`, `HomogeneousLocalization.liftAlgHom` is its `R`-algebra hom
+  version.
 
 ## References
 
@@ -126,6 +133,115 @@ theorem mk_inv {i : ι} (f g : 𝒜 i) (hf : (f : A) ∈ (⊥ : Ideal A).primeCo
   inv_eq_of_mul_eq_one_right (mk_mul_mk_swap f g hf hg)
 
 end domain
+
+section lift
+
+variable {K : Type*} [Field K] {S : Submonoid A}
+
+omit [AddSubgroupClass σ A] [AddCommMonoid ι] [DecidableEq ι] [GradedRing 𝒜] in
+variable {𝒜} in
+/-- For a submonoid `S` of non-zero-divisors and a ring hom `φ : A →+* K` to a field that does
+not vanish on the homogeneous elements of `S`, two fractions `c`, `d` with the same image in the
+localization have the same value: `φ c.num / φ c.den = φ d.num / φ d.den`. -/
+theorem map_num_div_map_den_eq_of_embedding_eq (hS : S ≤ nonZeroDivisors A) (φ : A →+* K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) {c d : NumDenSameDeg 𝒜 S}
+    (e : c.embedding = d.embedding) : φ c.num / φ c.den = φ d.num / φ d.den := by
+  simp only [NumDenSameDeg.embedding, Localization.mk_eq_mk_iff,
+    Localization.r_iff_exists] at e
+  obtain ⟨u, hu⟩ := e
+  have h := congrArg φ ((mul_cancel_left_mem_nonZeroDivisors (hS u.2)).1 hu)
+  simp only [map_mul] at h
+  rw [div_eq_div_iff (hφ c.den.2 c.den_mem) (hφ d.den.2 d.den_mem)]
+  linear_combination h
+
+variable {𝒜} in
+/-- The value `φ f / φ g` of a fraction `f / g` under a ring hom `φ`, before passing to the
+quotient. -/
+private def liftAux (φ : A →+* K) (c : NumDenSameDeg 𝒜 S) : K := φ c.num / φ c.den
+
+/-- For a submonoid `S` of non-zero-divisors and a ring hom `φ : A →+* K` to a field that does
+not vanish on the homogeneous elements of `S`, the ring hom from the homogeneous localization at
+`S` to `K` that sends `f / g` to `φ f / φ g`. -/
+noncomputable def lift (hS : S ≤ nonZeroDivisors A) (φ : A →+* K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) :
+    HomogeneousLocalization 𝒜 S →+* K where
+  toFun := Quotient.lift (liftAux φ) fun _ _ e ↦ map_num_div_map_den_eq_of_embedding_eq hS φ hφ e
+  map_one' := by
+    change φ 1 / φ 1 = 1
+    simp
+  map_mul' := Quotient.ind₂' fun c d ↦ by
+    change liftAux φ (c * d) = liftAux φ c * liftAux φ d
+    simp only [liftAux, NumDenSameDeg.num_mul, NumDenSameDeg.den_mul, map_mul, mul_div_mul_comm]
+  map_zero' := by
+    change φ 0 / φ 1 = 0
+    simp
+  map_add' := Quotient.ind₂' fun c d ↦ by
+    change liftAux φ (c + d) = liftAux φ c + liftAux φ d
+    simp only [liftAux, NumDenSameDeg.num_add, NumDenSameDeg.den_add, map_add, map_mul]
+    rw [div_add_div _ _ (hφ c.den.2 c.den_mem) (hφ d.den.2 d.den_mem)]
+    ring
+
+/-- `lift` is the map sending the class of a fraction `f / g` to `φ f / φ g`. -/
+theorem lift_def (hS : S ≤ nonZeroDivisors A) (φ : A →+* K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) :
+    ⇑(lift 𝒜 hS φ hφ) = Quotient.lift (fun c : NumDenSameDeg 𝒜 S ↦ φ c.num / φ c.den)
+      fun _ _ e ↦ map_num_div_map_den_eq_of_embedding_eq hS φ hφ e :=
+  (rfl)
+
+/-- `lift` sends `f / g` to `φ f / φ g`. -/
+@[simp]
+theorem lift_mk (hS : S ≤ nonZeroDivisors A) (φ : A →+* K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) (c : NumDenSameDeg 𝒜 S) :
+    lift 𝒜 hS φ hφ (mk c) = φ c.num / φ c.den :=
+  (rfl)
+
+end lift
+
+end HomogeneousLocalization
+
+namespace HomogeneousLocalization
+
+variable {ι R A K : Type*} [AddCommMonoid ι] [DecidableEq ι] [CommRing R] [CommRing A]
+  [Algebra R A] [Field K] [Algebra R K] (𝒜 : ι → Submodule R A) [GradedAlgebra 𝒜]
+  {S : Submonoid A}
+
+/-- For an `R`-algebra hom `φ`, `lift` sends the image of `r : R` to the image of `r` in `K`. -/
+@[simp]
+theorem lift_algebraMap (hS : S ≤ nonZeroDivisors A) (φ : A →ₐ[R] K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) (r : R) :
+    lift 𝒜 hS φ.toRingHom hφ (algebraMap R (HomogeneousLocalization 𝒜 S) r) =
+      algebraMap R K r := by
+  change lift 𝒜 hS φ.toRingHom hφ (mk ⟨0, algebraMap R (𝒜 0) r, 1, one_mem S⟩) = _
+  simp
+
+/-- For a graded `R`-algebra `A`, a submonoid `S` of non-zero-divisors and an `R`-algebra hom
+`φ : A →ₐ[R] K` to a field that does not vanish on the homogeneous elements of `S`, the
+`R`-algebra hom from the homogeneous localization at `S` to `K` that sends `f / g` to
+`φ f / φ g`. -/
+noncomputable def liftAlgHom (hS : S ≤ nonZeroDivisors A) (φ : A →ₐ[R] K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) :
+    HomogeneousLocalization 𝒜 S →ₐ[R] K :=
+  ⟨lift 𝒜 hS φ.toRingHom hφ, lift_algebraMap 𝒜 hS φ hφ⟩
+
+/-- `liftAlgHom` is `lift`, as an `R`-algebra hom. -/
+theorem liftAlgHom_def (hS : S ≤ nonZeroDivisors A) (φ : A →ₐ[R] K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) :
+    liftAlgHom 𝒜 hS φ hφ = ⟨lift 𝒜 hS φ.toRingHom hφ, lift_algebraMap 𝒜 hS φ hφ⟩ :=
+  (rfl)
+
+/-- `liftAlgHom` sends `f / g` to `φ f / φ g`. -/
+@[simp]
+theorem liftAlgHom_mk (hS : S ≤ nonZeroDivisors A) (φ : A →ₐ[R] K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) (c : NumDenSameDeg 𝒜 S) :
+    liftAlgHom 𝒜 hS φ hφ (mk c) = φ c.num / φ c.den :=
+  (rfl)
+
+/-- `liftAlgHom` is `lift` as a ring hom. -/
+@[simp]
+theorem toRingHom_liftAlgHom (hS : S ≤ nonZeroDivisors A) (φ : A →ₐ[R] K)
+    (hφ : ∀ ⦃i : ι⦄ ⦃g : A⦄, g ∈ 𝒜 i → g ∈ S → φ g ≠ 0) :
+    (liftAlgHom 𝒜 hS φ hφ : HomogeneousLocalization 𝒜 S →+* K) = lift 𝒜 hS φ.toRingHom hφ :=
+  (rfl)
 
 end HomogeneousLocalization
 
