@@ -28,7 +28,9 @@ tangent lines at the point.
 * `MvPolynomial.leadingFormAt_of_eval_ne_zero`: away from the zeros of `p` the leading form
   is the constant `p(a)`; `MvPolynomial.leadingFormAt_eq_sum_pderiv`: at a point of order one it
   is the differential `∑ᵢ (∂p/∂Xᵢ)(a) Xᵢ`; `MvPolynomial.orderAt_eq_one_iff`: the order is one
-  exactly at the zeros of `p` where some partial derivative does not vanish.
+  exactly at the zeros of `p` where some partial derivative does not vanish;
+  `MvPolynomial.two_le_orderAt_iff`: it is at least two exactly where `p` and all its partial
+  derivatives vanish.
 * `MvPolynomial.leadingFormAt_mul`, `MvPolynomial.leadingFormAt_pow`,
   `MvPolynomial.leadingFormAt_prod`: over a domain, the leading form is multiplicative.
 * `MvPolynomial.orderAt_mul_eq_one_iff`: over a domain, a product has order one exactly when
@@ -134,6 +136,20 @@ theorem orderAt_eq_one_iff [Finite σ] :
   have hp : p ≠ 0 := by rintro rfl; simp at h
   apply leadingFormAt_ne_zero (a := a) hp
   simp [leadingFormAt_eq_sum_pderiv h, hd]
+
+/-- A polynomial has order at least two at `a` exactly when it and all its partial derivatives
+vanish at `a`. -/
+theorem two_le_orderAt_iff [Finite σ] :
+    2 ≤ p.orderAt a ↔ eval a p = 0 ∧ ∀ i, eval a (pderiv i p) = 0 := by
+  have h : 2 ≤ p.orderAt a ↔ 0 < p.orderAt a ∧ p.orderAt a ≠ 1 := by
+    generalize p.orderAt a = m
+    cases m using ENat.recTopCoe with
+    | top => simp
+    | coe m =>
+      norm_cast
+      omega
+  rw [h, orderAt_pos_iff, Ne, orderAt_eq_one_iff]
+  grind
 
 /-- The leading form of a Taylor shift is the leading form at the translated point. -/
 @[simp]
