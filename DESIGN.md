@@ -126,6 +126,9 @@ creates it.
 
 ```
 PlaneCurves/
+├── Algebra/
+│   └── MvPolynomial/
+│       └── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
 ├── RingTheory/
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
@@ -282,7 +285,10 @@ PlaneCurves/
         │   ├── Basic.lean               genus formula (D9)
         │   ├── VirtualGenus.lean        g ≤ g* (D10)
         │   └── Examples.lean            a curve of genus 2 (D10)
-        ├── CanonicalDivisor.lean        canonical divisors from adjoints (D12)
+        ├── CanonicalDivisor/
+        │   ├── Basic.lean               canonical classes from adjoints, effective canonical divisors (D12)
+        │   ├── Position.lean            IsTransversePosition, existence of such coordinates (D12)
+        │   └── Differential.lean        dx/f_y and its divisor, holomorphic differentials (D12)
         └── RiemannRoch.lean             plane form of Riemann–Roch (D13)
 ```
 
@@ -694,7 +700,7 @@ D1–D3 need only Tau Ceti and can start at once; D4 needs only stage 2.
 | D9 | `PlaneCurve/Genus/Basic.lean` | **8-genus** | D8, D2 |
 | D10 | `PlaneCurve/Genus/VirtualGenus.lean`, `Examples.lean` | **8-virtual** | D9, T4, D3 |
 | D11 | `PlaneCurve/Cubic/GenusOne.lean` | **8-genus01** (complete) | D9, D3, N5, N7 |
-| D12 | `PlaneCurve/CanonicalDivisor.lean` | **8-canonical** (*large*) | D1, D9, B3, T1 |
+| D12 | `PlaneCurve/CanonicalDivisor/Basic.lean`, `Position.lean`, `Differential.lean`; `Algebra/MvPolynomial/Derivation.lean` | **8-canonical** (*large*) | D1, D9, B3, T1 |
 | D13 | `PlaneCurve/RiemannRoch.lean` | **8-rr**, **8-independence** | D12, D2 |
 
 The order departs from the atlas's stages only in placing D1–D3 at the
@@ -843,7 +849,7 @@ completes it, in `TwoGenerators.lean`, for every `x ∉ k`.
 | 8-virtual | Genus bound by the virtual genus of a plane curve | `PlaneCurve/Genus/VirtualGenus.lean` (D10) |
 | 8-genus01 | Curves of genus zero and one and their plane models | `PlaneCurve/Cubic/GenusOne.lean` (D11), with `FieldTheory/FunctionField/Rational.lean` (D3) |
 | 8-differential | Order and divisor of a differential on the nonsingular model | `FieldTheory/FunctionField/KaehlerDifferential.lean` (D1) |
-| 8-canonical | Canonical divisors of a plane curve are cut out by adjoints of degree n − 3 | `PlaneCurve/CanonicalDivisor.lean` (D12) |
+| 8-canonical | Canonical divisors of a plane curve are cut out by adjoints of degree n − 3 | `PlaneCurve/CanonicalDivisor/Differential.lean` (D12) |
 | 8-reduction | Noether's reduction lemma | `FieldTheory/FunctionField/RiemannRoch.lean` (D2) |
 | 8-rr | Riemann–Roch theorem for the nonsingular model of a plane curve | `PlaneCurve/RiemannRoch.lean` (D13), with the function-field form in `FieldTheory/FunctionField/KaehlerDifferential.lean` (D1) |
 | 8-independence | Independence of adjoint conditions in degree at least n − 3 | `PlaneCurve/RiemannRoch.lean` (D13) |
