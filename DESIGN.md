@@ -128,12 +128,16 @@ creates it.
 PlaneCurves/
 ├── Algebra/
 │   ├── MvPolynomial/
-│   │   └── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
+│   │   ├── Derivation.lean              chain rule Derivation.map_aeval_mvPolynomial (D12)
+│   │   └── SetVarZero.lean              setting X i to zero, X i ∣ p - p(X i = 0) (Q11)
 │   └── Polynomial/
-│       └── Bivariate.lean               coefficients and Y-degree of R[X][Y] ≃ R[X, Y] (R6)
+│       └── Bivariate.lean               R[X][Y] ≃ R[X, Y]: constants (A6), coefficients, Y-degree (R6)
 ├── RingTheory/
+│   ├── Polynomial/
+│   │   └── GaussLemma.lean              relatively prime p, q ∈ R[X] give C r ∈ (p, q) (A6)
 │   ├── MvPolynomial/
 │   │   ├── VanishingIdeal.lean          ideal of a point, separating polynomials (A1)
+│   │   ├── LinearForm.lean              linear forms ∑ C (a i) * X i (P8)
 │   │   ├── Homogenize/
 │   │   │   ├── Basic.lean               homogenization in any variable to a degree (A2)
 │   │   │   ├── Factorization.lean       Fulton's f*, F_*, Proposition 5 of §2.6 (A3)
@@ -149,6 +153,8 @@ PlaneCurves/
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
 │   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
+│   ├── Regular/
+│   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (Q11)
 │   ├── GradedAlgebra/
 │   │   └── HomogeneousLocalization.lean field of fractions of degree 0, mapId injective (P10)
 │   ├── Localization/
@@ -163,6 +169,8 @@ PlaneCurves/
 │   └── UniqueFactorizationDomain/
 │       └── Radical.lean                 radicals of principal ideals, no normalization (A7)
 ├── LinearAlgebra/
+│   ├── FiniteDimensional/
+│   │   └── Lemmas.lean                  extending linear equivalences, hyperplanes (P8)
 │   └── Projectivization/
 │       ├── AffineChart.lean             hyperplane at infinity ≅ ℙⁿ⁻¹ (P1)
 │       ├── LinearSubspace.lean          linear subvarieties, lines, general position (P8)
@@ -196,6 +204,7 @@ PlaneCurves/
     │   ├── Nullstellensatz.lean         projective Nullstellensatz (P5)
     │   ├── Irreducible.lean             varieties, components (P6)
     │   ├── Hypersurface.lean            I(V(F)), hypersurfaces, hyperplanes (P7)
+    │   ├── LinearSubvariety.lean        zero loci of linear forms, coordinates (P8)
     │   ├── FunctionField.lean           k(V), 𝒪_P(ℙⁿ), 𝒪_P(V), values, poles (P11)
     │   ├── ChangeOfCoordinates.lean     V^T and the induced isomorphisms (P12)
     │   ├── ProjectiveClosure.lean       V*, V_*, Proposition 3 of §4.3 (P14)
@@ -377,6 +386,11 @@ with their files.
   `Projectivization.affineChart` (`LinearAlgebra/Projectivization/AffineChart.lean`);
   the library adds `Projectivization.insertZero i : ℙ K (Fin n → K) → ℙ K (Fin (n+1) → K)`
   with `range_insertZero` (`= (affineOpen i)ᶜ`).
+- **Linear subvarieties** have no definition: they are Mathlib's
+  `Submodule.projectivization p`, of dimension `m` when
+  `finrank K p = m + 1`; lines have `finrank 2`, hyperplanes are
+  `(LinearMap.ker f).projectivization` for `f ≠ 0`, and linear forms are
+  `∑ i, C (a i) * X i` (see [`design/P8.md`](design/P8.md)).
 - **`PlaneCurves.ProjectiveSpace.zeroLocus (S) : Set (ℙ k (Fin (n+1) → k))`**:
   the points at whose representatives every element of `S` vanishes, in the
   every-vector convention. API: `mk_mem_zeroLocus_iff` (one representative
@@ -575,8 +589,13 @@ Affine varieties (Chapters 1–2):
 | A3 | `RingTheory/MvPolynomial/Homogenize/Factorization.lean` | **aff-hom** | A2 |
 | A4 | `RingTheory/MvPolynomial/BinaryForm/Basic.lean` | **aff-binary** | — |
 | A5 | `RingTheory/MvPolynomial/BinaryForm/Basis.lean`, `PowIdealOfVars.lean` | **aff-dim** | A1, A4 |
+<<<<<<< HEAD
 | A6 | `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
 | A7 | `RingTheory/UniqueFactorizationDomain/Radical.lean`, `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
+=======
+| A6 | `Algebra/Polynomial/Bivariate.lean`, `RingTheory/Polynomial/GaussLemma.lean`, `AffineSpace/PlaneZeroLocus.lean` | **aff-coprime** | — |
+| A7 | `AffineSpace/Hypersurface.lean` | **aff-hypersurface** | A1, A6 |
+>>>>>>> origin/main
 | A8 | `AffineSpace/FiniteZeroLocus.lean` | **aff-finite** | A1 |
 | A9 | `RingTheory/Localization/Quotient.lean`, `AffineSpace/LocalRing.lean` | `AffineSpace.localRing`; **aff-quotient**; parts (a)–(c), (e) of **aff-local** | A1 |
 | A10 | `AffineSpace/RationalFunction.lean` | **aff-local** (complete) | A9 |
@@ -611,7 +630,7 @@ Projective varieties (Chapter 4), beside Chapter 3:
 | P5 | `ProjectiveSpace/Nullstellensatz.lean` | parts (1)–(3) of **proj-null** | P4 |
 | P6 | `ProjectiveSpace/Irreducible.lean` | **proj-sets** (complete) | P4 |
 | P7 | `ProjectiveSpace/Hypersurface.lean` | **proj-null** (complete) | P5, P6, A3 |
-| P8 | `LinearAlgebra/Projectivization/LinearSubspace.lean` | parts (a)–(e), (h), (i) of **proj-linear** | P4 |
+| P8 | `LinearAlgebra/Projectivization/LinearSubspace.lean`, `LinearAlgebra/FiniteDimensional/Lemmas.lean`, `RingTheory/MvPolynomial/LinearForm.lean`, `ProjectiveSpace/LinearSubvariety.lean` | parts (a)–(e), (h), (i) of **proj-linear** ([`design/P8.md`](design/P8.md)) | P4 |
 | P9 | `LinearAlgebra/Projectivization/Duality.lean` | **proj-linear** (complete) | P8 |
 | P10 | `RingTheory/GradedAlgebra/HomogeneousLocalization.lean` | field instance, `mapId_injective` | — |
 | P11 | `ProjectiveSpace/FunctionField.lean` | `pointIdeal`, `localRing`, `functionField`, `localSubring`; parts (a)–(c) of **proj-coord** | P5, P6, P10 |
@@ -648,7 +667,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q8 | `PlaneCurve/Projective/Finiteness.lean` | **5-finite** | Q2, A3, A6 |
 | Q9 | `Projective/LinearSystem/Basic.lean` | `linearSystem`; parts (a), (b) of **5-linsys** | Q1, Q3, P8 |
 | Q10 | `Projective/LinearSystem/Independence.lean` | **5-linsys** (complete) | Q9 |
-| Q11 | `RingTheory/MvPolynomial/QuotientSpanPair.lean` | Steps 1–2 of Bézout's proof | P3 |
+| Q11 | `RingTheory/MvPolynomial/QuotientSpanPair.lean`, `RingTheory/Regular/IsRelPrime.lean`, `Algebra/MvPolynomial/SetVarZero.lean` | Steps 1–2 of Bézout's proof | P3 |
 | Q12 | `Projective/Bezout/Basic.lean` | **5-bezout** | Q7, Q8, Q11, L11, P8 |
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |

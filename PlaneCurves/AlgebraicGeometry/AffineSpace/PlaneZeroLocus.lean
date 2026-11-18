@@ -5,13 +5,13 @@ Authors: The FormalCommons contributors
 -/
 module
 
-public import Mathlib.Algebra.Polynomial.Bivariate
 public import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Mathlib.RingTheory.TensorProduct.Finite
 public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.RingTheory.Nullstellensatz
 public import Mathlib.RingTheory.TensorProduct.Basic
-public import TauCeti.RingTheory.Polynomial.GaussLemma
+public import PlaneCurves.Algebra.Polynomial.Bivariate
+public import PlaneCurves.RingTheory.Polynomial.GaussLemma
 
 /-!
 # Relatively prime plane polynomials have finitely many common zeros
@@ -27,14 +27,12 @@ prove, over any field:
 * `k[X, Y] ⧸ (F, G)` is finite-dimensional over `k`, of dimension at most `deg D · deg E`.
 
 The first step is Gauss's lemma: `F` and `G` stay relatively prime in `k(X)[Y]`, a principal
-ideal domain, so `aF + bG = 1` there, and clearing denominators gives `D`. The other two hold for
+ideal domain, so `aF + bG = 1` there, and clearing denominators gives `D`
+(`Polynomial.exists_C_mem_span_pair_of_isRelPrime`). The other two hold for
 every ideal that contains such `D(X)` and `E(Y)`.
 
 ## Main results
 
-* `Polynomial.exists_C_mem_span_pair_of_isRelPrime`: over a GCD domain `R`, two relatively
-  prime polynomials in `R[X]` generate an ideal that contains a nonzero constant.
-* `Polynomial.Bivariate.equivMvPolynomial_C`: `R[X][Y] ≃ R[X₀, X₁]` sends `C r` to `r(X₀)`.
 * `PlaneCurves.exists_aeval_X_mem_span_pair_of_isRelPrime`: `(F, G)` contains a nonzero
   polynomial in each variable alone.
 * `PlaneCurves.finite_zeroLocus_of_aeval_X_mem`, `PlaneCurves.ncard_zeroLocus_le_of_aeval_X_mem`,
@@ -51,42 +49,7 @@ every ideal that contains such `D(X)` and `E(Y)`.
 
 public section
 
-open scoped nonZeroDivisors TensorProduct
-
-namespace Polynomial
-
-variable {R : Type*} [CommRing R] [IsDomain R] [IsGCDMonoid R]
-
-/-- Over a GCD domain `R`, two relatively prime polynomials `p, q ∈ R[X]` generate an ideal that
-contains a nonzero constant: `a p + b q = C r` with `r ≠ 0`. -/
-theorem exists_C_mem_span_pair_of_isRelPrime {p q : R[X]} (h : IsRelPrime p q) :
-    ∃ r : R, r ≠ 0 ∧ C r ∈ Ideal.span {p, q} := by
-  classical
-  obtain ⟨a, b, hab⟩ := isRelPrime_iff_isCoprime.mp (h.map_fraction_map (K := FractionRing R))
-  obtain ⟨c, hc, hca⟩ := IsLocalization.integerNormalization_spec R⁰ a
-  obtain ⟨d, hd, hdb⟩ := IsLocalization.integerNormalization_spec R⁰ b
-  refine ⟨c * d, mul_ne_zero (nonZeroDivisors.ne_zero hc) (nonZeroDivisors.ne_zero hd), ?_⟩
-  have key : C d * IsLocalization.integerNormalization R⁰ a * p +
-      C c * IsLocalization.integerNormalization R⁰ b * q = C (c * d) := by
-    apply map_injective _ (IsFractionRing.injective R (FractionRing R))
-    simp only [Polynomial.map_add, Polynomial.map_mul, map_C, hca, hdb, Algebra.smul_def,
-      Polynomial.algebraMap_apply, map_mul]
-    linear_combination (C (algebraMap R (FractionRing R) c) *
-      C (algebraMap R (FractionRing R) d)) * hab
-  rw [← key]
-  exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ (Ideal.subset_span (by simp)))
-    (Ideal.mul_mem_left _ _ (Ideal.subset_span (by simp)))
-
-/-- The isomorphism `S[X][Y] ≃ S[X₀, X₁]` sends a constant `C r`, for `r ∈ S[X]`, to `r(X₀)`. -/
-theorem Bivariate.equivMvPolynomial_C {S : Type*} [CommSemiring S] (r : S[X]) :
-    Bivariate.equivMvPolynomial S (C r) = aeval (MvPolynomial.X 0) r := by
-  induction r using Polynomial.induction_on' with
-  | add p q hp hq => simp [hp, hq]
-  | monomial n a =>
-    simp [← C_mul_X_pow_eq_monomial, Bivariate.equivMvPolynomial_C_C,
-      Bivariate.equivMvPolynomial_C_X, MvPolynomial.algebraMap_eq]
-
-end Polynomial
+open scoped TensorProduct
 
 namespace PlaneCurves
 

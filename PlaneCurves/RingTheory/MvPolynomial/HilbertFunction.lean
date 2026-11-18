@@ -25,6 +25,8 @@ quotients `R/I` (Fulton, §4.2), most of which are in Mathlib and Tau Ceti.
 
 ## Main results
 
+* `Nat.two_mul_multichoose_three`: `2 * multichoose 3 d = (d + 2)(d + 1)`, twice the number
+  of monomials of degree `d` in three variables.
 * `MvPolynomial.finrank_quotientPiece_span_singleton_add_multichoose`: for a nonzero form `F` of
   degree `m`, `dim (R/(F))_{m+n} + dim R_n = dim R_{m+n}`, with `dim R_n` the multichoose number.
 * `MvPolynomial.finrank_quotientPiece_span_singleton_fin_three`: `dim (k[X,Y,Z]/(F))_d =
@@ -40,6 +42,16 @@ quotients `R/I` (Fulton, §4.2), most of which are in Mathlib and Tau Ceti.
 public section
 
 open TauCeti.GradedAlgebra
+
+/-- Twice the number of monomials of degree `d` in three variables, that is, twice the dimension
+of the degree-`d` piece of `k[X, Y, Z]`, is `(d + 2)(d + 1)`. -/
+theorem Nat.two_mul_multichoose_three (d : ℕ) :
+    2 * (3 : ℕ).multichoose d = (d + 2) * (d + 1) := by
+  induction d with
+  | zero => simp
+  | succ d ih =>
+    rw [Nat.multichoose_succ_succ, Nat.multichoose_two, mul_add, ih]
+    ring
 
 namespace MvPolynomial
 
@@ -58,14 +70,6 @@ theorem finrank_quotientPiece_span_singleton_add_multichoose [Fintype σ]
     ((mem_homogeneousSubmodule m F).mpr hF) (IsLeftCancelMulZero.mul_left_cancel_of_ne_zero hF₀) n
   simpa using this
 
-private theorem two_mul_multichoose_three (d : ℕ) :
-    2 * (3 : ℕ).multichoose d = (d + 2) * (d + 1) := by
-  induction d with
-  | zero => simp
-  | succ d ih =>
-    rw [Nat.multichoose_succ_succ, Nat.multichoose_two, mul_add, ih]
-    ring
-
 /-- **Problem 4.10 of Fulton.** For a nonzero form `F` of degree `m` in `k[X, Y, Z]`,
 `dim (k[X,Y,Z]/(F))_d = dm - m(m-3)/2` for every `d ≥ m - 2`. The formula is in `ℤ`, where
 `m(m-3)` is even, so that the division is exact. For `m ≥ 3` it fails at `d = m - 3`. -/
@@ -80,7 +84,7 @@ theorem finrank_quotientPiece_span_singleton_fin_three {F : MvPolynomial (Fin 3)
   have ht' : (m : ℤ) * (m - 3) / 2 = t := by omega
   rw [ht']
   refine mul_left_cancel₀ (two_ne_zero (α := ℤ)) ?_
-  have hR := fun e : ℕ ↦ congrArg (fun x : ℕ ↦ (x : ℤ)) (two_mul_multichoose_three e)
+  have hR := fun e : ℕ ↦ congrArg (fun x : ℕ ↦ (x : ℤ)) (Nat.two_mul_multichoose_three e)
   push_cast at hR
   rcases le_or_gt m d with hmd | hmd
   · obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le hmd
