@@ -118,7 +118,7 @@ example {K : Type*} [Field K] [CharP K 2] :
   · have := ((isMultiplePoint_iff_eval_pderiv ((isHomogeneous_X K 0).pow 2) _ _).1 h).1
     simp at this
 
-theorem IsSimplePoint.eval_rep (h : IsSimplePoint F P) : eval P.rep F = 0 :=
+theorem IsSimplePoint.eval_rep_eq_zero (h : IsSimplePoint F P) : eval P.rep F = 0 :=
   (isSimplePoint_iff_eval_rep.1 h).1
 
 theorem IsSimplePoint.ne_zero (h : IsSimplePoint F P) : F ≠ 0 := by
