@@ -367,6 +367,33 @@ theorem functionField.exists_eq_mk (z : functionField I) :
   obtain ⟨g, hg, rfl⟩ := I.exists_isHomogeneous_mk_eq hy
   exact ⟨d, f, g, hf, hg, fun h ↦ hden (Ideal.Quotient.eq_zero_iff_mem.2 h), rfl⟩
 
+variable {I} in
+/-- A fraction `f / g` with `f ∉ I` is nonzero in `k(V)`. -/
+theorem functionField.mk_ne_zero {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
+    (hg : g.IsHomogeneous d) (hgI : g ∉ I) (hfI : f ∉ I) : functionField.mk hf hg hgI ≠ 0 := by
+  intro h0
+  have h1 := HomogeneousLocalization.mk_mul_mk_swap (𝒜 := I.quotientGrading)
+    ⟨_, I.mk_mem_quotientGrading hf⟩ ⟨_, I.mk_mem_quotientGrading hg⟩
+    (fun h ↦ hfI (Ideal.Quotient.eq_zero_iff_mem.1 (Ideal.mem_bot.1 h)))
+    (fun h ↦ hgI (Ideal.Quotient.eq_zero_iff_mem.1 (Ideal.mem_bot.1 h)))
+  rw [functionField.mk_def] at h0
+  rw [h0, zero_mul] at h1
+  exact zero_ne_one h1
+
+variable {I} in
+/-- In `k(V)`, `(f / h) / (g / h) = f / g` for forms `f`, `g`, `h` of the same degree. -/
+theorem functionField.mk_div_mk {f g h : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
+    (hg : g.IsHomogeneous d) (hh : h.IsHomogeneous d) (hgI : g ∉ I) (hhI : h ∉ I) :
+    functionField.mk hf hh hhI / functionField.mk hg hh hhI = functionField.mk hf hg hgI := by
+  rw [div_eq_iff (functionField.mk_ne_zero hg hh hhI hgI), functionField.mk_def,
+    functionField.mk_def, functionField.mk_def, ← HomogeneousLocalization.mk_mul,
+    HomogeneousLocalization.ext_iff_val, HomogeneousLocalization.val_mk,
+    HomogeneousLocalization.val_mk, Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+  exact ⟨1, by
+    simp only [HomogeneousLocalization.NumDenSameDeg.num_mul,
+      HomogeneousLocalization.NumDenSameDeg.den_mul]
+    ring⟩
+
 namespace varietyLocalRing
 
 variable {I P}
