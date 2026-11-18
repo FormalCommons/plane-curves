@@ -22,8 +22,8 @@ of the forms of degree `d`.
 
 ## Main results
 
-* `MvPolynomial.IsHomogeneous.irreducible_of_ne_zero`: over a field, a nonzero linear form is
-  irreducible.
+* `MvPolynomial.irreducible_of_totalDegree_eq_one'`: over a field, a polynomial of total
+  degree `1` is irreducible.
 * `MvPolynomial.linearIndependent_prod_mul_prod`: the products `Aᵢ` are linearly independent.
 * `MvPolynomial.basisProdMulProd`: they form a basis of
   `homogeneousSubmodule (Fin 2) k d`, the forms of degree `d`.
@@ -41,10 +41,11 @@ open Finset
 
 variable {k : Type*} [Field k]
 
-/-- Over a field, a nonzero linear form is irreducible. -/
-theorem IsHomogeneous.irreducible_of_ne_zero {σ : Type*} {p : MvPolynomial σ k}
-    (hp : p.IsHomogeneous 1) (h₀ : p ≠ 0) : Irreducible p := by
-  refine irreducible_of_totalDegree_eq_one (hp.totalDegree h₀) fun x hx ↦ ?_
+/-- Over a field, a polynomial of total degree `1` is irreducible. -/
+theorem irreducible_of_totalDegree_eq_one' {σ : Type*} {p : MvPolynomial σ k}
+    (hp : p.totalDegree = 1) : Irreducible p := by
+  have h₀ : p ≠ 0 := by rintro rfl; simp at hp
+  refine irreducible_of_totalDegree_eq_one hp fun x hx ↦ ?_
   obtain ⟨d, hd⟩ := ne_zero_iff.1 h₀
   exact (ne_zero_of_dvd_ne_zero hd (hx d)).isUnit
 
@@ -67,7 +68,7 @@ theorem linearIndependent_prod_mul_prod {L M : ℕ → MvPolynomial (Fin 2) k}
   | zero => simp
   | succ d ih =>
     have hL0 : L 0 ≠ 0 := (hLM 0 0).ne_zero 0
-    have hprime : Prime (L 0) := ((hL 0).irreducible_of_ne_zero hL0).prime
+    have hprime : Prime (L 0) := (irreducible_of_totalDegree_eq_one' ((hL 0).totalDegree hL0)).prime
     rw [Fintype.linearIndependent_iff]
     intro g hg
     rw [Fin.sum_univ_succ] at hg
@@ -89,7 +90,7 @@ theorem linearIndependent_prod_mul_prod {L M : ℕ → MvPolynomial (Fin 2) k}
       · exact hprime.not_isUnit (isUnit_of_dvd_unit hC ((isUnit_iff_ne_zero.2 h0).map C))
       · obtain ⟨j, -, hj⟩ := hprime.exists_mem_finset_dvd hdvd
         obtain ⟨u, hu⟩ := hprime.irreducible.associated_of_dvd
-          ((hM j).irreducible_of_ne_zero ((hLM 0 j).ne_zero 1)) hj
+          (irreducible_of_totalDegree_eq_one' ((hM j).totalDegree ((hLM 0 j).ne_zero 1))) hj
         obtain ⟨c, -, hc⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
         have := LinearIndependent.pair_iff.1 (hLM 0 j) c (-1) (by
           simp [← hu, hc, smul_eq_C_mul, mul_comm])

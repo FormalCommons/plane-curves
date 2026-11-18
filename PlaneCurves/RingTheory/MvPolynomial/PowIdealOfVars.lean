@@ -32,8 +32,9 @@ for `k[X₁, …, Xₙ] ⧸ I_P ^ m`.
 * `MvPolynomial.finrank_quotient_pow_vanishingIdeal_singleton`:
   `dim k[X] ⧸ I_P ^ m = (m + n - 1).choose n`.
 * `MvPolynomial.finrank_homogeneousSubmodule_and_finrank_quotient_pow_vanishingIdeal_singleton`:
-  the dimensions of the spaces of forms, the bases of products of linear forms in `k[X, Y]`, and
-  the dimension of `k[X] ⧸ I_P ^ m`, together.
+  the monomial bases and dimensions of the spaces of forms, the bases of products of linear forms
+  in `k[X, Y]`, the description of `I ^ m`, the monomial basis and dimension of `k[X] ⧸ I ^ m`,
+  and the dimension of `k[X] ⧸ I_P ^ m`, together.
 
 ## References
 
@@ -167,29 +168,46 @@ theorem finrank_quotient_pow_vanishingIdeal_singleton [Fintype σ] (P : σ → k
     exact congrArg (· ^ m) (map_taylor_vanishingIdeal_singleton P).symm)).toLinearEquiv.finrank_eq,
     finrank_quotient_pow_idealOfVars h]
 
-/-- **Dimensions of spaces of forms and of `k[X] ⧸ I_P ^ m`.** Let `k` be a field.
-(a) The forms of degree `d` in `n` variables form a space of dimension `n.multichoose d`, which
-is `(d + n - 1).choose (n - 1)`.
+/-- **Dimensions of spaces of forms and of `k[X] ⧸ I_P ^ m`.** Let `k` be a field and
+`I = (X₁, …, Xₙ)`.
+(a) The monomials of degree `d` form a basis of the forms of degree `d` in `n` variables, which
+therefore form a space of dimension `n.multichoose d`, that is `(d + n - 1).choose (n - 1)`.
 (b) If `L₀, L₁, …` and `M₀, M₁, …` are linear forms in `k[X, Y]` and no `Lᵢ` is zero or
 proportional to an `Mⱼ`, the products `L₀ ⋯ L_{i-1} M₀ ⋯ M_{d-i-1}`, `0 ≤ i ≤ d`, form a basis
 of the forms of degree `d`.
-(c) For the ideal `I_P` of a point `P` of `kⁿ`, `k[X₁, …, Xₙ] ⧸ I_P ^ m` has dimension
-`(m + n - 1).choose n`, unless `m = n = 0`.
+(c) `I ^ m` consists of the polynomials with no terms of degree `< m`, the residues of the
+monomials of degree `< m` form a basis of `k[X₁, …, Xₙ] ⧸ I ^ m`, and this space has dimension
+`(m + n - 1).choose n`, unless `m = n = 0`; the same dimension holds for `k[X₁, …, Xₙ] ⧸ I_P ^ m`,
+for the ideal `I_P` of any point `P` of `kⁿ`.
 
 Milestone: *Dimensions of spaces of forms and of polynomials modulo a power of the ideal of a
 point*. -/
 theorem finrank_homogeneousSubmodule_and_finrank_quotient_pow_vanishingIdeal_singleton
     [Fintype σ] :
+    (∀ d, ∃ b : Module.Basis {s : σ →₀ ℕ // s.degree = d} k (homogeneousSubmodule σ k d),
+      ∀ s, (b s : MvPolynomial σ k) = monomial s.1 1) ∧
     (∀ d, Module.finrank k (homogeneousSubmodule σ k d) = (Fintype.card σ).multichoose d) ∧
     (∀ L M : ℕ → MvPolynomial (Fin 2) k, (∀ i, (L i).IsHomogeneous 1) →
       (∀ j, (M j).IsHomogeneous 1) → (∀ i j, LinearIndependent k ![L i, M j]) → ∀ d,
       ∃ b : Module.Basis (Fin (d + 1)) k (homogeneousSubmodule (Fin 2) k d), ∀ i,
         (b i : MvPolynomial (Fin 2) k) = (∏ l ∈ range i, L l) * ∏ l ∈ range (d - i), M l) ∧
+    (∀ (m : ℕ) (p : MvPolynomial σ k),
+      p ∈ idealOfVars σ k ^ m ↔ ∀ x ∈ p.support, m ≤ x.degree) ∧
+    (∀ m : ℕ, ∃ b : Module.Basis {d : σ →₀ ℕ | d.degree < m} k
+        (MvPolynomial σ k ⧸ idealOfVars σ k ^ m),
+      ∀ d, b d = Ideal.Quotient.mk _ (monomial (d : σ →₀ ℕ) (1 : k))) ∧
+    (∀ m : ℕ, (m ≠ 0 ∨ Nonempty σ) →
+      Module.finrank k (MvPolynomial σ k ⧸ idealOfVars σ k ^ m) =
+        (m + Fintype.card σ - 1).choose (Fintype.card σ)) ∧
     (∀ (P : σ → k) (m : ℕ), (m ≠ 0 ∨ Nonempty σ) →
       Module.finrank k (MvPolynomial σ k ⧸ vanishingIdeal k {P} ^ m) =
         (m + Fintype.card σ - 1).choose (Fintype.card σ)) :=
-  ⟨TauCeti.finrank_homogeneousSubmodule_eq_multichoose σ k,
+  ⟨fun d ↦ ⟨TauCeti.homogeneousMonomialBasis d, TauCeti.coe_homogeneousMonomialBasis d⟩,
+    TauCeti.finrank_homogeneousSubmodule_eq_multichoose σ k,
     fun _ _ hL hM hLM d ↦ ⟨basisProdMulProd hL hM hLM d, coe_basisProdMulProd_apply hL hM hLM d⟩,
+    mem_pow_idealOfVars_iff,
+    fun m ↦ ⟨quotientPowIdealOfVarsBasis m, quotientPowIdealOfVarsBasis_apply m⟩,
+    fun _ h ↦ finrank_quotient_pow_idealOfVars h,
     fun P _ h ↦ finrank_quotient_pow_vanishingIdeal_singleton P h⟩
 
 /-- The hypothesis `m ≠ 0 ∨ Nonempty σ` is needed: with no variables, `k ⧸ I_P ^ 0 = 0`, while
