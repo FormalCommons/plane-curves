@@ -42,7 +42,8 @@ Following Fulton (§4.3), this file defines
   `V* ∩ Uᵢ = φᵢ(V)` and `(V*)_* = V` (Proposition 3 (1)).
 * `projectiveClosure_injOn`, `projectiveClosure_union`, `projectiveClosure_biUnion`,
   `projectiveClosure_empty`, `projectiveClosure_univ`: `V ↦ V*` is injective on algebraic sets
-  and preserves finite unions, `∅` and, over an infinite field, `𝔸ⁿ`.
+  and preserves finite unions, `∅` and, over an infinite field, `𝔸ⁿ`;
+  `projectiveClosure_singleton`: the closure of a point `a` is `φᵢ(a)`.
 * `isPrime_vanishingIdeal_projectiveClosure`, `projectiveClosure_nonempty`: the projective
   closure of an affine variety is a projective variety (Proposition 3 (3)).
 * `projectiveClosure_irreducibleDecomposition`: the closures of the members of an irreducible
@@ -57,7 +58,9 @@ Following Fulton (§4.3), this file defines
   `vanishingIdeal_affinePart` (`I(W_*) = I(W)_*`) and `isPrime_vanishingIdeal_affinePart`.
 * `affinePart_ne_univ`, `projectiveClosure_affinePart_sUnion`, `affinePart_sUnion_ne_univ`:
   (7) for finite unions of projective varieties, none contained in (and, for `W_* ≠ 𝔸ⁿ` over an
-  infinite field, none containing) the hyperplane at infinity.
+  infinite field, none containing) the hyperplane at infinity; `affinePart_compl_affineOpen`: the
+  hyperplane at infinity has empty affine part; `exists_not_subset_compl_affineOpen`: a nonempty
+  set meets some chart.
 * `projectiveClosureEquiv`: `V ↦ V*` is a bijection from affine varieties to projective
   varieties not contained in the hyperplane at infinity, with inverse `W ↦ W_*`.
 
@@ -287,6 +290,13 @@ theorem projectiveClosure_univ [Infinite k] :
   rw [projectiveClosure_def, h, Ideal.homogenization_bot, HomogeneousIdeal.coe_bot]
   exact zeroLocus_singleton_zero
 
+/-- The projective closure of a point `a ∈ 𝔸ⁿ` is the point `φᵢ(a)`. -/
+@[simp]
+theorem projectiveClosure_singleton (a : Fin n → k) :
+    projectiveClosure i {a} = {(affineChart i).symm a} :=
+  ((projectiveClosure_subset_iff (zeroLocus_vanishingIdeal_singleton _)).2 (by simp)).antisymm
+    (by simpa using image_subset_projectiveClosure (i := i) {a})
+
 /-! ### Closures of affine varieties -/
 
 /-- The projective closure of a nonempty set is nonempty. -/
@@ -398,6 +408,23 @@ theorem zeroLocus_vanishingIdeal_compl_affineOpen (i : Fin (n + 1)) :
   rw [← zeroLocus_singleton_X]
   exact zeroLocus_vanishingIdeal_zeroLocus_of_isHomogeneous fun f hf ↦
     ⟨1, (Set.mem_singleton_iff.1 hf) ▸ isHomogeneous_X k i⟩
+
+/-- The affine part of the hyperplane at infinity is empty. -/
+@[simp]
+theorem affinePart_compl_affineOpen : affinePart i (affineOpen (K := k) i)ᶜ = ∅ := by
+  refine Set.eq_empty_of_forall_notMem fun a ha ↦ ?_
+  rw [mem_affinePart_iff (zeroLocus_vanishingIdeal_compl_affineOpen i), Set.mem_compl_iff,
+    ← affineChart_source] at ha
+  exact ha ((affineChart i).map_target (by simp [affineChart_target]))
+
+
+/-- A nonempty set `W ⊆ ℙⁿ` is not contained in the hyperplane at infinity of some chart. -/
+theorem exists_not_subset_compl_affineOpen {W : Set (ℙ k (Fin (n + 1) → k))} (hW : W.Nonempty) :
+    ∃ j, ¬ W ⊆ (affineOpen j)ᶜ := by
+  obtain ⟨P, hP⟩ := hW
+  obtain ⟨j, hj⟩ := exists_mem_affineOpen P
+  exact ⟨j, fun h ↦ h hP hj⟩
+
 
 /-- The affine part of a set is an affine algebraic set. -/
 @[simp]
