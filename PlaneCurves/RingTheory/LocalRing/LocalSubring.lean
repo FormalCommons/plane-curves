@@ -19,8 +19,7 @@ inverses, images under field homomorphisms, and the elements of `LocalSubring.of
   and its inverse lies in the subring.
 * `LocalSubring.le_iff_of_field`: domination of local subrings of a field in terms of inverses.
 * `LocalSubring.map_mono`, `LocalSubring.map_id`, `LocalSubring.map_map`,
-  `LocalSubring.map_symm_map`: images of local
-  subrings under field homomorphisms.
+  `LocalSubring.map_symm_map`: images of local subrings under field homomorphisms.
 * `LocalSubring.mem_ofPrime_iff`: the elements of `LocalSubring.ofPrime A P` are the fractions
   `a / s` with `a, s ∈ A` and `s ∉ P`.
 -/
