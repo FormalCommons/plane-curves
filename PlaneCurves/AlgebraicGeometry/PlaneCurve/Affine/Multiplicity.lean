@@ -176,18 +176,6 @@ theorem IsSimplePoint.leadingFormAt_eq (h : IsSimplePoint F P) :
 
 variable [NoZeroDivisors R]
 
-/-- The multiplicity of a product of two curves at a point is one exactly when it is one for a
-factor and zero for the other. -/
-private theorem orderAt_mul_eq_one_iff :
-    (F * G).orderAt P = 1 ↔
-      F.orderAt P = 1 ∧ G.orderAt P = 0 ∨ F.orderAt P = 0 ∧ G.orderAt P = 1 := by
-  rw [orderAt_mul]
-  generalize F.orderAt P = m
-  generalize G.orderAt P = n
-  cases m using ENat.recTopCoe <;> cases n using ENat.recTopCoe <;> simp
-  norm_cast
-  omega
-
 /-- A point is simple on `FG` exactly when it is simple on one factor and does not lie on the
 other. -/
 theorem isSimplePoint_mul_iff :

@@ -8,8 +8,11 @@ module
 public import Mathlib.Algebra.Squarefree.Basic
 public import Mathlib.RingTheory.Coprime.Lemmas
 public import Mathlib.RingTheory.UniqueFactorizationDomain.Multiplicity
+public import PlaneCurves.Algebra.BigOperators.Multiset
+public import PlaneCurves.Algebra.GroupWithZero.Associated
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Multiplicity
 public import PlaneCurves.RingTheory.MvPolynomial.BinaryForm.Basic
+public import PlaneCurves.RingTheory.Multiplicity
 
 /-!
 # Tangent lines and ordinary multiple points of affine plane curves
@@ -40,6 +43,8 @@ squarefree.
 * `PlaneCurves.Affine.exists_finset_isTangentAt`, `PlaneCurves.Affine.sum_tangentMultiplicity`,
   `PlaneCurves.Affine.leadingFormAt_eq_C_mul_prod_pow`: over an algebraically closed field the
   leading form is `ε ∏ⱼ Lⱼ ^ rⱼ` over the distinct tangents `Lⱼ`, with `∑ⱼ rⱼ = m_P(F)`.
+* `PlaneCurves.Affine.tangentMultiplicity_eq_countP`: in a factorization of the leading form
+  into tangents, the multiplicity of a tangent counts the factors associated to it.
 * `PlaneCurves.Affine.isOrdinaryMultiplePoint_iff`: a multiple point is ordinary exactly when
   it has `m_P(F)` distinct tangents.
 * `PlaneCurves.Affine.multiplicity_tangent_mul`: multiplicity and tangent lines of a product of
@@ -175,6 +180,26 @@ theorem tangentMultiplicity_smul {c : k} (hc : c ≠ 0) :
   exact multiplicity_eq_of_associated_right
     (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hc).map C))
 
+private theorem linearSubst_inv_linearSubst {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
+    (G : MvPolynomial (Fin 2) k) : linearSubst M⁻¹ (linearSubst M G) = G := by
+  rw [← AlgHom.comp_apply, ← linearSubst_mul, Matrix.mul_nonsing_inv _ hM, linearSubst_one,
+    AlgHom.id_apply]
+
+private theorem linearSubst_linearSubst_inv {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
+    (G : MvPolynomial (Fin 2) k) : linearSubst M (linearSubst M⁻¹ G) = G := by
+  rw [← AlgHom.comp_apply, ← linearSubst_mul, Matrix.nonsing_inv_mul _ hM, linearSubst_one,
+    AlgHom.id_apply]
+
+/-- An invertible linear substitution, as an algebra automorphism of `k[X, Y]`. -/
+private noncomputable def linearSubstAlgEquiv {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det) :
+    MvPolynomial (Fin 2) k ≃ₐ[k] MvPolynomial (Fin 2) k :=
+  AlgEquiv.ofAlgHom (linearSubst M) (linearSubst M⁻¹)
+    (AlgHom.ext (linearSubst_linearSubst_inv hM)) (AlgHom.ext (linearSubst_inv_linearSubst hM))
+
+private theorem linearSubstAlgEquiv_apply {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
+    (G : MvPolynomial (Fin 2) k) : linearSubstAlgEquiv hM G = linearSubst M G :=
+  rfl
+
 /-- An invertible linear change of coordinates preserves tangent multiplicities: the
 multiplicity of `L(M X)` as a tangent of `F(M X)` at `Q` is that of `L` as a tangent of `F` at
 `M Q`. -/
@@ -182,24 +207,20 @@ theorem tangentMultiplicity_linearSubst {M : Matrix (Fin 2) (Fin 2) k} (hM : IsU
     (F L : MvPolynomial (Fin 2) k) (Q : Fin 2 → k) :
     tangentMultiplicity (linearSubst M F) Q (linearSubst M L) =
       tangentMultiplicity F (M.mulVec Q) L := by
-  have h₁ : (linearSubst M⁻¹).comp (linearSubst M) = AlgHom.id k _ := by
-    rw [← linearSubst_mul, Matrix.mul_nonsing_inv _ hM, linearSubst_one]
-  have h₂ : (linearSubst M).comp (linearSubst M⁻¹) = AlgHom.id k _ := by
-    rw [← linearSubst_mul, Matrix.nonsing_inv_mul _ hM, linearSubst_one]
   rw [tangentMultiplicity_def, leadingFormAt_linearSubst hM]
-  exact multiplicity_map_eq (AlgEquiv.ofAlgHom (linearSubst M) (linearSubst M⁻¹) h₂ h₁)
+  exact multiplicity_map_eq (linearSubstAlgEquiv hM)
 
 /-- An invertible linear change of coordinates moves the tangents: `L(M X)` is tangent to
 `F(M X)` at `Q` exactly when `L` is tangent to `F` at `M Q`. -/
 theorem isTangentAt_linearSubst_iff {M : Matrix (Fin 2) (Fin 2) k} (hM : IsUnit M.det)
-    (hF : F ≠ 0) (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) (Q : Fin 2 → k) :
+    (Q : Fin 2 → k) :
     IsTangentAt (linearSubst M F) Q (linearSubst M L) ↔ IsTangentAt F (M.mulVec Q) L := by
-  have hML : linearSubst M L ≠ 0 := by
-    rwa [Ne, ← map_zero (linearSubst M), (linearSubst_injective hM).eq_iff]
-  have hMF : linearSubst M F ≠ 0 := by
-    rwa [Ne, ← map_zero (linearSubst M), (linearSubst_injective hM).eq_iff]
-  rw [← tangentMultiplicity_pos_iff hF hL hL₀, ← tangentMultiplicity_pos_iff hMF
-    (hL.linearSubst M) hML, tangentMultiplicity_linearSubst hM]
+  have hd := map_dvd_iff (linearSubstAlgEquiv hM) (a := L) (b := F.leadingFormAt (M.mulVec Q))
+  rw [linearSubstAlgEquiv_apply, linearSubstAlgEquiv_apply] at hd
+  rw [isTangentAt_def, isTangentAt_def, leadingFormAt_linearSubst hM, hd,
+    map_ne_zero_iff _ (linearSubst_injective hM)]
+  refine and_congr_left fun _ ↦ ⟨fun h ↦ ?_, fun h ↦ h.linearSubst M⟩
+  simpa [linearSubst_inv_linearSubst hM] using h.linearSubst M⁻¹
 
 /-- At a simple point, the leading form is a tangent. -/
 theorem IsSimplePoint.isTangentAt_leadingFormAt (h : IsSimplePoint F P) :
@@ -227,6 +248,17 @@ theorem IsSimplePoint.tangentMultiplicity_leadingFormAt (h : IsSimplePoint F P) 
   multiplicity_self (.of_prime_left h.isTangentAt_leadingFormAt.prime
     (leadingFormAt_ne_zero h.ne_zero))
 
+/-- In a factorization of the leading form into tangents, the multiplicity of a prime is the
+number of factors associated to it. -/
+theorem tangentMultiplicity_eq_countP {ε : k} (hε : ε ≠ 0)
+    {u : Multiset (MvPolynomial (Fin 2) k)} (hu : ∀ L ∈ u, IsTangentAt F P L)
+    (heq : F.leadingFormAt P = C ε * u.prod) {p : MvPolynomial (Fin 2) k} (hp : Prime p)
+    [DecidablePred (Associated p)] :
+    tangentMultiplicity F P p = u.countP (Associated p) := by
+  rw [tangentMultiplicity_def, heq, multiplicity_eq_of_associated_right
+    (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hε).map C))]
+  exact Multiset.multiplicity_prod_eq_countP hp fun L hL ↦ (hu L hL).prime.irreducible
+
 section IsAlgClosed
 
 variable [IsAlgClosed k]
@@ -246,64 +278,6 @@ theorem exists_leadingFormAt_eq_C_mul_prod (hF : F ≠ 0) :
       (irreducible_C_mul_X_add_C_mul_X (hs ℓ hℓ)).ne_zero,
       heq ▸ (Multiset.dvd_prod hL).mul_left _⟩
 
-/-- The multiplicity of a prime in a product of irreducibles is the number of factors associated
-to it. -/
-private theorem emultiplicity_multiset_prod {α : Type*} [CommMonoidWithZero α] [IsCancelMulZero α]
-    [WfDvdMonoid α] {p : α} (hp : Prime p) [DecidablePred (Associated p)] {u : Multiset α}
-    (hu : ∀ q ∈ u, Irreducible q) : emultiplicity p u.prod = u.countP (Associated p) := by
-  induction u using Multiset.induction_on with
-  | empty => simp [emultiplicity_of_one_right hp.not_isUnit]
-  | cons q u ih =>
-    rw [Multiset.prod_cons, emultiplicity_mul hp,
-      ih fun r hr ↦ hu r (Multiset.mem_cons_of_mem hr), Multiset.countP_cons]
-    have hq := hu q (Multiset.mem_cons_self q u)
-    split_ifs with h
-    · rw [emultiplicity_eq_of_associated_right h.symm,
-        (FiniteMultiplicity.of_prime_left hp hp.ne_zero).emultiplicity_self]
-      push_cast
-      ring
-    · rw [emultiplicity_eq_zero.2 fun hd ↦ h (hp.irreducible.associated_of_dvd hq hd)]
-      simp
-
-omit [IsAlgClosed k] in
-/-- In a factorization of the leading form into tangents, the multiplicity of a prime is the
-number of factors associated to it. -/
-private theorem multiplicity_eq_countP {ε : k} (hε : ε ≠ 0)
-    {u : Multiset (MvPolynomial (Fin 2) k)} (hu : ∀ L ∈ u, IsTangentAt F P L)
-    (heq : F.leadingFormAt P = C ε * u.prod) {p : MvPolynomial (Fin 2) k} (hp : Prime p)
-    [DecidablePred (Associated p)] :
-    tangentMultiplicity F P p = u.countP (Associated p) := by
-  rw [tangentMultiplicity_def, heq, multiplicity_eq_of_associated_right
-    (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hε).map C))]
-  exact multiplicity_eq_of_emultiplicity_eq_some
-    (emultiplicity_multiset_prod hp fun L hL ↦ (hu L hL).prime.irreducible)
-
-private theorem exists_finset_pairwise_not_associated {α : Type*} [Monoid α]
-    (u : Multiset α) :
-    ∃ s : Finset α, (∀ x ∈ s, x ∈ u) ∧ (s : Set α).Pairwise (fun x y ↦ ¬Associated x y) ∧
-      ∀ x ∈ u, ∃ y ∈ s, Associated x y := by
-  classical
-  induction u using Multiset.induction_on with
-  | empty => exact ⟨∅, by simp⟩
-  | cons a u ih =>
-    obtain ⟨s, hsu, hs, hcov⟩ := ih
-    by_cases ha : ∃ y ∈ s, Associated a y
-    · refine ⟨s, fun x hx ↦ Multiset.mem_cons_of_mem (hsu x hx), hs, fun x hx ↦ ?_⟩
-      rcases Multiset.mem_cons.1 hx with rfl | hx
-      · exact ha
-      · exact hcov x hx
-    · push Not at ha
-      refine ⟨insert a s, fun x hx ↦ ?_, ?_, fun x hx ↦ ?_⟩
-      · rcases Finset.mem_insert.1 hx with rfl | hx
-        · exact Multiset.mem_cons_self _ _
-        · exact Multiset.mem_cons_of_mem (hsu x hx)
-      · rw [Finset.coe_insert]
-        exact hs.insert fun y hy _ ↦ ⟨ha y hy, fun h ↦ ha y hy h.symm⟩
-      · rcases Multiset.mem_cons.1 hx with rfl | hx
-        · exact ⟨x, Finset.mem_insert_self _ _, Associated.refl _⟩
-        · obtain ⟨y, hy, hxy⟩ := hcov x hx
-          exact ⟨y, Finset.mem_insert_of_mem hy, hxy⟩
-
 /-- Over an algebraically closed field, a nonzero curve has finitely many tangents at `P` up to
 nonzero scalars: there is a finite set of pairwise non-associated tangents such that every
 tangent is associated to one of them. -/
@@ -313,7 +287,7 @@ theorem exists_finset_isTangentAt (hF : F ≠ 0) :
       ∀ L, IsTangentAt F P L → ∃ L' ∈ s, Associated L L' := by
   classical
   obtain ⟨ε, hε, u, -, hu, heq⟩ := exists_leadingFormAt_eq_C_mul_prod (P := P) hF
-  obtain ⟨s, hsu, hs, hcov⟩ := exists_finset_pairwise_not_associated u
+  obtain ⟨s, hsu, hs, hcov⟩ := u.exists_finset_pairwise_not_associated
   refine ⟨s, fun L hL ↦ hu L (hsu L hL), hs, fun L hL ↦ ?_⟩
   have hdvd : L ∣ u.prod := by
     have := hL.dvd
@@ -323,20 +297,6 @@ theorem exists_finset_isTangentAt (hF : F ≠ 0) :
   obtain ⟨L', hL', hyL'⟩ := hcov y hy
   exact ⟨L', hL', (hL.prime.irreducible.associated_of_dvd (hu y hy).prime.irreducible hLy).trans
     hyL'⟩
-
-private theorem sum_countP_eq_card {α β : Type*} (s : Finset β) (p : β → α → Prop)
-    [∀ b, DecidablePred (p b)] (u : Multiset α) (h : ∀ x ∈ u, ∃! b, b ∈ s ∧ p b x) :
-    ∑ b ∈ s, u.countP (p b) = Multiset.card u := by
-  classical
-  induction u using Multiset.induction_on with
-  | empty => simp
-  | cons a u ih =>
-    simp only [Multiset.countP_cons, Finset.sum_add_distrib, Multiset.card_cons]
-    rw [ih fun x hx ↦ h x (Multiset.mem_cons_of_mem hx), Finset.sum_boole, Nat.cast_id]
-    congr 1
-    obtain ⟨b, ⟨hb, hpb⟩, huniq⟩ := h a (Multiset.mem_cons_self a u)
-    exact Finset.card_eq_one.2 ⟨b, Finset.eq_singleton_iff_unique_mem.2
-      ⟨Finset.mem_filter.2 ⟨hb, hpb⟩, fun c hc ↦ huniq c (Finset.mem_filter.1 hc)⟩⟩
 
 variable {s : Finset (MvPolynomial (Fin 2) k)} (hs : ∀ L ∈ s, IsTangentAt F P L)
   (hpair : (s : Set (MvPolynomial (Fin 2) k)).Pairwise (fun L L' ↦ ¬Associated L L'))
@@ -349,8 +309,9 @@ theorem sum_tangentMultiplicity (hF : F ≠ 0) :
     ((∑ L ∈ s, tangentMultiplicity F P L : ℕ) : ℕ∞) = F.orderAt P := by
   classical
   obtain ⟨ε, hε, u, hcard, hu, heq⟩ := exists_leadingFormAt_eq_C_mul_prod (P := P) hF
-  rw [← hcard, Finset.sum_congr rfl fun L hL ↦ multiplicity_eq_countP hε hu heq (hs L hL).prime,
-    sum_countP_eq_card]
+  rw [← hcard,
+    Finset.sum_congr rfl fun L hL ↦ tangentMultiplicity_eq_countP hε hu heq (hs L hL).prime,
+    Multiset.sum_countP_eq_card]
   intro x hx
   obtain ⟨L, hL, hxL⟩ := hcov x (hu x hx)
   refine ⟨L, ⟨hL, hxL.symm⟩, fun L' ⟨hL', hL'x⟩ ↦ ?_⟩
@@ -408,8 +369,8 @@ theorem isOrdinaryMultiplePoint_iff (hF : F ≠ 0) :
         rw [tangentMultiplicity_def, ← hfin.pow_dvd_iff_le_multiplicity, sq]
         exact hxx
       obtain ⟨y, hy, hxy⟩ := Multiset.countP_pos.1
-        ((multiplicity_eq_countP hε hu heq hx.prime ▸ h2 : 2 ≤ u.countP (Associated x)).trans_lt'
-          zero_lt_two)
+        ((tangentMultiplicity_eq_countP hε hu heq hx.prime ▸ h2 :
+          2 ≤ u.countP (Associated x)).trans_lt' zero_lt_two)
       obtain ⟨L, hL, hyL⟩ := hcov y (hu y hy)
       have := tangentMultiplicity_eq_of_associated (F := F) (P := P) (hxy.trans hyL)
       have := h L hL
