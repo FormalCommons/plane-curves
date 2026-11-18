@@ -33,26 +33,11 @@ public section
 
 namespace MvPolynomial
 
-variable {σ R : Type*} [Fintype σ] [DecidableEq σ] [CommRing R]
+variable {σ R : Type*} [Fintype σ] [DecidableEq σ]
 
-/-- The change of variables along `M⁻¹` undoes the change of variables along `M`, for a matrix
-`M` with invertible determinant. -/
-@[simp]
-theorem linearSubst_nonsing_inv_linearSubst {M : Matrix σ σ R} (hM : IsUnit M.det)
-    (p : MvPolynomial σ R) : linearSubst M⁻¹ (linearSubst M p) = p := by
-  rw [← linearSubst_mul_apply, Matrix.mul_nonsing_inv _ hM, linearSubst_one, AlgHom.id_apply]
+section CommSemiring
 
-/-- The change of variables along `M` undoes the change of variables along `M⁻¹`, for a matrix
-`M` with invertible determinant. -/
-@[simp]
-theorem linearSubst_linearSubst_nonsing_inv {M : Matrix σ σ R} (hM : IsUnit M.det)
-    (p : MvPolynomial σ R) : linearSubst M (linearSubst M⁻¹ p) = p := by
-  rw [← linearSubst_mul_apply, Matrix.nonsing_inv_mul _ hM, linearSubst_one, AlgHom.id_apply]
-
-/-- A linear change of variables along a matrix with invertible determinant is injective. -/
-theorem linearSubst_injective {M : Matrix σ σ R} (hM : IsUnit M.det) :
-    Function.Injective (linearSubst M) :=
-  Function.LeftInverse.injective (linearSubst_nonsing_inv_linearSubst hM)
+variable [CommSemiring R]
 
 /-- The change of variables along `M⁻¹` undoes the change of variables along `M`, for `M` in
 `GL σ R`. -/
@@ -98,6 +83,33 @@ theorem linearSubstAlgEquiv_symm_apply (M : Matrix.GeneralLinearGroup σ R)
 theorem toAlgHom_linearSubstAlgEquiv (M : Matrix.GeneralLinearGroup σ R) :
     (linearSubstAlgEquiv M : MvPolynomial σ R →ₐ[R] MvPolynomial σ R) = linearSubst M.1 :=
   (rfl)
+
+end CommSemiring
+
+section CommRing
+
+variable [CommRing R]
+
+/-- The change of variables along `M⁻¹` undoes the change of variables along `M`, for a matrix
+`M` with invertible determinant. -/
+@[simp]
+theorem linearSubst_nonsing_inv_linearSubst {M : Matrix σ σ R} (hM : IsUnit M.det)
+    (p : MvPolynomial σ R) : linearSubst M⁻¹ (linearSubst M p) = p := by
+  rw [← linearSubst_mul_apply, Matrix.mul_nonsing_inv _ hM, linearSubst_one, AlgHom.id_apply]
+
+/-- The change of variables along `M` undoes the change of variables along `M⁻¹`, for a matrix
+`M` with invertible determinant. -/
+@[simp]
+theorem linearSubst_linearSubst_nonsing_inv {M : Matrix σ σ R} (hM : IsUnit M.det)
+    (p : MvPolynomial σ R) : linearSubst M (linearSubst M⁻¹ p) = p := by
+  rw [← linearSubst_mul_apply, Matrix.nonsing_inv_mul _ hM, linearSubst_one, AlgHom.id_apply]
+
+/-- A linear change of variables along a matrix with invertible determinant is injective. -/
+theorem linearSubst_injective {M : Matrix σ σ R} (hM : IsUnit M.det) :
+    Function.Injective (linearSubst M) :=
+  Function.LeftInverse.injective (linearSubst_nonsing_inv_linearSubst hM)
+
+end CommRing
 
 end MvPolynomial
 
