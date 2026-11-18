@@ -24,8 +24,8 @@ with `g(P) ≠ 0`, that is, the homogeneous localization of `k[X₀, …, Xₙ]`
 * `PlaneCurves.ProjectiveSpace.localRing P`: the local ring `𝒪_P(ℙⁿ)`, a local `k`-algebra.
 * `PlaneCurves.ProjectiveSpace.localRing.evalAt P`: the value at `P`, a `k`-algebra hom
   `𝒪_P(ℙⁿ) →ₐ[k] k`.
-* `PlaneCurves.ProjectiveSpace.localRing.residueFieldEquiv P`: the residue field of `𝒪_P(ℙⁿ)` is
-  `k`.
+* `PlaneCurves.ProjectiveSpace.localRing.residueFieldAlgEquiv P`: the residue field of
+  `𝒪_P(ℙⁿ)` is `k`.
 
 ## Main results
 
@@ -96,7 +96,7 @@ example (P : ℙ k (Fin (n + 1) → k)) : Algebra k (localRing P) := inferInstan
 namespace localRing
 
 /-- A form not in the ideal of `P` does not vanish at the representative of `P`. -/
-private theorem eval_rep_ne_zero ⦃i : ℕ⦄ ⦃g : MvPolynomial (Fin (n + 1)) k⦄
+theorem eval_rep_ne_zero ⦃i : ℕ⦄ ⦃g : MvPolynomial (Fin (n + 1)) k⦄
     (hg : g ∈ homogeneousSubmodule (Fin (n + 1)) k i)
     (hgP : g ∈ (pointIdeal P).toIdeal.primeCompl) :
     aeval P.rep g ≠ 0 := by
@@ -111,6 +111,12 @@ noncomputable def evalAt : localRing P →ₐ[k] k :=
   HomogeneousLocalization.liftAlgHom _ (pointIdeal P).toIdeal.primeCompl_le_nonZeroDivisors
     (aeval P.rep) eval_rep_ne_zero
 
+variable (P) in
+theorem evalAt_def : evalAt P =
+    HomogeneousLocalization.liftAlgHom _ (pointIdeal P).toIdeal.primeCompl_le_nonZeroDivisors
+      (aeval P.rep) eval_rep_ne_zero :=
+  (rfl)
+
 /-- The value at `P` of a fraction `f / g` of forms of the same degree is `f(v) / g(v)`, for every
 set of homogeneous coordinates `v` of `P`. -/
 theorem evalAt_mk {v : Fin (n + 1) → k} (hv : v ≠ 0) (hP : mk k v hv = P)
@@ -121,7 +127,7 @@ theorem evalAt_mk {v : Fin (n + 1) → k} (hv : v ≠ 0) (hP : mk k v hv = P)
   obtain ⟨u, hu⟩ := exists_smul_eq_mk_rep k v hv
   have hnum := (mem_homogeneousSubmodule _ _).1 c.num.2
   have hden := (mem_homogeneousSubmodule _ _).1 c.den.2
-  rw [evalAt, HomogeneousLocalization.liftAlgHom_mk, aeval_eq_eval, ← hu, Units.smul_def,
+  rw [evalAt_def, HomogeneousLocalization.liftAlgHom_mk, aeval_eq_eval, ← hu, Units.smul_def,
     hnum.eval_smul, hden.eval_smul, mul_div_mul_left _ _ (pow_ne_zero _ u.ne_zero)]
 
 /-- The value at `P` of a fraction `f / g` of forms of the same degree is `f(P) / g(P)`, computed
@@ -133,6 +139,7 @@ theorem evalAt_mk_rep
   evalAt_mk P.rep_ne_zero (mk_rep P) c
 
 /-- The value at `P` of a constant is that constant. -/
+@[simp]
 theorem evalAt_algebraMap (a : k) : evalAt P (algebraMap k (localRing P) a) = a :=
   (evalAt P).commutes a
 
@@ -152,14 +159,20 @@ theorem isUnit_iff_evalAt_ne_zero {z : localRing P} : IsUnit z ↔ evalAt P z �
 
 variable (P) in
 /-- The residue field of `𝒪_P(ℙⁿ)` is `k`, through the value at `P`. -/
-noncomputable def residueFieldEquiv : IsLocalRing.ResidueField (localRing P) ≃ₐ[k] k :=
+noncomputable def residueFieldAlgEquiv : IsLocalRing.ResidueField (localRing P) ≃ₐ[k] k :=
   (Ideal.quotientEquivAlgOfEq k (ker_evalAt P)).symm.trans
     (Ideal.quotientKerAlgEquivOfSurjective (evalAt_surjective P))
 
+variable (P) in
+theorem residueFieldAlgEquiv_def : residueFieldAlgEquiv P =
+    (Ideal.quotientEquivAlgOfEq k (ker_evalAt P)).symm.trans
+      (Ideal.quotientKerAlgEquivOfSurjective (evalAt_surjective P)) :=
+  (rfl)
+
 /-- The residue-field equivalence sends the residue of `z` to its value at `P`. -/
 @[simp]
-theorem residueFieldEquiv_residue (z : localRing P) :
-    residueFieldEquiv P (IsLocalRing.residue (localRing P) z) = evalAt P z :=
+theorem residueFieldAlgEquiv_residue (z : localRing P) :
+    residueFieldAlgEquiv P (IsLocalRing.residue (localRing P) z) = evalAt P z :=
   (rfl)
 
 end localRing
