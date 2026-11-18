@@ -48,7 +48,8 @@ map `𝒪_P(𝔸ⁿ) → k`, and describes its maximal ideal, its powers and its
 * `PlaneCurves.AffineSpace.localRing.ringKrullDim_eq`: `𝒪_P(𝔸ⁿ)` is a regular local ring of
   dimension `n`.
 * `PlaneCurves.AffineSpace.localRing.algebraMap_mem_maximalIdeal_pow_iff`: a polynomial lies in
-  `𝔪 ^ r` iff its order at `P` is at least `r`.
+  `𝔪 ^ r` iff its order at `P` is at least `r`; `localRing.algebraMap_mem_maximalIdeal_iff`: it
+  lies in `𝔪` iff it vanishes at `P`.
 * `PlaneCurves.AffineSpace.localRing.quotient_iso`: local rings of subvarieties are quotients
   of the local ring of affine space. For ideals `I ≤ J ≤ I_P` it gives
   `𝒪_P ⧸ J 𝒪_P ≅ 𝒪_P(k[X] ⧸ I) ⧸ J' 𝒪_P(k[X] ⧸ I)`, from
@@ -180,6 +181,18 @@ theorem algebraMap_mem_maximalIdeal_pow_iff {f : MvPolynomial σ k} {r : ℕ} :
   rw [← mem_comap, ← under_def,
     IsLocalization.AtPrime.under_maximalIdeal_pow (vanishingIdeal k {P}) (localRing k P),
     mem_pow_vanishingIdeal_singleton_iff]
+
+/-- A polynomial lies in the maximal ideal of `𝒪_P(𝔸ⁿ)` iff it vanishes at `P`. -/
+theorem algebraMap_mem_maximalIdeal_iff {f : MvPolynomial σ k} :
+    algebraMap _ (localRing k P) f ∈ maximalIdeal (localRing k P) ↔ eval P f = 0 := by
+  rw [mem_maximalIdeal, mem_nonunits_iff, isUnit_algebraMap_iff, not_not]
+
+variable (k P) in
+/-- The map `k[X] → 𝒪_P(𝔸ⁿ)` is injective. -/
+theorem algebraMap_injective :
+    Function.Injective (algebraMap (MvPolynomial σ k) (localRing k P)) :=
+  IsLocalization.injective (localRing k P)
+    (vanishingIdeal k {P} : Ideal (MvPolynomial σ k)).primeCompl_le_nonZeroDivisors
 
 variable [Finite σ]
 

@@ -24,7 +24,8 @@ An affine plane curve is a nonzero `F : MvPolynomial (Fin 2) k`, and its multipl
 ## Main results
 
 * `PlaneCurves.Affine.isSimplePoint_iff_orderAt_eq_one`: `P` is simple exactly when
-  `m_P(F) = 1`.
+  `m_P(F) = 1`; `PlaneCurves.Affine.isSimplePoint_of_totalDegree_eq_one`: a line through `P`
+  is smooth at `P`.
 * `PlaneCurves.Affine.isMultiplePoint_iff_eval_pderiv`: `P` is multiple exactly when `F` and
   both partial derivatives vanish at `P`.
 * `PlaneCurves.Affine.isSimplePoint_mul_iff`: `P` is simple on `FG` exactly when it is simple
@@ -241,6 +242,15 @@ end CommRing
 section Field
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 2) k} {P : Fin 2 → k}
+
+/-- A polynomial with total degree one vanishing at `P`, such as a line `aX + bY + c` through
+`P`, is smooth at `P`. -/
+theorem isSimplePoint_of_totalDegree_eq_one (hF : F.totalDegree = 1) (hP : eval P F = 0) :
+    IsSimplePoint F P := by
+  have hF0 : F ≠ 0 := by rintro rfl; simp at hF
+  rw [isSimplePoint_iff_orderAt_eq_one]
+  refine le_antisymm (by simpa [hF] using orderAt_le_totalDegree hF0 P) ?_
+  exact Order.one_le_iff_pos.2 (orderAt_pos_iff.2 hP)
 
 /-- **Multiplicity and simple points of an affine plane curve.** Let `F` be a nonzero plane
 curve over a field `k` and `P` a point, and write `m_P(F)` for the order of `F` at `P`.
