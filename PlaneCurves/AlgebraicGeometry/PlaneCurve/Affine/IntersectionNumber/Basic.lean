@@ -12,6 +12,7 @@ public import TauCeti.RingTheory.KrullDimension.Regular
 public import TauCeti.RingTheory.Length
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
+public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
 public import PlaneCurves.RingTheory.LocalRing.Length
 public import PlaneCurves.RingTheory.MvPolynomial.Factorization
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
@@ -45,6 +46,8 @@ properties (1)–(4) and (7) over any field.
 * `PlaneCurves.Affine.intersectionNumber_add_mul`: property (7).
 * `PlaneCurves.Affine.IntersectProperlyAt.radical_span_eq_maximalIdeal`: for a proper
   intersection through `P`, the ideal `(F, G) 𝒪_P(𝔸²)` has radical the maximal ideal.
+* `PlaneCurves.Affine.intersectionNumber_X_sub_C_X_sub_C`: `I(P, (X - a) ∩ (Y - b)) = 1` for
+  `P = (a, b)`.
 
 ## References
 
@@ -395,6 +398,21 @@ theorem intersectionNumber_ne_top_iff_and_eq_zero_iff (P : Fin 2 → k)
     fun _ hU => intersectionNumber_mul_left_of_eval_ne_zero hU,
     fun _ ψ h => intersectionNumber_algEquiv ψ h F G, intersectionNumber_comm P F G,
     intersectionNumber_add_mul P F G⟩
+
+/-- The two coordinate lines through `P` meet with intersection number one there:
+`I(P, (X - a) ∩ (Y - b)) = 1` for `P = (a, b)`. -/
+@[simp]
+theorem intersectionNumber_X_sub_C_X_sub_C (P : Fin 2 → k) :
+    intersectionNumber P (X 0 - C (P 0)) (X 1 - C (P 1)) = 1 := by
+  set ι := algebraMap (MvPolynomial (Fin 2) k) (AffineSpace.localRing k P)
+  have h : (vanishingIdeal k {P}).map ι = Ideal.span {ι (X 0 - C (P 0)), ι (X 1 - C (P 1))} := by
+    rw [congrArg (Ideal.map ι) (vanishingIdeal_singleton_eq_span P), Ideal.map_span,
+      ← Set.range_comp]
+    congr 1
+    ext x
+    simp [Fin.exists_fin_two, eq_comm]
+  rw [intersectionNumber_def, ← h, AffineSpace.localRing.map_vanishingIdeal]
+  exact TauCeti.length_residueField_eq_one
 
 end PlaneCurves.Affine
 
