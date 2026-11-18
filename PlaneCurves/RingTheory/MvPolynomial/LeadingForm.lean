@@ -27,9 +27,12 @@ tangent lines at the point.
 * `MvPolynomial.leadingFormAt_eq_zero_iff`: the leading form vanishes only for `p = 0`.
 * `MvPolynomial.leadingFormAt_of_eval_ne_zero`: away from the zeros of `p` the leading form
   is the constant `p(a)`; `MvPolynomial.leadingFormAt_eq_sum_pderiv`: at a point of order one it
-  is the differential `∑ᵢ (∂p/∂Xᵢ)(a) Xᵢ`.
+  is the differential `∑ᵢ (∂p/∂Xᵢ)(a) Xᵢ`; `MvPolynomial.orderAt_eq_one_iff`: the order is one
+  exactly at the zeros of `p` where some partial derivative does not vanish.
 * `MvPolynomial.leadingFormAt_mul`, `MvPolynomial.leadingFormAt_pow`,
   `MvPolynomial.leadingFormAt_prod`: over a domain, the leading form is multiplicative.
+* `MvPolynomial.orderAt_mul_eq_one_iff`: over a domain, a product has order one exactly when
+  one factor has order one and the other order zero.
 * `MvPolynomial.leadingFormAt_aeval`, `MvPolynomial.orderAt_aeval_eq`: if the leading form
   of `p` at `g(b)`, evaluated at the linear parts of `g` at `b`, is nonzero, then it is the
   leading form of `p(g)` at `b`, and the orders agree.
@@ -120,11 +123,35 @@ theorem leadingFormAt_eq_sum_pderiv [Fintype σ] (h : p.orderAt a = 1) :
     p.leadingFormAt a = ∑ i, eval a (pderiv i p) • X i := by
   rw [leadingFormAt_def, h, ENat.toNat_one, homogeneousComponent_one_taylor]
 
+/-- A polynomial has order one at `a` exactly when it vanishes at `a` and some partial
+derivative does not. -/
+theorem orderAt_eq_one_iff [Finite σ] :
+    p.orderAt a = 1 ↔ eval a p = 0 ∧ ∃ i, eval a (pderiv i p) ≠ 0 := by
+  have := Fintype.ofFinite σ
+  refine ⟨fun h ↦ ⟨orderAt_pos_iff.1 (by simp [h]), ?_⟩,
+    fun ⟨h0, i, hi⟩ ↦ orderAt_eq_one_of_eval_pderiv_ne_zero h0 hi⟩
+  by_contra! hd
+  have hp : p ≠ 0 := by rintro rfl; simp at h
+  apply leadingFormAt_ne_zero (a := a) hp
+  simp [leadingFormAt_eq_sum_pderiv h, hd]
+
 /-- The leading form of a Taylor shift is the leading form at the translated point. -/
 @[simp]
 theorem leadingFormAt_taylor (a b : σ → R) (p : MvPolynomial σ R) :
     (taylor a p).leadingFormAt b = p.leadingFormAt (b + a) := by
   rw [leadingFormAt_def, leadingFormAt_def, orderAt_taylor, taylor_taylor]
+
+/-- Over a semiring without zero divisors, a product has order one at `a` exactly when one
+factor has order one and the other order zero there. -/
+theorem orderAt_mul_eq_one_iff [NoZeroDivisors R] :
+    (p * q).orderAt a = 1 ↔
+      p.orderAt a = 1 ∧ q.orderAt a = 0 ∨ p.orderAt a = 0 ∧ q.orderAt a = 1 := by
+  rw [orderAt_mul]
+  generalize p.orderAt a = m
+  generalize q.orderAt a = n
+  cases m using ENat.recTopCoe <;> cases n using ENat.recTopCoe <;> simp
+  norm_cast
+  omega
 
 /-- Over a semiring without zero divisors, the leading form of a product is the product of the
 leading forms. -/

@@ -30,6 +30,8 @@ Its dehomogenization is `F(X, 1) = aeval ![Polynomial.X, 1] F`.
   form is a product of linear forms if and only if its dehomogenization splits.
 * `MvPolynomial.IsHomogeneous.exists_eq_C_mul_prod`: over an algebraically closed field, every
   nonzero binary form of degree `d` is a product of `d` linear forms.
+* `MvPolynomial.irreducible_of_isHomogeneous_one`: over a field, nonzero linear forms in any
+  number of variables are irreducible.
 * `MvPolynomial.irreducible_C_mul_X_add_C_mul_X`, `MvPolynomial.rel_associated_of_C_mul_prod_eq`:
   over a field, nonzero linear forms are irreducible, so the linear factors of a binary form are
   unique up to order and nonzero scalars.
@@ -94,6 +96,13 @@ end Domain
 section Field
 
 variable {K : Type*} [Field K] {F : MvPolynomial (Fin 2) K} {d : ℕ}
+
+/-- Over a field, a nonzero linear form, in any number of variables, is irreducible. -/
+theorem irreducible_of_isHomogeneous_one {σ : Type*} {L : MvPolynomial σ K}
+    (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) : Irreducible L := by
+  refine irreducible_of_totalDegree_eq_one (hL.totalDegree hL₀) fun x hx ↦ ?_
+  obtain ⟨d, hd⟩ := ne_zero_iff.1 hL₀
+  exact isUnit_iff_ne_zero.2 fun hx0 ↦ hd (zero_dvd_iff.1 (hx0 ▸ hx d))
 
 /-- Over a field, a nonzero linear binary form `a X + b Y` is irreducible. -/
 theorem irreducible_C_mul_X_add_C_mul_X {a b : K} (h : (a, b) ≠ (0, 0)) :

@@ -27,6 +27,20 @@ Each entry has this form:
 
 ## auxiliary/affine-varieties.md
 
+### Dimension of k[X]/I^m with no variables and m = 0
+
+- **Where:** `auxiliary/affine-varieties.md`, milestone *Dimensions of spaces of forms and of
+  polynomials modulo a power of the ideal of a point*, part (c).
+- **Error:** it says "$\dim_k k[X_1,\dots,X_n]/I^m = \binom{m+n-1}{n}$" for every `m` and `n`.
+  For `n = 0` and `m = 0` the quotient is $k/k = 0$, but $\binom{-1}{0} = 1$ (and in `ℕ`,
+  `(0 + 0 - 1).choose 0 = 1`). Fulton always has `n ≥ 1`, and every other case is right.
+- **Fix:** `MvPolynomial.finrank_quotient_pow_vanishingIdeal_singleton` and
+  `MvPolynomial.finrank_quotient_pow_idealOfVars` assume `m ≠ 0 ∨ Nonempty σ`; an `example`
+  next to the milestone shows the hypothesis is needed.
+  `MvPolynomial.finrank_quotient_pow_idealOfVars_succ` states the formula for `I ^ (m + 1)`
+  without a hypothesis.
+- **Issue:** #22.
+
 ## atlas/01-local-properties.md
 
 ## auxiliary/projective-varieties.md
