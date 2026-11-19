@@ -117,7 +117,7 @@ theorem ncard_nonOrdinaryMultiplePoints_linearSubst (hF : F.IsHomogeneous n)
   rw [nonOrdinaryMultiplePoints_linearSubst hF hM,
     Set.ncard_preimage_of_injective_subset_range hbij.1 (by simp [hbij.2.range_eq])]
 
-/-- A curve has no non-ordinary multiple points exactly when all its multiple points are ordinary. -/
+/-- A curve has no non-ordinary multiple points exactly when its multiple points are ordinary. -/
 theorem nonOrdinaryMultiplePoints_eq_empty_iff :
     nonOrdinaryMultiplePoints F = ∅ ↔ ∀ Q, IsMultiplePoint F Q → IsOrdinaryMultiplePoint F Q := by
   simp [Set.eq_empty_iff_forall_notMem]
