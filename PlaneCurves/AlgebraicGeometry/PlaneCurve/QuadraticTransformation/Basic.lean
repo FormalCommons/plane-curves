@@ -5,8 +5,11 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Algebra.MvPolynomial.Division
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 public import Mathlib.Algebra.MvPolynomial.Monad
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Multiplicity
+public import PlaneCurves.RingTheory.MvPolynomial.Homogeneous
 
 /-!
 # Fundamental points and the standard quadratic transformation
@@ -17,6 +20,11 @@ involution off the *fundamental triangle* `xyz = 0`. On polynomials it is the su
 `F ↦ F^Q = F(YZ, XZ, XY)`, a ring map that doubles degrees, with `(F^Q)^Q = (XYZ)^n F` for a form
 `F` of degree `n`.
 
+Fulton's step (1): `F^Q = X^r₀ Y^r₁ Z^r₂ F'`, where `rᵢ` is the multiplicity of `F` at the
+fundamental point `[eᵢ]` and no `Xᵢ` divides the *proper transform* `F'`. It holds for every
+nonzero form. It is proved at `Z` from the expansion `F^Q = ∑ⱼ Z^j Gⱼ(Y, X) (XY)^(n - j)`, and at
+the other two lines by permuting the variables.
+
 ## Main definitions
 
 * `PlaneCurves.Projective.fundamentalPoint i`: the point `[eᵢ]` of `ℙ²`.
@@ -24,6 +32,9 @@ involution off the *fundamental triangle* `xyz = 0`. On polynomials it is the su
   lines `V(Xᵢ)`.
 * `PlaneCurves.Projective.quadraticTransform`: the algebra map `F ↦ F^Q`, over any commutative
   semiring.
+* `PlaneCurves.Projective.exceptionalExponent`: the exponents `(r₀, r₁, r₂)` of the exceptional
+  factor of `F^Q`.
+* `PlaneCurves.Projective.properTransform`: the proper transform `F' = F^Q / (X^r₀ Y^r₁ Z^r₂)`.
 
 ## Main results
 
@@ -37,6 +48,16 @@ involution off the *fundamental triangle* `xyz = 0`. On polynomials it is the su
   `PlaneCurves.Projective.quadraticTransform_eq_zero_iff`: `F^Q = 0` only for `F = 0`.
 * `PlaneCurves.Projective.quadraticTransform_rename`: `F ↦ F^Q` commutes with permutations of
   the variables.
+* `PlaneCurves.Projective.quadraticTransform_eq_sum`: the expansion of `F^Q` at `Z`.
+* `PlaneCurves.Projective.multiplicity_X_quadraticTransform`,
+  `PlaneCurves.Projective.not_X_dvd_properTransform`,
+  `PlaneCurves.Projective.quadraticTransform_eq`:
+  step (1), `F^Q = X^r₀ Y^r₁ Z^r₂ F'` with `X^rᵢ` the exact power of `Xᵢ` dividing `F^Q`.
+* `MvPolynomial.IsHomogeneous.properTransform`: `F'` is a form of degree `2n - r₀ - r₁ - r₂`.
+* `PlaneCurves.Projective.properTransform_mul`, `PlaneCurves.Projective.properTransform_rename`:
+  the proper transform is multiplicative on forms and commutes with permutations of the variables.
+* `PlaneCurves.Projective.aeval_X_two_eq_zero_properTransform`: the restriction of `F'` to the
+  line `Z = 0`, in terms of the tangent cone of `F` at `[0 : 0 : 1]`.
 
 ## References
 
@@ -287,6 +308,376 @@ example :
   ring
 
 end QuadraticTransform
+
+section Expansion
+
+variable {R : Type*} [CommSemiring R] {F : MvPolynomial (Fin 3) R} {n : ℕ}
+
+/-- For a binary form `G(X, Y)` of degree `j`, `G(X, Y)^Q = G(YZ, XZ) = Z ^ j G(Y, X)`. -/
+theorem quadraticTransform_rename_succAbove_two {G : MvPolynomial (Fin 2) R} {j : ℕ}
+    (hG : G.IsHomogeneous j) :
+    quadraticTransform (rename (Fin.succAbove 2) G) = X 2 ^ j * rename ![1, 0] G := by
+  have h : quadraticTransform.comp (rename (Fin.succAbove (2 : Fin 3))) =
+      aeval fun i ↦ X 2 * (X (![1, 0] i) : MvPolynomial (Fin 3) R) := by
+    refine algHom_ext fun i ↦ ?_
+    fin_cases i <;> simp [mul_comm, Fin.succAbove, Fin.lt_def]
+  rw [← AlgHom.comp_apply, h, hG.aeval_mul_left, ← aeval_X_left_apply (rename _ G), aeval_rename]
+  rfl
+
+/-- **The expansion of `F^Q` at `Z`.** Writing a form `F` of degree `n` as
+`F = ∑ⱼ Gⱼ(X, Y) Z^(n - j)` with `Gⱼ` the degree `j` part of `F(X, Y, 1)`, its quadratic
+transform is `F^Q = ∑ⱼ Z^j Gⱼ(Y, X) (XY)^(n - j)`. -/
+theorem quadraticTransform_eq_sum (hF : F.IsHomogeneous n) :
+    quadraticTransform F = ∑ j ∈ Finset.range (n + 1), X 2 ^ j *
+      rename ![1, 0] (homogeneousComponent j (dehomogenize 2 F)) * (X 0 * X 1) ^ (n - j) := by
+  conv_lhs => rw [← homogenize_dehomogenize (i := 2) hF, homogenize_def]
+  simp only [map_sum, map_mul, map_pow, ← rename_homogeneousComponent]
+  refine Finset.sum_congr rfl fun j _ ↦ ?_
+  rw [quadraticTransform_rename_succAbove_two (homogeneousComponent_isHomogeneous j _),
+    quadraticTransform_X_two]
+
+end Expansion
+
+section ProperTransform
+
+variable {k : Type*} [Field k] {F G : MvPolynomial (Fin 3) k} {n m : ℕ}
+
+/-- The multiplicity of the line `V(Xᵢ)` at the fundamental point `[eⱼ]` is `0` for `j = i`
+and `1` otherwise. -/
+theorem mult_X_fundamentalPoint (i j : Fin 3) :
+    mult (X i : MvPolynomial (Fin 3) k) (fundamentalPoint j) = if j = i then 0 else 1 := by
+  split_ifs with h
+  · subst h
+    exact (mult_eq_zero_iff (isHomogeneous_X k j)).2 (by simp)
+  · refine le_antisymm (by simpa using mult_le_degree (isHomogeneous_X k i) (X_ne_zero i) _) ?_
+    exact Order.one_le_iff_pos.2 ((mult_pos_iff (isHomogeneous_X k i)).2 (by simpa using h))
+
+private theorem aeval_X_two_zero_rename (p : MvPolynomial (Fin 2) k) :
+    aeval (![X 0, X 1, 0] : Fin 3 → MvPolynomial (Fin 3) k) (rename ![1, 0] p) =
+      rename ![1, 0] p := by
+  have h : (aeval (![X 0, X 1, 0] : Fin 3 → MvPolynomial (Fin 3) k)).comp (rename ![1, 0]) =
+      rename (R := k) (![1, 0] : Fin 2 → Fin 3) :=
+    algHom_ext fun i ↦ by fin_cases i <;> simp
+  simpa using AlgHom.congr_fun h p
+
+private theorem dehomogenize_two_ne_zero (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) :
+    dehomogenize 2 F ≠ 0 := by
+  rw [Ne, ← orderAt_eq_top_iff (a := 0), ← mult_fundamentalPoint_eq_orderAt hF]
+  exact mult_eq_top_iff.not.2 hF0
+
+/-- `F^Q = Z ^ r H`, with `r` the multiplicity of `F` at `[0 : 0 : 1]` and
+`H(X, Y, 0) = (XY)^(n - r) G_r(Y, X)` for the leading form `G_r` of `F(X, Y, 1)` at `0`. -/
+private theorem exists_quadraticTransform_eq_X_two_pow_mul (hF : F.IsHomogeneous n)
+    (hF0 : F ≠ 0) :
+    ∃ H, quadraticTransform F = X 2 ^ (mult F (fundamentalPoint 2)).toNat * H ∧
+      aeval (![X 0, X 1, 0] : Fin 3 → MvPolynomial (Fin 3) k) H =
+        (X 0 * X 1) ^ (n - (mult F (fundamentalPoint 2)).toNat) *
+          rename ![1, 0] (leadingFormAt (dehomogenize 2 F) 0) := by
+  set r := (mult F (fundamentalPoint 2)).toNat with hr
+  have hrn : r ≤ n := ENat.toNat_le_of_le_natCast (mult_le_degree hF hF0 _)
+  have hr' : (r : ℕ∞) = (dehomogenize 2 F).orderAt 0 := by
+    rw [hr, ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0), mult_fundamentalPoint_eq_orderAt hF]
+  have hlt : ∀ j < r, homogeneousComponent j (dehomogenize 2 F) = 0 := fun j hj ↦ by
+    simpa [taylor_zero] using le_orderAt_iff_homogeneousComponent.1 hr'.le j hj
+  refine ⟨∑ j ∈ Finset.Ico r (n + 1), X 2 ^ (j - r) *
+    rename ![1, 0] (homogeneousComponent j (dehomogenize 2 F)) * (X 0 * X 1) ^ (n - j), ?_, ?_⟩
+  · rw [quadraticTransform_eq_sum hF, ← Finset.sum_range_add_sum_Ico _ (by omega : r ≤ n + 1),
+      Finset.sum_eq_zero fun j hj ↦ by rw [hlt j (Finset.mem_range.1 hj)]; simp, zero_add,
+      Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j hj ↦ ?_
+    rw [← mul_assoc, ← mul_assoc, ← pow_add, Nat.add_sub_cancel' (Finset.mem_Ico.1 hj).1]
+  · rw [map_sum, Finset.sum_eq_single_of_mem r (by simp; omega)]
+    · simp only [map_mul, map_pow, aeval_X_two_zero_rename]
+      simp [leadingFormAt_def, taylor_zero, ← hr', mul_comm]
+    · intro j hj hjr
+      have : j - r ≠ 0 := by simp at hj; omega
+      simp [zero_pow this]
+
+private theorem emultiplicity_X_two_quadraticTransform (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) :
+    emultiplicity (X 2) (quadraticTransform F) = (mult F (fundamentalPoint 2)).toNat := by
+  obtain ⟨H, hFH, hH⟩ := exists_quadraticTransform_eq_X_two_pow_mul hF hF0
+  refine emultiplicity_eq_of_dvd_of_not_dvd (hFH ▸ dvd_mul_right _ _) ?_
+  rw [hFH, pow_succ, mul_dvd_mul_iff_left (pow_ne_zero _ (X_ne_zero _))]
+  have hne : (X 0 * X 1 : MvPolynomial (Fin 3) k) ^ (n - (mult F (fundamentalPoint 2)).toNat) *
+      rename ![1, 0] (leadingFormAt (dehomogenize 2 F) 0) ≠ 0 :=
+    mul_ne_zero (pow_ne_zero _ (mul_ne_zero (X_ne_zero _) (X_ne_zero _)))
+      ((map_ne_zero_iff _ (rename_injective _ (by decide))).2
+        (leadingFormAt_ne_zero (dehomogenize_two_ne_zero hF hF0)))
+  rintro ⟨K, rfl⟩
+  apply hne
+  rw [← hH]
+  simp
+
+/-- **(1), the exact power**, as an `emultiplicity`: the largest power of `Xᵢ` dividing the
+quadratic transform of a nonzero form is its multiplicity at the fundamental point `[eᵢ]`. -/
+theorem emultiplicity_X_quadraticTransform (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) (i : Fin 3) :
+    emultiplicity (X i) (quadraticTransform F) = (mult F (fundamentalPoint i)).toNat := by
+  have hσ : Equiv.swap i 2 i = 2 := Equiv.swap_apply_left _ _
+  have hm := mult_rename_fundamentalPoint hF (Equiv.swap i 2) i
+  rw [hσ] at hm
+  have h := emultiplicity_X_two_quadraticTransform (hF.rename_isHomogeneous (f := Equiv.swap i 2))
+    ((map_ne_zero_iff _ (rename_injective _ (Equiv.injective _))).2 hF0)
+  rw [quadraticTransform_rename, hm, ← hσ, ← rename_X, hσ] at h
+  have he := emultiplicity_map_eq (renameEquiv k (Equiv.swap i 2)) (a := X i)
+    (b := quadraticTransform F)
+  rwa [renameEquiv_apply, renameEquiv_apply, h, eq_comm] at he
+
+/-- **(1), the exact power.** The largest power of `Xᵢ` dividing the quadratic transform of a
+nonzero form is its multiplicity at the fundamental point `[eᵢ]`. -/
+theorem multiplicity_X_quadraticTransform (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) (i : Fin 3) :
+    multiplicity (X i) (quadraticTransform F) = (mult F (fundamentalPoint i)).toNat :=
+  multiplicity_eq_of_emultiplicity_eq_some (emultiplicity_X_quadraticTransform hF hF0 i)
+
+/-- `Xᵢ ^ rᵢ` divides the quadratic transform of a form, `rᵢ` its multiplicity at `[eᵢ]`. -/
+theorem X_pow_dvd_quadraticTransform (hF : F.IsHomogeneous n) (i : Fin 3) :
+    X i ^ (mult F (fundamentalPoint i)).toNat ∣ quadraticTransform F := by
+  obtain rfl | hF0 := eq_or_ne F 0
+  · simp
+  exact pow_dvd_of_le_emultiplicity (emultiplicity_X_quadraticTransform hF hF0 i).ge
+
+/-- The exponents of the exceptional factor of `F^Q`: the exponent of `Xᵢ` is the multiplicity
+of `F` at the fundamental point `[eᵢ]` off the line `V(Xᵢ)`. -/
+noncomputable def exceptionalExponent (F : MvPolynomial (Fin 3) k) : Fin 3 →₀ ℕ :=
+  Finsupp.equivFunOnFinite.symm fun i ↦ (mult F (fundamentalPoint i)).toNat
+
+theorem exceptionalExponent_def (F : MvPolynomial (Fin 3) k) :
+    exceptionalExponent F =
+      Finsupp.equivFunOnFinite.symm fun i ↦ (mult F (fundamentalPoint i)).toNat :=
+  (rfl)
+
+@[simp]
+theorem exceptionalExponent_apply (F : MvPolynomial (Fin 3) k) (i : Fin 3) :
+    exceptionalExponent F i = (mult F (fundamentalPoint i)).toNat := by
+  simp [exceptionalExponent_def]
+
+/-- The exceptional monomial is `X^r₀ Y^r₁ Z^r₂`. -/
+theorem monomial_exceptionalExponent (F : MvPolynomial (Fin 3) k) :
+    monomial (exceptionalExponent F) (1 : k) =
+      X 0 ^ (mult F (fundamentalPoint 0)).toNat * X 1 ^ (mult F (fundamentalPoint 1)).toNat *
+        X 2 ^ (mult F (fundamentalPoint 2)).toNat := by
+  simp [monomial_eq_fin_three]
+
+/-- The exceptional exponents of a product of nonzero polynomials add up. -/
+theorem exceptionalExponent_mul (hF0 : F ≠ 0) (hG0 : G ≠ 0) :
+    exceptionalExponent (F * G) = exceptionalExponent F + exceptionalExponent G := by
+  ext i
+  simp [mult_mul, ENat.toNat_add (mult_eq_top_iff.not.2 hF0) (mult_eq_top_iff.not.2 hG0)]
+
+/-- Renaming the variables by `σ` permutes the exceptional exponents along. -/
+theorem exceptionalExponent_rename (hF : F.IsHomogeneous n) (σ : Equiv.Perm (Fin 3)) :
+    exceptionalExponent (rename σ F) = (exceptionalExponent F).mapDomain σ := by
+  ext j
+  obtain ⟨i, rfl⟩ := σ.surjective j
+  rw [Finsupp.mapDomain_apply_of_injective σ.injective, exceptionalExponent_apply,
+    exceptionalExponent_apply, mult_rename_fundamentalPoint hF]
+
+private theorem isRelPrime_X {i j : Fin 3} (h : i ≠ j) :
+    IsRelPrime (X i : MvPolynomial (Fin 3) k) (X j) :=
+  (prime_X (R := k) (σ := Fin 3) (i := i)).irreducible.isRelPrime_iff_not_dvd.2
+    (by rwa [X_dvd_X])
+
+/-- The exceptional monomial `X^r₀ Y^r₁ Z^r₂` divides the quadratic transform of a form. -/
+theorem monomial_exceptionalExponent_dvd (hF : F.IsHomogeneous n) :
+    monomial (exceptionalExponent F) 1 ∣ quadraticTransform F := by
+  rw [monomial_exceptionalExponent]
+  refine IsRelPrime.mul_dvd ?_ (IsRelPrime.mul_dvd ?_ ?_ ?_) (X_pow_dvd_quadraticTransform hF 2)
+  · exact (isRelPrime_X (by decide)).pow.mul_left (isRelPrime_X (by decide)).pow
+  · exact (isRelPrime_X (by decide)).pow
+  exacts [X_pow_dvd_quadraticTransform hF 0, X_pow_dvd_quadraticTransform hF 1]
+
+/-- The proper transform `F'` of a form `F`: its quadratic transform `F^Q` divided by
+`X^r₀ Y^r₁ Z^r₂`, where `rᵢ` is the multiplicity of `F` at the fundamental point `[eᵢ]`. This
+is the largest monomial dividing `F^Q` (`multiplicity_X_quadraticTransform`). The value is not
+meaningful for a polynomial that is not homogeneous. -/
+noncomputable def properTransform (F : MvPolynomial (Fin 3) k) : MvPolynomial (Fin 3) k :=
+  divMonomial (quadraticTransform F) (exceptionalExponent F)
+
+theorem properTransform_def (F : MvPolynomial (Fin 3) k) :
+    properTransform F = divMonomial (quadraticTransform F) (exceptionalExponent F) :=
+  (rfl)
+
+/-- If `F^Q` is the exceptional monomial times `G`, then `G` is the proper transform of `F`. -/
+theorem properTransform_eq_of_quadraticTransform_eq
+    (h : quadraticTransform F = monomial (exceptionalExponent F) 1 * G) : properTransform F = G :=
+  by rw [properTransform_def, h, divMonomial_monomial_mul]
+
+/-- `F^Q` is the exceptional monomial `X^r₀ Y^r₁ Z^r₂` times the proper transform `F'`. -/
+theorem quadraticTransform_eq_monomial_mul_properTransform (hF : F.IsHomogeneous n) :
+    quadraticTransform F = monomial (exceptionalExponent F) 1 * properTransform F := by
+  obtain ⟨G, hG⟩ := monomial_exceptionalExponent_dvd hF
+  rw [properTransform_eq_of_quadraticTransform_eq hG, ← hG]
+
+/-- **Fulton's (1)**: `F^Q = X^r₀ Y^r₁ Z^r₂ F'`, with `rᵢ` the multiplicity of `F` at the
+fundamental point `[eᵢ]`. -/
+theorem quadraticTransform_eq (hF : F.IsHomogeneous n) :
+    quadraticTransform F =
+      X 0 ^ (mult F (fundamentalPoint 0)).toNat * X 1 ^ (mult F (fundamentalPoint 1)).toNat *
+        X 2 ^ (mult F (fundamentalPoint 2)).toNat * properTransform F := by
+  rw [quadraticTransform_eq_monomial_mul_properTransform hF, monomial_exceptionalExponent]
+
+/-- **(1)**: no exceptional line divides the proper transform of a nonzero form. -/
+theorem not_X_dvd_properTransform (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) (i : Fin 3) :
+    ¬ X i ∣ properTransform F := by
+  rintro ⟨K, hK⟩
+  have hdvd : X i ^ ((mult F (fundamentalPoint i)).toNat + 1) ∣ quadraticTransform F := by
+    rw [quadraticTransform_eq_monomial_mul_properTransform hF, hK, pow_succ]
+    refine mul_dvd_mul ?_ (dvd_mul_right _ _)
+    rw [X_pow_eq_monomial, monomial_one_dvd_monomial_one, Finsupp.single_le_iff,
+      exceptionalExponent_apply]
+  have := (pow_dvd_iff_le_emultiplicity.1 hdvd).trans_eq
+    (emultiplicity_X_quadraticTransform hF hF0 i)
+  norm_cast at this
+  omega
+
+@[simp]
+theorem properTransform_zero : properTransform (0 : MvPolynomial (Fin 3) k) = 0 := by
+  simp [properTransform_def, zero_divMonomial]
+
+theorem properTransform_eq_zero_iff (hF : F.IsHomogeneous n) : properTransform F = 0 ↔ F = 0 := by
+  refine ⟨fun h ↦ ?_, by rintro rfl; exact properTransform_zero⟩
+  rw [← quadraticTransform_eq_zero_iff, quadraticTransform_eq_monomial_mul_properTransform hF, h,
+    mul_zero]
+
+/-- The proper transform of a form `F` of degree `n` is a form of degree `2n - r₀ - r₁ - r₂`. -/
+theorem _root_.MvPolynomial.IsHomogeneous.properTransform (hF : F.IsHomogeneous n) :
+    (PlaneCurves.Projective.properTransform F).IsHomogeneous
+      (2 * n - ∑ i, (mult F (fundamentalPoint i)).toNat) := by
+  obtain rfl | hF0 := eq_or_ne F 0
+  · simpa using isHomogeneous_zero _ _ _
+  have hm0 : monomial (exceptionalExponent F) (1 : k) ≠ 0 := by simp
+  have hP0 : PlaneCurves.Projective.properTransform F ≠ 0 :=
+    (properTransform_eq_zero_iff hF).not.2 hF0
+  have h := hF.quadraticTransform
+  rw [quadraticTransform_eq_monomial_mul_properTransform hF] at h
+  convert h.of_mul_right hm0 using 1
+  have := h.totalDegree (mul_ne_zero hm0 hP0)
+  rw [totalDegree_mul_of_isDomain hm0 hP0, totalDegree_monomial _ one_ne_zero,
+    Finsupp.sum_fintype _ _ fun _ ↦ rfl] at this
+  simp only [exceptionalExponent_apply] at this
+  omega
+
+/-- **Multiplicativity**: `(FG)' = F'G'` for forms `F` and `G`. -/
+theorem properTransform_mul (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m) :
+    properTransform (F * G) = properTransform F * properTransform G := by
+  obtain rfl | hF0 := eq_or_ne F 0
+  · simp
+  obtain rfl | hG0 := eq_or_ne G 0
+  · simp
+  refine properTransform_eq_of_quadraticTransform_eq ?_
+  have hm : monomial (exceptionalExponent F + exceptionalExponent G) (1 : k) =
+      monomial (exceptionalExponent F) 1 * monomial (exceptionalExponent G) 1 := by
+    rw [monomial_mul_monomial, mul_one]
+  rw [map_mul, quadraticTransform_eq_monomial_mul_properTransform hF,
+    quadraticTransform_eq_monomial_mul_properTransform hG, exceptionalExponent_mul hF0 hG0,
+    hm]
+  ring
+
+@[simp]
+theorem properTransform_C (c : k) : properTransform (C c : MvPolynomial (Fin 3) k) = C c := by
+  obtain rfl | hc := eq_or_ne c 0
+  · simp
+  refine properTransform_eq_of_quadraticTransform_eq ?_
+  have h : exceptionalExponent (C c : MvPolynomial (Fin 3) k) = 0 := by
+    ext i
+    have h0 : mult (C c : MvPolynomial (Fin 3) k) (fundamentalPoint i) = 0 := by
+      by_contra h
+      exact hc (by simpa using mult_pos_iff_eval_rep.1 (pos_iff_ne_zero.2 h))
+    simp [h0]
+  simp [h]
+
+@[simp]
+theorem properTransform_one : properTransform (1 : MvPolynomial (Fin 3) k) = 1 := by
+  simpa using properTransform_C (1 : k)
+
+theorem properTransform_smul (hF : F.IsHomogeneous n) (c : k) :
+    properTransform (c • F) = c • properTransform F := by
+  rw [smul_eq_C_mul, smul_eq_C_mul, properTransform_mul (isHomogeneous_C _ c) hF,
+    properTransform_C]
+
+theorem properTransform_pow (hF : F.IsHomogeneous n) (e : ℕ) :
+    properTransform (F ^ e) = properTransform F ^ e := by
+  induction e with
+  | zero => simp
+  | succ e ih => rw [pow_succ, properTransform_mul (hF.pow e) hF, ih, pow_succ]
+
+theorem properTransform_prod {ι : Type*} (s : Finset ι) {F : ι → MvPolynomial (Fin 3) k}
+    {n : ι → ℕ} (hF : ∀ i ∈ s, (F i).IsHomogeneous (n i)) :
+    properTransform (∏ i ∈ s, F i) = ∏ i ∈ s, properTransform (F i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert a s ha ih =>
+    rw [Finset.prod_insert ha, Finset.prod_insert ha,
+      properTransform_mul (hF a (by simp))
+        (IsHomogeneous.prod _ _ _ fun i hi ↦ hF i (by simp [hi])),
+      ih fun i hi ↦ hF i (by simp [hi])]
+
+/-- The proper transform of an exceptional line is `1`: `X^Q = YZ` is all exceptional. -/
+@[simp]
+theorem properTransform_X (i : Fin 3) : properTransform (X i : MvPolynomial (Fin 3) k) = 1 := by
+  refine properTransform_eq_of_quadraticTransform_eq ?_
+  rw [mul_one, monomial_exceptionalExponent]
+  fin_cases i <;> simp [mult_X_fundamentalPoint]
+
+/-- Proper transforms commute with permutations of the variables. -/
+theorem properTransform_rename (hF : F.IsHomogeneous n) (σ : Equiv.Perm (Fin 3)) :
+    properTransform (rename σ F) = rename σ (properTransform F) := by
+  refine properTransform_eq_of_quadraticTransform_eq ?_
+  rw [quadraticTransform_rename, quadraticTransform_eq_monomial_mul_properTransform hF, map_mul,
+    rename_monomial, exceptionalExponent_rename hF]
+
+/-- **The restriction of `F'` to `Z = 0`.** For a nonzero form `F` of degree `n`,
+`X^r₀ Y^r₁ F'(X, Y, 0) = (XY)^(n - r₂) G(Y, X)`, where `G` is the leading form of `F(X, Y, 1)`
+at the origin, the tangent cone of `F` at `[0 : 0 : 1]`. -/
+theorem aeval_X_two_eq_zero_properTransform (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) :
+    X 0 ^ (mult F (fundamentalPoint 0)).toNat * X 1 ^ (mult F (fundamentalPoint 1)).toNat *
+        aeval (![X 0, X 1, 0] : Fin 3 → MvPolynomial (Fin 3) k) (properTransform F) =
+      (X 0 * X 1) ^ (n - (mult F (fundamentalPoint 2)).toNat) *
+        rename ![1, 0] (leadingFormAt (dehomogenize 2 F) 0) := by
+  obtain ⟨H, hFH, hH⟩ := exists_quadraticTransform_eq_X_two_pow_mul hF hF0
+  have h := quadraticTransform_eq hF
+  rw [hFH, mul_comm _ (X 2 ^ _), mul_assoc, mul_right_inj' (pow_ne_zero _ (X_ne_zero _))] at h
+  rw [← hH, h]
+  simp
+
+/-- The line `X + Y + Z` passes through no fundamental point, so its proper transform is its
+quadratic transform, the conic `YZ + XZ + XY`. -/
+example :
+    properTransform (X 0 + X 1 + X 2 : MvPolynomial (Fin 3) ℚ) = X 1 * X 2 + X 0 * X 2 + X 0 * X 1
+    := by
+  refine properTransform_eq_of_quadraticTransform_eq ?_
+  have hL : (X 0 + X 1 + X 2 : MvPolynomial (Fin 3) ℚ).IsHomogeneous 1 :=
+    ((isHomogeneous_X ℚ 0).add (isHomogeneous_X ℚ 1)).add (isHomogeneous_X ℚ 2)
+  have h (i : Fin 3) : mult (X 0 + X 1 + X 2 : MvPolynomial (Fin 3) ℚ) (fundamentalPoint i) = 0 :=
+    by
+    rw [fundamentalPoint_def, mult_mk hL, orderAt_eq_zero_iff]
+    fin_cases i <;> simp
+  simp [monomial_exceptionalExponent, h]
+
+/-- The conic `YZ + XZ + XY` passes simply through the three fundamental points, and its proper
+transform is the line `X + Y + Z`. -/
+example :
+    properTransform (X 1 * X 2 + X 0 * X 2 + X 0 * X 1 : MvPolynomial (Fin 3) ℚ) =
+      X 0 + X 1 + X 2 := by
+  refine properTransform_eq_of_quadraticTransform_eq ?_
+  have hC : (X 1 * X 2 + X 0 * X 2 + X 0 * X 1 : MvPolynomial (Fin 3) ℚ).IsHomogeneous 2 :=
+    (((isHomogeneous_X ℚ 1).mul (isHomogeneous_X ℚ 2)).add
+      ((isHomogeneous_X ℚ 0).mul (isHomogeneous_X ℚ 2))).add
+      ((isHomogeneous_X ℚ 0).mul (isHomogeneous_X ℚ 1))
+  have h (i : Fin 3) :
+      mult (X 1 * X 2 + X 0 * X 2 + X 0 * X 1 : MvPolynomial (Fin 3) ℚ) (fundamentalPoint i) = 1 :=
+    by
+    rw [fundamentalPoint_def, mult_mk hC, orderAt_eq_one_iff]
+    fin_cases i
+    · exact ⟨by simp, 1, by simp⟩
+    · exact ⟨by simp, 0, by simp⟩
+    · exact ⟨by simp, 0, by simp⟩
+  simp only [monomial_exceptionalExponent, h, map_add, map_mul, quadraticTransform_X_zero,
+    quadraticTransform_X_one, quadraticTransform_X_two]
+  simp
+  ring
+
+end ProperTransform
 
 end PlaneCurves.Projective
 
