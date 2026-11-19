@@ -45,6 +45,8 @@ prime ideals of `𝒪_P(V)`.
 ## Main results
 
 * `PlaneCurves.AffineSpace.mem_localSubring_iff`: `f ∈ 𝒪_P(V)` iff `f = a / b` with `b(P) ≠ 0`.
+* `PlaneCurves.AffineSpace.isFractionRing_localSubring`: `k(V)` is the field of fractions of
+  `𝒪_P(V)`.
 * `PlaneCurves.AffineSpace.ker_evalAt`: the kernel of the value map is the maximal ideal.
 * `PlaneCurves.AffineSpace.isUnit_iff_evalAt_ne_zero`: the units of `𝒪_P(V)` are the functions
   not vanishing at `P`.
@@ -171,6 +173,13 @@ theorem mem_localSubring_iff {f : functionField I} :
 theorem algebraMap_mem_localSubring (a : MvPolynomial σ k ⧸ I) :
     algebraMap _ (functionField I) a ∈ (localSubring P hI).toSubring :=
   LocalSubring.le_ofPrime _ _ ⟨a, rfl⟩
+
+/-- **`k(V)` is the field of fractions of `𝒪_P(V)`**, since it is that of `Γ(V) ⊆ 𝒪_P(V)`. -/
+instance isFractionRing_localSubring :
+    IsFractionRing (localSubring P hI).toSubring (functionField I) := by
+  refine IsFractionRing.of_field _ _ fun z ↦ ?_
+  obtain ⟨a, b, -, rfl⟩ := IsFractionRing.div_surjective (A := MvPolynomial σ k ⧸ I) z
+  exact ⟨⟨_, algebraMap_mem_localSubring P hI a⟩, ⟨_, algebraMap_mem_localSubring P hI b⟩, rfl⟩
 
 /-- `𝒪_P(V)` is a `Γ(V)`-algebra, by the inclusion `Γ(V) ⊆ 𝒪_P(V)` in `k(V)`. -/
 noncomputable instance : Algebra (MvPolynomial σ k ⧸ I) (localSubring P hI).toSubring :=
