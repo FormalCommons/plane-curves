@@ -42,8 +42,6 @@ so `H_* ∈ (F_*, G_*)`; Step 2 of the proof of Bézout's theorem gives `H ∈ (
   `H ∈ (F, G)`, and at points off `V(F) ∩ V(G)`.
 * `noetherConditionsAt_linearSubst_iff`: they are invariant under projective changes of
   coordinates.
-* `exists_linearSubst_forall_mem_affineOpen_last`: a change of coordinates moves a finite set of
-  points into the chart `Xₙ ≠ 0`.
 * `dehomogenize_mem_span_pair_of_forall_noetherConditionsAt`: in a chart containing finitely
   many common zeros of `F_*` and `G_*`, Noether's conditions give `H_* ∈ (F_*, G_*)`.
 * `mem_span_pair_iff_forall_noetherConditionsAt`: Max Noether's theorem, `H ∈ (F, G)` iff
@@ -119,26 +117,6 @@ theorem noetherConditionsAt_linearSubst_iff (hF : F.IsHomogeneous d) (hG : G.IsH
     (associated_linearSubstEquiv_localEquation hF M rfl)
     (associated_linearSubstEquiv_localEquation hG M rfl)
     (associated_linearSubstEquiv_localEquation hH M rfl)
-
-/-- **Moving finitely many points into a chart.** Over an infinite field, for a finite set `S`
-of points of `ℙⁿ` there is a projective change of coordinates `T` such that every `Q` with
-`T(Q) ∈ S` lies in the chart `Xₙ ≠ 0`: carry a hyperplane missing `S` to `Xₙ = 0`. -/
-theorem exists_linearSubst_forall_mem_affineOpen_last [Infinite k]
-    {S : Set (ℙ k (Fin (n + 1) → k))} (hS : S.Finite) :
-    ∃ M : GL (Fin (n + 1)) k, ∀ Q : ℙ k (Fin (n + 1) → k),
-      map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q ∈ S →
-        Q ∈ affineOpen (Fin.last n) := by
-  obtain ⟨a, ha0, ha⟩ := exists_sum_C_mul_X_forall_notMem_zeroLocus hS
-  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X (a := fun _ : Unit ↦ a)
-    (linearIndependent_unique_iff.2 ha0) (τ := fun _ ↦ Fin.last n)
-    (Function.injective_of_subsingleton _)
-  have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.1 hM
-  refine ⟨hU.unit, fun Q hQ ↦ (mem_affineOpen_iff _ Q).2 fun hQn ↦ ha _ hQ ?_⟩
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
-  rintro f rfl
-  rw [← eval_rep_linearSubst_eq_zero_iff hU.unit (isHomogeneous_sum_C_mul_X a), hU.unit_spec,
-    hMa ()]
-  simpa using hQn
 
 /-- **Noether's conditions in a chart.** Let `k` be algebraically closed and `F`, `G`, `H` forms
 such that the dehomogenizations `F_*`, `G_*` at `Xᵢ = 1` have finitely many common zeros. If

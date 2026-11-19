@@ -148,31 +148,20 @@ many nonzero terms (`finite_support_intersectionNumber`). -/
 theorem finsum_intersectionNumber_eq_mul (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n)
     (hFG : IsRelPrime F G) : ∑ᶠ P, intersectionNumber P F G = ↑(m * n) := by
   classical
-  -- a line missing the finitely many common zeros, carried to `Z = 0`
-  obtain ⟨a, ha0, ha⟩ :=
-    exists_sum_C_mul_X_forall_notMem_zeroLocus (finite_zeroLocus_pair_of_isRelPrime hF hG hFG)
-  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X (a := fun _ : Unit ↦ a)
-    (linearIndependent_unique_iff.2 ha0) (τ := fun _ ↦ 2) (Function.injective_of_subsingleton _)
-  have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.1 hM
-  set N : GL (Fin 3) k := hU.unit
-  have hN : N.1 = M := hU.unit_spec
+  -- a change of coordinates moving the finitely many common zeros into the chart `Z ≠ 0`
+  obtain ⟨N, hN⟩ :=
+    exists_linearSubst_forall_mem_affineOpen_last (finite_zeroLocus_pair_of_isRelPrime hF hG hFG)
   set T := map N.1.mulVecLin (Matrix.mulVec_injective_of_isUnit N.isUnit)
   have hrel : IsRelPrime (linearSubst N.1 F) (linearSubst N.1 G) :=
     IsRelPrime.of_map (linearSubstAlgEquiv N).symm (by
       rwa [← linearSubstAlgEquiv_apply, ← linearSubstAlgEquiv_apply, AlgEquiv.symm_apply_apply,
         AlgEquiv.symm_apply_apply])
-  have key := finsum_intersectionNumber_eq_mul_of_forall_mem_affineOpen (i := 2)
-    (hF.linearSubst N.1) (hG.linearSubst N.1) hrel fun Q hQF hQG ↦ by
-      rw [eval_rep_linearSubst_eq_zero_iff N hF] at hQF
-      rw [eval_rep_linearSubst_eq_zero_iff N hG] at hQG
-      refine (mem_affineOpen_iff 2 Q).2 fun hQ ↦ ha (T Q) ?_ ?_
-      · rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨m, hF⟩, ⟨n, hG⟩])]
-        rintro f (rfl | rfl)
-        exacts [hQF, hQG]
-      · rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
-        rintro f rfl
-        rw [← eval_rep_linearSubst_eq_zero_iff N (isHomogeneous_sum_C_mul_X a), hN, hMa ()]
-        simpa using hQ
+  have key := finsum_intersectionNumber_eq_mul_of_forall_mem_affineOpen (i := Fin.last 2)
+    (hF.linearSubst N.1) (hG.linearSubst N.1) hrel fun Q hQF hQG ↦ hN Q (by
+      rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨m, hF⟩, ⟨n, hG⟩])]
+      rintro f (rfl | rfl)
+      exacts [(eval_rep_linearSubst_eq_zero_iff N hF Q).1 hQF,
+        (eval_rep_linearSubst_eq_zero_iff N hG Q).1 hQG])
   simp_rw [intersectionNumber_linearSubst hF hG N] at key
   rw [← finsum_comp_equiv (Equiv.ofBijective T (bijective_map_mulVecLin N))]
   exact key
