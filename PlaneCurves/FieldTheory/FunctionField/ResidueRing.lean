@@ -141,13 +141,9 @@ theorem ValuationSubring.exists_forall_valuation_lt_one_iff_eval_eq_zero [IsAlgC
     (R : ValuationSubring L) (hkR : ∀ a : k, algebraMap k L a ∈ R) (hc : ∀ l, ψ (c l) ∈ R)
     (h0 : ∃ f : MvPolynomial σ k, aeval c f ≠ 0 ∧ R.valuation (ψ (aeval c f)) < 1) :
     ∃ a : σ → k, ∀ f : MvPolynomial σ k, R.valuation (ψ (aeval c f)) < 1 ↔ eval a f = 0 := by
-  have hψ : ∀ f : MvPolynomial σ k, ψ (aeval c f) ∈ R := by
-    intro f
-    rw [← AlgHom.comp_apply, MvPolynomial.comp_aeval]
-    induction f using MvPolynomial.induction_on with
-    | C a => simpa using hkR a
-    | add p q hp hq => simpa using AddMemClass.add_mem hp hq
-    | mul_X p l hp => simpa using MulMemClass.mul_mem hp (hc l)
+  have hψ : ∀ f : MvPolynomial σ k, ψ (aeval c f) ∈ R := fun f ↦ by
+    rw [← AlgHom.comp_apply, MvPolynomial.comp_aeval, aeval_def]
+    exact eval₂_mem (fun _ _ ↦ hkR _) hc
   let θ : (aeval c).range →+* R :=
     ((ψ : K →+* L).comp (aeval c).range.val.toRingHom).codRestrict R
       (by rintro ⟨_, f, rfl⟩; exact hψ f)
