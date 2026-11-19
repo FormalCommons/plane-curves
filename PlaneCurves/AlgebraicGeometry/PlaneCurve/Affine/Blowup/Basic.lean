@@ -46,6 +46,10 @@ multiple point every point of the fibre is a simple point of the strict transfor
   `F(X, XZ)` divided by `X ^ r`.
 * `PlaneCurves.Affine.blowupCoordinateRingHom F`: the map `Γ(C) → Γ(C')`, `x ↦ x`, `y ↦ xz`.
 * `PlaneCurves.Affine.blowupFunctionFieldEquiv`: the isomorphism `k(C) ≅ k(C')`.
+* `PlaneCurves.Affine.blowupChartEquiv`: the blow-up chart `(x, z) ↦ (x, xz)` as an automorphism
+  of `R[x, z][1/x]`.
+* `PlaneCurves.Affine.localRingEquivBlowupChart`: for `c ≠ 0`, the isomorphism of local rings
+  `𝒪_{(c, cd)}(𝔸²) ≅ 𝒪_{(c, d)}(𝔸²)` it induces, sending `f` to `f(x, xz)`.
 
 ## Main results
 
@@ -70,6 +74,9 @@ multiple point every point of the fibre is a simple point of the strict transfor
   `PlaneCurves.Affine.blowupFunctionFieldEquiv_symm_z`: `k(C) ≅ k(C')` sends `x ↦ x`, `y ↦ xz`,
   and its inverse sends `z ↦ y / x`; `blowupFunctionFieldEquiv_symm_algebraMap_mk`: it sends
   the class of `g(X, Z)` to `g(x, y / x)`.
+* `PlaneCurves.Affine.awayLift_comp_blowupChartEquiv`,
+  `PlaneCurves.Affine.localRingEquivBlowupChart_algebraMap`:
+  the blow-up chart respects values, and off the exceptional line it is a local isomorphism.
 * `PlaneCurves.Affine.isPrime_span_blowupStrictTransform`: the ideal of the strict transform of an
   irreducible curve other than `X = 0` is prime.
 * `PlaneCurves.Affine.eval_zero_blowupStrictTransform_eq_zero_iff`: `F'(0, α) = 0` iff `Y - α X`
@@ -672,6 +679,137 @@ theorem blowupFunctionFieldEquiv_symm_algebraMap_mk [(Ideal.span {F}).IsPrime]
   exact DFunLike.congr_fun h g
 
 end Field
+
+/-! ### The blow-up chart off the exceptional line
+
+The substitution `(x, z) ↦ (x, xz)` is an automorphism of `R[x, z][1/x]`. So, at a point `(c, d)`
+with `c ≠ 0`, it identifies the local ring of `𝔸²` at `(c, cd)` with the one at `(c, d)`: away
+from the exceptional line, the blow-up is a local isomorphism. -/
+
+section BlowupChart
+
+variable (R : Type*) [CommRing R]
+
+/-- The localization `R[x, z][1/x]`. -/
+local notation "𝓛[" R "]" => Localization.Away (X 0 : MvPolynomial (Fin 2) R)
+/-- The map `R[x, z] → R[x, z][1/x]`. -/
+local notation "toL[" R "]" => algebraMap (MvPolynomial (Fin 2) R) 𝓛[R]
+/-- The inverse `x⁻¹` in `R[x, z][1/x]`. -/
+local notation "w[" R "]" =>
+  IsLocalization.Away.invSelf (S := 𝓛[R]) (X 0 : MvPolynomial (Fin 2) R)
+
+private noncomputable def blowupChartHom : 𝓛[R] →ₐ[R] 𝓛[R] :=
+  IsLocalization.Away.liftAlgHom (X 0)
+    (f := (IsScalarTower.toAlgHom R (MvPolynomial (Fin 2) R) 𝓛[R]).comp (aeval ![X 0, X 0 * X 1]))
+    <| by
+    simpa using IsLocalization.Away.algebraMap_isUnit (S := 𝓛[R]) (X 0 : MvPolynomial (Fin 2) R)
+
+private noncomputable def blowupChartInvHom : 𝓛[R] →ₐ[R] 𝓛[R] :=
+  IsLocalization.Away.liftAlgHom (X 0) (f := aeval ![toL[R] (X 0), toL[R] (X 1) * w[R]]) <| by
+    simpa using IsLocalization.Away.algebraMap_isUnit (S := 𝓛[R]) (X 0 : MvPolynomial (Fin 2) R)
+
+variable {R}
+
+private theorem blowupChartHom_algebraMap (f : MvPolynomial (Fin 2) R) :
+    blowupChartHom R (toL[R] f) = toL[R] (aeval ![X 0, X 0 * X 1] f) := by
+  simp [blowupChartHom]
+
+private theorem blowupChartInvHom_algebraMap (f : MvPolynomial (Fin 2) R) :
+    blowupChartInvHom R (toL[R] f) = aeval ![toL[R] (X 0), toL[R] (X 1) * w[R]] f := by
+  simp [blowupChartInvHom]
+
+private theorem mul_invSelf' : toL[R] (X 0) * w[R] = 1 :=
+  IsLocalization.Away.mul_invSelf _
+
+private theorem blowupChartHom_invSelf : blowupChartHom R w[R] = w[R] := by
+  have h1 := congrArg (blowupChartHom R) (mul_invSelf' (R := R))
+  rw [map_mul, map_one, blowupChartHom_algebraMap] at h1
+  simp only [aeval_X, Matrix.cons_val_zero] at h1
+  have h2 := mul_invSelf' (R := R)
+  linear_combination w[R] * h1 - blowupChartHom R w[R] * h2
+
+private theorem blowupChartHom_comp :
+    (blowupChartHom R).comp (blowupChartInvHom R) = AlgHom.id _ _ := by
+  ext i
+  change blowupChartHom R (blowupChartInvHom R (toL[R] (X i))) = toL[R] (X i)
+  have h := mul_invSelf' (R := R)
+  fin_cases i
+  · simp [blowupChartInvHom_algebraMap, blowupChartHom_algebraMap]
+  · simp [blowupChartInvHom_algebraMap, blowupChartHom_algebraMap, blowupChartHom_invSelf]
+    linear_combination toL[R] (X 1) * h
+
+private theorem blowupChartInvHom_comp :
+    (blowupChartInvHom R).comp (blowupChartHom R) = AlgHom.id _ _ := by
+  ext i
+  change blowupChartInvHom R (blowupChartHom R (toL[R] (X i))) = toL[R] (X i)
+  have h := mul_invSelf' (R := R)
+  fin_cases i
+  · simp [blowupChartInvHom_algebraMap, blowupChartHom_algebraMap]
+  · simp [blowupChartInvHom_algebraMap, blowupChartHom_algebraMap]
+    linear_combination toL[R] (X 1) * h
+
+variable (R) in
+/-- The blow-up chart `(x, z) ↦ (x, xz)` as an automorphism of `R[x, z][1/x]`, the variables
+being `x = X 0` and `z = X 1`: it sends `f` to `f(x, xz)` (`blowupChartEquiv_algebraMap`), and its
+inverse sends `z` to `z / x`. -/
+noncomputable def blowupChartEquiv : 𝓛[R] ≃ₐ[R] 𝓛[R] :=
+  AlgEquiv.ofAlgHom (blowupChartHom R) (blowupChartInvHom R) blowupChartHom_comp
+    blowupChartInvHom_comp
+
+/-- The blow-up chart sends `f` to `f(x, xz)`. -/
+theorem blowupChartEquiv_algebraMap (f : MvPolynomial (Fin 2) R) :
+    blowupChartEquiv R (toL[R] f) = toL[R] (aeval ![X 0, X 0 * X 1] f) :=
+  blowupChartHom_algebraMap f
+
+/-- The inverse of the blow-up chart sends `z` to `z / x`. -/
+theorem blowupChartEquiv_symm_algebraMap_X_one :
+    (blowupChartEquiv R).symm (toL[R] (X 1)) = toL[R] (X 1) * w[R] := by
+  change blowupChartInvHom R _ = _
+  simp [blowupChartInvHom_algebraMap]
+
+end BlowupChart
+section BlowupChartField
+
+variable {k : Type*} [Field k] {c : k}
+
+/-- The localization `k[x, z][1/x]`. -/
+local notation "𝓛" => Localization.Away (X 0 : MvPolynomial (Fin 2) k)
+
+/-- The blow-up chart respects values: `(φ a)(c, d) = a(c, cd)` for every `a ∈ k[x, z][1/x]`,
+`c ≠ 0`. -/
+theorem awayLift_comp_blowupChartEquiv (hc : c ≠ 0) (d : k) :
+    (Localization.awayLift (eval ![c, d]) (X 0)
+        (isUnit_iff_ne_zero.2 (by simpa using hc))).comp
+        (blowupChartEquiv k : 𝓛 →+* 𝓛) =
+      Localization.awayLift (eval ![c, c * d]) (X 0)
+        (isUnit_iff_ne_zero.2 (by simpa using hc)) := by
+  refine IsLocalization.ringHom_ext (Submonoid.powers (X 0 : MvPolynomial (Fin 2) k)) <|
+    RingHom.ext fun f ↦ ?_
+  simp only [RingHom.coe_comp, Function.comp_apply, RingHom.coe_coe, blowupChartEquiv_algebraMap,
+    Localization.awayLift, IsLocalization.Away.lift_eq]
+  rw [← coe_aeval_eq_eval, ← coe_aeval_eq_eval]
+  change aeval ![c, d] (aeval ![X 0, X 0 * X 1] f) = aeval ![c, c * d] f
+  rw [← AlgHom.comp_apply, comp_aeval]
+  congr 2
+  ext i : 1
+  fin_cases i <;> simp
+
+/-- **The blow-up chart is a local isomorphism off the exceptional line.** For `c ≠ 0`, the
+blow-up chart `(x, z) ↦ (x, xz)` induces an isomorphism `𝒪_{(c, cd)}(𝔸²) ≅ 𝒪_{(c, d)}(𝔸²)` of
+local rings, sending `f` to `f(x, xz)` (`localRingEquivBlowupChart_algebraMap`). -/
+noncomputable def localRingEquivBlowupChart (hc : c ≠ 0) (d : k) :
+    AffineSpace.localRing k ![c, c * d] ≃ₐ[k] AffineSpace.localRing k ![c, d] :=
+  AffineSpace.localRingEquivOfAway (blowupChartEquiv k) (by simpa using hc)
+    (by simpa using hc) (awayLift_comp_blowupChartEquiv hc d)
+
+@[simp]
+theorem localRingEquivBlowupChart_algebraMap (hc : c ≠ 0) (d : k) (f : MvPolynomial (Fin 2) k) :
+    localRingEquivBlowupChart hc d (algebraMap (MvPolynomial (Fin 2) k) _ f) =
+      algebraMap (MvPolynomial (Fin 2) k) _ (aeval ![X 0, X 0 * X 1] f) := by
+  rw [localRingEquivBlowupChart, AffineSpace.localRingEquivOfAway_algebraMap,
+    blowupChartEquiv_algebraMap, AffineSpace.localRing.ofAway_algebraMap]
+
+end BlowupChartField
 
 section Fibre
 

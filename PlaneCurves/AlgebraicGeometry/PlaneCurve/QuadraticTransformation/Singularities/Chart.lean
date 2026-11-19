@@ -5,9 +5,11 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Blowup.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.OrdinaryMultiplePoint
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Birational
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Singularities.Basic
 
 /-!
 # Singularities of the proper transform under the standard quadratic transformation
@@ -21,12 +23,22 @@ dehomogenization `F_*` of `F` to a unit times the dehomogenization `F'_*` of the
 off the triangle is isomorphic to the local ring of `F'` at `Q(P)`, and `F` and `F'` have the same
 multiplicity there, and the same ordinariness. This is Fulton's step (7)(2)(a).
 
+Near the centre `P = [0 : 0 : 1]`, for a curve in excellent position, the quadratic
+transformation is the blow-up of `P` (Fulton's step (5)): in the chart `y = 1`, with coordinates
+`(x, z)`, `F'(x, 1, xz) = x^(n - r) g(z, x)` for `g` the strict transform of `F(x, y, 1)` under the
+blow-up of the origin and `r = m_P(F)`. So the blow-up chart `(x, z) ↦ (x, xz)` identifies the
+local ring of `F'` at a point over the centre `[α : 1 : 0]` with that of `g` at `(0, α)`, and the
+results of the blow-up apply: Fulton's step (7)(2)(c).
+
 ## Main definitions
 
 * `PlaneCurves.Projective.chartInversion`: the inversion `x ↦ x⁻¹, y ↦ y⁻¹` of
   `R[x, y][1/(xy)]`, an involution.
 * `PlaneCurves.Projective.localRingEquivQuadraticMap`: for a point `P` off the fundamental
   triangle, the isomorphism `𝒪_P(F) ≅ 𝒪_{Q(P)}(F')` of the local rings in the chart `z = 1`.
+* `PlaneCurves.Projective.IsExcellentPosition.localRingEquivPointsOverCentre`: for `α ≠ 0`, the
+  isomorphism of the local ring of `F'` at `[α : 1 : 0]`, in the chart `y = 1`, with that of `g` at
+  `(0, α)`.
 
 ## Main results
 
@@ -43,6 +55,23 @@ multiplicity there, and the same ordinariness. This is Fulton's step (7)(2)(a).
   an ordinary multiple point of `F'` iff `P` is one of `F`, for `P` off the fundamental triangle.
 
 These hold for every form `F`; that no exceptional line is a component of `F` is not needed.
+
+At the points over the centre, for a curve in excellent position with `r = m_P(F)`:
+
+* `PlaneCurves.Projective.IsExcellentPosition.dehomogenize_properTransform_blowup`:
+  `F'(x, 1, xz) = x^(n - r) g(z, x)`.
+* `PlaneCurves.Projective.IsExcellentPosition.mem_pointsOverCentre_iff_eval_blowupStrictTransform`:
+  the points over the centre are the `[α : 1 : 0]` with `g(0, α) = 0`.
+* `IsExcellentPosition.mult_properTransform_mk_eq_orderAt_blowupStrictTransform` (in the namespace
+  `PlaneCurves.Projective`): `m_{[α:1:0]}(F') = m_{(0, α)}(g)`;
+  `PlaneCurves.Projective.IsExcellentPosition.intersectionNumber_properTransform_X_two_mk`:
+  `I([α : 1 : 0], F' ∩ Z) = I((0, α), g ∩ X)`.
+* `PlaneCurves.Projective.mult_le_intersectionNumber_of_mem_pointsOverCentre`:
+  `m_Q(F') ≤ I(Q, F' ∩ Z)` at a point `Q` over the centre, for every form `F`.
+* `PlaneCurves.Projective.IsExcellentPosition.finsum_intersectionNumber_pointsOverCentre`: these
+  intersection numbers add up to `r`.
+* `PlaneCurves.Projective.IsExcellentPosition.isSimplePoint_of_mem_pointsOverCentre`: if `r ≤ 1` or
+  `P` is an ordinary multiple point, the points over the centre are simple points of `F'`.
 
 ## References
 
@@ -396,6 +425,337 @@ theorem isOrdinaryMultiplePoint_properTransform_quadraticMap_iff [IsAlgClosed k]
       exact absurd this (by decide)
 
 end Field
+
+/-! ### The points over the centre: the blow-up chart
+
+In the chart `y = 1`, with coordinates `(x, z)`, the points over the centre `[α : 1 : 0]` are the
+points `(α, 0)`, `α ≠ 0`. For a form `F` of degree `n` in excellent position, with
+`f = F(x, y, 1)` and `r = m_{[0:0:1]}(F)`, Fulton's identity `F'(x, 1, xz) = x^(n - r) g(z, x)`,
+with `g` the strict transform of `f` under the blow-up of the origin, shows that the blow-up
+chart `(x, z) ↦ (x, xz)`, followed by the swap of the two variables, identifies the local ring of
+`C'` at `(α, 0)` with that of `g` at `(0, α)`: near the centre, the quadratic transformation is the
+blow-up. This is Fulton's step (5), and gives (7) (2) (c). -/
+
+section PointsOverCentre
+
+variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k} {n : ℕ} {α : k}
+
+namespace IsExcellentPosition
+
+/-- **The quadratic transform near the centre, through the blow-up** (Fulton's step (5)). For a
+form `F` of degree `n` in excellent position, `F'(x, 1, xz) = x^(n - r) g(z, x)`, where `F'` is
+the proper transform, `r = m_{[0:0:1]}(F)` and `g` is the strict transform of `F(x, y, 1)` under
+the blow-up of the origin. -/
+theorem dehomogenize_properTransform_blowup (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) :
+    aeval ![X 0, X 0 * X 1] (dehomogenize 1 (properTransform F)) =
+      X 0 ^ (n - (mult F (fundamentalPoint 2)).toNat) *
+        rename (Equiv.swap 0 1) (Affine.blowupStrictTransform (dehomogenize 2 F)) := by
+  set r := (mult F (fundamentalPoint 2)).toNat
+  have hr : r = ((dehomogenize 2 F).orderAt 0).toNat := by
+    rw [← mult_fundamentalPoint_eq_orderAt hF]
+  have hrn : r ≤ n := ENat.toNat_le_of_le_natCast (mult_le_degree hF h.ne_zero _)
+  have hX : (Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) k) 1 1 X 2) = X 1 := rfl
+  let φ : MvPolynomial (Fin 3) k →ₐ[k] MvPolynomial (Fin 2) k :=
+    (aeval ![X 0, X 0 * X 1]).comp (dehomogenize 1)
+  have e1 : φ.comp quadraticTransform =
+      aeval fun i ↦ X 0 * (![X 1, X 0 * X 1, 1] i : MvPolynomial (Fin 2) k) := by
+    ext i
+    fin_cases i <;> simp [φ, quadraticTransform_def, Fin.insertNth_apply_below, hX]
+  have e2 : ((rename (Equiv.swap (0 : Fin 2) 1)).comp (aeval ![X 0, X 0 * X 1])).comp
+      (dehomogenize 2) = aeval ![X 1, X 0 * X 1, (1 : MvPolynomial (Fin 2) k)] := by
+    ext i
+    fin_cases i <;> simp [Fin.insertNth_apply_below, mul_comm]
+  have h1 : φ (quadraticTransform F) = X 0 ^ n *
+      rename (Equiv.swap 0 1) (aeval ![X 0, X 0 * X 1] (dehomogenize 2 F)) := by
+    rw [← AlgHom.comp_apply, e1, hF.aeval_mul_left, ← e2]
+    rfl
+  have h2 := congrArg φ (h.quadraticTransform_eq hF)
+  rw [h1, map_mul, map_pow, ← Affine.X_pow_mul_blowupStrictTransform, ← hr, map_mul, map_pow,
+    rename_X] at h2
+  have hX2 : φ (X 2) = X 0 * X 1 := by simp [φ, hX]
+  rw [hX2] at h2
+  refine mul_left_cancel₀ (pow_ne_zero r (mul_ne_zero (X_ne_zero (0 : Fin 2)) (X_ne_zero 1))) ?_
+  change (X 0 * X 1) ^ r * φ _ = _
+  rw [← h2]
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hrn
+  simp only [Nat.add_sub_cancel_left, Equiv.swap_apply_left]
+  ring
+
+/-- The values at the points of the exceptional line: `F'(α, 1, 0) = α^(n - r) g(0, α)`, with `g`
+the strict transform of `F(x, y, 1)` under the blow-up of the origin and `r = m_{[0:0:1]}(F)`. -/
+theorem eval_dehomogenize_properTransform (h : IsExcellentPosition F) (hF : F.IsHomogeneous n)
+    (α : k) :
+    eval ![α, 0] (dehomogenize 1 (properTransform F)) =
+      α ^ (n - (mult F (fundamentalPoint 2)).toNat) *
+        eval ![0, α] (Affine.blowupStrictTransform (dehomogenize 2 F)) := by
+  have h' := congrArg (eval ![α, 0]) (h.dehomogenize_properTransform_blowup hF)
+  have e1 : eval ![α, 0] (aeval ![X 0, X 0 * X 1] (dehomogenize 1 (properTransform F))) =
+      eval ![α, 0] (dehomogenize 1 (properTransform F)) := by
+    rw [← coe_aeval_eq_eval]
+    change aeval _ (aeval _ _) = aeval _ _
+    rw [← AlgHom.comp_apply, comp_aeval]
+    congr 2
+    ext i : 1
+    fin_cases i <;> simp
+  have e2 : (![α, 0] ∘ Equiv.swap (0 : Fin 2) 1) = ![0, α] := by
+    ext i : 1
+    fin_cases i <;> simp
+  rwa [e1, eval_mul, eval_pow, eval_X, eval_rename, e2] at h'
+
+end IsExcellentPosition
+
+/-- The localization `k[x, z][1/x]`. -/
+local notation "𝓛₀[" k "]" => Localization.Away (X 0 : MvPolynomial (Fin 2) k)
+/-- The localization `k[x, z][1/z]`. -/
+local notation "𝓛₁[" k "]" => Localization.Away (X 1 : MvPolynomial (Fin 2) k)
+
+/-- The swap of the two variables, `k[x, z][1/x] ≅ k[x, z][1/z]`. -/
+private noncomputable def swapAway : 𝓛₀[k] ≃ₐ[k] 𝓛₁[k] :=
+  IsLocalization.algEquivOfAlgEquiv (M := Submonoid.powers (X 0)) (T := Submonoid.powers (X 1))
+    _ _ (renameEquiv k (Equiv.swap (0 : Fin 2) 1)) (by simp [Submonoid.map_powers])
+
+/-- The blow-up chart followed by the swap of the variables. -/
+private noncomputable def overCentreAway : 𝓛₀[k] ≃ₐ[k] 𝓛₁[k] :=
+  (Affine.blowupChartEquiv k).trans swapAway
+
+private theorem overCentreAway_algebraMap (p : MvPolynomial (Fin 2) k) :
+    overCentreAway (algebraMap (MvPolynomial (Fin 2) k) 𝓛₀[k] p) =
+      algebraMap (MvPolynomial (Fin 2) k) 𝓛₁[k]
+        (rename (Equiv.swap 0 1) (aeval ![X 0, X 0 * X 1] p)) := by
+  rw [overCentreAway, AlgEquiv.trans_apply, Affine.blowupChartEquiv_algebraMap, swapAway,
+    IsLocalization.algEquivOfAlgEquiv_eq]
+  rfl
+
+private theorem awayLift_comp_overCentreAway (hα : α ≠ 0) :
+    (Localization.awayLift (eval ![0, α]) (X 1 : MvPolynomial (Fin 2) k)
+        (isUnit_iff_ne_zero.2 (by simpa using hα))).comp
+        ((overCentreAway (k := k)) : 𝓛₀[k] →+* 𝓛₁[k]) =
+      Localization.awayLift (eval ![α, 0]) (X 0 : MvPolynomial (Fin 2) k)
+        (isUnit_iff_ne_zero.2 (by simpa using hα)) := by
+  refine IsLocalization.ringHom_ext (Submonoid.powers (X 0 : MvPolynomial (Fin 2) k)) <|
+    RingHom.ext fun p ↦ ?_
+  simp only [RingHom.coe_comp, Function.comp_apply, RingHom.coe_coe, overCentreAway_algebraMap,
+    Localization.awayLift, IsLocalization.Away.lift_eq, eval_rename]
+  rw [← coe_aeval_eq_eval, ← coe_aeval_eq_eval]
+  change aeval (![0, α] ∘ Equiv.swap 0 1) (aeval ![X 0, X 0 * X 1] p) = aeval ![α, 0] p
+  rw [← AlgHom.comp_apply, comp_aeval]
+  congr 2
+  ext i : 1
+  fin_cases i <;> simp
+
+private theorem overCentreAway_dehomogenize_properTransform (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) :
+    overCentreAway (algebraMap _ 𝓛₀[k] (dehomogenize 1 (properTransform F))) =
+      ((IsLocalization.Away.algebraMap_isUnit (S := 𝓛₁[k]) (X 1 : MvPolynomial (Fin 2) k)).pow
+        (n - (mult F (fundamentalPoint 2)).toNat)).unit *
+        algebraMap _ 𝓛₁[k] (Affine.blowupStrictTransform (dehomogenize 2 F)) := by
+  rw [overCentreAway_algebraMap, h.dehomogenize_properTransform_blowup hF, map_mul, map_pow,
+    rename_X, rename_rename, Equiv.swap_apply_left, IsUnit.unit_spec, map_mul, map_pow]
+  rw [show (⇑(Equiv.swap (0 : Fin 2) 1) ∘ ⇑(Equiv.swap (0 : Fin 2) 1)) = id from
+    funext (Equiv.swap_apply_self 0 1), rename_id_apply]
+
+private theorem eval_X_zero_vec_ne_zero (hα : α ≠ 0) :
+    eval ![α, 0] (X 0 : MvPolynomial (Fin 2) k) ≠ 0 := by simpa using hα
+
+private theorem eval_X_one_vec_ne_zero (hα : α ≠ 0) :
+    eval ![0, α] (X 1 : MvPolynomial (Fin 2) k) ≠ 0 := by simpa using hα
+
+namespace IsExcellentPosition
+
+/-- **Near the centre the quadratic transformation is the blow-up.** For a curve in excellent
+position and `α ≠ 0`, the local ring of `C'` at the point over the centre `[α : 1 : 0]`, which is
+`(α, 0)` in the chart `y = 1`, is isomorphic to the local ring at `(0, α)` of the strict transform
+`g` of the blow-up of `F(x, y, 1)` at the origin. -/
+noncomputable def localRingEquivPointsOverCentre (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) (hα : α ≠ 0) :
+    (localRing k ![α, 0] ⧸
+        span {algebraMap _ (localRing k ![α, 0]) (dehomogenize 1 (properTransform F))}) ≃ₐ[k]
+      (localRing k ![0, α] ⧸ span {(algebraMap _ (localRing k ![0, α])
+        (Affine.blowupStrictTransform (dehomogenize 2 F)))}) :=
+  quotientEquivOfAway overCentreAway (eval_X_zero_vec_ne_zero hα) (eval_X_one_vec_ne_zero hα)
+    (awayLift_comp_overCentreAway hα) _ (overCentreAway_dehomogenize_properTransform h hF)
+
+end IsExcellentPosition
+
+private theorem mk_vec_one_zero_mem_affineOpen (α : k) :
+    mk k ![α, 1, 0] (by simp) ∈ affineOpen 1 :=
+  (mk_mem_affineOpen_iff 1 _ _).2 (by simp)
+
+private theorem affineChart_mk_vec_one_zero (α : k) :
+    affineChart 1 (mk k ![α, 1, 0] (by simp)) = ![α, 0] := by
+  rw [affineChart_mk]
+  ext j : 1
+  fin_cases j <;> simp [Fin.succAbove]
+
+namespace IsExcellentPosition
+
+/-- At a point `[α : 1 : 0]`, `α ≠ 0`, of the exceptional line `V(Z)`, the intersection number of
+`C'` with `V(Z)` is that of the strict transform `g` of the blow-up of `F(x, y, 1)` at the origin
+with the exceptional line `x = 0` at `(0, α)`. -/
+theorem intersectionNumber_properTransform_X_two_mk (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) (hα : α ≠ 0) :
+    intersectionNumber (mk k ![α, 1, 0] (by simp)) (properTransform F) (X 2) =
+      Affine.intersectionNumber ![0, α] (Affine.blowupStrictTransform (dehomogenize 2 F))
+        (X 0) := by
+  rw [intersectionNumber_eq_affine (h.isHomogeneous_properTransform hF) (isHomogeneous_X k 2)
+    (mk_vec_one_zero_mem_affineOpen α), affineChart_mk_vec_one_zero, dehomogenize_X,
+    show (Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) k) 1 1 X 2) = X 1 from rfl,
+    Affine.intersectionNumber_def, Affine.intersectionNumber_def]
+  set E := localRingEquivOfAway overCentreAway (eval_X_zero_vec_ne_zero hα)
+    (eval_X_one_vec_ne_zero hα) (awayLift_comp_overCentreAway hα)
+  refine (Ideal.length_quotient_span_pair_eq_of_ringEquiv E.toRingEquiv ?_ ?_).symm
+  · rw [AlgEquiv.coe_toRingEquiv, localRingEquivOfAway_algebraMap,
+      overCentreAway_dehomogenize_properTransform h hF, map_mul, IsUnit.unit_spec, map_pow,
+      localRing.ofAway_algebraMap, localRing.ofAway_algebraMap]
+    exact associated_unit_mul_left _ _
+      ((localRing.isUnit_algebraMap_iff.2 (eval_X_one_vec_ne_zero hα)).pow _)
+  · rw [AlgEquiv.coe_toRingEquiv, localRingEquivOfAway_algebraMap,
+      overCentreAway_algebraMap]
+    simp only [aeval_X, Matrix.cons_val_one, Matrix.cons_val_zero, map_mul, rename_X,
+      Equiv.swap_apply_left, Equiv.swap_apply_right, localRing.ofAway_algebraMap]
+    exact associated_unit_mul_left _ _
+      (localRing.isUnit_algebraMap_iff.2 (eval_X_one_vec_ne_zero hα))
+
+/-- **The multiplicity at a point over the centre.** For a curve in excellent position and
+`α ≠ 0`, the multiplicity of `C'` at `[α : 1 : 0]` is the multiplicity at `(0, α)` of the strict
+transform `g` of the blow-up of `F(x, y, 1)` at the origin. -/
+theorem mult_properTransform_mk_eq_orderAt_blowupStrictTransform (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) (hα : α ≠ 0) :
+    mult (properTransform F) (mk k ![α, 1, 0] (by simp)) =
+      (Affine.blowupStrictTransform (dehomogenize 2 F)).orderAt ![0, α] := by
+  rw [mult_eq_orderAt_dehomogenize (h.isHomogeneous_properTransform hF)
+    (mk_vec_one_zero_mem_affineOpen α), affineChart_mk_vec_one_zero]
+  have he := h.eval_dehomogenize_properTransform hF α
+  by_cases hg : eval ![0, α] (Affine.blowupStrictTransform (dehomogenize 2 F)) = 0
+  · rw [hg, mul_zero] at he
+    exact Affine.orderAt_eq_of_ringEquiv he hg
+      (h.localRingEquivPointsOverCentre hF hα).toRingEquiv
+  · rw [orderAt_eq_zero_iff.2 hg, orderAt_eq_zero_iff.2]
+    rw [he]
+    exact mul_ne_zero (pow_ne_zero _ hα) hg
+
+/-- In excellent position, neither `x` nor `y` is tangent at the origin to `F(x, y, 1)`: this is
+good position at `[0 : 0 : 1]`. -/
+theorem not_isTangentAt_dehomogenize_X (h : IsExcellentPosition F) (hF : F.IsHomogeneous n)
+    (i : Fin 2) : ¬ Affine.IsTangentAt (dehomogenize 2 F) 0 (X i) := fun hT ↦
+  isGoodPosition_def.1 h.isGoodPosition 2 (Fin.succAbove 2 i) (Fin.succAbove_ne 2 i).symm
+    ((isTangentAt_fundamentalPoint_two_iff_dvd_leadingFormAt hF i).2
+      (Affine.isTangentAt_def.1 hT).2.2)
+
+private theorem ne_zero_of_eval_blowupStrictTransform_eq_zero (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) {α : k}
+    (h0 : eval ![0, α] (Affine.blowupStrictTransform (dehomogenize 2 F)) = 0) : α ≠ 0 := by
+  rintro rfl
+  refine h.not_isTangentAt_dehomogenize_X hF 1 ?_
+  simpa using (Affine.eval_zero_blowupStrictTransform_eq_zero_iff
+    (dehomogenize_ne_zero_of_isHomogeneous 2 hF h.ne_zero) 0).1 h0
+
+/-- **The points over the centre through the blow-up.** For a curve in excellent position, the
+points over the centre are the points `[α : 1 : 0]` for the points `(0, α)` of the strict
+transform `g` of the blow-up of `F(x, y, 1)` at the origin on the exceptional line `x = 0`. -/
+theorem mem_pointsOverCentre_iff_eval_blowupStrictTransform (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) {Q : ℙ k (Fin 3 → k)} :
+    Q ∈ pointsOverCentre F ↔ ∃ α : k, Q = mk k ![α, 1, 0] (by simp) ∧
+      eval ![0, α] (Affine.blowupStrictTransform (dehomogenize 2 F)) = 0 := by
+  rw [h.mem_pointsOverCentre_iff hF]
+  simp_rw [← Affine.eval_zero_blowupStrictTransform]
+  exact ⟨fun ⟨α, _, hQ, h0⟩ ↦ ⟨α, hQ, h0⟩, fun ⟨α, hQ, h0⟩ ↦
+    ⟨α, h.ne_zero_of_eval_blowupStrictTransform_eq_zero hF h0, hQ, h0⟩⟩
+
+end IsExcellentPosition
+
+/-- **A point over the centre has multiplicity at most its intersection number with the
+exceptional line**: `m_Q(F') ≤ I(Q, F' ∩ Z)` for `Q` over the centre. -/
+theorem mult_le_intersectionNumber_of_mem_pointsOverCentre (hF : F.IsHomogeneous n)
+    {Q : ℙ k (Fin 3 → k)} (hQ : Q ∈ pointsOverCentre F) :
+    mult (properTransform F) Q ≤ intersectionNumber Q (properTransform F) (X 2) := by
+  have hQ' : Q ∈ zeroLocus {properTransform F, X 2} := by
+    rw [pointsOverCentre_def] at hQ
+    exact hQ.1
+  have h2 : eval Q.rep (X 2 : MvPolynomial (Fin 3) k) = 0 :=
+    (mem_zeroLocus_iff_eval_rep (by simpa using ⟨⟨_, hF.properTransform⟩,
+      ⟨1, isHomogeneous_X k 2⟩⟩)).1 hQ' _ (by simp)
+  simpa [mult_eq_one_of_isHomogeneous_one (isHomogeneous_X k 2) (X_ne_zero 2) h2] using
+    mul_mult_le_intersectionNumber hF.properTransform (isHomogeneous_X k 2) (P := Q)
+
+namespace IsExcellentPosition
+
+/-- **The points over the centre count the multiplicity of the centre.** For a curve in excellent
+position over an algebraically closed field, the intersection numbers of `C'` with the
+exceptional line `V(Z)` at the points over the centre add up to `r = m_P(F)`,
+`P = [0 : 0 : 1]`. -/
+theorem finsum_intersectionNumber_pointsOverCentre [IsAlgClosed k] (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) :
+    ∑ᶠ Q ∈ pointsOverCentre F, intersectionNumber Q (properTransform F) (X 2) =
+      mult F (fundamentalPoint 2) := by
+  classical
+  set f := dehomogenize 2 F
+  have hf : f ≠ 0 := dehomogenize_ne_zero_of_isHomogeneous 2 hF h.ne_zero
+  have hfib := Affine.eval_zero_blowupStrictTransform_eq_zero_iff hf
+  obtain ⟨A, hA, -⟩ :=
+    Affine.exists_finset_eval_zero_blowupStrictTransform hf (h.not_isTangentAt_dehomogenize_X hF 0)
+  have hA0 (α : k) (hα : α ∈ A) : α ≠ 0 :=
+    h.ne_zero_of_eval_blowupStrictTransform_eq_zero hF ((hA α).1 hα)
+  have himage : pointsOverCentre F = (fun α : k ↦ mk k ![α, 1, 0] (by simp)) '' ↑A := by
+    ext Q
+    simp only [h.mem_pointsOverCentre_iff_eval_blowupStrictTransform hF, Set.mem_image,
+      Finset.mem_coe, hA]
+    exact ⟨fun ⟨α, hQ, h0⟩ ↦ ⟨α, h0, hQ.symm⟩, fun ⟨α, h0, hQ⟩ ↦ ⟨α, hQ.symm, h0⟩⟩
+  have hinj : Set.InjOn (fun α : k ↦ mk k ![α, 1, 0] (by simp)) ↑A := by
+    intro α _ β _ hαβ
+    obtain ⟨a, ha⟩ := (mk_eq_mk_iff' _ _ _ _ _).1 hαβ
+    have h1 := congrFun ha 1
+    have h0 := congrFun ha 0
+    simp only [Pi.smul_apply, Matrix.cons_val_one, Matrix.cons_val_zero, smul_eq_mul,
+      mul_one] at h0 h1
+    rw [← h0, h1, one_mul]
+  rw [himage, finsum_mem_image hinj, finsum_mem_coe_finset,
+    Finset.sum_congr rfl fun α hα ↦ (h.intersectionNumber_properTransform_X_two_mk hF
+      (hA0 α hα)).trans (Affine.intersectionNumber_blowupStrictTransform_X_zero hf α),
+    ← Nat.cast_sum, ← Finset.sum_image (f := fun L ↦ Affine.tangentMultiplicity f 0 L)
+      fun α _ β _ h ↦ X_one_sub_C_mul_X_zero_injective h,
+    mult_fundamentalPoint_eq_orderAt hF]
+  refine Affine.sum_tangentMultiplicity ?_ ?_ ?_ hf
+  · simp only [Finset.mem_image]
+    rintro _ ⟨α, hα, rfl⟩
+    exact (hfib α).1 ((hA α).1 hα)
+  · simp only [Finset.coe_image, Set.Pairwise, Set.mem_image, Finset.mem_coe]
+    rintro _ ⟨α, -, rfl⟩ _ ⟨β, -, rfl⟩ hne hαβ
+    exact hne (by rw [associated_X_one_sub_C_mul_X_zero_iff.1 hαβ])
+  · intro L hL
+    obtain ⟨α, hα⟩ := hL.exists_associated_X_one_sub_C_mul_X_zero
+      (h.not_isTangentAt_dehomogenize_X hF 0)
+    refine ⟨_, Finset.mem_image_of_mem _ ((hA α).2 ((hfib α).2 ?_)), hα⟩
+    exact Affine.isTangentAt_def.2 ⟨isHomogeneous_X_one_sub_C_mul_X_zero α,
+      X_one_sub_C_mul_X_zero_ne_zero α, hα.symm.dvd.trans hL.dvd⟩
+
+/-- **The points over an ordinary centre are simple.** For a curve in excellent position whose
+centre `P = [0 : 0 : 1]` is a point of multiplicity at most one or an ordinary multiple point,
+the points over the centre are simple points of `C'`. -/
+theorem isSimplePoint_of_mem_pointsOverCentre (h : IsExcellentPosition F) (hF : F.IsHomogeneous n)
+    (hP : mult F (fundamentalPoint 2) ≤ 1 ∨ IsOrdinaryMultiplePoint F (fundamentalPoint 2))
+    {Q : ℙ k (Fin 3 → k)} (hQ : Q ∈ pointsOverCentre F) :
+    IsSimplePoint (properTransform F) Q := by
+  obtain ⟨α, rfl, h0⟩ := (h.mem_pointsOverCentre_iff_eval_blowupStrictTransform hF).1 hQ
+  have hf : dehomogenize 2 F ≠ 0 := dehomogenize_ne_zero_of_isHomogeneous 2 hF h.ne_zero
+  have hT := (Affine.eval_zero_blowupStrictTransform_eq_zero_iff hf α).1 h0
+  rw [isSimplePoint_def, h.mult_properTransform_mk_eq_orderAt_blowupStrictTransform hF
+    (h.ne_zero_of_eval_blowupStrictTransform_eq_zero hF h0)]
+  rcases hP with hle | hord
+  · refine le_antisymm ?_ (Order.one_le_iff_pos.2 (orderAt_pos_iff.2 h0))
+    calc _ ≤ (Affine.tangentMultiplicity (dehomogenize 2 F) 0 (X 1 - C α * X 0) : ℕ∞) :=
+          Affine.orderAt_blowupStrictTransform_le_tangentMultiplicity hf α
+      _ ≤ (dehomogenize 2 F).orderAt 0 := Affine.tangentMultiplicity_le_orderAt hf
+          (isHomogeneous_X_one_sub_C_mul_X_zero α) (X_one_sub_C_mul_X_zero_ne_zero α)
+      _ ≤ 1 := by rwa [← mult_fundamentalPoint_eq_orderAt hF]
+  · rw [isOrdinaryMultiplePoint_iff_affine hF (fundamentalPoint_mem_affineOpen_iff.2 rfl),
+      affineChart_fundamentalPoint] at hord
+    exact Affine.isSimplePoint_iff_orderAt_eq_one.1 (hord.isSimplePoint_blowupStrictTransform hT).1
+
+end IsExcellentPosition
+
+end PointsOverCentre
 
 end PlaneCurves.Projective
 
