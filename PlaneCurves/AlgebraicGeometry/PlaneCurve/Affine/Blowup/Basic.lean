@@ -542,12 +542,19 @@ theorem isPrime_span_blowupStrictTransform (hF : Irreducible F) (hX : ¬ Associa
   isPrime_span (irreducible_blowupStrictTransform hF hX)
 
 /-- The image of `x` in `Frac(k[X, Y] ⧸ (G))` is nonzero if `G` does not divide `X`. -/
-private theorem algebraMap_mk_X_zero_ne_zero {G : MvPolynomial (Fin 2) k}
-    [(Ideal.span {G}).IsPrime] (hG : ¬ G ∣ X 0) :
+theorem algebraMap_mk_X_zero_ne_zero {G : MvPolynomial (Fin 2) k} (hG : ¬ G ∣ X 0) :
     algebraMap _ (FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {G}))
       (Ideal.Quotient.mk (Ideal.span {G}) (X 0)) ≠ 0 := by
   rwa [Ne, IsFractionRing.to_map_eq_zero_iff, Ideal.Quotient.eq_zero_iff_mem,
     Ideal.mem_span_singleton]
+
+/-- The image of `x` in `k(F) = Frac(k[X, Y] ⧸ (F))` is nonzero if `F` is irreducible and not
+associated to `X`. -/
+theorem algebraMap_mk_X_zero_ne_zero_of_irreducible (hF : Irreducible F)
+    (hX : ¬ Associated F (X 0)) :
+    algebraMap _ (FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {F}))
+      (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ≠ 0 :=
+  algebraMap_mk_X_zero_ne_zero (not_dvd_X_zero hF hX)
 
 section FunctionFieldHom
 

@@ -34,8 +34,9 @@ transform `G'`, has order `s · ord_Q(x) + ord_Q(G'(x, z))`, from `G(x, xz) = x 
 
 ## Main results
 
-* `PlaneCurves.Affine.div_mem_integers_of_localSubring_le`: `z = y / x` lies in the valuation
-  ring of every place over the origin, if `X = 0` is not tangent.
+* `PlaneCurves.Affine.isIntegral_div`, `PlaneCurves.Affine.div_mem_integers_of_localSubring_le`:
+  `z = y / x` is integral over `𝒪_0(F)`, so it lies in the valuation ring of every place over
+  the origin, if `X = 0` is not tangent.
 * `PlaneCurves.Affine.localSubring_le_integers_map_symm`,
   `PlaneCurves.Affine.valuation_map_symm_div_sub_lt_one`: a place of `k(F')` over `(0, α)` lies
   over the origin, and `z` takes the value `α` there.
@@ -82,45 +83,73 @@ private theorem coe_aeval_integers {K : Type*} [Field K] [Algebra k K] (Q : Plac
   rw [hu] at h
   exact h
 
+section Integral
+
+variable {hI : Ideal.span {F} ≤ vanishingIdeal k {(0 : Fin 2 → k)}}
+
+omit [(Ideal.span {F}).IsPrime] in
+private theorem aeval_mk_X {R : Type*} [CommSemiring R] [Algebra k R]
+    (f : MvPolynomial (Fin 2) k ⧸ Ideal.span {F} →ₐ[k] R) (g : MvPolynomial (Fin 2) k) :
+    aeval ![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] g =
+      f (Ideal.Quotient.mk _ g) := by
+  have h : (![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] : Fin 2 → R) =
+      (f.comp (Ideal.Quotient.mkₐ k _)) ∘ X := by
+    ext i : 1
+    fin_cases i <;> rfl
+  rw [h, ← aeval_unique]
+  rfl
+
+/-- If `X` is not tangent to `F` at the origin, `H(x, y)` is a unit of `𝒪_0(F)`: its value at the
+origin is the coefficient `a_{0r}` of `Y ^ r`. -/
+theorem isUnit_aeval_blowupChartLeadingCoeff_localSubring (hT : ¬IsTangentAt F 0 (X 0)) :
+    IsUnit (aeval ![algebraMap _ (localSubring 0 hI).toSubring
+        (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
+      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))]
+      (blowupChartLeadingCoeff F)) := by
+  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
+      (localSubring 0 hI).toSubring)
+    (blowupChartLeadingCoeff F)
+  simp only [IsScalarTower.coe_toAlgHom'] at e
+  rw [e, isUnit_iff_evalAt_ne_zero, evalAt_algebraMap, coordinateEval_mk,
+    eval_zero_blowupChartLeadingCoeff]
+  exact (isTangentAt_zero_X_zero_iff).not.1 hT
+
+/-- `F(x, y) = 0` in `𝒪_0(F)`. -/
+theorem aeval_localSubring_eq_zero :
+    aeval ![algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
+      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))] F =
+      0 := by
+  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
+    (localSubring 0 hI).toSubring) F
+  simp only [IsScalarTower.coe_toAlgHom'] at e
+  rw [e, Ideal.Quotient.mk_singleton_self, map_zero]
+
+include hF hX in
+/-- If the curve `F` passes through the origin and `X = 0` is not tangent to it there, then `y / x`
+is integral over `𝒪_0(F)`: it is a root of the monic polynomial obtained from
+`F(x, xz) = x ^ r F'(x, z)`. -/
+theorem isIntegral_div (hT : ¬IsTangentAt F 0 (X 0)) :
+    IsIntegral (localSubring 0 hI).toSubring
+      (algebraMap _ (functionField (Ideal.span {F})) (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
+        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))) :=
+  isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff aeval_localSubring_eq_zero
+    (mul_div_cancel₀ _ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX))
+    (fun _ _ h ↦ mul_left_cancel₀ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX) h)
+    (isUnit_aeval_blowupChartLeadingCoeff_localSubring hT)
+
+end Integral
+
 include hF hX in
 /-- **`z = y / x` is integral at a place over the origin.** If the curve `F` passes through the
 origin and `X = 0` is not tangent to it there, then `y / x` lies in the valuation ring of every
-place of `k(F)` over the origin: it is a root of a monic polynomial over `𝒪_0(F)`. -/
+place of `k(F)` over the origin: it is integral over `𝒪_0(F)` (`isIntegral_div`). -/
 theorem div_mem_integers_of_localSubring_le (h0 : eval 0 F = 0) (hT : ¬IsTangentAt F 0 (X 0))
     {Q : Place k (functionField (Ideal.span {F}))}
     (hQ : (AffineSpace.localSubring 0 (span_le_vanishingIdeal h0)).toSubring ≤
       Q.integers.toSubring) :
     algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers := by
-  set x : functionField (Ideal.span {F}) :=
-    algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))
-  set y : functionField (Ideal.span {F}) :=
-    algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1))
-  have hx0 : x ≠ 0 := by
-    rw [Ne, IsFractionRing.to_map_eq_zero_iff, Ideal.Quotient.eq_zero_iff_mem,
-      Ideal.mem_span_singleton]
-    exact fun hd ↦ hX (hF.associated_of_dvd prime_X.irreducible hd)
-  have hxQ : x ∈ Q.integers := hQ (algebraMap_mem_localSubring _ _ _)
-  have hyQ : y ∈ Q.integers := hQ (algebraMap_mem_localSubring _ _ _)
-  have hxy (g : MvPolynomial (Fin 2) k) :
-      ((aeval ![(⟨x, hxQ⟩ : Q.integers), ⟨y, hyQ⟩] g : Q.integers) :
-        functionField (Ideal.span {F})) =
-        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) g) := by
-    have h' : aeval ![x, y] = (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
-        (functionField (Ideal.span {F}))).comp (Ideal.Quotient.mkₐ k (Ideal.span {F})) :=
-      algHom_ext fun i ↦ by fin_cases i <;> simp [x, y]
-    rw [coe_aeval_integers]
-    exact DFunLike.congr_fun h' g
-  refine Q.mem_integers_of_isIntegral (R := Q.integers) (fun r ↦ r.2) ?_
-  refine isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff (F := F) (B := functionField _)
-    (x := (⟨x, hxQ⟩ : Q.integers)) (y := ⟨y, hyQ⟩) ?_ ?_ (fun _ _ h ↦ mul_left_cancel₀ hx0 h) ?_
-  · exact Subtype.ext ((hxy F).trans (by simp))
-  · exact mul_div_cancel₀ y hx0
-  · refine Q.isUnit_iff_valuation_eq_one.2 ?_
-    rw [hxy]
-    refine AffineSpace.valuation_algebraMap_mk_eq_one hQ ?_
-    rw [eval_zero_blowupChartLeadingCoeff]
-    exact (isTangentAt_zero_X_zero_iff).not.1 hT
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers :=
+  Q.mem_integers_of_isIntegral (fun r ↦ hQ r.2) (isIntegral_div hF hX hT)
 
 /-- An element that agrees with a constant to first order at a place lies in its valuation
 ring. -/
