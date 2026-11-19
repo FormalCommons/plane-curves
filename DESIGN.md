@@ -291,6 +291,7 @@ PlaneCurves/
         │   └── GenusOne.lean            curves of genus one (D11)
         ├── Place/
         │   ├── Basic.lean               places over a point, order of a form (V3)
+        │   ├── Blowup.lean              places over the origin through the chart (B4)
         │   ├── ChangeOfCoordinates.lean places and orders of forms under M (B3)
         │   ├── SimplePoint.lean         the place at a simple point (V3)
         │   ├── RationalMap.lean         rational maps defined at simple points (V4)
