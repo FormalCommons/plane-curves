@@ -25,6 +25,8 @@ each of its homogeneous components.
   for `F(1, T)` as a polynomial in one variable.
 * `MvPolynomial.IsHomogeneous.dvd_homogeneousComponent`: a form dividing a polynomial divides
   each of its homogeneous components.
+* `MvPolynomial.IsHomogeneous.exists_isHomogeneous_of_dvd`: over a field, a divisor of a nonzero
+  form that is not a unit is a form of positive degree.
 -/
 
 public section
@@ -84,6 +86,18 @@ theorem IsHomogeneous.dvd_homogeneousComponent {P : MvPolynomial σ R} (hF : F.I
   rw [mul_comm, hF.homogeneousComponent_mul_right]
   split_ifs
   exacts [dvd_mul_left _ _, dvd_zero _]
+
+/-- Over a field, a divisor of a nonzero form that is not a unit is a form of positive
+degree. -/
+theorem IsHomogeneous.exists_isHomogeneous_of_dvd {k : Type*} [Field k]
+    {F H : MvPolynomial σ k} (hF : F.IsHomogeneous d) (hF0 : F ≠ 0) (hHF : H ∣ F)
+    (hH : ¬IsUnit H) : ∃ e ≠ 0, H.IsHomogeneous e := by
+  obtain ⟨c, rfl⟩ := hHF
+  refine ⟨H.totalDegree, fun h0 ↦ hH ?_, hF.of_mul_left (right_ne_zero_of_mul hF0)⟩
+  rw [totalDegree_eq_zero_iff_eq_C.1 h0, isUnit_map_iff, isUnit_iff_ne_zero]
+  rintro hc
+  rw [totalDegree_eq_zero_iff_eq_C.1 h0, hc, map_zero, zero_mul] at hF0
+  exact hF0 rfl
 
 end MvPolynomial
 
