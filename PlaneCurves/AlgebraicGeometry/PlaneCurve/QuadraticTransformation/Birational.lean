@@ -5,24 +5,34 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.CurveLocalRing
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Basic
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.GoodPosition
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Hypersurface
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Irreducible
 
 /-!
-# The standard quadratic transformation as a map of points
+# The standard quadratic transformation as a birational map of curves
 
 The standard quadratic transformation of `ℙ²` sends `[x : y : z]` to `[yz : xz : xy]`. It is
 defined off the three fundamental points, and is an involution of the complement `U` of the
 fundamental triangle `xyz = 0`. For every form `F` it maps `V(F) ∖ U` bijectively onto
 `V(F') ∖ U`, where `F'` is the proper transform, and it maps every point of `V(F')` that is not
 fundamental into `V(F)`. If `F` is irreducible, with no exceptional component, over an
-algebraically closed field, then `V(F')` is the closure of the image of `V(F) ∖ U`.
+algebraically closed field, then `V(F')` is the closure of the image of `V(F) ∖ U`. For an
+irreducible `F` with no exceptional component, `G / H ↦ G^Q / H^Q` is an isomorphism
+`k(F) ≅ k(F')` of function fields: the quadratic transformation is a birational map of the two
+curves.
 
 ## Main definitions
 
 * `PlaneCurves.Projective.quadraticMap`: the point map `[x : y : z] ↦ [yz : xz : xy]`, with the
   junk value `P` at a fundamental point `P`.
+* `PlaneCurves.Projective.quadraticFunctionFieldHom`: for irreducible forms `F`, `G` with
+  `G ∣ H^Q ↔ F ∣ H` for every `H`, the map of function fields `k(F) → k(G)`,
+  `G₁ / H₁ ↦ G₁^Q / H₁^Q`.
+* `PlaneCurves.Projective.quadraticFunctionFieldEquiv`: for an irreducible form `F` with no
+  exceptional component, the isomorphism `k(F) ≅ k(F')` of function fields.
 
 ## Main results
 
@@ -37,11 +47,20 @@ algebraically closed field, then `V(F')` is the closure of the image of `V(F) �
   the points of `V(F')` that are not fundamental into `V(F)`.
 * `PlaneCurves.Projective.zeroLocus_vanishingIdeal_image_quadraticMap`: `V(F')` is the closure,
   `V(I(·))`, of the image of `V(F) ∖ V(XYZ)`.
+* `PlaneCurves.Projective.quadraticFunctionFieldEquiv_mk`: the isomorphism of function fields
+  sends `G / H` to `G^Q / H^Q`.
+* `PlaneCurves.Projective.properTransform_spec`: Fulton's properties (1)–(4) of the proper
+  transform of an irreducible form with no exceptional component, together.
 
 ## Implementation notes
 
 The library has no Zariski topology on `ℙ²`: the closure of a set `S` of points is
 `zeroLocus (vanishingIdeal S)`, the smallest algebraic set that contains it.
+
+The map of function fields is built with `HomogeneousLocalization.liftAlgHom`. The map
+`H ↦ (H^Q)_*`, `Q` followed by the dehomogenization at a coordinate `Xᵢ` with `G ∤ Xᵢ`, sends the
+homogeneous coordinate ring of `F` to the function field of the affine chart of `G`, which is
+`k(G)` by `Projective.functionField.chartEquiv`.
 
 ## References
 
@@ -289,6 +308,216 @@ theorem zeroLocus_vanishingIdeal_image_quadraticMap [IsAlgClosed k] (hF : F.IsHo
     (irreducible_properTransform hF hirr hX) (not_X_dvd_properTransform hF hirr.ne_zero)
 
 end ZeroLocus
+
+section FunctionField
+
+open TauCeti TauCeti.AlgebraicGeometry
+
+variable {F G : MvPolynomial (Fin 3) k} {n m : ℕ}
+
+/-- The map `H ↦ (H^Q)_*` from the homogeneous coordinate ring of `F` to the function field of
+the affine chart `Xᵢ = 1` of `G`, for forms `F`, `G` with `F ∣ H → G ∣ H^Q`. -/
+private noncomputable def quadraticChartHom (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m)
+    [Fact (Irreducible G)] {i : Fin 3} (hi : ¬ G ∣ X i)
+    (h : ∀ H, F ∣ H → G ∣ quadraticTransform H) :
+    haveI := isPrime_span_dehomogenize hG hi
+    MvPolynomial (Fin 3) k ⧸ (projectivePlaneCurve.ideal hF).toIdeal →ₐ[k]
+      AffineSpace.functionField (Ideal.span {dehomogenize i G}) :=
+  haveI := isPrime_span_dehomogenize hG hi
+  (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {dehomogenize i G}) _).comp
+    (Ideal.quotientMapₐ _ ((dehomogenize i).comp quadraticTransform) fun H hH ↦ by
+      rw [Ideal.mem_comap, Ideal.mem_span_singleton]
+      exact map_dvd _ (h H ((projectivePlaneCurve.mem_ideal_iff hF).1 hH)))
+
+private theorem quadraticChartHom_mk (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m)
+    [Fact (Irreducible G)] {i : Fin 3} (hi : ¬ G ∣ X i)
+    (h : ∀ H, F ∣ H → G ∣ quadraticTransform H) (H : MvPolynomial (Fin 3) k) :
+    haveI := isPrime_span_dehomogenize hG hi
+    quadraticChartHom hF hG hi h (Ideal.Quotient.mk _ H) =
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {dehomogenize i G})
+        (dehomogenize i (quadraticTransform H))) :=
+  (rfl)
+
+private theorem quadraticChartHom_ne_zero (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m)
+    [Fact (Irreducible F)] [Fact (Irreducible G)] {i : Fin 3} (hi : ¬ G ∣ X i)
+    (h : ∀ H, G ∣ quadraticTransform H ↔ F ∣ H) ⦃d : ℕ⦄
+    ⦃g : MvPolynomial (Fin 3) k ⧸ (projectivePlaneCurve.ideal hF).toIdeal⦄
+    (hg : g ∈ (projectivePlaneCurve.ideal hF).quotientGrading d)
+    (hgI : g ∈ (⊥ : Ideal (MvPolynomial (Fin 3) k ⧸
+      (projectivePlaneCurve.ideal hF).toIdeal)).primeCompl) :
+    quadraticChartHom hF hG hi (fun H ↦ (h H).2) g ≠ 0 := by
+  have := isPrime_span_dehomogenize hG hi
+  obtain ⟨g, hg', rfl⟩ := (projectivePlaneCurve.ideal hF).exists_isHomogeneous_mk_eq hg
+  rw [quadraticChartHom_mk, Ne, IsFractionRing.to_map_eq_zero_iff, Ideal.Quotient.eq_zero_iff_mem,
+    ← projectivePlaneCurve.map_dehomogenize_ideal hG i]
+  refine dehomogenize_notMem_map ((projectivePlaneCurve.mem_ideal_iff hG).not.2 hi)
+    hg'.quadraticTransform ((projectivePlaneCurve.mem_ideal_iff hG).not.2 fun hQ ↦ hgI ?_)
+  exact Ideal.Quotient.eq_zero_iff_mem.2 ((projectivePlaneCurve.mem_ideal_iff hF).2 ((h g).1 hQ))
+
+/-- **The quadratic transformation of function fields.** For irreducible forms `F`, `G` such
+that `G ∣ H^Q ↔ F ∣ H` for every polynomial `H`, the `k`-algebra hom `k(F) → k(G)` of the
+function fields of the curves `F = 0` and `G = 0` that sends `G₁ / H₁` to `G₁^Q / H₁^Q`
+(`quadraticFunctionFieldHom_mk`). -/
+noncomputable def quadraticFunctionFieldHom (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m)
+    [Fact (Irreducible F)] [Fact (Irreducible G)] (h : ∀ H, G ∣ quadraticTransform H ↔ F ∣ H) :
+    Projective.functionField hF →ₐ[k] Projective.functionField hG :=
+  haveI := isPrime_span_dehomogenize hG
+    (projectivePlaneCurve.exists_not_dvd_X (Fact.out : Irreducible G)).choose_spec
+  (Projective.functionField.chartEquiv hG _
+      (projectivePlaneCurve.exists_not_dvd_X (Fact.out : Irreducible G)).choose_spec).symm.toAlgHom
+    |>.comp (HomogeneousLocalization.liftAlgHom _ (Ideal.primeCompl_le_nonZeroDivisors _)
+      (quadraticChartHom hF hG _ (fun H ↦ (h H).2))
+      (quadraticChartHom_ne_zero hF hG
+        (projectivePlaneCurve.exists_not_dvd_X (Fact.out : Irreducible G)).choose_spec h))
+
+/-- The quadratic transformation of function fields sends `G₁ / H₁` to `G₁^Q / H₁^Q`. -/
+@[simp]
+theorem quadraticFunctionFieldHom_mk (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m)
+    [Fact (Irreducible F)] [Fact (Irreducible G)] (h : ∀ H, G ∣ quadraticTransform H ↔ F ∣ H)
+    {d : ℕ} {G₁ H₁ : MvPolynomial (Fin 3) k} (hG₁ : G₁.IsHomogeneous d)
+    (hH₁ : H₁.IsHomogeneous d) (hH₁F : H₁ ∉ projectivePlaneCurve.ideal hF) :
+    quadraticFunctionFieldHom hF hG h (ProjectiveSpace.functionField.mk hG₁ hH₁ hH₁F) =
+      ProjectiveSpace.functionField.mk hG₁.quadraticTransform hH₁.quadraticTransform
+        fun hQ ↦ hH₁F ((projectivePlaneCurve.mem_ideal_iff hF).2
+          ((h H₁).1 ((projectivePlaneCurve.mem_ideal_iff hG).1 hQ))) := by
+  have hi := (projectivePlaneCurve.exists_not_dvd_X (Fact.out : Irreducible G)).choose_spec
+  have := isPrime_span_dehomogenize hG hi
+  rw [quadraticFunctionFieldHom, AlgHom.comp_apply, AlgEquiv.toAlgHom_apply,
+    AlgEquiv.symm_apply_eq, Projective.functionField.chartEquiv_mk,
+    ProjectiveSpace.functionField.mk_def, HomogeneousLocalization.liftAlgHom_mk]
+  rfl
+
+/-- The quadratic transformations of function fields `k(F) → k(G)` and `k(G) → k(F)` are
+inverse to each other: `G₁^{QQ} / H₁^{QQ} = (XYZ)^d G₁ / ((XYZ)^d H₁) = G₁ / H₁`. -/
+theorem quadraticFunctionFieldHom_comp_quadraticFunctionFieldHom (hF : F.IsHomogeneous n)
+    (hG : G.IsHomogeneous m) [Fact (Irreducible F)] [Fact (Irreducible G)]
+    (h : ∀ H, G ∣ quadraticTransform H ↔ F ∣ H) (h' : ∀ H, F ∣ quadraticTransform H ↔ G ∣ H) :
+    (quadraticFunctionFieldHom hG hF h').comp (quadraticFunctionFieldHom hF hG h) =
+      AlgHom.id k _ := by
+  refine AlgHom.ext fun z ↦ ?_
+  obtain ⟨d, f, g, hf, hg, hgI, rfl⟩ := ProjectiveSpace.functionField.exists_eq_mk z
+  rw [AlgHom.comp_apply, quadraticFunctionFieldHom_mk, quadraticFunctionFieldHom_mk,
+    AlgHom.id_apply, ProjectiveSpace.functionField.mk_eq_mk_iff,
+    quadraticTransform_quadraticTransform hf, quadraticTransform_quadraticTransform hg]
+  convert zero_mem (projectivePlaneCurve.ideal hF)
+  ring
+
+variable [Fact (Irreducible F)] [Fact (Irreducible (properTransform F))]
+
+/-- **The quadratic transformation is birational.** For an irreducible form `F` with no
+exceptional component, the isomorphism `k(F) ≅ k(F')` of the function fields of the curve
+`F = 0` and of its proper transform, that sends `G / H` to `G^Q / H^Q`
+(`quadraticFunctionFieldEquiv_mk`). Its inverse is the same map for `F'`, since `(F')' = F`
+(`quadraticFunctionFieldEquiv_symm_mk`). -/
+noncomputable def quadraticFunctionFieldEquiv (hF : F.IsHomogeneous n) (hX : ∀ i, ¬ X i ∣ F) :
+    Projective.functionField hF ≃ₐ[k] Projective.functionField hF.properTransform :=
+  AlgEquiv.ofAlgHom
+    (quadraticFunctionFieldHom hF hF.properTransform fun _ ↦
+      dvd_quadraticTransform_iff hF Fact.out hX)
+    (quadraticFunctionFieldHom hF.properTransform hF fun _ ↦
+      dvd_quadraticTransform_iff_properTransform_dvd hF Fact.out hX)
+    (quadraticFunctionFieldHom_comp_quadraticFunctionFieldHom _ _ _ _)
+    (quadraticFunctionFieldHom_comp_quadraticFunctionFieldHom _ _ _ _)
+
+theorem quadraticFunctionFieldEquiv_def (hF : F.IsHomogeneous n) (hX : ∀ i, ¬ X i ∣ F) :
+    quadraticFunctionFieldEquiv hF hX =
+      AlgEquiv.ofAlgHom
+        (quadraticFunctionFieldHom hF hF.properTransform fun _ ↦
+          dvd_quadraticTransform_iff hF Fact.out hX)
+        (quadraticFunctionFieldHom hF.properTransform hF fun _ ↦
+          dvd_quadraticTransform_iff_properTransform_dvd hF Fact.out hX)
+        (quadraticFunctionFieldHom_comp_quadraticFunctionFieldHom _ _ _ _)
+        (quadraticFunctionFieldHom_comp_quadraticFunctionFieldHom _ _ _ _) :=
+  (rfl)
+
+/-- The isomorphism `k(F) ≅ k(F')` sends `G / H` to `G^Q / H^Q`. -/
+@[simp]
+theorem quadraticFunctionFieldEquiv_mk (hF : F.IsHomogeneous n) (hX : ∀ i, ¬ X i ∣ F) {d : ℕ}
+    {G H : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous d) (hH : H.IsHomogeneous d)
+    (hHF : H ∉ projectivePlaneCurve.ideal hF) :
+    quadraticFunctionFieldEquiv hF hX (ProjectiveSpace.functionField.mk hG hH hHF) =
+      ProjectiveSpace.functionField.mk hG.quadraticTransform hH.quadraticTransform
+        fun hQ ↦ hHF ((projectivePlaneCurve.mem_ideal_iff hF).2
+          ((dvd_quadraticTransform_iff hF Fact.out hX).1
+            ((projectivePlaneCurve.mem_ideal_iff hF.properTransform).1 hQ))) :=
+  quadraticFunctionFieldHom_mk _ _ (fun _ ↦ dvd_quadraticTransform_iff hF Fact.out hX) hG hH hHF
+
+/-- The inverse of the isomorphism `k(F) ≅ k(F')` sends `G / H` to `G^Q / H^Q`. -/
+@[simp]
+theorem quadraticFunctionFieldEquiv_symm_mk (hF : F.IsHomogeneous n) (hX : ∀ i, ¬ X i ∣ F)
+    {d : ℕ} {G H : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous d) (hH : H.IsHomogeneous d)
+    (hHF : H ∉ projectivePlaneCurve.ideal hF.properTransform) :
+    (quadraticFunctionFieldEquiv hF hX).symm (ProjectiveSpace.functionField.mk hG hH hHF) =
+      ProjectiveSpace.functionField.mk hG.quadraticTransform hH.quadraticTransform
+        fun hQ ↦ hHF ((projectivePlaneCurve.mem_ideal_iff hF.properTransform).2
+          ((dvd_quadraticTransform_iff_properTransform_dvd hF Fact.out hX).1
+            ((projectivePlaneCurve.mem_ideal_iff hF).1 hQ))) :=
+  quadraticFunctionFieldHom_mk _ _
+    (fun _ ↦ dvd_quadraticTransform_iff_properTransform_dvd hF Fact.out hX) hG hH hHF
+
+end FunctionField
+
+section Milestone
+
+variable {F : MvPolynomial (Fin 3) k} {n : ℕ}
+
+/-- **Proper transform of a plane curve under the standard quadratic transformation.** Let `F`
+be an irreducible form of degree `n` over an algebraically closed field, not an exceptional line
+(no `Xᵢ` divides `F`), with multiplicities `rᵢ` at the fundamental points `[eᵢ]`, and let
+`F'` be its proper transform. Then:
+
+1. `F^Q = X^{r₀} Y^{r₁} Z^{r₂} F'`, no `Xᵢ` divides `F'`, and `Xᵢ` divides `F^Q` exactly `rᵢ`
+   times;
+2. `F'` is an irreducible form of degree `2n - r₀ - r₁ - r₂` with `(F')' = F`; `V(F')` is the
+   closure of the image of `V(F) ∖ V(XYZ)` under the point map `Q`, which is a bijection from
+   `V(F) ∖ V(XYZ)` onto `V(F') ∖ V(XYZ)` and maps the points of `V(F')` that are not fundamental
+   into `V(F)`; and `Q` is birational: the function fields `k(F)` and `k(F')` are isomorphic;
+3. the multiplicities of `F'` at the fundamental points are `n - r₁ - r₂`, `n - r₀ - r₂` and
+   `n - r₀ - r₁`;
+4. if `F` is in good position, so is `F'`.
+
+Milestone: *Proper transform of a plane curve under the standard quadratic transformation*. -/
+theorem properTransform_spec [IsAlgClosed k] (hF : F.IsHomogeneous n) (hirr : Irreducible F)
+    (hX : ∀ i, ¬ X i ∣ F) :
+    (quadraticTransform F =
+        X 0 ^ (mult F (fundamentalPoint 0)).toNat * X 1 ^ (mult F (fundamentalPoint 1)).toNat *
+          X 2 ^ (mult F (fundamentalPoint 2)).toNat * properTransform F ∧
+      (∀ i, ¬ X i ∣ properTransform F) ∧
+      ∀ i, multiplicity (X i) (quadraticTransform F) = (mult F (fundamentalPoint i)).toNat) ∧
+    ((properTransform F).IsHomogeneous (2 * n - ∑ i, (mult F (fundamentalPoint i)).toNat) ∧
+      Irreducible (properTransform F) ∧ properTransform (properTransform F) = F ∧
+      zeroLocus (vanishingIdeal (quadraticMap '' (zeroLocus {F} \ fundamentalTriangle)) :
+        Set _) = zeroLocus {properTransform F} ∧
+      Set.BijOn quadraticMap (zeroLocus {F} \ fundamentalTriangle)
+        (zeroLocus {properTransform F} \ fundamentalTriangle) ∧
+      Set.MapsTo quadraticMap (zeroLocus {properTransform F} \ Set.range fundamentalPoint)
+        (zeroLocus {F}) ∧
+      haveI := Fact.mk hirr
+      haveI := Fact.mk (irreducible_properTransform hF hirr hX)
+      Nonempty (Projective.functionField hF ≃ₐ[k] Projective.functionField hF.properTransform)) ∧
+    (mult (properTransform F) (fundamentalPoint 0) =
+        (n - (mult F (fundamentalPoint 1)).toNat - (mult F (fundamentalPoint 2)).toNat : ℕ) ∧
+      mult (properTransform F) (fundamentalPoint 1) =
+        (n - (mult F (fundamentalPoint 0)).toNat - (mult F (fundamentalPoint 2)).toNat : ℕ) ∧
+      mult (properTransform F) (fundamentalPoint 2) =
+        (n - (mult F (fundamentalPoint 0)).toNat - (mult F (fundamentalPoint 1)).toNat : ℕ)) ∧
+    (IsGoodPosition F → IsGoodPosition (properTransform F)) := by
+  have := Fact.mk hirr
+  have := Fact.mk (irreducible_properTransform hF hirr hX)
+  refine ⟨⟨quadraticTransform_eq hF, not_X_dvd_properTransform hF hirr.ne_zero,
+      multiplicity_X_quadraticTransform hF hirr.ne_zero⟩,
+    ⟨hF.properTransform, irreducible_properTransform hF hirr hX,
+      properTransform_properTransform hF hX,
+      zeroLocus_vanishingIdeal_image_quadraticMap hF hirr hX, bijOn_quadraticMap hF,
+      fun P hP ↦ quadraticMap_mem_zeroLocus_of_mem_zeroLocus_properTransform hF
+        (fun i hi ↦ hP.2 ⟨i, hi.symm⟩) hP.1,
+      ⟨quadraticFunctionFieldEquiv hF hX⟩⟩,
+    ⟨mult_properTransform_fundamentalPoint_zero hF (hX 0),
+      mult_properTransform_fundamentalPoint_one hF (hX 1),
+      mult_properTransform_fundamentalPoint_two hF (hX 2)⟩,
+    fun h ↦ h.properTransform hF⟩
+
+end Milestone
 
 end PlaneCurves.Projective
 
