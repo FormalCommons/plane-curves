@@ -75,20 +75,6 @@ theorem existsUnique_isCenter_of_ne_top [IsAlgClosed k] (hL : IsFunctionField k 
     (hkR : ∀ c : k, algebraMap k L c ∈ R) (hR : R ≠ ⊤) : ∃! P, IsCenter hF ψ R P :=
   existsUnique_isCenter hkR (exists_notMem_of_ne_top hL ψ hR)
 
-/-- The valuation subring of a field `L` whose underlying subring is a local subring `B` that is
-a discrete valuation ring with fraction field `L`. -/
-private noncomputable def valuationSubringOfDVR (B : LocalSubring L)
-    [IsDiscreteValuationRing B.toSubring] [IsFractionRing B.toSubring L] : ValuationSubring L :=
-  .ofSubring B.toSubring fun x ↦ by
-    rcases ValuationRing.isInteger_or_isInteger B.toSubring x with ⟨y, hy⟩ | ⟨y, hy⟩
-    · exact .inl (hy ▸ y.2)
-    · exact .inr (hy ▸ y.2)
-
-private theorem toLocalSubring_valuationSubringOfDVR (B : LocalSubring L)
-    [IsDiscreteValuationRing B.toSubring] [IsFractionRing B.toSubring L] :
-    (valuationSubringOfDVR B).toLocalSubring = B :=
-  LocalSubring.toSubring_injective rfl
-
 /-- **A rational map to a projective curve is defined at a simple point.** Let `k` be
 algebraically closed, `C : F = 0` an irreducible projective plane curve, `ψ : k(C) → L` a
 `k`-embedding into an algebraic function field `L` of one variable, and `B` a local subring of
@@ -100,14 +86,9 @@ theorem existsUnique_map_le_of_isDiscreteValuationRing [IsAlgClosed k]
     [IsDiscreteValuationRing B.toSubring] [IsFractionRing B.toSubring L]
     (hkB : ∀ c : k, algebraMap k L c ∈ B.toSubring) :
     ∃! P, (localSubring hF P).map (ψ : functionField hF →+* L) ≤ B := by
-  have hR : valuationSubringOfDVR B ≠ ⊤ := fun h ↦ by
-    obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible B.toSubring
-    refine hϖ.not_isUnit (isUnit_iff_exists_inv.2 ⟨⟨(ϖ : L)⁻¹, ?_⟩, Subtype.ext ?_⟩)
-    · change (ϖ : L)⁻¹ ∈ (valuationSubringOfDVR B)
-      exact h ▸ ValuationSubring.mem_top _
-    · exact mul_inv_cancel₀ fun h0 ↦ hϖ.ne_zero (Subtype.ext h0)
-  have := existsUnique_isCenter_of_ne_top hL ψ hkB hR
-  simpa only [isCenter_def, toLocalSubring_valuationSubringOfDVR] using this
+  have := existsUnique_isCenter_of_ne_top hL ψ
+    (fun c ↦ LocalSubring.mem_toValuationSubring.2 (hkB c)) B.toValuationSubring_ne_top
+  simpa only [isCenter_def, LocalSubring.toLocalSubring_toValuationSubring] using this
 
 /-- Let `k` be algebraically closed, `C : F = 0` an irreducible projective plane curve, and
 `ψ : k(C) → L` a `k`-embedding into an algebraic function field `L` of one variable. The
