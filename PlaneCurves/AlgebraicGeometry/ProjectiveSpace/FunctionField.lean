@@ -407,9 +407,15 @@ variable {I} in
 `I = J`, sending `f / g` to `f / g` (`functionField.equivOfEq_mk`). -/
 noncomputable def functionField.equivOfEq
     {J : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k)} [J.toIdeal.IsPrime]
-    (h : I = J) : functionField I ≃ₐ[k] functionField J := by
-  subst h
-  exact AlgEquiv.refl
+    (h : I = J) : functionField I ≃ₐ[k] functionField J :=
+  h ▸ AlgEquiv.refl
+
+variable {I} in
+theorem functionField.equivOfEq_def
+    {J : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k)} [J.toIdeal.IsPrime]
+    (h : I = J) :
+    functionField.equivOfEq h = h ▸ (AlgEquiv.refl : functionField I ≃ₐ[k] functionField I) :=
+  (rfl)
 
 variable {I} in
 /-- The isomorphism `k(V(I)) ≅ k(V(J))` for `I = J` sends `f / g` to `f / g`. -/
@@ -568,6 +574,20 @@ theorem mem_localSubring_iff {z : functionField I} :
     exact ⟨d, f, g, hf, hg, hgP, rfl⟩
   · rintro ⟨d, f, g, hf, hg, hgP, rfl⟩
     exact ⟨varietyLocalRing.mk hf hg hgP, rfl⟩
+
+variable {I} in
+/-- The isomorphism `k(V(I)) ≅ k(V(J))` for `I = J` carries `𝒪_P(V(I))` onto `𝒪_P(V(J))`. -/
+theorem map_localSubring_equivOfEq
+    {J : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k)} [J.toIdeal.IsPrime]
+    (h : I = J) (P : zeroLocus (I : Set (MvPolynomial (Fin (n + 1)) k)))
+    (P' : zeroLocus (J : Set (MvPolynomial (Fin (n + 1)) k))) (hP : P'.1 = P.1) :
+    (localSubring I P).map (functionField.equivOfEq h : functionField I →+* _) =
+      localSubring J P' := by
+  subst h
+  obtain rfl : P' = P := Subtype.ext hP
+  refine LocalSubring.toSubring_injective (Subring.ext fun z ↦ ?_)
+  rw [LocalSubring.map_toSubring, Subring.mem_map]
+  exact ⟨fun ⟨_, hy, e⟩ ↦ e ▸ hy, fun hz ↦ ⟨z, hz, rfl⟩⟩
 
 variable {I P} in
 /-- An element of `𝒪_P(V)` lies in its maximal ideal iff it is a fraction `f / g` of forms of the

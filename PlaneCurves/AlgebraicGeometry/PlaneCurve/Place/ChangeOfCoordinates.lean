@@ -107,24 +107,16 @@ theorem map_localSubring_linearSubstEquiv
     (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) P'.1 = P.1) :
     (localSubring hF P).map (functionField.linearSubstEquiv hF M : functionField hF →+* _) =
       localSubring (hF.linearSubst M.1) P' := by
-  refine LocalSubring.toSubring_injective (Subring.ext fun z ↦ ?_)
-  rw [LocalSubring.map_toSubring, Subring.mem_map]
-  constructor
-  · rintro ⟨y, hy, rfl⟩
-    obtain ⟨m, G, H, hG, hH, hHP, rfl⟩ := mem_localSubring_iff.1 hy
-    refine mem_localSubring_iff.2 ⟨m, _, _, hG.linearSubst M.1, hH.linearSubst M.1, ?_, ?_⟩
-    · rwa [Ne, eval_rep_linearSubst_eq_zero_iff M hH, hQP]
-    · exact functionField.linearSubstEquiv_mk hG hH _
-  · intro hz
-    obtain ⟨m, G, H, hG, hH, hHQ, rfl⟩ := mem_localSubring_iff.1 hz
-    have hHP : eval P.1.rep (linearSubst (M⁻¹).1 H) ≠ 0 := by
-      rwa [Ne, eval_rep_linearSubst_eq_zero_iff M⁻¹ hH, ← hQP, map_inv_map_mulVecLin]
-    refine ⟨_, mem_localSubring_iff.2
-      ⟨m, _, _, hG.linearSubst (M⁻¹).1, hH.linearSubst _, hHP, rfl⟩, ?_⟩
-    change functionField.linearSubstEquiv hF M _ = _
-    rw [functionField.linearSubstEquiv_mk, functionField.mk_eq_mk_iff,
-      linearSubst_linearSubst_inv, linearSubst_linearSubst_inv, sub_self]
-    exact zero_mem _
+  have hP : P'.1 ∈ zeroLocus (linearSubstIdeal M (projectivePlaneCurve.ideal hF) :
+      Set (MvPolynomial (Fin 3) k)) := by rw [linearSubstIdeal_ideal]; exact P'.2
+  have h1 := congrArg LocalSubring.toSubring
+    (ProjectiveSpace.map_localSubring_linearSubstEquiv (P := P) (Q := ⟨_, hP⟩) hQP)
+  have h2 := congrArg LocalSubring.toSubring
+    (ProjectiveSpace.map_localSubring_equivOfEq (linearSubstIdeal_ideal hF M) ⟨_, hP⟩ P' rfl)
+  refine LocalSubring.toSubring_injective ?_
+  rw [LocalSubring.map_toSubring] at h1 h2 ⊢
+  rw [← h2, ← h1, Subring.map_map]
+  rfl
 
 variable [IsAlgClosed k]
 
