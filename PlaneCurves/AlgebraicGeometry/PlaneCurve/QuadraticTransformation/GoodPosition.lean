@@ -162,7 +162,7 @@ private theorem exists_aeval_X_two_zero_eq (hF : F.IsHomogeneous n) (hZ : ¬ X 2
   set c := fun i ↦ (G i).coeff (Finsupp.single 0 i) with hc
   have hmn : m ≤ n := ENat.toNat_le_of_le_natCast (mult_le_degree hF hF0 _)
   have hm' : (m : ℕ∞) = (dehomogenize 1 F).orderAt 0 := by
-    rw [hm, ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0), mult_fundamentalPoint_eq_orderAt hF]
+    rw [hm, natCast_toNat_mult hF0, mult_fundamentalPoint_eq_orderAt hF]
   have hlt : ∀ i < m, G i = 0 := fun i hi ↦ by
     simpa [taylor_zero] using le_orderAt_iff_homogeneousComponent.1 hm'.le i hi
   have hGm0 : G m ≠ 0 := by
@@ -421,8 +421,8 @@ private theorem IsGoodPosition.not_isTangentAt_properTransform (h : IsGoodPositi
       hG0, multiplicity_X_zero_X_pow_mul_X_pow] at hm
   have hle := mult_fundamentalPoint_add_le hF (h.not_X_dvd 1) (i := 1) (j := 0) (l := 2)
     (by decide) (by decide) (by decide)
-  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint 0) ≠ ⊤),
-    ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint 2) ≠ ⊤)] at hle
+  rw [← natCast_toNat_mult (P := fundamentalPoint 0) hF0,
+    ← natCast_toNat_mult (P := fundamentalPoint 2) hF0] at hle
   norm_cast at hle
   intro ht
   rw [isTangentAt_fundamentalPoint_one_X_two_iff hF.properTransform hZ',

@@ -295,7 +295,7 @@ theorem exists_restrict_X_eq [IsAlgClosed k] (h : IsExcellentPosition F) (hF : F
         mul_one] at this
     have h2 := hsplit P
     rw [h.intersectionNumber_fundamentalPoint_two hF hj,
-      ← ENat.natCast_toNat (mult_eq_top_iff.not.2 h.ne_zero), ← hr] at h2
+      ← natCast_toNat_mult h.ne_zero, ← hr] at h2
     have h3 : (r : ℕ∞) + intersectionNumber P H (X j) ≤ r + 0 := by
       calc (r : ℕ∞) + intersectionNumber P H (X j)
           ≤ intersectionNumber P (X l ^ r) (X j) + intersectionNumber P H (X j) := by gcongr
@@ -356,7 +356,7 @@ theorem ncard_zeroLocus_X_diff [IsAlgClosed k] (h : IsExcellentPosition F)
       n - (mult F (fundamentalPoint 2)).toNat :=
   ncard_zeroLocus_pair_diff hF (isHomogeneous_X k j) (X_ne_zero j) (h.not_X_dvd j)
     (by rw [h.intersectionNumber_fundamentalPoint_two hF hj,
-      ENat.natCast_toNat (mult_eq_top_iff.not.2 h.ne_zero)])
+      natCast_toNat_mult h.ne_zero])
     fun Q hQ hQP ↦ h.intersectionNumber_eq_one hQ hQP
 
 end IsExcellentPosition
@@ -467,7 +467,7 @@ theorem exists_isExcellentPosition_avoiding [IsAlgClosed k] (hF : F.IsHomogeneou
         ∀ R, map M.mulVecLin hM R ∈ S → R ∉ fundamentalTriangle := by
   classical
   obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F P = r :=
-    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+    (ENat.ne_top_iff_exists.1 (mult_ne_top hirr.ne_zero)).imp fun _ h ↦ h.symm
   have hℓ (a : Fin 3 → k) := isHomogeneous_sum_C_mul_X (σ := Fin 3) (R := k) a
   -- Two distinct lines through `P` meeting `F` as part (d) of the terrible-point theorem says,
   -- and through no point of `S`.

@@ -417,7 +417,7 @@ private theorem exists_quadraticTransform_eq_X_two_pow_mul (hF : F.IsHomogeneous
   set r := (mult F (fundamentalPoint 2)).toNat with hr
   have hrn : r ≤ n := ENat.toNat_le_of_le_natCast (mult_le_degree hF hF0 _)
   have hr' : (r : ℕ∞) = (dehomogenize 2 F).orderAt 0 := by
-    rw [hr, ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0), mult_fundamentalPoint_eq_orderAt hF]
+    rw [hr, natCast_toNat_mult hF0, mult_fundamentalPoint_eq_orderAt hF]
   have hlt : ∀ j < r, homogeneousComponent j (dehomogenize 2 F) = 0 := fun j hj ↦ by
     simpa [taylor_zero] using le_orderAt_iff_homogeneousComponent.1 hr'.le j hj
   refine ⟨∑ j ∈ Finset.Ico r (n + 1), X 2 ^ (j - r) *
@@ -502,7 +502,7 @@ theorem monomial_exceptionalExponent (F : MvPolynomial (Fin 3) k) :
 theorem exceptionalExponent_mul (hF0 : F ≠ 0) (hG0 : G ≠ 0) :
     exceptionalExponent (F * G) = exceptionalExponent F + exceptionalExponent G := by
   ext i
-  simp [mult_mul, ENat.toNat_add (mult_eq_top_iff.not.2 hF0) (mult_eq_top_iff.not.2 hG0)]
+  simp [mult_mul, ENat.toNat_add (mult_ne_top hF0) (mult_ne_top hG0)]
 
 /-- Renaming the variables by `σ` permutes the exceptional exponents along. -/
 theorem exceptionalExponent_rename (hF : F.IsHomogeneous n) (σ : Equiv.Perm (Fin 3)) :
@@ -744,7 +744,7 @@ theorem mult_quadraticTransform_fundamentalPoint (hF : F.IsHomogeneous n) {i : F
     emultiplicity_mul prime_X, emultiplicity_pow prime_X,
     emultiplicity_eq_zero.2 (not_X_dvd_quadraticTransform_X i), emultiplicity_eq_zero.2 hXi]
     at h
-  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hQ0)]
+  rw [← natCast_toNat_mult hQ0]
   simpa using h.symm
 
 /-- **Fulton's (3)**, as a sum: if `V(Xᵢ)` is not a component of a form `F` of degree `n`, and
@@ -756,7 +756,7 @@ theorem mult_properTransform_fundamentalPoint_add (hF : F.IsHomogeneous n) {i j 
   have hF0 : F ≠ 0 := by rintro rfl; exact hXi (dvd_zero _)
   have hc (m : Fin 3) :
       ((mult F (fundamentalPoint m)).toNat : ℕ∞) = mult F (fundamentalPoint m) :=
-    ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0)
+    natCast_toNat_mult hF0
   have h := mult_quadraticTransform_fundamentalPoint hF hXi
   rw [quadraticTransform_eq hF] at h
   simp only [mult_mul, mult_pow, mult_X_fundamentalPoint, nsmul_eq_mul] at h
@@ -780,10 +780,10 @@ theorem mult_properTransform_fundamentalPoint (hF : F.IsHomogeneous n) {i j l : 
   have hF0 : F ≠ 0 := by rintro rfl; exact hXi (dvd_zero _)
   have hF0' : properTransform F ≠ 0 := (properTransform_eq_zero_iff hF).not.2 hF0
   have h := mult_properTransform_fundamentalPoint_add hF hXi hij hil hjl
-  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0'),
-    ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint j) ≠ ⊤),
-    ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint l) ≠ ⊤)] at h
-  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0')]
+  rw [← natCast_toNat_mult hF0',
+    ← natCast_toNat_mult (P := fundamentalPoint j) hF0,
+    ← natCast_toNat_mult (P := fundamentalPoint l) hF0] at h
+  rw [← natCast_toNat_mult hF0']
   norm_cast at h ⊢
   omega
 
@@ -818,8 +818,8 @@ theorem quadraticTransform_properTransform (hF : F.IsHomogeneous n) (hX : ∀ i,
   have hle {i j l : Fin 3} (hij : i ≠ j) (hil : i ≠ l) (hjl : j ≠ l) :
       (mult F (fundamentalPoint j)).toNat + (mult F (fundamentalPoint l)).toNat ≤ n := by
     have h := mult_fundamentalPoint_add_le hF (hX i) hij hil hjl
-    rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint j) ≠ ⊤),
-      ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint l) ≠ ⊤)] at h
+    rw [← natCast_toNat_mult (P := fundamentalPoint j) hF0,
+      ← natCast_toNat_mult (P := fundamentalPoint l) hF0] at h
     exact_mod_cast h
   have e (i : Fin 3) {a b : ℕ} (hab : a + b ≤ n) :
       (X i : MvPolynomial (Fin 3) k) ^ n = X i ^ (a + b) * X i ^ (n - a - b) := by

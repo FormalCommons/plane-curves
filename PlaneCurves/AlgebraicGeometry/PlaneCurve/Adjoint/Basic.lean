@@ -174,7 +174,7 @@ noncomputable def adjointConditions (hF0 : F ≠ 0) (hfin : {P | IsMultiplePoint
   Finsupp.ofSupportFinite (fun P ↦ (mult F P).toNat - 1) (hfin.subset fun P hP ↦ by
     by_contra h
     have := mult_sub_one_eq_zero h
-    rw [sub_one_eq_natCast (mult_eq_top_iff.not.2 hF0)] at this
+    rw [sub_one_eq_natCast (mult_ne_top hF0)] at this
     exact hP (by exact_mod_cast this))
 
 theorem adjointConditions_apply (hF0 : F ≠ 0) (hfin : {P | IsMultiplePoint F P}.Finite)
@@ -187,7 +187,7 @@ theorem adjointSubmodule_eq_linearSystem (hF0 : F ≠ 0) (hfin : {P | IsMultiple
     (m : ℕ) : adjointSubmodule F m = linearSystem m (adjointConditions F hF0 hfin) := by
   ext G
   rw [mem_adjointSubmodule_iff, mem_linearSystem, isAdjoint_def]
-  simp only [adjointConditions_apply, ← sub_one_eq_natCast (mult_eq_top_iff.not.2 hF0)]
+  simp only [adjointConditions_apply, ← sub_one_eq_natCast (mult_ne_top hF0)]
 
 private theorem isHomogeneous_pow_of_one {L : MvPolynomial (Fin 3) k}
     (hL : L.IsHomogeneous 1) (n : ℕ) : (L ^ n).IsHomogeneous n := by
@@ -209,8 +209,7 @@ private theorem finite_setOf_isMultiplePoint_center :
 omit [IsAlgClosed k] in
 private theorem two_le_toNat_mult_iff {P : ℙ k (Fin 3 → k)} :
     2 ≤ (mult F P).toNat ↔ IsMultiplePoint F P := by
-  rw [isMultiplePoint_def, ← ENat.natCast_toNat (mult_eq_top_iff.not.2
-    (Fact.out : Irreducible F).ne_zero)]
+  rw [isMultiplePoint_def, ← natCast_toNat_mult (Fact.out : Irreducible F).ne_zero]
   exact_mod_cast Iff.rfl
 
 variable (hF) in
@@ -325,7 +324,7 @@ theorem isAdjoint_iff_le_formDivisor (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
   have hF0 : F ≠ 0 := (Fact.out : Irreducible F).ne_zero
   have hG0 : G ≠ 0 := fun h ↦ hFG (h ▸ dvd_zero F)
   have hs {P : ℙ k (Fin 3 → k)} : (((mult F P).toNat - 1 : ℕ) : ℕ∞) ≤ mult F P :=
-    (sub_one_eq_natCast (mult_eq_top_iff.not.2 hF0)).symm.trans_le tsub_le_self
+    (sub_one_eq_natCast (mult_ne_top hF0)).symm.trans_le tsub_le_self
   rw [Finsupp.le_def]
   constructor
   · intro h Q
@@ -334,7 +333,7 @@ theorem isAdjoint_iff_le_formDivisor (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
     · rw [coeff_adjointDivisor, ← WithTop.coe_le_coe, coeff_formDivisor hG hFG]
       refine (le_mult_iff_forall_le_ordForm (hord _ hQ) hG hG0 hs).1 ?_ Q
         (mem_placesOver_center Q)
-      rw [← sub_one_eq_natCast (mult_eq_top_iff.not.2 hF0)]
+      rw [← sub_one_eq_natCast (mult_ne_top hF0)]
       exact h _
     · have := (coeff_adjointDivisor_pos_iff (Q := Q)).not.2 hQ
       have := WeilDivisor.coeff_nonneg (formDivisor_nonneg (hF := hF) hG) Q
@@ -343,7 +342,7 @@ theorem isAdjoint_iff_le_formDivisor (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
     refine isAdjoint_iff_forall_isMultiplePoint.2 fun P hP ↦ ?_
     have hPF : P ∈ zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) :=
       (mem_zeroLocus_ideal_iff hF).2 hP.eval_rep_eq_zero
-    rw [sub_one_eq_natCast (mult_eq_top_iff.not.2 hF0)]
+    rw [sub_one_eq_natCast (mult_ne_top hF0)]
     refine (le_mult_iff_forall_le_ordForm (P := ⟨P, hPF⟩) (hord _ hP) hG hG0 hs).2
       fun Q hQ ↦ ?_
     have hQE := h Q
