@@ -81,6 +81,8 @@ multiple point every point of the fibre is a simple point of the strict transfor
   irreducible curve other than `X = 0` is prime.
 * `PlaneCurves.Affine.eval_zero_blowupStrictTransform_eq_zero_iff`: `F'(0, α) = 0` iff `Y - α X`
   is tangent to `F` at the origin.
+* `PlaneCurves.Affine.eval_zero_blowupStrictTransform_ne_zero`: the strict transform of a curve
+  not through the origin does not meet the exceptional line.
 * `PlaneCurves.Affine.exists_finset_eval_zero_blowupStrictTransform`: over an algebraically
   closed field, if `X` is not tangent, the leading form is `ε ∏ (Y - α X) ^ rₐ` over the finitely
   many points `(0, α)` of the fibre.
@@ -266,6 +268,12 @@ theorem eval_zero_blowupStrictTransform (F : MvPolynomial (Fin 2) R) (z : R) :
   rw [← AlgHom.comp_apply, ← AlgHom.comp_apply, comp_aeval, comp_aeval] at h
   change MvPolynomial.aeval ![0, z] _ = MvPolynomial.aeval ![1, z] _
   convert h using 2 <;> (ext i : 1; fin_cases i <;> simp)
+
+/-- The strict transform of a curve that does not pass through the origin does not meet the
+exceptional line. -/
+theorem eval_zero_blowupStrictTransform_ne_zero (h0 : eval 0 F ≠ 0) (z : R) :
+    eval ![0, z] (blowupStrictTransform F) ≠ 0 := by
+  rwa [eval_zero_blowupStrictTransform, leadingFormAt_of_eval_ne_zero h0, eval_C]
 
 /-- The strict transform of a nonzero curve is not divisible by `X`: it does not contain the
 exceptional line. -/

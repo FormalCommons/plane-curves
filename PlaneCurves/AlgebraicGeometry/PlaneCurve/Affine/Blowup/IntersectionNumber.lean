@@ -62,13 +62,6 @@ private theorem castHom_apply (n : ℕ∞) : castHom n = n.map (Nat.cast : ℕ �
 private theorem castHom_injective : Function.Injective castHom :=
   WithTop.map_injective Nat.cast_injective
 
-/-- The strict transform of a curve that does not pass through the origin does not meet the
-exceptional line. -/
-theorem eval_zero_blowupStrictTransform_ne_zero {F : MvPolynomial (Fin 2) k} (h0 : eval 0 F ≠ 0)
-    (α : k) : eval ![0, α] (blowupStrictTransform F) ≠ 0 := by
-  rw [eval_zero_blowupStrictTransform, leadingFormAt_of_eval_ne_zero h0, eval_C]
-  exact h0
-
 /-- The formula for a curve `F` that does not pass through the origin: both sides vanish. -/
 private theorem eq_of_eval_ne_zero {F : MvPolynomial (Fin 2) k} (h0 : eval 0 F ≠ 0)
     (G : MvPolynomial (Fin 2) k) (A : Finset k) :
@@ -78,32 +71,6 @@ private theorem eq_of_eval_ne_zero {F : MvPolynomial (Fin 2) k} (h0 : eval 0 F �
     Finset.sum_eq_zero fun α _ ↦ intersectionNumber_eq_zero_of_eval_ne_zero_left
       (eval_zero_blowupStrictTransform_ne_zero h0 α)]
   simp
-
-/-- A curve to which `X = 0` is not tangent at the origin is not associated to `X`. -/
-private theorem not_associated_X_zero_of_not_isTangentAt {F : MvPolynomial (Fin 2) k}
-    (hT : ¬IsTangentAt F 0 (X 0)) : ¬Associated F (X 0) := by
-  rintro h
-  obtain ⟨u, hu⟩ := h.symm
-  refine hT (isTangentAt_def.2 ⟨isHomogeneous_X k 0, X_ne_zero 0, ?_⟩)
-  rw [← hu, leadingFormAt_mul, (isHomogeneous_X k 0).leadingFormAt_zero]
-  exact dvd_mul_right _ _
-
-/-- The line `X = 0` is tangent to the zero polynomial. -/
-private theorem ne_zero_of_not_isTangentAt {F : MvPolynomial (Fin 2) k}
-    (hT : ¬IsTangentAt F 0 (X 0)) : F ≠ 0 := by
-  rintro rfl
-  exact hT (isTangentAt_def.2 ⟨isHomogeneous_X k 0, X_ne_zero 0, by simp [leadingFormAt_zero]⟩)
-
-/-- If `X = 0` is not tangent to `F` at the origin, `I(0, F ∩ X) = m_0(F)`. -/
-theorem intersectionNumber_X_zero_of_not_isTangentAt {F : MvPolynomial (Fin 2) k}
-    (hT : ¬IsTangentAt F 0 (X 0)) : intersectionNumber 0 F (X 0) = F.orderAt 0 := by
-  have hF := ne_zero_of_not_isTangentAt hT
-  have h := (isTangentAt_iff_orderAt_lt_intersectionNumber (P := 0) hF (isHomogeneous_X k 0)
-    (X_ne_zero 0)).not.1 hT
-  have hle := mul_orderAt_le_intersectionNumber (0 : Fin 2 → k) F (X 0)
-  rw [(isHomogeneous_X k 0).orderAt_zero (X_ne_zero 0), Nat.cast_one, mul_one] at hle
-  rw [neg_zero, taylor_zero] at h
-  exact le_antisymm (not_lt.1 h) hle
 
 variable [IsAlgClosed k]
 
@@ -176,17 +143,20 @@ private theorem map_natCast_eq_of_irreducible {F : MvPolynomial (Fin 2) k} (hF :
         ∑ α ∈ A, intersectionNumber ![0, α] (blowupStrictTransform F)
           (blowupStrictTransform G)) := by
   classical
-  have hX := not_associated_X_zero_of_not_isTangentAt hT
+  have hX : ¬Associated F (X 0) := fun h ↦ hT (isTangentAt_of_associated_taylor
+    (isHomogeneous_X k 0) (X_ne_zero 0) (by rwa [neg_zero, taylor_zero]))
   have : (Ideal.span {F}).IsPrime := (Ideal.span_singleton_prime hF.ne_zero).2 hF.prime
   have := isPrime_span_blowupStrictTransform hF hX
   have hF' := irreducible_blowupStrictTransform hF hX
   set e := blowupFunctionFieldEquiv hF hX
   set S := (finite_setOf_localSubring_le_integers 0 (span_le_vanishingIdeal h0)
     (isFunctionField_functionField_span_singleton hF)).toFinset
+  have hI : intersectionNumber 0 F (X 0) = F.orderAt 0 := by
+    simpa using intersectionNumber_eq_orderAt_of_not_isTangentAt (P := 0) (isHomogeneous_X k 0)
+      (X_ne_zero 0) hT
   have hr : ∑ Q ∈ S, Q.addValuation (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))) =
       (((F.orderAt 0).toNat : ℕ) : WithTop ℤ) := by
-    rw [← map_natCast_intersectionNumber_eq_sum_addValuation hF h0,
-      intersectionNumber_X_zero_of_not_isTangentAt hT,
+    rw [← map_natCast_intersectionNumber_eq_sum_addValuation hF h0, hI,
       ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF.ne_zero), ENat.toNat_natCast]
     rfl
   have hdisj : (A : Set k).PairwiseDisjoint fun α ↦ placesOverFinset hF' ![0, α] := by
@@ -233,15 +203,12 @@ theorem intersectionNumber_eq_mul_add_sum_blowupStrictTransform {F : MvPolynomia
     intersectionNumber 0 F G = ((F.orderAt 0).toNat * (G.orderAt 0).toNat : ℕ) +
       ∑ α ∈ A, intersectionNumber ![0, α] (blowupStrictTransform F) (blowupStrictTransform G) := by
   induction F using UniqueFactorizationMonoid.induction_on_prime generalizing A with
-  | h₁ => exact (hT (isTangentAt_def.2 ⟨isHomogeneous_X k 0, X_ne_zero 0,
-      by simp [leadingFormAt_zero]⟩)).elim
+  | h₁ => exact (hT (isTangentAt_zero (isHomogeneous_X k 0) (X_ne_zero 0))).elim
   | h₂ u hu =>
     exact eq_of_eval_ne_zero ((hu.map (eval 0)).ne_zero) G A
   | h₃ a p ha hp ih =>
-    have hTp : ¬IsTangentAt p 0 (X 0) := fun h ↦ hT (isTangentAt_def.2
-      ⟨h.isHomogeneous, h.ne_zero, by rw [leadingFormAt_mul]; exact h.dvd.mul_right _⟩)
-    have hTa : ¬IsTangentAt a 0 (X 0) := fun h ↦ hT (isTangentAt_def.2
-      ⟨h.isHomogeneous, h.ne_zero, by rw [leadingFormAt_mul]; exact h.dvd.mul_left _⟩)
+    have hTp : ¬IsTangentAt p 0 (X 0) := fun h ↦ hT (h.mul_right a)
+    have hTa : ¬IsTangentAt a 0 (X 0) := fun h ↦ hT (h.mul_left p)
     have hAp : ∀ α, eval ![0, α] (blowupStrictTransform p) = 0 → α ∈ A := fun α h ↦
       hA α (by rw [blowupStrictTransform_mul, eval_mul, h, zero_mul])
     have hAa : ∀ α, eval ![0, α] (blowupStrictTransform a) = 0 → α ∈ A := fun α h ↦
@@ -266,7 +233,7 @@ theorem intersectionNumber_eq_mul_add_finsum_blowupStrictTransform {F G : MvPoly
     (hG : G ≠ 0) (hT : ¬IsTangentAt F 0 (X 0)) :
     intersectionNumber 0 F G = F.orderAt 0 * G.orderAt 0 +
       ∑ᶠ α, intersectionNumber ![0, α] (blowupStrictTransform F) (blowupStrictTransform G) := by
-  have hF := ne_zero_of_not_isTangentAt hT
+  have hF := ne_zero_of_not_isTangentAt (isHomogeneous_X k 0) (X_ne_zero 0) hT
   obtain ⟨A, hA, -⟩ := exists_finset_eval_zero_blowupStrictTransform hF hT
   rw [finsum_eq_sum_of_support_subset (s := A) _ fun α hα ↦ (hA α).2 ?_,
     intersectionNumber_eq_mul_add_sum_blowupStrictTransform hT G fun α ↦ (hA α).2, Nat.cast_mul,

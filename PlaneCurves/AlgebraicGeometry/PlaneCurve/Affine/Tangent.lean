@@ -63,6 +63,10 @@ squarefree.
   tangent, every tangent is `Y - α X` up to a nonzero scalar;
   `PlaneCurves.Affine.IsOrdinaryMultiplePoint.ncard_setOf_isTangentAt_X_one_sub_C_mul_X_zero`:
   at an ordinary multiple point there are then exactly `m_P(F)` tangents `Y - α X`.
+* `PlaneCurves.Affine.isTangentAt_zero`, `PlaneCurves.Affine.IsTangentAt.mul_right`,
+  `PlaneCurves.Affine.isTangentAt_of_associated_taylor`: every nonzero linear form is tangent to
+  `0`, a tangent to a factor is a tangent to the product, and a curve associated to a line through
+  `P` has that line as a tangent at `P`.
 * `PlaneCurves.Affine.multiplicity_tangent_mul`: multiplicity and tangent lines of a product of
   plane curves, as in §3.1 of Fulton.
 
@@ -170,6 +174,36 @@ theorem IsTangentAt.dvd (h : IsTangentAt F P L) : L ∣ F.leadingFormAt P :=
 /-- A tangent is a prime element of `k[X, Y]`. -/
 theorem IsTangentAt.prime (h : IsTangentAt F P L) : Prime L :=
   (irreducible_of_isHomogeneous_one h.1 h.2.1).prime
+
+/-- Every nonzero linear form is tangent to the zero polynomial, at every point. -/
+theorem isTangentAt_zero (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) : IsTangentAt 0 P L :=
+  isTangentAt_def.2 ⟨hL, hL₀, by simp [leadingFormAt_zero]⟩
+
+/-- A curve to which a nonzero linear form `L` is not tangent at `P` is nonzero. -/
+theorem ne_zero_of_not_isTangentAt (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0)
+    (h : ¬IsTangentAt F P L) : F ≠ 0 := by
+  rintro rfl
+  exact h (isTangentAt_zero hL hL₀)
+
+/-- A tangent to `F` at `P` is a tangent to `F * G` at `P`. -/
+theorem IsTangentAt.mul_right (h : IsTangentAt F P L) (G : MvPolynomial (Fin 2) k) :
+    IsTangentAt (F * G) P L :=
+  isTangentAt_def.2
+    ⟨h.isHomogeneous, h.ne_zero, by rw [leadingFormAt_mul]; exact h.dvd.mul_right _⟩
+
+/-- A tangent to `F` at `P` is a tangent to `G * F` at `P`. -/
+theorem IsTangentAt.mul_left (h : IsTangentAt F P L) (G : MvPolynomial (Fin 2) k) :
+    IsTangentAt (G * F) P L :=
+  isTangentAt_def.2
+    ⟨h.isHomogeneous, h.ne_zero, by rw [leadingFormAt_mul]; exact h.dvd.mul_left _⟩
+
+/-- A curve associated to the line `L(X - P) = 0` through `P` has `L` as a tangent at `P`. -/
+theorem isTangentAt_of_associated_taylor (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0)
+    (h : Associated F (taylor (-P) L)) : IsTangentAt F P L := by
+  obtain ⟨u, hu⟩ := h.symm
+  refine isTangentAt_def.2 ⟨hL, hL₀, ?_⟩
+  rw [← hu, leadingFormAt_mul, leadingFormAt_taylor, add_neg_cancel, hL.leadingFormAt_zero]
+  exact dvd_mul_right _ _
 
 /-- A tangent passes through the point: the curve vanishes there. -/
 theorem IsTangentAt.eval_eq_zero (h : IsTangentAt F P L) : eval P F = 0 := by
