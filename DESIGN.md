@@ -163,6 +163,8 @@ PlaneCurves/
 │   ├── Length.lean                      Hilbert–Samuel lengths under ring isomorphisms (L5)
 │   ├── Conductor.lean                   a conductor element inside a localization (V6)
 │   ├── Japanese.lean                    integral closure of a Japanese domain in a field (V6)
+│   ├── Adjoin/
+│   │   └── FG.lean                      a subalgebra inside a finite module over a f.g. one is f.g. (V6)
 │   ├── Regular/
 │   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (P3)
 │   ├── GradedAlgebra/
