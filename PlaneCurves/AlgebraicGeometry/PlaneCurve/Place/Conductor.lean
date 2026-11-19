@@ -32,9 +32,8 @@ point: a function with order at least `r - 1` at every place over the origin lie
 
 ## Main results
 
-* `PlaneCurves.Affine.isIntegral_div`, `PlaneCurves.Affine.pow_mem_conductor_adjoin_div`:
-  `z = y / x` is integral over `𝒪_0(F)`, and `x ^ (r - 1)` lies in the conductor of
-  `𝒪_0(F)[z]`.
+* `PlaneCurves.Affine.pow_mem_conductor_adjoin_div`: `x ^ (r - 1)` lies in the conductor of
+  `𝒪_0(F)[z]`, where `z = y / x` is integral over `𝒪_0(F)` (`PlaneCurves.Affine.isIntegral_div`).
 * `PlaneCurves.Affine.mem_adjoin_div_of_forall_mem_integers`: a function in the valuation ring of
   every place over the origin lies in `𝒪_0(F)[y / x]`.
 * `PlaneCurves.Affine.integralClosure_localSubring_eq_adjoin`: the integral closure of `𝒪_0(F)`
@@ -59,64 +58,7 @@ open AffineSpace
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 2) k} [(Ideal.span {F}).IsPrime]
   {hI : Ideal.span {F} ≤ vanishingIdeal k {(0 : Fin 2 → k)}}
 
-omit [(Ideal.span {F}).IsPrime] in
-private theorem aeval_mk_X {R : Type*} [CommSemiring R] [Algebra k R]
-    (f : MvPolynomial (Fin 2) k ⧸ Ideal.span {F} →ₐ[k] R) (g : MvPolynomial (Fin 2) k) :
-    aeval ![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] g =
-      f (Ideal.Quotient.mk _ g) := by
-  have h : (![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] : Fin 2 → R) =
-      (f.comp (Ideal.Quotient.mkₐ k _)) ∘ X := by
-    ext i : 1
-    fin_cases i <;> rfl
-  rw [h, ← aeval_unique]
-  rfl
-
-/-- If `X` is not tangent to `F` at the origin, `H(x, y)` is a unit of `𝒪_0(F)`: its value at the
-origin is the coefficient `a_{0r}` of `Y ^ r`. -/
-theorem isUnit_aeval_blowupChartLeadingCoeff_localSubring (hT : ¬IsTangentAt F 0 (X 0)) :
-    IsUnit (aeval ![algebraMap _ (localSubring 0 hI).toSubring
-        (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
-      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))]
-      (blowupChartLeadingCoeff F)) := by
-  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
-      (localSubring 0 hI).toSubring)
-    (blowupChartLeadingCoeff F)
-  simp only [IsScalarTower.coe_toAlgHom'] at e
-  rw [e, isUnit_iff_evalAt_ne_zero, evalAt_algebraMap, coordinateEval_mk,
-    eval_zero_blowupChartLeadingCoeff]
-  exact (isTangentAt_zero_X_zero_iff).not.1 hT
-
-private theorem aeval_eq_zero :
-    aeval ![algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
-      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))] F =
-      0 := by
-  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
-    (localSubring 0 hI).toSubring) F
-  simp only [IsScalarTower.coe_toAlgHom'] at e
-  rw [e, Ideal.Quotient.mk_singleton_self, map_zero]
-
 variable (hF : Irreducible F) (hX : ¬Associated F (X 0)) (h : IsOrdinaryMultiplePoint F 0)
-
-omit [(Ideal.span {F}).IsPrime] in
-include hF hX in
-private theorem algebraMap_mk_X_zero_ne_zero :
-    algebraMap _ (functionField (Ideal.span {F})) (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ≠
-      0 := by
-  rw [Ne, IsFractionRing.to_map_eq_zero_iff, Ideal.Quotient.eq_zero_iff_mem,
-    Ideal.mem_span_singleton]
-  exact fun hd ↦ hX (hF.associated_of_dvd prime_X.irreducible hd)
-
-include hF hX in
-/-- At an ordinary multiple point at the origin at which `X = 0` is not tangent, `y / x` is
-integral over `𝒪_0(F)`. -/
-theorem isIntegral_div (hT : ¬IsTangentAt F 0 (X 0)) :
-    IsIntegral (localSubring 0 hI).toSubring
-      (algebraMap _ (functionField (Ideal.span {F})) (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))) :=
-  isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff aeval_eq_zero
-    (mul_div_cancel₀ _ (algebraMap_mk_X_zero_ne_zero hF hX))
-    (fun _ _ h ↦ mul_left_cancel₀ (algebraMap_mk_X_zero_ne_zero hF hX) h)
-    (isUnit_aeval_blowupChartLeadingCoeff_localSubring hT)
 
 include hF hX in
 /-- **The conductor of `𝒪_0(F)[y / x]`.** At an ordinary multiple point of multiplicity `r` at
@@ -130,9 +72,9 @@ theorem pow_mem_conductor_adjoin_div (hT : ¬IsTangentAt F 0 (X 0)) :
           {algebraMap _ (functionField (Ideal.span {F}))
               (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
             algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))}) :=
-  pow_mem_conductor_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff aeval_eq_zero
-    (mul_div_cancel₀ _ (algebraMap_mk_X_zero_ne_zero hF hX))
-    (fun _ _ h ↦ mul_left_cancel₀ (algebraMap_mk_X_zero_ne_zero hF hX) h)
+  pow_mem_conductor_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff aeval_localSubring_eq_zero
+    (mul_div_cancel₀ _ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX))
+    (fun _ _ h ↦ mul_left_cancel₀ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX) h)
     (isUnit_aeval_blowupChartLeadingCoeff_localSubring hT)
 
 variable [IsAlgClosed k]
@@ -271,7 +213,8 @@ theorem mem_localSubring_of_forall_le_addValuation (hT : ¬IsTangentAt F 0 (X 0)
       (localSubring 0 hI).toSubring ≤ Q.integers.toSubring →
         (((F.orderAt 0).toNat - 1 : ℕ) : WithTop ℤ) ≤ Q.addValuation w) :
     w ∈ (localSubring 0 hI).toSubring := by
-  have hx0 := pow_ne_zero ((F.orderAt 0).toNat - 1) (algebraMap_mk_X_zero_ne_zero hF hX)
+  have hx0 :=
+    pow_ne_zero ((F.orderAt 0).toNat - 1) (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX)
   have hmem := mem_adjoin_div_of_forall_mem_integers (w := w / algebraMap _ _
       (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ^ ((F.orderAt 0).toNat - 1)) hF hX h hT
     fun Q hQ ↦ by

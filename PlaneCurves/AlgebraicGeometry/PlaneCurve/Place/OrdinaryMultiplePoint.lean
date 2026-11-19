@@ -49,6 +49,7 @@ of forms at them are as for affine curves.
 * `PlaneCurves.Affine.localSubring_le_integers_blowupPlace`: `blowupPlace` lies over the origin.
 * `PlaneCurves.Affine.valuation_blowupPlace_div_sub_lt_one`, `eq_of_blowupPlace_eq`: `y / x - α`
   has positive order at the place over `Y - α X`, so distinct tangents give distinct places.
+* `PlaneCurves.Affine.isIntegral_div`: `z = y / x` is integral over `𝒪_0(F)`.
 * `PlaneCurves.Affine.div_mem_integers_of_localSubring_le`: `z = y / x` lies in the valuation
   ring of every place over the origin.
 * `PlaneCurves.Affine.isTangentAt_of_valuation_div_sub_lt_one`,
@@ -209,6 +210,61 @@ private theorem coe_aeval_integers {K : Type*} [Field K] [Algebra k K] (Q : Plac
   rw [hu] at h
   exact h
 
+section Integral
+
+variable {hI : Ideal.span {F} ≤ vanishingIdeal k {(0 : Fin 2 → k)}}
+
+omit [(Ideal.span {F}).IsPrime] in
+private theorem aeval_mk_X {R : Type*} [CommSemiring R] [Algebra k R]
+    (f : MvPolynomial (Fin 2) k ⧸ Ideal.span {F} →ₐ[k] R) (g : MvPolynomial (Fin 2) k) :
+    aeval ![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] g =
+      f (Ideal.Quotient.mk _ g) := by
+  have h : (![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] : Fin 2 → R) =
+      (f.comp (Ideal.Quotient.mkₐ k _)) ∘ X := by
+    ext i : 1
+    fin_cases i <;> rfl
+  rw [h, ← aeval_unique]
+  rfl
+
+/-- If `X` is not tangent to `F` at the origin, `H(x, y)` is a unit of `𝒪_0(F)`: its value at the
+origin is the coefficient `a_{0r}` of `Y ^ r`. -/
+theorem isUnit_aeval_blowupChartLeadingCoeff_localSubring (hT : ¬IsTangentAt F 0 (X 0)) :
+    IsUnit (aeval ![algebraMap _ (localSubring 0 hI).toSubring
+        (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
+      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))]
+      (blowupChartLeadingCoeff F)) := by
+  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
+      (localSubring 0 hI).toSubring)
+    (blowupChartLeadingCoeff F)
+  simp only [IsScalarTower.coe_toAlgHom'] at e
+  rw [e, isUnit_iff_evalAt_ne_zero, evalAt_algebraMap, coordinateEval_mk,
+    eval_zero_blowupChartLeadingCoeff]
+  exact (isTangentAt_zero_X_zero_iff).not.1 hT
+
+/-- `F(x, y) = 0` in `𝒪_0(F)`. -/
+theorem aeval_localSubring_eq_zero :
+    aeval ![algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
+      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))] F =
+      0 := by
+  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
+    (localSubring 0 hI).toSubring) F
+  simp only [IsScalarTower.coe_toAlgHom'] at e
+  rw [e, Ideal.Quotient.mk_singleton_self, map_zero]
+
+include hF hX in
+/-- At an ordinary multiple point at the origin at which `X = 0` is not tangent, `y / x` is
+integral over `𝒪_0(F)`. -/
+theorem isIntegral_div (hT : ¬IsTangentAt F 0 (X 0)) :
+    IsIntegral (localSubring 0 hI).toSubring
+      (algebraMap _ (functionField (Ideal.span {F})) (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
+        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))) :=
+  isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff aeval_localSubring_eq_zero
+    (mul_div_cancel₀ _ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX))
+    (fun _ _ h ↦ mul_left_cancel₀ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX) h)
+    (isUnit_aeval_blowupChartLeadingCoeff_localSubring hT)
+
+end Integral
+
 include hF hX in
 /-- **`z = y / x` is integral at a place over the origin.** If the origin is an ordinary multiple
 point of `F` at which `X = 0` is not tangent, then `y / x` lies in the valuation ring of every place
@@ -219,36 +275,8 @@ theorem div_mem_integers_of_localSubring_le (hT : ¬IsTangentAt F 0 (X 0))
       (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
         Q.integers.toSubring) :
     algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers := by
-  set x : functionField (Ideal.span {F}) :=
-    algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))
-  set y : functionField (Ideal.span {F}) :=
-    algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1))
-  have hx0 : x ≠ 0 := by
-    rw [Ne, IsFractionRing.to_map_eq_zero_iff, Ideal.Quotient.eq_zero_iff_mem,
-      Ideal.mem_span_singleton]
-    exact fun hd ↦ hX (hF.associated_of_dvd prime_X.irreducible hd)
-  have hxQ : x ∈ Q.integers := hQ (algebraMap_mem_localSubring _ _ _)
-  have hyQ : y ∈ Q.integers := hQ (algebraMap_mem_localSubring _ _ _)
-  have hxy (g : MvPolynomial (Fin 2) k) :
-      ((aeval ![(⟨x, hxQ⟩ : Q.integers), ⟨y, hyQ⟩] g : Q.integers) :
-        functionField (Ideal.span {F})) =
-        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) g) := by
-    have h' : aeval ![x, y] = (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
-        (functionField (Ideal.span {F}))).comp (Ideal.Quotient.mkₐ k (Ideal.span {F})) :=
-      algHom_ext fun i ↦ by fin_cases i <;> simp [x, y]
-    rw [coe_aeval_integers]
-    exact DFunLike.congr_fun h' g
-  refine Q.mem_integers_of_isIntegral (R := Q.integers) (fun r ↦ r.2) ?_
-  refine isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff (F := F) (B := functionField _)
-    (x := (⟨x, hxQ⟩ : Q.integers)) (y := ⟨y, hyQ⟩) ?_ ?_ (fun _ _ h ↦ mul_left_cancel₀ hx0 h) ?_
-  · exact Subtype.ext ((hxy F).trans (by simp))
-  · exact mul_div_cancel₀ y hx0
-  · refine Q.isUnit_iff_valuation_eq_one.2 ?_
-    rw [hxy]
-    refine AffineSpace.valuation_algebraMap_mk_eq_one hQ ?_
-    rw [eval_zero_blowupChartLeadingCoeff]
-    exact (isTangentAt_zero_X_zero_iff).not.1 hT
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers :=
+  Q.mem_integers_of_isIntegral (fun r ↦ hQ r.2) (isIntegral_div hF hX hT)
 
 /-- At a place `Q` of `k(F)` at which `x` and `z = y / x` lie in the valuation ring, the polynomial
 expressions in `x` and `z` are the functions on the strict transform `F'`, read in `k(F)`. -/
