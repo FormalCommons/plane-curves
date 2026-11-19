@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.RingTheory.GradedAlgebra.Homogeneous.Ideal
+public import Mathlib.RingTheory.GradedAlgebra.RingHom
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.RingTheory.Noetherian.Basic
@@ -30,6 +31,8 @@ by finitely many forms (Fulton, Proposition 1 of §4.2).
   for `σ` finite and `R` Noetherian, is spanned by finitely many forms.
 * `MvPolynomial.pow_idealOfVars_le_iff`: an ideal contains the `N`-th power of the ideal of the
   variables exactly when it contains every form of degree at least `N`.
+* `HomogeneousIdeal.quotientMkGradedRingHom`: the quotient map `A → A ⧸ I` by a homogeneous
+  ideal, as a graded ring hom to the quotient grading.
 * `HomogeneousIdeal.mk_mem_quotientGrading`, `HomogeneousIdeal.exists_isHomogeneous_mk_eq`: the
   graded piece of degree `d` of `MvPolynomial σ R ⧸ I` consists of the classes of forms of
   degree `d`.
@@ -143,6 +146,24 @@ example {k : Type*} [Field k] (I : HomogeneousIdeal (homogeneousSubmodule σ k))
 end MvPolynomial
 
 namespace HomogeneousIdeal
+
+section QuotientMk
+
+variable {ι R A : Type*} [DecidableEq ι] [AddMonoid ι] [CommSemiring R] [CommRing A] [Algebra R A]
+  {𝒜 : ι → Submodule R A} [GradedAlgebra 𝒜] (I : HomogeneousIdeal 𝒜)
+
+/-- The quotient map `A → A ⧸ I` by a homogeneous ideal `I`, as a graded ring hom from `𝒜` to
+the quotient grading `I.quotientGrading`. -/
+noncomputable def quotientMkGradedRingHom : 𝒜 →+*ᵍ I.quotientGrading where
+  toRingHom := Ideal.Quotient.mk I.toIdeal
+  map_mem hx := TauCeti.GradedAlgebra.mk_mem_quotientPiece _ _ hx
+
+@[simp]
+theorem quotientMkGradedRingHom_apply (a : A) :
+    I.quotientMkGradedRingHom a = Ideal.Quotient.mk I.toIdeal a :=
+  (rfl)
+
+end QuotientMk
 
 open MvPolynomial
 
