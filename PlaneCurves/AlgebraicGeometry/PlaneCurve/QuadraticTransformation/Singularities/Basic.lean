@@ -7,7 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Finiteness
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Position
-import Mathlib.LinearAlgebra.Matrix.Permutation
+import TauCeti.Algebra.Squarefree
 
 /-!
 # The proper transform of a curve in excellent position
@@ -276,17 +276,13 @@ theorem bind₁_update_X_zero_properTransform (h : IsExcellentPosition F) (hF : 
   rw [← hQ, Nat.add_sub_cancel_left]
   ring
 
-private theorem aeval_eq_bind₁_update {j : Fin 3} {v : Fin 3 → MvPolynomial (Fin 3) k}
-    (hv : v = Function.update X j 0) (p : MvPolynomial (Fin 3) k) :
-    aeval v p = bind₁ (Function.update X j 0) p := by
-  rw [hv, aeval_eq_bind₁]
-
 /-- **The restriction of `F'` to `L' = V(Y)`**: `F'(X, 0, Z) = F(0, 1, 0) X^n Z^(n - r)`. -/
 theorem aeval_X_one_eq_zero_properTransform (h : IsExcellentPosition F)
     (hF : F.IsHomogeneous n) :
     aeval (![X 0, 0, X 2] : Fin 3 → MvPolynomial (Fin 3) k) (properTransform F) =
       C (eval (Pi.single 1 1) F) * X 0 ^ n * X 2 ^ (n - (mult F (fundamentalPoint 2)).toNat) := by
-  rw [aeval_eq_bind₁_update (j := 1) (by funext i; fin_cases i <;> rfl)]
+  rw [show (![X 0, 0, X 2] : Fin 3 → MvPolynomial (Fin 3) k) = Function.update X 1 0 by
+    funext i; fin_cases i <;> rfl, aeval_eq_bind₁]
   exact h.bind₁_update_X_zero_properTransform hF (by decide) (by decide) (by decide)
 
 /-- **The restriction of `F'` to `L'' = V(X)`**: `F'(0, Y, Z) = F(1, 0, 0) Y^n Z^(n - r)`. -/
@@ -294,7 +290,8 @@ theorem aeval_X_zero_eq_zero_properTransform (h : IsExcellentPosition F)
     (hF : F.IsHomogeneous n) :
     aeval (![0, X 1, X 2] : Fin 3 → MvPolynomial (Fin 3) k) (properTransform F) =
       C (eval (Pi.single 0 1) F) * X 1 ^ n * X 2 ^ (n - (mult F (fundamentalPoint 2)).toNat) := by
-  rw [aeval_eq_bind₁_update (j := 0) (by funext i; fin_cases i <;> rfl)]
+  rw [show (![0, X 1, X 2] : Fin 3 → MvPolynomial (Fin 3) k) = Function.update X 0 0 by
+    funext i; fin_cases i <;> rfl, aeval_eq_bind₁]
   exact h.bind₁_update_X_zero_properTransform hF (by decide) (by decide) (by decide)
 
 /-- **`C'` meets `V(Xⱼ)`, `j ≠ 2`, only in fundamental points**: in `[0 : 0 : 1]` and the
@@ -339,10 +336,6 @@ private theorem eval_aeval (w : Fin 3 → k) (g : Fin 3 → MvPolynomial (Fin 3)
     (p : MvPolynomial (Fin 3) k) : eval w (aeval g p) = eval (fun i ↦ eval w (g i)) p := by
   rw [aeval_eq_bind₁]
   exact eval₂Hom_bind₁ _ _ _ _
-
-private theorem zeroLocus_pair_eq (G H : MvPolynomial (Fin 3) k) :
-    zeroLocus {G, H} = zeroLocus {G} ∩ zeroLocus {H} := by
-  rw [Set.insert_eq, zeroLocus_union]
 
 /-- The points of `L = V(Z)` other than the fundamental points are the `[α : 1 : 0]`, `α ≠ 0`. -/
 private theorem mem_zeroLocus_X_two_and_ne_iff :
@@ -424,7 +417,7 @@ theorem mem_pointsOverCentre_iff (h : IsExcellentPosition F) (hF : F.IsHomogeneo
     rw [mk_mem_zeroLocus_iff (by simpa using ⟨_, hF'⟩)]
     simp
   change (Q ∈ zeroLocus {properTransform F, X 2} ∧ ∀ i, Q ≠ fundamentalPoint i) ↔ _
-  rw [zeroLocus_pair_eq]
+  rw [zeroLocus_insert]
   constructor
   · rintro ⟨⟨hQF, hQ2⟩, hne⟩
     obtain ⟨α, hα, rfl⟩ := mem_zeroLocus_X_two_and_ne_iff.1 ⟨hQ2, hne⟩
@@ -452,7 +445,7 @@ theorem eq_fundamentalPoint_or_mem_pointsOverCentre (h : IsExcellentPosition F)
   · rw [fundamentalTriangle_eq_iUnion, Set.mem_iUnion] at hQT
     obtain ⟨j, hj⟩ := hQT
     have hQj : Q ∈ zeroLocus {properTransform F, X j} := by
-      rw [zeroLocus_pair_eq]
+      rw [zeroLocus_insert]
       exact ⟨hQ, hj⟩
     fin_cases j
     · rcases h.zeroLocus_properTransform_X_zero_subset hF hQj with h1 | h1
@@ -462,7 +455,6 @@ theorem eq_fundamentalPoint_or_mem_pointsOverCentre (h : IsExcellentPosition F)
     · exact Or.inr ⟨hQj, hne⟩
   · push Not at hne
     exact Or.inl hne
-
 
 /-! ### The fundamental points of `C'` -/
 
@@ -560,13 +552,6 @@ theorem X_two_pow_mul_leadingFormAt_properTransform_single_zero (h : IsExcellent
   funext m
   fin_cases m <;> simp [Equiv.swap_apply_of_ne_of_ne]
 
-
-private theorem squarefree_rename_perm_iff (e : Equiv.Perm (Fin 3)) {p : MvPolynomial (Fin 3) k} :
-    Squarefree (rename e p) ↔ Squarefree p := by
-  rw [← linearSubst_toPEquiv_toMatrix, squarefree_linearSubst_iff]
-  rw [← Equiv.Perm.permMatrix, Matrix.det_permutation]
-  exact (Units.isUnit e.sign).map (Int.castRingHom k)
-
 private theorem rename_swap_aeval (σ : Equiv.Perm (Fin 3)) (v w : Fin 3 → MvPolynomial (Fin 3) k)
     (hvw : ∀ m, w m = rename σ (v m)) :
     aeval w F = rename σ (aeval v F) := by
@@ -586,17 +571,17 @@ theorem squarefree_leadingFormAt_properTransform [IsAlgClosed k] (h : IsExcellen
     rw [rename_swap_aeval (Equiv.swap 1 2) ![0, X 1, X 2] _ (fun m ↦ by
       fin_cases m <;> simp), hH, map_mul, map_pow, rename_X,
       Equiv.swap_apply_left] at key
-    exact (mul_left_cancel₀ hX2 key) ▸ (squarefree_rename_perm_iff _).2 hsq
+    exact (mul_left_cancel₀ hX2 key) ▸ (TauCeti.squarefree_map_iff (renameEquiv k _)).2 hsq
   · obtain ⟨H, hH, hsq, -, -⟩ := h.restrict_X_one_eq hF
     have key := h.X_two_pow_mul_leadingFormAt_properTransform_single_one hF
     rw [rename_swap_aeval (Equiv.swap 0 2) ![X 0, 0, X 2] _ (fun m ↦ by
       fin_cases m <;> simp), hH, map_mul, map_pow, rename_X,
       Equiv.swap_apply_left] at key
-    exact (mul_left_cancel₀ hX2 key) ▸ (squarefree_rename_perm_iff _).2 hsq
+    exact (mul_left_cancel₀ hX2 key) ▸ (TauCeti.squarefree_map_iff (renameEquiv k _)).2 hsq
   · change Squarefree ((properTransform F).leadingFormAt (Pi.single 2 1))
     rw [h.leadingFormAt_properTransform_single_two hF, rename_swap_aeval (Equiv.swap 0 1)
       ![X 0, X 1, 0] _ (fun m ↦ by fin_cases m <;> simp)]
-    exact (squarefree_rename_perm_iff _).2 (h.squarefree_restrict_X_two hF).1
+    exact (TauCeti.squarefree_map_iff (renameEquiv k _)).2 (h.squarefree_restrict_X_two hF).1
 
 /-- The leading form of `C'` at each fundamental point is squarefree. -/
 theorem squarefree_leadingForm_properTransform [IsAlgClosed k] (h : IsExcellentPosition F)
