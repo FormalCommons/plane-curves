@@ -6,12 +6,13 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.RingTheory.LocalRing.RingHom.Basic
+public import Mathlib.RingTheory.OrderOfVanishing.Basic
 public import TauCeti.RingTheory.Length
 
 /-!
 # Lengths under ring isomorphisms
 
-Ring isomorphisms preserve the lengths of corresponding quotients.
+Ring isomorphisms preserve the lengths of corresponding quotients, and so orders of vanishing.
 
 ## Main results
 
@@ -19,6 +20,7 @@ Ring isomorphisms preserve the lengths of corresponding quotients.
   the same lengths `ℓ(R ⧸ 𝔪 ^ n)`.
 * `Ideal.length_quotient_span_pair_eq_of_ringEquiv`: a ring isomorphism carrying `a` and `b` to
   associates of `a'` and `b'` identifies `ℓ(R ⧸ (a, b))` with `ℓ(S ⧸ (a', b'))`.
+* `Ring.ord_ringEquiv`: ring isomorphisms preserve orders of vanishing `Ring.ord`.
 -/
 
 public section
@@ -45,5 +47,11 @@ theorem Ideal.length_quotient_span_pair_eq_of_ringEquiv {R S : Type*} [CommRing 
     Ideal.span_singleton_mul_right_unit v.isUnit, ← Ideal.span_insert, ← Set.image_pair,
     ← Ideal.map_span, Ideal.length_quotient_map_of_surjective _ φ.surjective,
     RingHom.ker_equiv φ, sup_bot_eq]
+
+/-- Ring isomorphisms preserve orders of vanishing: `ord_S (φ x) = ord_R x` for `φ : R ≃+* S`. -/
+theorem Ring.ord_ringEquiv {R S : Type*} [CommRing R] [CommRing S] (φ : R ≃+* S) (x : R) :
+    Ring.ord S (φ x) = Ring.ord R x := by
+  rw [Ring.ord, Ring.ord, ← Set.image_singleton, ← Ideal.map_span,
+    Ideal.length_quotient_map_of_surjective _ φ.surjective, RingHom.ker_equiv φ, sup_bot_eq]
 
 end
