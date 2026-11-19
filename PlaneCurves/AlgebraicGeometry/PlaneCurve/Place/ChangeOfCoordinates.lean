@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.Basic
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.GenericLine
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ChangeOfCoordinates
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 
@@ -35,6 +36,8 @@ places over a point and the orders of forms move with them.
   moved place is the moved centre.
 * `placesOver_linearSubst`: the places of `C^M` over `Q` are the moved places of `C` over `M·Q`.
 * `ordForm_linearSubst`: `ord_{Q^M}(G^M) = ord_Q(G)` for a form `G` and a place `Q` of `k(C)`.
+* `exists_linearSubst_isOrdinaryMultiplePoint_affineChart_eq_zero`: a change of coordinates moves
+  an ordinary multiple point to `[0 : 0 : 1]`, with `X₀ = 0` not tangent there.
 
 ## References
 
@@ -199,6 +202,33 @@ theorem ordForm_linearSubst (Q : Place k (functionField hF)) (hG : G.IsHomogeneo
   rw [ordForm_eq_addValuation_mk hG (isHomogeneous_X_pow i m) hXQ,
     ordForm_eq_addValuation_mk _ ((isHomogeneous_X_pow i m).linearSubst M.1) hXQ',
     ← functionField.linearSubstEquiv_mk, Place.addValuation_map_apply]
+
+variable (hF P) in
+/-- **Moving an ordinary multiple point to `[0 : 0 : 1]`.** For an ordinary multiple point `P`
+of `C : F = 0`, there are a change of coordinates `M` and a point `P'` of `C^M : F^M = 0` with
+`M·P' = P`, such that `P'` is the origin of the chart `X₂ ≠ 0`, an ordinary multiple point of
+`F^M`, and `X₀ = 0` is not tangent to `F^M` at `P'`. -/
+theorem exists_linearSubst_isOrdinaryMultiplePoint_affineChart_eq_zero
+    (h : IsOrdinaryMultiplePoint F P.1) :
+    ∃ (M : GL (Fin 3) k) (P' : zeroLocus (projectivePlaneCurve.ideal (hF.linearSubst M.1) :
+        Set (MvPolynomial (Fin 3) k))),
+      map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) P'.1 = P.1 ∧
+      P'.1 ∈ affineOpen 2 ∧ affineChart 2 P'.1 = 0 ∧
+      IsOrdinaryMultiplePoint (linearSubst M.1 F) P'.1 ∧
+      ¬IsTangentAt (linearSubst M.1 F) P'.1 (X 0) := by
+  obtain ⟨c, hcP, hcT⟩ := ((infinite_setOf_eval_sum_C_mul_X_eq_zero P.1).sdiff
+    (finite_setOf_isTangentAt (Fact.out : Irreducible F).ne_zero P.1)).nonempty
+  obtain ⟨M, hMP, hMX⟩ := exists_map_eq_and_linearSubst_eq_X_zero P.1 hcP
+  have hM := mulVec_injective_of_isUnit M.isUnit
+  have hO : mk k (Pi.single 2 1) (by simp) ∈ zeroLocus
+      (projectivePlaneCurve.ideal (hF.linearSubst M.1) : Set (MvPolynomial (Fin 3) k)) := by
+    rw [mem_zeroLocus_ideal_iff, eval_rep_linearSubst_eq_zero_iff M hF, hMP]
+    exact (mem_zeroLocus_ideal_iff hF).1 P.2
+  refine ⟨M, ⟨_, hO⟩, hMP, (mk_mem_affineOpen_iff _ _ _).2 (by simp), affineChart_mk_single 2,
+    ?_, ?_⟩
+  · rwa [isOrdinaryMultiplePoint_linearSubst_iff hF hM, hMP]
+  · rw [← hMX, isTangentAt_linearSubst_iff hF hM, hMP]
+    exact hcT
 
 end PlaneCurves.Projective
 
