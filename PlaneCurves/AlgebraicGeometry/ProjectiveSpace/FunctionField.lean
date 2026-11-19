@@ -38,6 +38,8 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
   `R ⧸ I`, a homogeneous prime.
 * `PlaneCurves.ProjectiveSpace.functionField I`: the function field `k(V)`, the homogeneous
   localization of `R ⧸ I` at `⊥`; `functionField.mk` is the fraction `f / g`.
+* `PlaneCurves.ProjectiveSpace.functionField.equivOfEq h`: the isomorphism `k(V(I)) ≅ k(V(J))`
+  for `h : I = J`.
 * `PlaneCurves.ProjectiveSpace.varietyLocalRing I P`: the local ring `𝒪_P(V)`, the homogeneous
   localization of `R ⧸ I` at `quotientPointIdeal I P`, with its value map
   `varietyLocalRing.evalAt I P : 𝒪_P(V) →ₐ[k] k` and its inclusion
@@ -399,6 +401,27 @@ theorem functionField.mk_div_mk {f g h : MvPolynomial (Fin (n + 1)) k} (hf : f.I
     simp only [HomogeneousLocalization.NumDenSameDeg.num_mul,
       HomogeneousLocalization.NumDenSameDeg.den_mul]
     ring⟩
+
+variable {I} in
+/-- The isomorphism `k(V(I)) ≅ k(V(J))` of the function fields of equal homogeneous primes
+`I = J`, sending `f / g` to `f / g` (`functionField.equivOfEq_mk`). -/
+noncomputable def functionField.equivOfEq
+    {J : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k)} [J.toIdeal.IsPrime]
+    (h : I = J) : functionField I ≃ₐ[k] functionField J := by
+  subst h
+  exact AlgEquiv.refl
+
+variable {I} in
+/-- The isomorphism `k(V(I)) ≅ k(V(J))` for `I = J` sends `f / g` to `f / g`. -/
+@[simp]
+theorem functionField.equivOfEq_mk
+    {J : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k)} [J.toIdeal.IsPrime]
+    (h : I = J) {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d)
+    (hg : g.IsHomogeneous d) (hgI : g ∉ I) :
+    functionField.equivOfEq h (functionField.mk hf hg hgI) =
+      functionField.mk hf hg (h ▸ hgI) := by
+  subst h
+  rfl
 
 namespace varietyLocalRing
 
