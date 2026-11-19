@@ -68,7 +68,10 @@ multiple point every point of the fibre is a simple point of the strict transfor
   `{F' = 0, x ≠ 0}` bijectively onto `{F = 0, x ≠ 0}`.
 * `PlaneCurves.Affine.blowupFunctionFieldEquiv_x`, `PlaneCurves.Affine.blowupFunctionFieldEquiv_y`,
   `PlaneCurves.Affine.blowupFunctionFieldEquiv_symm_z`: `k(C) ≅ k(C')` sends `x ↦ x`, `y ↦ xz`,
-  and its inverse sends `z ↦ y / x`.
+  and its inverse sends `z ↦ y / x`; `blowupFunctionFieldEquiv_symm_algebraMap_mk`: it sends
+  the class of `g(X, Z)` to `g(x, y / x)`.
+* `PlaneCurves.Affine.isPrime_span_blowupStrictTransform`: the ideal of the strict transform of an
+  irreducible curve other than `X = 0` is prime.
 * `PlaneCurves.Affine.eval_zero_blowupStrictTransform_eq_zero_iff`: `F'(0, α) = 0` iff `Y - α X`
   is tangent to `F` at the origin.
 * `PlaneCurves.Affine.exists_finset_eval_zero_blowupStrictTransform`: over an algebraically
@@ -526,6 +529,11 @@ private theorem not_blowupStrictTransform_dvd_X_zero (hF : Irreducible F)
   not_X_dvd_blowupStrictTransform hF.ne_zero
     ((irreducible_blowupStrictTransform hF hX).associated_of_dvd prime_X.irreducible h).symm.dvd
 
+/-- The ideal of the strict transform of an irreducible curve other than `X = 0` is prime. -/
+theorem isPrime_span_blowupStrictTransform (hF : Irreducible F) (hX : ¬ Associated F (X 0)) :
+    (Ideal.span {blowupStrictTransform F}).IsPrime :=
+  isPrime_span (irreducible_blowupStrictTransform hF hX)
+
 /-- The image of `x` in `Frac(k[X, Y] ⧸ (G))` is nonzero if `G` does not divide `X`. -/
 private theorem algebraMap_mk_X_zero_ne_zero {G : MvPolynomial (Fin 2) k}
     [(Ideal.span {G}).IsPrime] (hG : ¬ G ∣ X 0) :
@@ -640,6 +648,28 @@ theorem blowupFunctionFieldEquiv_symm_z [(Ideal.span {F}).IsPrime] :
   rw [AlgEquiv.symm_apply_eq, map_div₀, blowupFunctionFieldEquiv_x, blowupFunctionFieldEquiv_y,
     mul_div_cancel_left₀ _ (algebraMap_mk_X_zero_ne_zero
       (not_blowupStrictTransform_dvd_X_zero hF hX))]
+
+/-- The inverse of the isomorphism `k(C) ≅ k(C')` sends the class of `g(X, Z)` to
+`g(x, y / x)`. -/
+theorem blowupFunctionFieldEquiv_symm_algebraMap_mk [(Ideal.span {F}).IsPrime]
+    (g : MvPolynomial (Fin 2) k) :
+    (blowupFunctionFieldEquiv hF hX).symm
+        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) g)) =
+      aeval ![algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
+        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
+          algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))] g := by
+  have h : ((blowupFunctionFieldEquiv hF hX).symm.toAlgHom.comp
+      ((IsScalarTower.toAlgHom k _ _).comp
+        (Ideal.Quotient.mkₐ k (Ideal.span {blowupStrictTransform F})))) =
+      aeval ![algebraMap _ (FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {F}))
+          (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
+        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
+          algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))] := by
+    refine algHom_ext fun i ↦ ?_
+    fin_cases i
+    · simp [AlgEquiv.symm_apply_eq]
+    · simp
+  exact DFunLike.congr_fun h g
 
 end Field
 
