@@ -5,9 +5,8 @@ Authors: The FormalCommons contributors
 -/
 module
 
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.ChangeOfCoordinates
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.OrdinaryMultiplePoint
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Birational
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.FunctionField
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Singularities.Chart
 
 /-!
@@ -41,6 +40,9 @@ The same holds for a quadratic transformation `G` of `F` centred at a point `P`
   `isSimplePoint_center_map_quadraticFunctionFieldEquiv`: a place centred at the ordinary
   multiple point `[0 : 0 : 1]` moves to a place centred at a point over the centre, a simple
   point of `F'`.
+* `center_map_linearSubstQuadraticFunctionFieldEquiv`,
+  `center_map_linearSubstQuadraticFunctionFieldEquiv_mem_pointsOverCentre`: the same facts
+  through a change of coordinates, for `linearSubstQuadraticFunctionFieldEquiv`.
 * `IsQuadraticTransformAt.exists_algEquiv_center`: the same facts for a quadratic transformation
   centred at a point.
 
@@ -53,6 +55,7 @@ public section
 
 open MvPolynomial Projectivization TauCeti TauCeti.AlgebraicGeometry PlaneCurves.ProjectiveSpace
 open scoped LinearAlgebra.Projectivization
+open Matrix (mulVec_injective_of_isUnit)
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
@@ -217,6 +220,74 @@ theorem isSimplePoint_center_map_quadraticFunctionFieldEquiv (h : IsExcellentPos
 
 /-! ### Quadratic transformations centred at a point -/
 
+section linearSubst
+
+omit [Fact (Irreducible (properTransform F))]
+
+variable {G : MvPolynomial (Fin 3) k} {m : ℕ} [Fact (Irreducible G)] (hF : F.IsHomogeneous n)
+  (M : GL (Fin 3) k) (hG : G.IsHomogeneous m) (hGF : G = properTransform (linearSubst M.1 F))
+
+/-- The centre of a place moved along `linearSubstQuadraticFunctionFieldEquiv` is the centre of
+the place moved to `k(F^M)` and then along the quadratic transformation of function fields. -/
+private theorem coe_center_map_linearSubstQuadraticFunctionFieldEquiv
+    (hX : ∀ i, ¬ X i ∣ linearSubst M.1 F) (p : Place k (functionField hF)) :
+    haveI : Fact (Irreducible (properTransform (linearSubst M.1 F))) := ⟨hGF ▸ Fact.out⟩
+    (center hG (p.map (linearSubstQuadraticFunctionFieldEquiv hF M hX hG hGF))).1 =
+      (center (hF.linearSubst M.1).properTransform
+        ((p.map (functionField.linearSubstEquiv hF M)).map
+          (quadraticFunctionFieldEquiv (hF.linearSubst M.1) hX))).1 := by
+  have : Fact (Irreducible (properTransform (linearSubst M.1 F))) := ⟨hGF ▸ Fact.out⟩
+  have h := coe_center_map_equivOfEq (ideal_properTransform_linearSubst_eq hF M hG hGF)
+    ((p.map (functionField.linearSubstEquiv hF M)).map
+      (quadraticFunctionFieldEquiv (hF.linearSubst M.1) hX))
+  rw [Place.map_map, Place.map_map] at h
+  rw [linearSubstQuadraticFunctionFieldEquiv_def]
+  exact h
+
+/-- **Centres off the fundamental triangle, through a change of coordinates.** If the centre of a
+place `p` of `k(F)` is `M R` with `R` off the fundamental triangle, the place `p` moved to
+`k(G)`, `G = (F^M)'`, along `linearSubstQuadraticFunctionFieldEquiv` is centred at `Q(R)`. -/
+theorem center_map_linearSubstQuadraticFunctionFieldEquiv (hX : ∀ i, ¬ X i ∣ linearSubst M.1 F)
+    (p : Place k (functionField hF)) {R : ℙ k (Fin 3 → k)} (hR : R ∉ fundamentalTriangle)
+    (hRp : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) R = (center hF p).1) :
+    (center hG (p.map (linearSubstQuadraticFunctionFieldEquiv hF M hX hG hGF))).1 =
+      quadraticMap R := by
+  have : Fact (Irreducible (properTransform (linearSubst M.1 F))) := ⟨hGF ▸ Fact.out⟩
+  have hR' : (center (hF.linearSubst M.1) (p.map (functionField.linearSubstEquiv hF M))).1 = R :=
+    map_injective _ (mulVec_injective_of_isUnit M.isUnit)
+      (by rw [hRp]; exact map_center_map_linearSubstEquiv p)
+  rw [coe_center_map_linearSubstQuadraticFunctionFieldEquiv,
+    center_map_quadraticFunctionFieldEquiv hX _ (by rwa [hR']), hR']
+
+/-- **Places over an ordinary multiple point, through a change of coordinates.** Let `F^M` be in
+excellent position, `G = (F^M)'`, and `M [0 : 0 : 1]` an ordinary multiple point of `F`. A place
+of `k(F)` centred at `M [0 : 0 : 1]`, moved to `k(G)` along
+`linearSubstQuadraticFunctionFieldEquiv`, is centred at a point over the centre of `F^M`, a
+simple point of `G`. -/
+theorem center_map_linearSubstQuadraticFunctionFieldEquiv_mem_pointsOverCentre
+    (hE : IsExcellentPosition (linearSubst M.1 F)) (p : Place k (functionField hF))
+    (hp : (center hF p).1 = map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit)
+      (fundamentalPoint 2))
+    (hP : IsOrdinaryMultiplePoint F (center hF p).1) :
+    (center hG (p.map (linearSubstQuadraticFunctionFieldEquiv hF M hE.not_X_dvd hG hGF))).1 ∈
+        pointsOverCentre (linearSubst M.1 F) ∧
+      IsSimplePoint G
+        (center hG
+          (p.map (linearSubstQuadraticFunctionFieldEquiv hF M hE.not_X_dvd hG hGF))).1 := by
+  have : Fact (Irreducible (properTransform (linearSubst M.1 F))) := ⟨hGF ▸ Fact.out⟩
+  have hp' : (center (hF.linearSubst M.1) (p.map (functionField.linearSubstEquiv hF M))).1 =
+      fundamentalPoint 2 :=
+    map_injective _ (mulVec_injective_of_isUnit M.isUnit)
+      (by rw [← hp]; exact map_center_map_linearSubstEquiv p)
+  have hP' : IsOrdinaryMultiplePoint (linearSubst M.1 F) (fundamentalPoint 2) := by
+    rwa [isOrdinaryMultiplePoint_linearSubst_iff hF (mulVec_injective_of_isUnit M.isUnit), ← hp]
+  rw [coe_center_map_linearSubstQuadraticFunctionFieldEquiv]
+  subst hGF
+  exact ⟨center_map_quadraticFunctionFieldEquiv_mem_pointsOverCentre hE.isGoodPosition _ hp' hP',
+    isSimplePoint_center_map_quadraticFunctionFieldEquiv hE _ hp' hP'⟩
+
+end linearSubst
+
 omit [Fact (Irreducible (properTransform F))] in
 /-- **Places along a quadratic transformation centred at a point.** Let `G` be a quadratic
 transformation of an irreducible form `F` centred at `P`. There are a change of coordinates `T`,
@@ -240,34 +311,15 @@ theorem IsQuadraticTransformAt.exists_algEquiv_center {P : ℙ k (Fin 3 → k)}
           (IsOrdinaryMultiplePoint F P → ∀ p : Place k (functionField hF), (center hF p).1 = P →
             (center hG (p.map e)).1 ∈ pointsOverCentre (linearSubst M F) ∧
               IsSimplePoint G (center hG (p.map e)).1) := by
-  obtain ⟨M, hM, hMP, hE, rfl⟩ := isQuadraticTransformAt_def.1 h
-  refine ⟨M, hM, hMP, hE, rfl, ?_⟩
+  obtain ⟨M, hM, hMP, hE, hGF⟩ := isQuadraticTransformAt_def.1 h
   obtain ⟨M', rfl⟩ : ∃ M' : GL (Fin 3) k, M'.1 = M :=
     ⟨Matrix.nonsingInvUnit M (Matrix.isUnit_det_of_mulVecLin_injective hM), rfl⟩
-  have hF' := hF.linearSubst M'.1
-  have hI : projectivePlaneCurve.ideal hF'.properTransform = projectivePlaneCurve.ideal hG :=
-    HomogeneousIdeal.toIdeal_injective (by
-      rw [projectivePlaneCurve.toIdeal_ideal, projectivePlaneCurve.toIdeal_ideal])
-  set e₁ := functionField.linearSubstEquiv hF M'
-  set e₂ := quadraticFunctionFieldEquiv hF' hE.not_X_dvd
-  set e₃ := ProjectiveSpace.functionField.equivOfEq hI
-  have hc : ∀ p : Place k (functionField hF),
-      (center hG (p.map ((e₁.trans e₂).trans e₃))).1 =
-        (center hF'.properTransform ((p.map e₁).map e₂)).1 := fun p ↦ by
-    rw [← Place.map_map, ← Place.map_map]
-    exact coe_center_map_equivOfEq hI _
-  have hR : ∀ (p : Place k (functionField hF)) (R : ℙ k (Fin 3 → k)),
-      map M'.1.mulVecLin hM R = (center hF p).1 → (center hF' (p.map e₁)).1 = R :=
-    fun p R hR ↦ map_injective _ hM (by rw [hR]; exact map_center_map_linearSubstEquiv p)
-  refine ⟨(e₁.trans e₂).trans e₃, fun p R hRT hRp ↦ ?_, fun hP p hp ↦ ?_⟩
-  · rw [hc, center_map_quadraticFunctionFieldEquiv hE.not_X_dvd _ (by rwa [hR p R hRp]),
-      hR p R hRp]
-  · have hp' := hR p _ (hMP.trans hp.symm)
-    have hP' : IsOrdinaryMultiplePoint (linearSubst M'.1 F) (fundamentalPoint 2) := by
-      rwa [isOrdinaryMultiplePoint_linearSubst_iff hF hM, hMP]
-    rw [hc]
-    exact ⟨center_map_quadraticFunctionFieldEquiv_mem_pointsOverCentre hE.isGoodPosition _ hp' hP',
-      isSimplePoint_center_map_quadraticFunctionFieldEquiv hE _ hp' hP'⟩
+  refine ⟨M'.1, hM, hMP, hE, hGF, linearSubstQuadraticFunctionFieldEquiv hF M' hE.not_X_dvd hG hGF,
+    fun p R hR hRp ↦ center_map_linearSubstQuadraticFunctionFieldEquiv hF M' hG hGF _ p hR hRp,
+    fun hP p hp ↦ ?_⟩
+  subst hMP
+  exact center_map_linearSubstQuadraticFunctionFieldEquiv_mem_pointsOverCentre hF M' hG hGF hE p hp
+    (hp ▸ hP)
 
 end PlaneCurves.Projective
 

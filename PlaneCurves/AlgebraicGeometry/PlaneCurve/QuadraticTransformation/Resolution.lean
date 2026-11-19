@@ -6,8 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.Logic.Relation
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.ChangeOfCoordinates
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Birational
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.FunctionField
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Singularities.NonOrdinary
 
 /-!
@@ -24,7 +23,7 @@ Along a quadratic transformation the curve stays irreducible, its virtual genus 
 increase, and its function field does not change: the change of coordinates and the standard
 quadratic transformation give an isomorphism `k(F) ≅ k(G)` that carries the local ring of `F` at
 `T R` onto the local ring of `G` at `Q(R)`, for every point `R` of `F^T` off the fundamental
-triangle.
+triangle (`IsQuadraticTransformAt.exists_algEquiv`, in `FunctionField.lean`).
 
 Every irreducible curve over an algebraically closed field is carried by a finite sequence of
 quadratic transformations to a curve with only ordinary multiple points (Fulton, §7.4, Theorem 2,
@@ -41,8 +40,6 @@ and `N(F) + g*(F)` in characteristic zero, where no point is terrible.
 
 ## Main results
 
-* `PlaneCurves.Projective.IsQuadraticTransformAt.exists_algEquiv`: an isomorphism
-  `k(F) ≅ k(G)` compatible with the local rings at the points off the fundamental triangle.
 * `PlaneCurves.Projective.IsQuadraticTransform.irreducible`,
   `PlaneCurves.Projective.IsQuadraticTransform.virtualGenus_le`,
   `PlaneCurves.Projective.IsQuadraticTransform.nonempty_algEquiv`: one step keeps the curve
@@ -74,56 +71,6 @@ open scoped LinearAlgebra.Projectivization
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {k : Type*} [Field k] {F G : MvPolynomial (Fin 3) k} {P : ℙ k (Fin 3 → k)} {n m : ℕ}
-
-/-! ### Function fields along a quadratic transformation centred at a point -/
-
-/-- **The function field along a quadratic transformation centred at a point.** Let `G` be a
-quadratic transformation of an irreducible form `F` centred at `P`. There are a change of
-coordinates `T`, given by a matrix `M` as in `IsQuadraticTransformAt`, and an isomorphism
-`e : k(F) ≅ k(G)` such that, for every point `R` of `F^T` off the fundamental triangle, `e`
-carries the local ring of `F` at `T R` onto the local ring of `G` at `Q(R)`. -/
-theorem IsQuadraticTransformAt.exists_algEquiv (h : IsQuadraticTransformAt F P G)
-    (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m) [Fact (Irreducible F)]
-    [Fact (Irreducible G)] :
-    ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
-      map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) ∧
-        G = properTransform (linearSubst M F) ∧
-        ∃ e : functionField hF ≃ₐ[k] functionField hG,
-          ∀ (R₀ : ℙ k (Fin 3 → k)) (R : zeroLocus (projectivePlaneCurve.ideal hF :
-              Set (MvPolynomial (Fin 3) k)))
-            (R' : zeroLocus (projectivePlaneCurve.ideal hG : Set (MvPolynomial (Fin 3) k))),
-            R₀ ∉ fundamentalTriangle → map M.mulVecLin hM R₀ = R.1 →
-              quadraticMap R₀ = R'.1 →
-              (localSubring hF R).map (e : functionField hF →+* _) = localSubring hG R' := by
-  obtain ⟨M, hM, hMP, hE, rfl⟩ := isQuadraticTransformAt_def.1 h
-  refine ⟨M, hM, hMP, hE, rfl, ?_⟩
-  obtain ⟨M', rfl⟩ : ∃ M' : GL (Fin 3) k, M'.1 = M :=
-    ⟨Matrix.nonsingInvUnit M (Matrix.isUnit_det_of_mulVecLin_injective hM), rfl⟩
-  have hF' := hF.linearSubst M'.1
-  have hI : projectivePlaneCurve.ideal hF'.properTransform = projectivePlaneCurve.ideal hG :=
-    HomogeneousIdeal.toIdeal_injective (by
-      rw [projectivePlaneCurve.toIdeal_ideal, projectivePlaneCurve.toIdeal_ideal])
-  refine ⟨((functionField.linearSubstEquiv hF M').trans
-    (quadraticFunctionFieldEquiv hF' hE.not_X_dvd)).trans
-      (ProjectiveSpace.functionField.equivOfEq hI), fun R₀ R R' hR₀ hR₀R hR₀R' ↦ ?_⟩
-  have hR₀F : R₀ ∈ zeroLocus (projectivePlaneCurve.ideal hF' : Set (MvPolynomial (Fin 3) k)) := by
-    rw [mem_zeroLocus_ideal_iff, eval_rep_linearSubst_eq_zero_iff M' hF,
-      ← mem_zeroLocus_ideal_iff hF]
-    exact hR₀R ▸ R.2
-  have hR₀G : quadraticMap R₀ ∈ zeroLocus
-      (projectivePlaneCurve.ideal hF'.properTransform : Set (MvPolynomial (Fin 3) k)) :=
-    hI ▸ hR₀R' ▸ R'.2
-  have h1 := congrArg LocalSubring.toSubring
-    (map_localSubring_linearSubstEquiv (M := M') (P' := ⟨R₀, hR₀F⟩) hR₀R)
-  have h2 := congrArg LocalSubring.toSubring
-    (map_localSubring_quadraticFunctionFieldEquiv hF' hE.not_X_dvd (R := ⟨R₀, hR₀F⟩)
-      (R' := ⟨_, hR₀G⟩) hR₀ rfl)
-  have h3 := congrArg LocalSubring.toSubring
-    (ProjectiveSpace.map_localSubring_equivOfEq hI ⟨_, hR₀G⟩ R' hR₀R'.symm)
-  refine LocalSubring.toSubring_injective ?_
-  rw [LocalSubring.map_toSubring] at h1 h2 h3 ⊢
-  rw [← h3, ← h2, ← h1, Subring.map_map, Subring.map_map]
-  rfl
 
 /-! ### The step relation -/
 
