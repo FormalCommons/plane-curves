@@ -29,6 +29,8 @@ dehomogenization.
   `X i ^ (d - deg F_*) * (F_*)*`.
 * `MvPolynomial.X_pow_mul_homogenize_dehomogenize_of_dvd`: if `X i ^ r` is the largest power of
   `X i` dividing a nonzero form `F`, then `X i ^ r * (F_*)* = F`.
+* `MvPolynomial.totalDegree_dehomogenize_of_not_X_dvd`: a form of degree `d` not divisible by
+  `X i` has a dehomogenization of total degree `d`.
 * `MvPolynomial.X_pow_mul_homogenize_add`: `X i ^ t * (f + g)* = X i ^ r * f* + X i ^ s * g*`
   for `s = deg f`, `r = deg g` and `t = r + s - deg (f + g)`.
 * `MvPolynomial.irreducible_dehomogenize_iff`: a form not divisible by `X i` is irreducible if and
@@ -143,6 +145,15 @@ theorem homogenize_dehomogenize_of_not_X_dvd {F : MvPolynomial (Fin (n + 1)) R} 
   obtain rfl | hF0 := eq_or_ne F 0
   · simp
   simpa using X_pow_mul_homogenize_dehomogenize_of_dvd hF hF0 (r := 0) (by simp) (by simpa)
+
+/-- The dehomogenization `F_*` of a form `F` of degree `d` not divisible by `X i` has total degree
+`d`. -/
+theorem totalDegree_dehomogenize_of_not_X_dvd {F : MvPolynomial (Fin (n + 1)) R} {d : ℕ}
+    (hF : F.IsHomogeneous d) (hX : ¬ X i ∣ F) : (dehomogenize i F).totalDegree = d := by
+  have h := isHomogeneous_homogenize (i := i) (N := (dehomogenize i F).totalDegree)
+    (dehomogenize i F)
+  rw [homogenize_dehomogenize_of_not_X_dvd hF hX] at h
+  exact h.inj_right hF fun h0 ↦ hX (h0 ▸ dvd_zero _)
 
 end CommSemiring
 
