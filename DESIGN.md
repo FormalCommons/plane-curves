@@ -269,6 +269,7 @@ PlaneCurves/
         │   │   └── Flex.lean            flexes, nine flexes of a cubic (Q17)
         │   ├── Conic.lean               irreducible conics (Q18)
         │   ├── Center.lean              centre of a valuation ring on a plane curve (V2)
+        │   ├── RegularFunctions.lean    Γ(U), the ring A_G of D(G) (V6)
         │   ├── IntersectionCycle.lean   F • G as a zero-cycle (N1)
         │   ├── Noether/
         │   │   ├── Basic.lean           Max Noether's fundamental theorem (N1)

@@ -68,10 +68,13 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
 * `isFractionRing_localSubring`: `k(V)` is the field of fractions of `𝒪_P(V)`.
 * `exists_algebraMap_notMem_range_toFractionRing`: `Γ_h(V) ⊄ k(V)` inside the fraction field of
   `Γ_h(V)`, when `V` is nonempty.
-* `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`.
+* `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`, and
+  `functionField.mk_eq_mk_of_mul_eq`: `f / g = f' / g'` if `f g' = f' g`.
 * `functionField.mk_eq_zero_iff`, `functionField.mk_self`, `functionField.mk_mul_mk_swap`:
   `f / g = 0` iff `f ∈ I`, `f / f = 1` and `(f / g) (g / f) = 1`; `functionField.algebraMap_eq_mk`:
   a constant `a` is `a / 1`.
+* `functionField.mk_mul_mk`, `functionField.mk_add_mk_self`: `(f / g) (f' / g') = f f' / (g g')` and
+  `f / g + f' / g = (f + f') / g`.
 * `functionField.aeval_mk_X`: a form `f` of degree `m` evaluated at the fractions `Xⱼ / Xᵢ` is
   `f / Xᵢᵐ`, so that `f / g = f(X / Xᵢ) / g(X / Xᵢ)` (`functionField.mk_eq_aeval_div_aeval`).
 * `poleSet_eq_inter`: the pole set of `z` is `V(I) ∩ V(J(z))`, and
@@ -700,6 +703,15 @@ theorem functionField.mk_eq_mk_iff {d' : ℕ} {f g f' g' : MvPolynomial (Fin (n 
     mul_comm _ (Ideal.Quotient.mk _ g)]
   refine ⟨fun ⟨c, hc⟩ ↦ mul_left_cancel₀ c.2 hc, fun h ↦ ⟨1, by rw [h]⟩⟩
 
+variable {I} in
+/-- Two fractions `f / g` and `f' / g'` of forms with `f g' = f' g` are equal in `k(V)`. -/
+theorem functionField.mk_eq_mk_of_mul_eq {d' : ℕ} {f g f' g' : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgI : g ∉ I)
+    (hf' : f'.IsHomogeneous d') (hg' : g'.IsHomogeneous d') (hgI' : g' ∉ I)
+    (h : f * g' = f' * g) :
+    functionField.mk hf hg hgI = functionField.mk hf' hg' hgI' :=
+  (functionField.mk_eq_mk_iff hf hg hgI hf' hg' hgI').2 (by rw [h, sub_self]; exact zero_mem _)
+
 section Fractions
 
 variable {I}
@@ -770,6 +782,28 @@ theorem functionField.mk_self {d : ℕ} {f : MvPolynomial (Fin (n + 1)) k}
     (hf : f.IsHomogeneous d) (hfI : f ∉ I) : functionField.mk hf hf hfI = 1 := by
   have h := functionField.mk_div_mk hf hf hf hfI hfI
   rwa [div_self (functionField.mk_ne_zero hf hf hfI hfI), eq_comm] at h
+
+/-- In `k(V)`, `(f / g) (f' / g') = f f' / (g g')`. -/
+theorem functionField.mk_mul_mk {d d' : ℕ} {f g f' g' : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgI : g ∉ I)
+    (hf' : f'.IsHomogeneous d') (hg' : g'.IsHomogeneous d') (hgI' : g' ∉ I) :
+    functionField.mk hf hg hgI * functionField.mk hf' hg' hgI' =
+      functionField.mk (hf.mul hf') (hg.mul hg')
+        (Ideal.IsPrime.mul_notMem inferInstance hgI hgI') := by
+  rw [HomogeneousLocalization.ext_iff_val, HomogeneousLocalization.val_mul, functionField.mk_def,
+    functionField.mk_def, functionField.mk_def, HomogeneousLocalization.val_mk,
+    HomogeneousLocalization.val_mk, HomogeneousLocalization.val_mk, Localization.mk_mul]
+  rfl
+
+/-- In `k(V)`, `f / g + f' / g = (f + f') / g`. -/
+theorem functionField.mk_add_mk_self {d : ℕ} {f f' g : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hf' : f'.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgI : g ∉ I) :
+    functionField.mk hf hg hgI + functionField.mk hf' hg hgI =
+      functionField.mk (hf.add hf') hg hgI := by
+  rw [HomogeneousLocalization.ext_iff_val, HomogeneousLocalization.val_add, functionField.mk_def,
+    functionField.mk_def, functionField.mk_def, HomogeneousLocalization.val_mk,
+    HomogeneousLocalization.val_mk, HomogeneousLocalization.val_mk, Localization.add_mk_self]
+  rfl
 
 /-- A constant `a ∈ k` is the fraction `a / 1` in `k(V)`. -/
 theorem functionField.algebraMap_eq_mk (a : k) (h1 : (1 : MvPolynomial (Fin (n + 1)) k) ∉ I) :
