@@ -8,6 +8,7 @@ module
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionNumber.Properties
 public import PlaneCurves.RingTheory.MvPolynomial.Homogeneous
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 
 /-!
 # Corollaries of Bézout's theorem
@@ -101,6 +102,23 @@ theorem not_isRelPrime_of_mul_lt_card (hF : F.IsHomogeneous m) (hG : G.IsHomogen
     {s : Finset (ℙ k (Fin 3 → k))} (hs : ∀ P ∈ s, eval P.rep F = 0 ∧ eval P.rep G = 0)
     (h : m * n < s.card) : ¬IsRelPrime F G :=
   fun hFG ↦ (card_le_mul_of_isRelPrime hF hG hFG hs).not_gt h
+
+/-- A line meets a conic that it is not a component of in at most two points: if `P ≠ Q` and
+`S` lie on the line `L` and on the conic `G`, and `L` does not divide `G`, then `S` is `P` or
+`Q`. -/
+theorem eq_or_eq_of_isHomogeneous_one_of_not_dvd {L : MvPolynomial (Fin 3) k}
+    (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0) (hG : G.IsHomogeneous 2) (hLG : ¬L ∣ G)
+    {P Q S : ℙ k (Fin 3 → k)} (hPQ : P ≠ Q) (hP : eval P.rep L = 0 ∧ eval P.rep G = 0)
+    (hQ : eval Q.rep L = 0 ∧ eval Q.rep G = 0) (hS : eval S.rep L = 0 ∧ eval S.rep G = 0) :
+    S = P ∨ S = Q := by
+  classical
+  by_contra! h
+  have := card_le_mul_of_isRelPrime hL hG
+    ((irreducible_of_isHomogeneous_one hL hL0).isRelPrime_iff_not_dvd.2 hLG)
+    (s := {P, Q, S}) (by simp [hP, hQ, hS])
+  rw [Finset.card_insert_of_notMem (by simp [hPQ, Ne.symm h.1]),
+    Finset.card_pair (Ne.symm h.2)] at this
+  omega
 
 /-- If the common zeros of forms `F` and `G` of degrees `m` and `n` are exactly the `mn` points
 of `s`, then `I(P, F ∩ G) = 1` at each of them. -/
