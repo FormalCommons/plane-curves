@@ -106,6 +106,17 @@ theorem fundamentalPoint_inj {i j : Fin 3} :
     fundamentalPoint (k := k) i = fundamentalPoint j ↔ i = j :=
   fundamentalPoint_injective.eq_iff
 
+/-- The class of `v` is the fundamental point `[eᵢ]` exactly when every other coordinate of `v`
+is zero. -/
+theorem mk_eq_fundamentalPoint_iff (v : Fin 3 → k) (hv : v ≠ 0) (i : Fin 3) :
+    mk k v hv = fundamentalPoint i ↔ ∀ j, j ≠ i → v j = 0 := by
+  rw [fundamentalPoint_def, mk_eq_mk_iff']
+  refine ⟨fun ⟨a, ha⟩ j hj ↦ by simp [← ha, hj], fun h ↦ ⟨v i, ?_⟩⟩
+  funext j
+  by_cases hj : j = i
+  · simp [hj]
+  · simp [hj, h j hj]
+
 /-- The fundamental point `[eᵢ]` lies on the exceptional line `V(Xⱼ)` exactly when `i ≠ j`. -/
 @[simp]
 theorem fundamentalPoint_mem_zeroLocus_X_iff {i j : Fin 3} :
