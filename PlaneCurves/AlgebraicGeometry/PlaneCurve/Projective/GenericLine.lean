@@ -47,6 +47,8 @@ Problem 5.26).
 * `infinite_setOf_eval_sum_C_mul_X_eq_zero`: infinitely many lines pass through a point.
 * `ncard_zeroLocus_pair_diff_add`, `ncard_zeroLocus_pair_diff`: counting the points of
   `V(F) ∩ V(L)` other than `P`.
+* `ncard_zeroLocus_pair_diff_lt_of_isTangentAt`: a line through `P` tangent to `F` at another
+  point meets `F` in fewer than `deg F - m_P(F)` points other than `P`.
 * `eq_of_mem_zeroLocus_pair_of_intersectionNumber_eq`: if `I(P, F ∩ L) = deg F`, then `P` is
   the only common point of `F` and `L`.
 * `eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_zero`: if `D_P F ≠ 0`,
@@ -213,6 +215,51 @@ theorem ncard_zeroLocus_pair_diff [IsAlgClosed k] (hF : F.IsHomogeneous d)
     (h1 : ∀ Q ∈ zeroLocus {F, L}, Q ≠ P → intersectionNumber Q F L = 1) :
     (zeroLocus {F, L} \ {P}).ncard = d - r := by
   have := ncard_zeroLocus_pair_diff_add hF hL hL0 hLF hP h1
+  omega
+
+/-- **A line tangent at another point.** Let `k` be algebraically closed, `F` a form of degree
+`d`, `P` a point with `r = m_P(F)`, and `L` a line through `P` that is not a component of `F`. If
+`L` is tangent to `F` at a point `Q ≠ P`, then `L` meets `F` in fewer than `d - r` points other
+than `P`. -/
+theorem ncard_zeroLocus_pair_diff_lt_of_isTangentAt [IsAlgClosed k] (hF : F.IsHomogeneous d)
+    (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0) (hLF : ¬L ∣ F) {r : ℕ} (hr : mult F P = r)
+    (hLP : eval P.rep L = 0) (hQP : Q ≠ P) (hQ : IsTangentAt F Q L) :
+    (zeroLocus {F, L} \ {P}).ncard < d - r := by
+  classical
+  have hF0 : F ≠ 0 := fun h ↦ hLF (h ▸ dvd_zero L)
+  have hLQ : eval Q.rep L = 0 := (isTangentAt_def.1 hQ).2.2.1
+  have hrel : IsRelPrime F L :=
+    ((irreducible_of_isHomogeneous_one hL hL0).isRelPrime_iff_not_dvd.2 hLF).symm
+  have hs : (zeroLocus {F, L} \ {P} : Set (ℙ k (Fin 3 → k))).Finite :=
+    (finite_zeroLocus_pair_of_isRelPrime hF hL hrel).sdiff
+  have hmem : ∀ Q, Q ∈ zeroLocus {F, L} ↔ eval Q.rep F = 0 ∧ eval Q.rep L = 0 := fun Q ↦ by
+    rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨d, hF⟩, ⟨1, hL⟩])]
+    simp
+  have hQs : Q ∈ hs.toFinset := by
+    simp [hmem, hQ.eval_rep_eq_zero, hLQ, hQP]
+  have hQ2 : 2 ≤ intersectionNumber Q F L := by
+    have h1 : 1 ≤ mult F Q :=
+      Order.one_le_iff_pos.2 (mult_pos_iff_eval_rep.2 hQ.eval_rep_eq_zero)
+    have h2 := (isTangentAt_iff_mult_lt_intersectionNumber hF hF0 hL hL0 hLQ).1 hQ
+    simpa [one_add_one_eq_two] using Order.add_one_le_of_lt (h1.trans_lt h2)
+  have hP : (r : ℕ∞) ≤ intersectionNumber P F L := by
+    simpa [mult_eq_one_of_isHomogeneous_one hL hL0 hLP, hr] using
+      mul_mult_le_intersectionNumber (P := P) hF hL
+  have hrest : ((hs.toFinset.erase Q).card : ℕ∞) ≤
+      ∑ x ∈ hs.toFinset.erase Q, intersectionNumber x F L := by
+    rw [← nsmul_one, ← Finset.sum_const]
+    refine Finset.sum_le_sum fun x hx ↦ ?_
+    simp only [Finset.mem_erase, Set.Finite.mem_toFinset, Set.mem_sdiff, hmem] at hx
+    exact one_le_intersectionNumber hF hL hx.2.1.1 hx.2.1.2
+  have hle := sum_intersectionNumber_le_mul hF hL hrel (insert P hs.toFinset)
+  rw [Finset.sum_insert (by simp), ← Finset.add_sum_erase _ _ hQs, mul_one] at hle
+  rw [Finset.card_erase_of_mem hQs] at hrest
+  have hpos : 0 < hs.toFinset.card := Finset.card_pos.2 ⟨Q, hQs⟩
+  have h : ((r + (2 + (hs.toFinset.card - 1)) : ℕ) : ℕ∞) ≤ d := by
+    push_cast
+    exact (add_le_add hP (add_le_add hQ2 hrest)).trans hle
+  rw [Set.ncard_eq_toFinset_card _ hs]
+  have := Nat.cast_le.1 h
   omega
 
 /-! ### Generic lines through a point -/
