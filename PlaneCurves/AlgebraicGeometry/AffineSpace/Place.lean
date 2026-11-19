@@ -22,6 +22,8 @@ over `P`. This file shows that polynomial functions take their values at `P` at 
 * `PlaneCurves.AffineSpace.valuation_algebraMap_mk_sub_lt_one`: for `k` algebraically closed and
   `k(V)` a function field, every polynomial `g` agrees with `g(P)` to first order at `Q`:
   `v_Q(g - g(P)) < 1`.
+* `PlaneCurves.AffineSpace.valuation_algebraMap_mk_eq_one_iff`: then `g` has valuation one at
+  `Q` exactly when `g(P) ≠ 0`.
 -/
 
 public section
@@ -65,6 +67,16 @@ theorem valuation_algebraMap_mk_sub_lt_one (hK : IsFunctionField k (functionFiel
     rfl
   rw [map_sub, map_sub, hC] at h1
   exact absurd hc (by rw [h1]; exact lt_irrefl 1)
+
+/-- If the valuation ring of a place `Q` of the function field `k(V)` contains `𝒪_P(V)`, a
+polynomial `g` has valuation one at `Q` exactly when `g(P) ≠ 0`. -/
+theorem valuation_algebraMap_mk_eq_one_iff (hK : IsFunctionField k (functionField I))
+    (hQ : (localSubring P hI).toSubring ≤ Q.integers.toSubring) {g : MvPolynomial σ k} :
+    Q.valuation (algebraMap _ _ (Ideal.Quotient.mk I g)) = 1 ↔ eval P g ≠ 0 := by
+  refine ⟨fun h1 h0 ↦ ?_, valuation_algebraMap_mk_eq_one hQ⟩
+  have h := valuation_algebraMap_mk_sub_lt_one hK hQ g
+  rw [h0, map_zero, sub_zero, h1] at h
+  exact lt_irrefl 1 h
 
 end PlaneCurves.AffineSpace
 

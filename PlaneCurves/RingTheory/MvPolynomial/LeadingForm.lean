@@ -10,6 +10,7 @@ public import Mathlib.Algebra.MvPolynomial.Nilpotent
 public import TauCeti.RingTheory.MvPolynomial.OrderAt
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 import Mathlib.Algebra.MvPolynomial.CommRing
+import TauCeti.RingTheory.MvPolynomial.PoincareLemma
 import Mathlib.Tactic.LinearCombination
 
 /-!
@@ -43,7 +44,10 @@ tangent lines at the point.
   one factor has order one and the other order zero.
 * `MvPolynomial.leadingFormAt_rename`: leading forms commute with injective renamings.
 * `MvPolynomial.orderAt_sub_one_le_orderAt_pderiv`: a partial derivative lowers the order by
-  at most one, in every characteristic (Problem 5.6 of Fulton, in affine space).
+  at most one, in every characteristic (Problem 5.6 of Fulton, in affine space);
+  `MvPolynomial.orderAt_pderiv_of_pderiv_leadingFormAt_ne_zero`,
+  `MvPolynomial.leadingFormAt_pderiv_of_ne_zero`: it lowers it by exactly one, with leading form
+  the partial derivative of the leading form, when that derivative does not vanish.
 * `MvPolynomial.orderAt_add_of_ne`, `MvPolynomial.orderAt_add_of_lt`,
   `MvPolynomial.orderAt_add_of_gt`: if `p` and `q` have different orders at `a`, `p + q` has
   the smaller one.
@@ -288,6 +292,36 @@ theorem orderAt_sub_one_le_orderAt_pderiv (p : MvPolynomial σ R) (a : σ → R)
   rcases eq_or_ne (p.orderAt a) 0 with h | h
   · simp [h]
   exact le_orderAt_pderiv (by rw [tsub_add_cancel_of_le (Order.one_le_iff_ne_zero.2 h)]) i
+
+/-- The order of `p` at `a` is at least one when the partial derivative of its leading form
+there does not vanish: the leading form is then not a constant. -/
+private theorem one_le_toNat_orderAt_of_pderiv_leadingFormAt_ne_zero {i : σ}
+    (h : pderiv i (p.leadingFormAt a) ≠ 0) : 1 ≤ (p.orderAt a).toNat := by
+  refine Nat.one_le_iff_ne_zero.2 fun h0 ↦ h ?_
+  rw [leadingFormAt_def, h0, homogeneousComponent_zero, pderiv_C]
+
+/-- **The order of a partial derivative.** If the partial derivative `∂/∂Xᵢ` of the leading form
+of `p` at `a` does not vanish, then `∂p/∂Xᵢ` has order exactly one less than `p` at `a`. -/
+theorem orderAt_pderiv_of_pderiv_leadingFormAt_ne_zero {i : σ}
+    (h : pderiv i (p.leadingFormAt a) ≠ 0) :
+    (pderiv i p).orderAt a = ((p.orderAt a).toNat - 1 : ℕ) := by
+  have h1 := one_le_toNat_orderAt_of_pderiv_leadingFormAt_ne_zero h
+  have hp : p ≠ 0 := by rintro rfl; simp at h
+  have hn : p.orderAt a = (p.orderAt a).toNat :=
+    (ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hp)).symm
+  refine orderAt_eq_of_homogeneousComponent_ne_zero ?_ ?_
+  · refine le_orderAt_pderiv ?_ i
+    conv_rhs => rw [hn]
+    exact_mod_cast (Nat.sub_add_cancel h1).le
+  · rwa [← pderiv_taylor, homogeneousComponent_pderiv, Nat.sub_add_cancel h1]
+
+/-- **The leading form of a partial derivative.** If the partial derivative `∂/∂Xᵢ` of the
+leading form of `p` at `a` does not vanish, it is the leading form of `∂p/∂Xᵢ` at `a`. -/
+theorem leadingFormAt_pderiv_of_ne_zero {i : σ} (h : pderiv i (p.leadingFormAt a) ≠ 0) :
+    (pderiv i p).leadingFormAt a = pderiv i (p.leadingFormAt a) := by
+  rw [leadingFormAt_def, orderAt_pderiv_of_pderiv_leadingFormAt_ne_zero h, ENat.toNat_natCast,
+    ← pderiv_taylor, homogeneousComponent_pderiv,
+    Nat.sub_add_cancel (one_le_toNat_orderAt_of_pderiv_leadingFormAt_ne_zero h), leadingFormAt_def]
 
 /-- If `p` and `q` have different orders at `a`, the order of `p + q` there is the smaller
 one. -/
