@@ -50,7 +50,7 @@ tangent lines at the point.
   the partial derivative of the leading form, when that derivative does not vanish.
 * `MvPolynomial.orderAt_add_of_ne`, `MvPolynomial.orderAt_add_of_lt`,
   `MvPolynomial.orderAt_add_of_gt`: if `p` and `q` have different orders at `a`, `p + q` has
-  the smaller one.
+  the smaller one; `MvPolynomial.leadingFormAt_add_of_lt`: and the leading form of that summand.
 * `MvPolynomial.IsHomogeneous.orderAt_zero`: a nonzero form of degree `d` has order `d` at the
   origin.
 * `MvPolynomial.IsHomogeneous.leadingFormAt_zero`: a form is its own leading form at the origin.
@@ -339,6 +339,13 @@ theorem orderAt_add_of_lt (h : p.orderAt a < q.orderAt a) :
 theorem orderAt_add_of_gt (h : q.orderAt a < p.orderAt a) :
     (p + q).orderAt a = q.orderAt a := by
   rw [orderAt_add_of_ne h.ne', min_eq_right h.le]
+
+/-- If `p` has smaller order at `a` than `q`, then `p + q` has the leading form of `p` there. -/
+theorem leadingFormAt_add_of_lt (h : p.orderAt a < q.orderAt a) :
+    (p + q).leadingFormAt a = p.leadingFormAt a := by
+  have hp : p.orderAt a ≠ ⊤ := h.ne_top
+  rw [leadingFormAt_def, leadingFormAt_def, orderAt_add_of_lt h, map_add, map_add,
+    homogeneousComponent_taylor_eq_zero_of_lt (p := q) (by rwa [ENat.natCast_toNat hp]), add_zero]
 
 /-- A form of degree `d` has order at least `d` at the origin. -/
 theorem IsHomogeneous.natCast_le_orderAt_zero {d : ℕ} (hp : p.IsHomogeneous d) :
