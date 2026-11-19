@@ -10,6 +10,7 @@ public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Hypersurface
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Factorization
+public import PlaneCurves.RingTheory.MvPolynomial.Homogeneous
 public import PlaneCurves.RingTheory.MvPolynomial.PDeriv
 
 /-!
@@ -20,7 +21,8 @@ Let `F` and `G` be forms in `k[X, Y, Z]`.
 * If `F` and `G` are relatively prime (no common component), then `V(F) ∩ V(G) ⊆ ℙ²` is finite
   (Fulton, Problem 5.7), over any field. In each standard affine chart the dehomogenizations of
   `F` and `G` are relatively prime (`MvPolynomial.isRelPrime_dehomogenize`), so they have
-  finitely many common zeros (§1.6, Proposition 2).
+  finitely many common zeros (§1.6, Proposition 2). Over an algebraically closed field the
+  converse holds: a common component has infinitely many zeros.
 * Over a perfect field, an irreducible form has a nonzero partial derivative, which it does not
   divide, and so only finitely many multiple points (Problem 5.8).
 * Over an algebraically closed field, two curves of positive degree always meet: this is the
@@ -31,6 +33,8 @@ Let `F` and `G` be forms in `k[X, Y, Z]`.
 
 * `PlaneCurves.Projective.finite_zeroLocus_pair_of_isRelPrime`: `V(F, G)` is finite for
   relatively prime forms `F`, `G`.
+* `PlaneCurves.Projective.isRelPrime_iff_finite_zeroLocus_pair`: over an algebraically closed
+  field, `F` and `G` are relatively prime iff `V(F, G)` is finite.
 * `PlaneCurves.Projective.finite_setOf_isMultiplePoint_of_irreducible`: an irreducible form over
   a perfect field has finitely many multiple points.
 * `PlaneCurves.Projective.finite_zeroLocus_pair_spec`: the three statements together.
@@ -70,6 +74,40 @@ theorem finite_zeroLocus_pair_of_isRelPrime (hF : F.IsHomogeneous m) (hG : G.IsH
   intro p hp
   obtain ⟨a, b, rfl⟩ := Ideal.mem_span_pair.1 hp
   simp [hP F (by simp), hP G (by simp)]
+
+/-- **The converse of Problem 5.7.** Over an algebraically closed field, forms `F`, `G` with only
+finitely many common zeros in `ℙ²` are relatively prime: a common factor that is not a unit is a
+form of positive degree (or `F = G = 0`), with infinitely many zeros. -/
+theorem isRelPrime_of_finite_zeroLocus_pair [IsAlgClosed k] (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous n) (h : (zeroLocus ({F, G} : Set (MvPolynomial (Fin 3) k))).Finite) :
+    IsRelPrime F G := by
+  intro H hHF hHG
+  by_contra hH
+  -- a form of positive degree dividing `F` and `G`
+  obtain ⟨H', e, he, hH'e, hH'F, hH'G⟩ :
+      ∃ H' : MvPolynomial (Fin 3) k, ∃ e ≠ 0, H'.IsHomogeneous e ∧ H' ∣ F ∧ H' ∣ G := by
+    by_cases hF0 : F = 0
+    · by_cases hG0 : G = 0
+      · exact ⟨X 0, 1, one_ne_zero, isHomogeneous_X k 0, by simp [hF0], by simp [hG0]⟩
+      · obtain ⟨e, he, hHe⟩ := hG.exists_isHomogeneous_of_dvd hG0 hHG hH
+        exact ⟨H, e, he, hHe, hHF, hHG⟩
+    · obtain ⟨e, he, hHe⟩ := hF.exists_isHomogeneous_of_dvd hF0 hHF hH
+      exact ⟨H, e, he, hHe, hHF, hHG⟩
+  refine zeroLocus_singleton_infinite le_rfl hH'e he (h.subset fun P hP ↦ ?_)
+  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨e, hH'e⟩)] at hP
+  rw [mem_zeroLocus_iff_eval_rep (forall_isHomogeneous_pair hF hG)]
+  have hP0 : eval P.rep H' = 0 := hP H' rfl
+  simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
+  rintro f (rfl | rfl)
+  exacts [zero_dvd_iff.1 (hP0 ▸ map_dvd (eval P.rep) hH'F),
+    zero_dvd_iff.1 (hP0 ▸ map_dvd (eval P.rep) hH'G)]
+
+/-- **Problem 5.7 and its converse.** Over an algebraically closed field, forms `F`, `G` are
+relatively prime exactly when they have only finitely many common zeros in `ℙ²`. -/
+theorem isRelPrime_iff_finite_zeroLocus_pair [IsAlgClosed k] (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous n) :
+    IsRelPrime F G ↔ (zeroLocus ({F, G} : Set (MvPolynomial (Fin 3) k))).Finite :=
+  ⟨finite_zeroLocus_pair_of_isRelPrime hF hG, isRelPrime_of_finite_zeroLocus_pair hF hG⟩
 
 /-- **Problem 5.8.** Over a perfect field, an irreducible form `F` has only finitely many
 multiple points: they are common zeros of `F` and of a nonzero partial derivative of `F`, which

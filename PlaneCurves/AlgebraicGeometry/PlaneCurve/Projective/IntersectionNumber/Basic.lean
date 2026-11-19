@@ -119,6 +119,12 @@ theorem intersectionNumber_eq_zero_iff (hF : F.IsHomogeneous d) (hG : G.IsHomoge
     eval_affineChart_dehomogenize_eq_zero_iff hP hF,
     eval_affineChart_dehomogenize_eq_zero_iff hP hG]
 
+/-- At a common zero of forms `F` and `G`, `I(P, F ∩ G) ≥ 1`. -/
+theorem one_le_intersectionNumber (hF : F.IsHomogeneous d) (hG : G.IsHomogeneous e)
+    (hPF : eval P.rep F = 0) (hPG : eval P.rep G = 0) : 1 ≤ intersectionNumber P F G := by
+  rw [Order.one_le_iff_ne_zero, Ne, intersectionNumber_eq_zero_iff hF hG]
+  simp [hPF, hPG]
+
 /-- **Property (2)**, second part: components not through `P` do not count,
 `I(P, F U ∩ G) = I(P, F ∩ G)` for a form `U` with `U(P) ≠ 0`. -/
 theorem intersectionNumber_mul_left_of_eval_ne_zero {U : MvPolynomial (Fin 3) k} {m : ℕ}
