@@ -195,6 +195,7 @@ PlaneCurves/
 │       ├── PlaneModel.lean              K ≅ k(F) for an irreducible plane F (R6)
 │       ├── RationalMap.lean             domination, rational maps of curves (R7)
 │       ├── Place/
+│       │   ├── Basic.lean               valuation ring 𝒪_Q of a place: isEquiv, ≠ K (V2)
 │       │   └── AddValuation.lean        TauCeti.Place.addValuation : K → WithTop ℤ (V1)
 │       ├── HolomorphyRing/
 │       │   └── Length.lean              ℓ(𝒪_S/g) = Σ ord_Q g (V7)
