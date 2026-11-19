@@ -285,12 +285,6 @@ theorem eval_affineChart_two_X_mul_X_ne_zero (hP : P ∉ fundamentalTriangle) :
   have h : ∀ i, v i ≠ 0 := by simpa [mk_mem_fundamentalTriangle_iff] using hP
   simp [affineChart_mk, h, Fin.succAbove]
 
-theorem mem_affineOpen_two_of_notMem_fundamentalTriangle (hP : P ∉ fundamentalTriangle) :
-    P ∈ affineOpen 2 := by
-  rw [mem_affineOpen_iff]
-  intro h
-  exact hP (mem_fundamentalTriangle_iff.2 ⟨2, h⟩)
-
 /-- In the chart `z = 1`, the point map is the inversion `(a, b) ↦ (a⁻¹, b⁻¹)` off the fundamental
 triangle: `[a : b : 1] ↦ [b : a : ab] = [a⁻¹ : b⁻¹ : 1]`. -/
 theorem affineChart_quadraticMap (hP : P ∉ fundamentalTriangle) (i : Fin 2) :
@@ -348,9 +342,9 @@ theorem localRingEquivQuadraticMap_mk (hF : F.IsHomogeneous n) (hP : P ∉ funda
   quotientEquivOfAway_mk _ _ _ _ _ _ a
 
 private theorem eval_dehomogenize_eq_zero (hF : F.IsHomogeneous n) (hP : P ∈ affineOpen 2)
-    (hPF : P ∈ zeroLocus {F}) : eval (affineChart 2 P) (dehomogenize 2 F) = 0 := by
-  rw [← orderAt_pos_iff, ← mult_eq_orderAt_dehomogenize hF hP]
-  exact (mult_pos_iff hF).2 hPF
+    (hPF : P ∈ zeroLocus {F}) : eval (affineChart 2 P) (dehomogenize 2 F) = 0 :=
+  (eval_affineChart_dehomogenize_eq_zero_iff hP hF).2 <| by
+    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)] at hPF; exact hPF F rfl
 
 /-- **Fulton's (7)(2)(a), multiplicities.** Off the fundamental triangle, the quadratic
 transformation preserves multiplicities: `m_{Q(P)}(F') = m_P(F)` for every form `F`. -/
@@ -361,12 +355,12 @@ theorem mult_properTransform_quadraticMap (hF : F.IsHomogeneous n)
   by_cases hPF : P ∈ zeroLocus {F}
   · have hPF' := (quadraticMap_mem_zeroLocus_properTransform_iff hF hP).2 hPF
     rw [mult_eq_orderAt_dehomogenize hF.properTransform
-        (mem_affineOpen_two_of_notMem_fundamentalTriangle hP'),
-      mult_eq_orderAt_dehomogenize hF (mem_affineOpen_two_of_notMem_fundamentalTriangle hP)]
+        (mem_affineOpen_of_notMem_fundamentalTriangle hP' 2),
+      mult_eq_orderAt_dehomogenize hF (mem_affineOpen_of_notMem_fundamentalTriangle hP 2)]
     exact (Affine.orderAt_eq_of_ringEquiv
-      (eval_dehomogenize_eq_zero hF (mem_affineOpen_two_of_notMem_fundamentalTriangle hP) hPF)
+      (eval_dehomogenize_eq_zero hF (mem_affineOpen_of_notMem_fundamentalTriangle hP 2) hPF)
       (eval_dehomogenize_eq_zero hF.properTransform
-        (mem_affineOpen_two_of_notMem_fundamentalTriangle hP') hPF')
+        (mem_affineOpen_of_notMem_fundamentalTriangle hP' 2) hPF')
       (localRingEquivQuadraticMap hF hP).toRingEquiv).symm
   · rw [(mult_eq_zero_iff hF).2 hPF, mult_eq_zero_iff hF.properTransform,
       quadraticMap_mem_zeroLocus_properTransform_iff hF hP]
@@ -383,12 +377,12 @@ theorem isOrdinaryMultiplePoint_properTransform_quadraticMap_iff [IsAlgClosed k]
   by_cases hPF : P ∈ zeroLocus {F}
   · have hPF' := (quadraticMap_mem_zeroLocus_properTransform_iff hF hP).2 hPF
     rw [isOrdinaryMultiplePoint_iff_affine hF.properTransform
-        (mem_affineOpen_two_of_notMem_fundamentalTriangle hP'),
-      isOrdinaryMultiplePoint_iff_affine hF (mem_affineOpen_two_of_notMem_fundamentalTriangle hP)]
+        (mem_affineOpen_of_notMem_fundamentalTriangle hP' 2),
+      isOrdinaryMultiplePoint_iff_affine hF (mem_affineOpen_of_notMem_fundamentalTriangle hP 2)]
     exact (Affine.isOrdinaryMultiplePoint_iff_of_ringEquiv
-      (eval_dehomogenize_eq_zero hF (mem_affineOpen_two_of_notMem_fundamentalTriangle hP) hPF)
+      (eval_dehomogenize_eq_zero hF (mem_affineOpen_of_notMem_fundamentalTriangle hP 2) hPF)
       (eval_dehomogenize_eq_zero hF.properTransform
-        (mem_affineOpen_two_of_notMem_fundamentalTriangle hP') hPF')
+        (mem_affineOpen_of_notMem_fundamentalTriangle hP' 2) hPF')
       (localRingEquivQuadraticMap hF hP).toRingEquiv).symm
   · have h0 : mult F P = 0 := (mult_eq_zero_iff hF).2 hPF
     have h0' : mult (properTransform F) (quadraticMap P) = 0 := by
