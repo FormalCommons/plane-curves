@@ -220,14 +220,6 @@ namespace IsExcellentPosition
 
 variable {Q : ℙ k (Fin 3 → k)}
 
-/-- Off the fundamental triangle, `m_Q(F') = m_{Q(Q)}(F)`, for `Q` the quadratic map. -/
-theorem mult_properTransform_of_notMem_fundamentalTriangle (hF : F.IsHomogeneous n)
-    (hQ : Q ∉ fundamentalTriangle) :
-    mult (properTransform F) Q = mult F (quadraticMap Q) := by
-  conv_lhs => rw [← quadraticMap_quadraticMap hQ]
-  exact mult_properTransform_quadraticMap hF
-    (bijOn_quadraticMap_compl_fundamentalTriangle.mapsTo hQ)
-
 /-- **The multiple points of the proper transform** (Fulton, §7.4, Step (7)). For a curve in
 excellent position with proper transform `F'`, a multiple point of `F'` is either off the
 fundamental triangle, the image under the quadratic map of a multiple point of `F`, or a
@@ -255,13 +247,6 @@ theorem isMultiplePoint_properTransform_iff (h : IsExcellentPosition F) (hF : F.
     exacts [hQ, hQ]
 
 /-! ### The virtual genus of the proper transform -/
-
-/-- A finsum with finite support splits over a set and its complement. -/
-private theorem finsum_eq_finsum_mem_add_finsum_mem_compl {α : Type*} {f : α → ℤ}
-    (hf : (Function.support f).Finite) (s : Set α) :
-    ∑ᶠ a, f a = ∑ᶠ a ∈ s, f a + ∑ᶠ a ∈ sᶜ, f a := by
-  rw [← finsum_mem_univ, ← Set.union_compl_self s,
-    finsum_mem_union' disjoint_compl_right (hf.inter_of_right _) (hf.inter_of_right _)]
 
 /-- The multiple points of `F` on the fundamental triangle: only `[0 : 0 : 1]`. -/
 private theorem finsum_mem_fundamentalTriangle (h : IsExcellentPosition F)
@@ -337,9 +322,13 @@ theorem virtualGenus_properTransform [IsAlgClosed k] (h : IsExcellentPosition F)
   rw [← support_choose_two_toNat_mult h.ne_zero] at hfin
   rw [← support_choose_two_toNat_mult hirr'.ne_zero] at hfin'
   rw [virtualGenus_def, virtualGenus_def, hF.totalDegree h.ne_zero,
-    hF'.totalDegree hirr'.ne_zero, finsum_eq_finsum_mem_add_finsum_mem_compl hfin
-      fundamentalTriangle, finsum_eq_finsum_mem_add_finsum_mem_compl hfin' fundamentalTriangle,
-    h.finsum_mem_fundamentalTriangle hF, h.finsum_mem_fundamentalTriangle_properTransform hF]
+    hF'.totalDegree hirr'.ne_zero,
+    ← finsum_mem_univ fun Q ↦ ((mult F Q).toNat.choose 2 : ℤ),
+    ← finsum_mem_univ fun Q ↦ ((mult (properTransform F) Q).toNat.choose 2 : ℤ),
+    ← finsum_mem_add_sdiff' (Set.subset_univ fundamentalTriangle) (by simpa using hfin'),
+    ← finsum_mem_add_sdiff' (Set.subset_univ fundamentalTriangle) (by simpa using hfin),
+    ← Set.compl_eq_univ_sdiff, h.finsum_mem_fundamentalTriangle hF,
+    h.finsum_mem_fundamentalTriangle_properTransform hF]
   have hU := finsum_mem_eq_of_bijOn quadraticMap bijOn_quadraticMap_compl_fundamentalTriangle
     (f := fun Q ↦ ((mult F Q).toNat.choose 2 : ℤ))
     (g := fun Q ↦ ((mult (properTransform F) Q).toNat.choose 2 : ℤ))
@@ -464,8 +453,8 @@ theorem quadraticTransform_centre_singularities [IsAlgClosed k] (hF : F.IsHomoge
   refine ⟨fun P hP ↦ ?_, fun _ P ↦ exists_isExcellentPosition_of_charZero hF hirr P,
     fun h ↦ ⟨h.isHomogeneous_properTransform hF,
       fun Q ↦ h.isMultiplePoint_properTransform_iff hF,
-      fun Q hQ ↦ ⟨IsExcellentPosition.mult_properTransform_of_notMem_fundamentalTriangle hF hQ,
-        ?_⟩,
+      fun Q hQ ↦ ⟨mult_properTransform_of_notMem_fundamentalTriangle hF hQ,
+        isOrdinaryMultiplePoint_properTransform_iff_of_notMem_fundamentalTriangle hF hQ⟩,
       h.mult_properTransform_fundamentalPoint_two hF,
       fun i hi ↦ h.mult_properTransform_fundamentalPoint hF hi,
       fun i ↦ h.isOrdinaryMultiplePoint_properTransform_fundamentalPoint hF,
@@ -478,10 +467,6 @@ theorem quadraticTransform_centre_singularities [IsAlgClosed k] (hF : F.IsHomoge
     fun P G hG hP ↦ hG.virtualGenus_eq hF hirr hP⟩
   · obtain ⟨M, hM, hTP, hE⟩ := exists_isExcellentPosition hF hirr hP
     exact ⟨M, hM, hTP, hE, isQuadraticTransformAt_def.2 ⟨M, hM, hTP, hE, rfl⟩⟩
-  · have hQ' := bijOn_quadraticMap_compl_fundamentalTriangle.mapsTo hQ
-    conv_lhs => rw [← quadraticMap_quadraticMap hQ]
-    exact isOrdinaryMultiplePoint_properTransform_quadraticMap_iff hF hQ'
-
 end PlaneCurves.Projective
 
 end
