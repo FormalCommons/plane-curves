@@ -66,6 +66,10 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
 * `exists_algebraMap_notMem_range_toFractionRing`: `Γ_h(V) ⊄ k(V)` inside the fraction field of
   `Γ_h(V)`, when `V` is nonempty.
 * `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`.
+* `functionField.mk_eq_zero_iff`, `functionField.mk_self`, `functionField.mk_mul_mk_swap`:
+  `f / g = 0` iff `f ∈ I`, `f / f = 1` and `(f / g) (g / f) = 1`.
+* `functionField.aeval_mk_X`: a form `f` of degree `m` evaluated at the fractions `Xⱼ / Xᵢ` is
+  `f / Xᵢᵐ`, so that `f / g = f(X / Xᵢ) / g(X / Xᵢ)` (`functionField.mk_eq_aeval_div_aeval`).
 * `poleSet_eq_inter`: the pole set of `z` is `V(I) ∩ V(J(z))`, and
   `poleSet_eq_zeroLocus_denominatorIdeal`: it is `V(J(z))`. So the pole set is algebraic
   (`exists_poleSet_eq_zeroLocus`).
@@ -636,6 +640,89 @@ theorem functionField.mk_eq_mk_iff {d' : ℕ} {f g f' g' : MvPolynomial (Fin (n 
     mul_comm _ (Ideal.Quotient.mk _ g'),
     mul_comm _ (Ideal.Quotient.mk _ g)]
   refine ⟨fun ⟨c, hc⟩ ↦ mul_left_cancel₀ c.2 hc, fun h ↦ ⟨1, by rw [h]⟩⟩
+
+section Fractions
+
+variable {I}
+
+/-- For a homogeneous prime `I`, a power of a coordinate `Xᵢ ∉ I` is not in `I`. -/
+theorem X_pow_notMem_of_X_notMem {i : Fin (n + 1)} (hi : X i ∉ I) (m : ℕ) : X i ^ m ∉ I :=
+  fun h ↦ hi (HomogeneousIdeal.mem_iff.1
+    (Ideal.IsPrime.mem_of_pow_mem inferInstance m (HomogeneousIdeal.mem_iff.2 h)))
+
+/-- A form `f` of degree `m` evaluated at the fractions `Xⱼ / Xᵢ` of `k(V)` is `f / Xᵢᵐ`. -/
+theorem functionField.aeval_mk_X {i : Fin (n + 1)} (hi : X i ∉ I) {m : ℕ}
+    {f : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous m) :
+    aeval (fun j ↦ functionField.mk (isHomogeneous_X k j) (isHomogeneous_X k i) hi) f =
+      functionField.mk hf (isHomogeneous_X_pow i m) (X_pow_notMem_of_X_notMem hi m) := by
+  set A := MvPolynomial (Fin (n + 1)) k ⧸ I.toIdeal
+  set Loc := Localization.AtPrime (⊥ : Ideal A)
+  set φ : MvPolynomial (Fin (n + 1)) k →+* Loc := (algebraMap A Loc).comp (Ideal.Quotient.mk _)
+  have hXi : Ideal.Quotient.mk I.toIdeal (X i) ∈ (⊥ : Ideal A).primeCompl :=
+    fun h ↦ hi (HomogeneousIdeal.mem_iff.1 (Ideal.Quotient.eq_zero_iff_mem.1 h))
+  set u : Loc := Localization.mk 1 ⟨_, hXi⟩
+  have hC : (algebraMap (functionField I) Loc).comp (algebraMap k (functionField I)) =
+      φ.comp C := by
+    ext a
+    rfl
+  have hX : (algebraMap (functionField I) Loc) ∘
+      (fun j ↦ functionField.mk (isHomogeneous_X k j) (isHomogeneous_X k i) hi) =
+      u • (φ ∘ X) := by
+    funext j
+    rw [Function.comp_apply, HomogeneousLocalization.algebraMap_apply, functionField.mk_def,
+      HomogeneousLocalization.val_mk, Pi.smul_apply, smul_eq_mul, Function.comp_apply]
+    simp only [φ, u, RingHom.comp_apply]
+    rw [← Localization.mk_one_eq_algebraMap, Localization.mk_mul, one_mul, mul_one]
+  apply HomogeneousLocalization.val_injective
+  have := hf.map (φ.comp C)
+  change algebraMap (functionField I) Loc _ = _
+  rw [aeval_def, eval₂_comp_left, hC, hX, ← eval_map, this.eval_smul, eval_map,
+    ← eval₂_comp_left, eval₂_eta, functionField.mk_def, HomogeneousLocalization.val_mk]
+  simp only [φ, u, RingHom.comp_apply]
+  rw [← Localization.mk_one_eq_algebraMap, Localization.mk_pow, Localization.mk_mul, one_pow,
+    one_mul, mul_one]
+  rfl
+
+/-- A fraction `f / g` is zero in `k(V)` iff `f ∈ I`. -/
+theorem functionField.mk_eq_zero_iff {d : ℕ} {f g : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgI : g ∉ I) :
+    functionField.mk hf hg hgI = 0 ↔ f ∈ I := by
+  have h0 : (0 : functionField I) = functionField.mk (isHomogeneous_zero _ _ d) hg hgI := by
+    rw [HomogeneousLocalization.ext_iff_val, functionField.mk_def, HomogeneousLocalization.val_mk,
+      HomogeneousLocalization.val_zero]
+    exact (Localization.mk_zero _).symm
+  rw [h0, functionField.mk_eq_mk_iff, zero_mul, sub_zero, ← HomogeneousIdeal.mem_iff,
+    ← HomogeneousIdeal.mem_iff, Ideal.IsPrime.mul_mem_iff_mem_or_mem inferInstance,
+    or_iff_left (by rwa [HomogeneousIdeal.mem_iff])]
+
+/-- In `k(V)`, `(f / g) * (g / f) = 1` for forms `f`, `g` of the same degree not in `I`. -/
+theorem functionField.mk_mul_mk_swap {d : ℕ} {f g : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hfI : f ∉ I) (hgI : g ∉ I) :
+    functionField.mk hf hg hgI * functionField.mk hg hf hfI = 1 := by
+  rw [functionField.mk_def, functionField.mk_def]
+  exact HomogeneousLocalization.mk_mul_mk_swap (𝒜 := I.quotientGrading)
+    ⟨_, I.mk_mem_quotientGrading hf⟩ ⟨_, I.mk_mem_quotientGrading hg⟩
+    (fun h ↦ hfI (Ideal.Quotient.eq_zero_iff_mem.1 (Ideal.mem_bot.1 h)))
+    (fun h ↦ hgI (Ideal.Quotient.eq_zero_iff_mem.1 (Ideal.mem_bot.1 h)))
+
+/-- In `k(V)`, `f / f = 1` for a form `f ∉ I`. -/
+@[simp]
+theorem functionField.mk_self {d : ℕ} {f : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hfI : f ∉ I) : functionField.mk hf hf hfI = 1 := by
+  have h := functionField.mk_div_mk hf hf hf hfI hfI
+  rwa [div_self (functionField.mk_ne_zero hf hf hfI hfI), eq_comm] at h
+
+/-- A fraction `f / g` of forms of degree `m` is the quotient of `f` and `g` evaluated at the
+fractions `Xⱼ / Xᵢ`, for any `Xᵢ ∉ I`. -/
+theorem functionField.mk_eq_aeval_div_aeval {i : Fin (n + 1)} (hi : X i ∉ I) {m : ℕ}
+    {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous m) (hg : g.IsHomogeneous m)
+    (hgI : g ∉ I) :
+    functionField.mk hf hg hgI =
+      aeval (fun j ↦ functionField.mk (isHomogeneous_X k j) (isHomogeneous_X k i) hi) f /
+        aeval (fun j ↦ functionField.mk (isHomogeneous_X k j) (isHomogeneous_X k i) hi) g := by
+  rw [functionField.aeval_mk_X hi hf, functionField.aeval_mk_X hi hg, functionField.mk_div_mk]
+
+end Fractions
 
 variable {I} in
 /-- The denominators of `z ∈ k(V)`: the forms `g ∉ I` such that `z = f / g` for some form `f` of
