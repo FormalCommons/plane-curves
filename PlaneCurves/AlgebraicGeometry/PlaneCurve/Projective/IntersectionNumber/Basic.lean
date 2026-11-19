@@ -7,7 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.LocalRing
-public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ChangeOfCoordinates
+public import PlaneCurves.RingTheory.Length
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Factorization
 
 /-!
@@ -36,7 +36,8 @@ affine ones of §3.3.
 * `intersectionNumber_eq_zero_iff`, property (2): `I(P, F ∩ G) = 0` iff `P ∉ V(F) ∩ V(G)`; and
   `intersectionNumber_mul_left_of_eval_ne_zero`: components not through `P` do not count.
 * `intersectionNumber_linearSubst`, property (3): invariance under projective changes of
-  coordinates. The local equations correspond (`associated_linearSubstEquiv_localEquation`).
+  coordinates; the local equations correspond by `associated_linearSubstEquiv_localEquation`
+  in `PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.LocalRing`.
 * `intersectionNumber_comm`, property (4): symmetry.
 * `intersectionNumber_add_mul`, property (7): `I(P, F ∩ (G + A F)) = I(P, F ∩ G)`.
 
@@ -95,19 +96,6 @@ theorem intersectionNumber_eq_length_localEquation (hF : F.IsHomogeneous d)
       (localRing P ⧸ Ideal.span {localEquation P F, localEquation P G}) := by
   rw [intersectionNumber_def, localIdeal_span_pair hF hG]
 
-/-- An isomorphism of rings carrying `a` and `b` to associates of `a'` and `b'` identifies the
-lengths of `R ⧸ (a, b)` and `S ⧸ (a', b')`. -/
-private theorem length_quotient_span_pair_eq_of_ringEquiv {R S : Type*} [CommRing R]
-    [CommRing S] (φ : R ≃+* S) {a b : R} {a' b' : S} (ha : Associated (φ a) a')
-    (hb : Associated (φ b) b') :
-    Module.length S (S ⧸ Ideal.span {a', b'}) = Module.length R (R ⧸ Ideal.span {a, b}) := by
-  obtain ⟨u, rfl⟩ := ha
-  obtain ⟨v, rfl⟩ := hb
-  rw [Ideal.span_insert, Ideal.span_singleton_mul_right_unit u.isUnit,
-    Ideal.span_singleton_mul_right_unit v.isUnit, ← Ideal.span_insert, ← Set.image_pair,
-    ← Ideal.map_span, Ideal.length_quotient_map_of_surjective _ φ.surjective,
-    (RingHom.injective_iff_ker_eq_bot _).1 φ.injective, sup_bot_eq]
-
 /-- **The intersection number in a chart.** For forms `F` and `G` and every standard chart
 `Xᵢ ≠ 0` containing `P`, `I(P, F ∩ G)` is the affine intersection number of the
 dehomogenizations `F_(i)` and `G_(i)` at the chart point of `P`. -/
@@ -116,8 +104,10 @@ theorem intersectionNumber_eq_affine (hF : F.IsHomogeneous d) (hG : G.IsHomogene
     intersectionNumber P F G =
       Affine.intersectionNumber (affineChart i P) (dehomogenize i F) (dehomogenize i G) := by
   rw [intersectionNumber_eq_length_localEquation hF hG, Affine.intersectionNumber_def]
-  exact (length_quotient_span_pair_eq_of_ringEquiv (localRing.chartEquiv i hP).toRingEquiv
-    (associated_chartEquiv_localEquation hF hP) (associated_chartEquiv_localEquation hG hP)).symm
+  exact (Ideal.length_quotient_span_pair_eq_of_ringEquiv
+    (localRing.chartEquiv i hP).toRingEquiv (associated_chartEquiv_localEquation hF hP)
+    (associated_chartEquiv_localEquation hG hP)).symm
+
 /-! ### Vanishing -/
 
 /-- **Property (2)**: for forms `F` and `G`, `I(P, F ∩ G) = 0` iff `P` does not lie on both
@@ -203,20 +193,6 @@ theorem intersectionNumber_ne_top_of_isRelPrime (hF : F.IsHomogeneous d)
 
 /-! ### Changes of coordinates -/
 
-/-- For `T(Q) = P`, the isomorphism `𝒪_P(ℙⁿ) ≅ 𝒪_Q(ℙⁿ)` sends the local equation `F_*` of a form
-`F` at `P` to the local equation `(F^T)_*` at `Q`, up to a unit. -/
-theorem associated_linearSubstEquiv_localEquation {n : ℕ} {F : MvPolynomial (Fin (n + 1)) k}
-    (hF : F.IsHomogeneous d) (M : GL (Fin (n + 1)) k) {P Q : ℙ k (Fin (n + 1) → k)}
-    (hQP : map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q = P) :
-    Associated (localRing.linearSubstEquiv hQP (localEquation P F))
-      (localEquation Q (linearSubst M.1 F)) := by
-  obtain ⟨j, hj⟩ := exists_mem_affineOpen P
-  have h := (associated_localEquation_mk (P := P) ⟨d, ⟨F, (mem_homogeneousSubmodule _ _).2 hF⟩,
-    ⟨X j ^ d, (mem_homogeneousSubmodule _ _).2 (isHomogeneous_X_pow _ d)⟩,
-      pow_mem (X_mem_primeCompl_pointIdeal hj) d⟩).map (localRing.linearSubstEquiv hQP)
-  rw [localRing.linearSubstEquiv_mk] at h
-  exact h.trans (associated_localEquation_mk _).symm
-
 /-- **Property (3)**: intersection numbers are invariant under projective changes of
 coordinates. For forms `F` and `G`, an invertible matrix `M` with projective change of
 coordinates `T`, and `F^T = F(M X)`, `I(Q, F^T ∩ G^T) = I(T(Q), F ∩ G)`. -/
@@ -227,7 +203,8 @@ theorem intersectionNumber_linearSubst (hF : F.IsHomogeneous d) (hG : G.IsHomoge
         F G := by
   rw [intersectionNumber_eq_length_localEquation (hF.linearSubst _) (hG.linearSubst _),
     intersectionNumber_eq_length_localEquation hF hG]
-  exact length_quotient_span_pair_eq_of_ringEquiv (localRing.linearSubstEquiv rfl).toRingEquiv
+  exact Ideal.length_quotient_span_pair_eq_of_ringEquiv
+    (localRing.linearSubstEquiv rfl).toRingEquiv
     (associated_linearSubstEquiv_localEquation hF M rfl)
     (associated_linearSubstEquiv_localEquation hG M rfl)
 
