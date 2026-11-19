@@ -209,6 +209,17 @@ theorem zeroLocus_union (S T : Set (MvPolynomial (Fin (n + 1)) k)) :
   simp only [mem_zeroLocus_iff, Set.mem_union, Set.mem_inter_iff]
   grind
 
+/-- The zero locus of `insert G S` is the intersection of `V(G)` and `V(S)`. -/
+theorem zeroLocus_insert (G : MvPolynomial (Fin (n + 1)) k)
+    (S : Set (MvPolynomial (Fin (n + 1)) k)) :
+    zeroLocus (insert G S) = zeroLocus {G} ∩ zeroLocus S := by
+  rw [Set.insert_eq, zeroLocus_union]
+
+/-- A point lies on the zero locus of a pair `{F, G}` iff it lies on `V(F)` and on `V(G)`. -/
+theorem mem_zeroLocus_pair_iff {F G : MvPolynomial (Fin (n + 1)) k} :
+    P ∈ zeroLocus {F, G} ↔ P ∈ zeroLocus {F} ∧ P ∈ zeroLocus {G} := by
+  rw [zeroLocus_insert, Set.mem_inter_iff]
+
 theorem zeroLocus_iUnion {ι : Sort*} (S : ι → Set (MvPolynomial (Fin (n + 1)) k)) :
     zeroLocus (⋃ i, S i) = ⋂ i, zeroLocus (S i) := by
   ext P

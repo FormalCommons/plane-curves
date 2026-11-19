@@ -74,10 +74,6 @@ open scoped LinearAlgebra.Projectivization
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k} {Q : ℙ k (Fin 3 → k)} {n : ℕ}
 
-private theorem mem_zeroLocus_pair_iff {G : MvPolynomial (Fin 3) k} :
-    Q ∈ zeroLocus {F, G} ↔ Q ∈ zeroLocus {F} ∧ Q ∈ zeroLocus {G} := by
-  rw [Set.insert_eq, zeroLocus_union, Set.mem_inter_iff]
-
 private theorem eval_rep_eq_zero_iff_mem (hF : F.IsHomogeneous n) :
     eval Q.rep F = 0 ↔ Q ∈ zeroLocus {F} := by
   rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)]
@@ -218,11 +214,6 @@ theorem notMem_fundamentalTriangle_of_isMultiplePoint (h : IsExcellentPosition F
 
 /-! ### The restrictions to the exceptional lines -/
 
-private theorem aeval_eq_bind₁_update {j : Fin 3} {v : Fin 3 → MvPolynomial (Fin 3) k}
-    (hv : v = Function.update X j 0) (p : MvPolynomial (Fin 3) k) :
-    aeval v p = bind₁ (Function.update X j 0) p := by
-  rw [hv, aeval_eq_bind₁]
-
 /-- The restriction of a curve in excellent position to an exceptional line `V(Xⱼ)` does not
 vanish at the fundamental point `[eₗ]` on that line, for `l ≠ 2`. -/
 private theorem eval_single_bind₁_ne_zero (h : IsExcellentPosition F) (hF : F.IsHomogeneous n)
@@ -245,7 +236,7 @@ theorem squarefree_restrict_X_two [IsAlgClosed k] (h : IsExcellentPosition F)
   have hv : (![X 0, X 1, 0] : Fin 3 → MvPolynomial (Fin 3) k) = Function.update X 2 0 := by
     funext i
     fin_cases i <;> rfl
-  rw [aeval_eq_bind₁_update hv]
+  rw [hv, aeval_eq_bind₁]
   have hG := hF.bind₁_update_X_zero 2
   have hG0 : bind₁ (Function.update X 2 0) F ≠ 0 :=
     fun h0 ↦ h.not_X_dvd 2 (X_dvd_of_bind₁_update_X_zero_eq_zero h0)
@@ -323,7 +314,8 @@ field, `F(X, 0, Z) = X^r H` with `r = m_{[0:0:1]}(F)` and `H` squarefree and div
 theorem restrict_X_one_eq [IsAlgClosed k] (h : IsExcellentPosition F) (hF : F.IsHomogeneous n) :
     ∃ H, aeval (![X 0, 0, X 2] : Fin 3 → MvPolynomial (Fin 3) k) F =
         X 0 ^ (mult F (fundamentalPoint 2)).toNat * H ∧ Squarefree H ∧ ¬ X 0 ∣ H ∧ ¬ X 2 ∣ H := by
-  rw [aeval_eq_bind₁_update (j := 1) (by funext i; fin_cases i <;> rfl)]
+  rw [show (![X 0, 0, X 2] : Fin 3 → MvPolynomial (Fin 3) k) = Function.update X 1 0 by
+    funext i; fin_cases i <;> rfl, aeval_eq_bind₁]
   exact h.exists_restrict_X_eq hF (by decide) (by decide) (by decide)
 
 /-- **The restriction to `V(X)`.** For a curve in excellent position over an algebraically closed
@@ -332,7 +324,8 @@ field, `F(0, Y, Z) = Y^r H` with `r = m_{[0:0:1]}(F)` and `H` squarefree and div
 theorem restrict_X_zero_eq [IsAlgClosed k] (h : IsExcellentPosition F) (hF : F.IsHomogeneous n) :
     ∃ H, aeval (![0, X 1, X 2] : Fin 3 → MvPolynomial (Fin 3) k) F =
         X 1 ^ (mult F (fundamentalPoint 2)).toNat * H ∧ Squarefree H ∧ ¬ X 1 ∣ H ∧ ¬ X 2 ∣ H := by
-  rw [aeval_eq_bind₁_update (j := 0) (by funext i; fin_cases i <;> rfl)]
+  rw [show (![0, X 1, X 2] : Fin 3 → MvPolynomial (Fin 3) k) = Function.update X 0 0 by
+    funext i; fin_cases i <;> rfl, aeval_eq_bind₁]
   exact h.exists_restrict_X_eq hF (by decide) (by decide) (by decide)
 
 /-! ### The counts -/
