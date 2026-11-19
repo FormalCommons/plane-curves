@@ -10,6 +10,7 @@ public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.MultiplePoints
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Factorization
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 
 /-!
@@ -193,14 +194,6 @@ private noncomputable def shape (a b c d e f g : k) : MvPolynomial (Fin 3) k :=
   X 1 * (C a * X 0 ^ 2 + C b * (X 0 * X 2) + C c * X 2 ^ 2) +
     (C d * X 0 ^ 3 + C e * (X 0 ^ 2 * X 2) + C f * (X 0 * X 2 ^ 2) + C g * X 2 ^ 3)
 
-omit [IsAlgClosed k] in
-/-- A product of two polynomials that vanish at the origin is not irreducible. -/
-private theorem not_irreducible_mul {p q : MvPolynomial (Fin 3) k} (hp : eval 0 p = 0)
-    (hq : eval 0 q = 0) : ¬Irreducible (p * q) := fun h ↦ by
-  rcases h.isUnit_or_isUnit rfl with h | h
-  · exact (h.map (eval 0)).ne_zero hp
-  · exact (h.map (eval 0)).ne_zero hq
-
 /-- A change of coordinates fixing `[0 : 1 : 0]` removes the `YZ²` term of a cubic
 `Y (a X² + b XZ + c Z²) + d X³ + e X²Z + f XZ² + g Z³`. -/
 private theorem exists_linearSubst_shape_eq (a b c d e f g : k) :
@@ -373,7 +366,7 @@ private theorem exists_linearSubst_shape_eq_X_sq_mul_X_sub_X_pow_three {a d e f 
       linearSubst M (shape a 0 0 d e f g) = X 1 ^ 2 * X 2 - X 0 ^ 3 := by
   have hg : g ≠ 0 := by
     rintro rfl
-    refine not_irreducible_mul (p := X 0)
+    refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 0)
       (q := C a * X 0 * X 1 + C d * X 0 ^ 2 + C e * (X 0 * X 2) + C f * X 2 ^ 2)
       (by simp) (by simp) ?_
     convert h using 1
@@ -401,14 +394,14 @@ private theorem exists_linearSubst_X_mul_X_mul_X_add_eq {d e f g : k}
         C f * (X 0 * X 2 ^ 2) + C g * X 2 ^ 3)) = X 1 ^ 2 * X 2 - X 0 ^ 2 * (X 0 + X 2) := by
   have hd : d ≠ 0 := by
     rintro rfl
-    refine not_irreducible_mul (p := X 2)
+    refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 2)
       (q := X 0 * X 1 + C e * X 0 ^ 2 + C f * (X 0 * X 2) + C g * X 2 ^ 2)
       (by simp) (by simp) ?_
     convert h using 1
     simp; ring
   have hg : g ≠ 0 := by
     rintro rfl
-    refine not_irreducible_mul (p := X 0)
+    refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 0)
       (q := X 1 * X 2 + C d * X 0 ^ 2 + C e * (X 0 * X 2) + C f * X 2 ^ 2)
       (by simp) (by simp) ?_
     convert h using 1
