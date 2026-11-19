@@ -179,8 +179,7 @@ terrible points. -/
 theorem not_isTerriblePoint [IsAlgClosed k] [CharZero k] (hF : F.IsHomogeneous n)
     (hirr : Irreducible F) (hv : v ≠ 0) : ¬IsTerriblePoint F v := by
   intro h
-  obtain ⟨r, hr⟩ := ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero :
-    mult F (mk k v hv) ≠ ⊤)
+  obtain ⟨r, hr⟩ := ENat.ne_top_iff_exists.1 (mult_ne_top (P := mk k v hv) hirr.ne_zero)
   obtain ⟨hrn, hnr⟩ := h.mult_lt_and_natCast_sub_eq_zero hF hirr hv hr.symm
   rw [Nat.cast_eq_zero] at hnr
   omega

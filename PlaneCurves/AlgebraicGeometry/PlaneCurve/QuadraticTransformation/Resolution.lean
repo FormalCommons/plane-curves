@@ -230,7 +230,7 @@ theorem exists_mult_le_one_natCast_sub_ne_zero [IsAlgClosed k] (hF : F.IsHomogen
     simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, isMultiplePoint_def, not_le] at hQS
     have hpos := (mult_pos_iff hF).2 hQ
     obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F Q = r :=
-      (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+      (ENat.ne_top_iff_exists.1 (mult_ne_top hirr.ne_zero)).imp fun _ h ↦ h.symm
     rw [hr] at hpos hQS
     norm_cast at hpos hQS
     obtain rfl : r = 1 := by omega
@@ -274,13 +274,13 @@ theorem exists_isQuadraticTransformAt_of_isTerriblePoint [IsAlgClosed k] (hF : F
   have hG := (isQuadraticTransformAt_def.2 ⟨M, hM, hTQ, hE, rfl⟩ :
     IsQuadraticTransformAt F Q _).isHomogeneous hF
   obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F P = r :=
-    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+    (ENat.ne_top_iff_exists.1 (mult_ne_top hirr.ne_zero)).imp fun _ h ↦ h.symm
   have hrn : r < n := by exact_mod_cast hr ▸ hP.mult_lt hF hirr P
   have hPr := hP.natCast_sub_eq_zero hF P.rep_ne_zero (r := r) (by rwa [mk_rep])
   have hGr := hT.natCast_sub_eq_zero hG (quadraticMap R).rep_ne_zero (r := r) (by
     rw [mk_rep, mult_properTransform_linearSubst_quadraticMap hF hM hRt, hR, hr])
   obtain ⟨m, hm⟩ : ∃ m : ℕ, mult F Q = m :=
-    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+    (ENat.ne_top_iff_exists.1 (mult_ne_top hirr.ne_zero)).imp fun _ h ↦ h.symm
   rw [hm, ENat.toNat_natCast] at hGr
   rw [hm, ENat.toNat_natCast] at hQn
   have hm1 : m ≤ 1 := by exact_mod_cast hm ▸ hQ1

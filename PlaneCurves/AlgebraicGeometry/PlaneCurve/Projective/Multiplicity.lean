@@ -86,6 +86,15 @@ theorem mult_zero (P : ℙ k (Fin 3 → k)) : mult 0 P = ⊤ :=
 theorem mult_eq_top_iff : mult F P = ⊤ ↔ F = 0 :=
   orderAt_eq_top_iff
 
+/-- A nonzero polynomial has finite multiplicity at every point. -/
+theorem mult_ne_top (hF : F ≠ 0) : mult F P ≠ ⊤ :=
+  fun h ↦ hF (mult_eq_top_iff.1 h)
+
+/-- The multiplicity of a nonzero polynomial is the cast of its `toNat`. -/
+@[simp]
+theorem natCast_toNat_mult (hF : F ≠ 0) : ((mult F P).toNat : ℕ∞) = mult F P :=
+  ENat.natCast_toNat (mult_ne_top hF)
+
 /-- A curve passes through a point exactly when its multiplicity there is positive; this is
 tested at the representative `P.rep`. -/
 theorem mult_pos_iff_eval_rep : 0 < mult F P ↔ eval P.rep F = 0 :=
