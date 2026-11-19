@@ -5,11 +5,12 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Corollaries
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionNumber.Properties
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Noether.Basic
 
 /-!
-# Local criteria for Noether's conditions
+# Local criteria for Noether's conditions and the residual intersection
 
 Let `F`, `G` and `H` be forms in `k[X, Y, Z]` and `P` a point of `ℙ²`. Noether's conditions hold
 at `P` (`NoetherConditionsAt P F G H`, that is `H_* ∈ (F_*, G_*)` in `𝒪_P(ℙ²)`) in each of the
@@ -33,6 +34,16 @@ Criteria (1) and (2) are also necessary (Fulton, Problem 5.29): Noether's condit
 `G = Z³ - X²Y` have tangent cones `Z²` and `X²` at `P`, and `H = F` satisfies Noether's conditions
 with `m_P(H) = 2 < 3 = m_P(F) + m_P(G) - 1`.
 
+**The residual intersection** (Fulton, §5.5, Corollary to Proposition 1). Let `k` be
+algebraically closed, `F` of positive degree and prime to `G` and `H`. If Noether's conditions
+hold at every point of `V(F) ∩ V(G)`, Max Noether's theorem writes `H = A F + B G` with `B` a form
+of degree `deg H - deg G`, so `H • F = B • F + G • F`, and `B` is prime to `F`, since a common
+component of `B` and `F` would divide `H`. Criteria (1) and (2) give the two cases of the
+Corollary: `V(F) ∩ V(G)` consists of `deg F * deg G` points, all transversal by Corollary 2 of
+Bézout's theorem, and `H` vanishes at them; or every point of `V(F) ∩ V(G)` is simple on `F` and
+`G • F ≤ H • F`. Fulton's curves are nonconstant; for a constant `F` the Corollary fails
+(`exists_isHomogeneous_zero_and_not_le`).
+
 ## Main results
 
 * `noetherConditionsAt_of_intersectionNumber_eq_one`: criterion (1).
@@ -41,10 +52,17 @@ with `m_P(H) = 2 < 3 = m_P(F) + m_P(G) - 1`.
 * `noetherConditionsAt_iff_eval_rep_eq_zero`, `noetherConditionsAt_iff_intersectionNumber_le`:
   criteria (1) and (2) are necessary.
 * `exists_noetherConditionsAt_and_mult_lt`: criterion (3) is not necessary.
+* `exists_isHomogeneous_intersectionCycle_eq_add_of_forall_noetherConditionsAt`: the residual
+  intersection, from Noether's conditions at every point.
+* `exists_isHomogeneous_intersectionCycle_eq_sub_of_card_eq_mul`,
+  `exists_isHomogeneous_intersectionCycle_eq_sub_of_isSimplePoint`: the Corollary, cases (1)
+  and (2).
+* `noetherConditionsAt_of_intersectionNumber_eq_one_spec`: the milestone, combining
+  Proposition 1, Problem 5.29 and the Corollary.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.5, Proposition 1 and Problem 5.29
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.5, Proposition 1, its Corollary and Problem 5.29
 -/
 
 public section
@@ -231,6 +249,160 @@ theorem exists_noetherConditionsAt_and_mult_lt :
     · simpa using hLF.2.2.2.trans hF.dvd
   · rw [hmF, hmG]
     decide
+
+/-! ### The residual intersection -/
+
+section Residual
+
+variable [IsAlgClosed k]
+
+/-- **The residual intersection.** Let `k` be algebraically closed and `F`, `G`, `H` forms of
+degrees `d > 0`, `e` and `r`, with `F` prime to both `G` and `H`. If Noether's conditions hold at
+every point of `V(F) ∩ V(G)`, then `e ≤ r` and there is a nonzero form `B` of degree `r - e`
+(possibly a constant), prime to `F`, with `H • F = B • F + G • F`. -/
+theorem exists_isHomogeneous_intersectionCycle_eq_add_of_forall_noetherConditionsAt
+    (hF : F.IsHomogeneous d) (hG : G.IsHomogeneous e) (hH : H.IsHomogeneous r) (hd : 0 < d)
+    (hFG : IsRelPrime F G) (hFH : IsRelPrime F H)
+    (hN : ∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 →
+      NoetherConditionsAt P F G H) :
+    e ≤ r ∧ ∃ B : MvPolynomial (Fin 3) k, B.IsHomogeneous (r - e) ∧ B ≠ 0 ∧ IsRelPrime F B ∧
+      intersectionCycle H F = intersectionCycle B F + intersectionCycle G F := by
+  obtain ⟨A, B, -, hB, -, hB0, hAB⟩ :=
+    (exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt hF hG hH hFG).2 hN
+  have hFB : IsRelPrime F B := fun D hDF hDB ↦
+    hFH hDF (hAB ▸ dvd_add (dvd_mul_of_dvd_right hDF A) (dvd_mul_of_dvd_left hDB G))
+  have hBne : B ≠ 0 := by
+    rintro rfl
+    have hu := isRelPrime_zero_right.1 hFB
+    have h := hF.totalDegree hu.ne_zero
+    rw [(isUnit_iff_totalDegree_of_isReduced.1 hu).2] at h
+    omega
+  refine ⟨not_lt.1 fun h ↦ hBne (hB0 h), B, hB, hBne, hFB, ?_⟩
+  rw [intersectionCycle_comm H, intersectionCycle_comm B, intersectionCycle_comm G, ← hAB,
+    add_comm, intersectionCycle_add_mul, intersectionCycle_mul_right hF hB hG hFB hFG]
+
+/-- **The residual intersection at simple points** (Fulton, §5.5, Corollary to Proposition 1,
+case (2)). Let `k` be algebraically closed and `F`, `G`, `H` forms of degrees `d > 0`, `e` and
+`r`, with `F` prime to both `G` and `H`. If every point of `V(F) ∩ V(G)` is a simple point of `F`
+and `G • F ≤ H • F`, then `e ≤ r` and there is a nonzero form `B` of degree `r - e` (possibly a
+constant), prime to `F`, with `B • F = H • F - G • F`. -/
+theorem exists_isHomogeneous_intersectionCycle_eq_sub_of_isSimplePoint
+    (hF : F.IsHomogeneous d) (hG : G.IsHomogeneous e) (hH : H.IsHomogeneous r) (hd : 0 < d)
+    (hFG : IsRelPrime F G) (hFH : IsRelPrime F H)
+    (hP : ∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 → IsSimplePoint F P)
+    (hle : intersectionCycle G F ≤ intersectionCycle H F) :
+    e ≤ r ∧ ∃ B : MvPolynomial (Fin 3) k, B.IsHomogeneous (r - e) ∧ B ≠ 0 ∧ IsRelPrime F B ∧
+      intersectionCycle B F = intersectionCycle H F - intersectionCycle G F := by
+  obtain ⟨her, B, hB, hBne, hFB, hc⟩ :=
+    exists_isHomogeneous_intersectionCycle_eq_add_of_forall_noetherConditionsAt hF hG hH hd hFG
+      hFH fun P hPF hPG ↦ noetherConditionsAt_of_isSimplePoint hF hG hH (hP P hPF hPG) (by
+        rw [← intersectionCycle_apply hF hG hFG, ← intersectionCycle_apply hF hH hFH,
+          intersectionCycle_comm F, intersectionCycle_comm F, Nat.cast_le]
+        exact hle P)
+  exact ⟨her, B, hB, hBne, hFB, by rw [hc, add_tsub_cancel_right]⟩
+
+/-- **The residual intersection at `de` distinct points** (Fulton, §5.5, Corollary to
+Proposition 1, case (1)). Let `k` be algebraically closed and `F`, `G`, `H` forms of degrees
+`d > 0`, `e` and `r`, with `F` prime to `H`. If `V(F) ∩ V(G)` consists of the `de` points of `s`
+and `H` vanishes at all of them, then `e ≤ r` and there is a nonzero form `B` of degree `r - e`
+(possibly a constant), prime to `F`, with `B • F = H • F - G • F`. That `F` and `G` have no
+common component follows from the finiteness of `V(F) ∩ V(G)`. -/
+theorem exists_isHomogeneous_intersectionCycle_eq_sub_of_card_eq_mul
+    (hF : F.IsHomogeneous d) (hG : G.IsHomogeneous e) (hH : H.IsHomogeneous r) (hd : 0 < d)
+    (hFH : IsRelPrime F H) {s : Finset (ℙ k (Fin 3 → k))}
+    (hs : ∀ P, P ∈ s ↔ eval P.rep F = 0 ∧ eval P.rep G = 0) (h : s.card = d * e)
+    (hHs : ∀ P ∈ s, eval P.rep H = 0) :
+    e ≤ r ∧ ∃ B : MvPolynomial (Fin 3) k, B.IsHomogeneous (r - e) ∧ B ≠ 0 ∧ IsRelPrime F B ∧
+      intersectionCycle B F = intersectionCycle H F - intersectionCycle G F := by
+  have hFG : IsRelPrime F G := isRelPrime_of_finite_zeroLocus_pair hF hG
+    (s.finite_toSet.subset fun Q hQ ↦ (hs Q).2 (by
+      rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨d, hF⟩, ⟨e, hG⟩])] at hQ
+      exact ⟨hQ F (by simp), hQ G (by simp)⟩))
+  obtain ⟨her, B, hB, hBne, hFB, hc⟩ :=
+    exists_isHomogeneous_intersectionCycle_eq_add_of_forall_noetherConditionsAt hF hG hH hd hFG
+      hFH fun P hPF hPG ↦
+        noetherConditionsAt_of_intersectionNumber_eq_one hF hG hH
+          (intersectionNumber_eq_one_of_card_eq_mul hF hG hs h ((hs P).2 ⟨hPF, hPG⟩))
+          (hHs P ((hs P).2 ⟨hPF, hPG⟩))
+  exact ⟨her, B, hB, hBne, hFB, by rw [hc, add_tsub_cancel_right]⟩
+
+end Residual
+
+/-- The residual intersection needs `deg F > 0`: for the constant `F = 1`, `G = X` and `H = 1`,
+the hypotheses of both cases hold, since `V(F) ∩ V(G)` is empty, but `deg G > deg H`. -/
+theorem exists_isHomogeneous_zero_and_not_le :
+    ∃ (F G H : MvPolynomial (Fin 3) k) (s : Finset (ℙ k (Fin 3 → k))),
+      F.IsHomogeneous 0 ∧ G.IsHomogeneous 1 ∧ H.IsHomogeneous 0 ∧ IsRelPrime F G ∧
+      IsRelPrime F H ∧ (∀ P, P ∈ s ↔ eval P.rep F = 0 ∧ eval P.rep G = 0) ∧ s.card = 0 * 1 ∧
+      (∀ P ∈ s, eval P.rep H = 0) ∧
+      (∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 → IsSimplePoint F P) ∧
+      intersectionCycle G F ≤ intersectionCycle H F ∧ ¬1 ≤ 0 :=
+  ⟨1, X 0, 1, ∅, isHomogeneous_one _ _, isHomogeneous_X _ _, isHomogeneous_one _ _,
+    isRelPrime_one_left, isRelPrime_one_left, by simp, rfl, by simp, by simp,
+    by rw [← C_1, intersectionCycle_C_right one_ne_zero]; exact zero_le, by decide⟩
+
+/-! ### The local criteria and the residual intersection -/
+
+/-- **Local criteria for Noether's conditions and the residual intersection** (Fulton, §5.5,
+Proposition 1, its Corollary, and Problem 5.29). Let `k` be algebraically closed and `F`, `G`,
+`H` forms of degrees `d`, `e` and `r` in `k[X, Y, Z]`.
+
+1. **Proposition 1.** Noether's conditions hold at `P` if (1) `I(P, F ∩ G) = 1` and `H(P) = 0`;
+   or (2) `P` is a simple point of `F` and `I(P, F ∩ G) ≤ I(P, F ∩ H)` (the right side may be
+   `∞`); or (3) `F` and `G` have no common tangent at `P` and `m_P(H) ≥ m_P(F) + m_P(G) - 1`.
+   No hypothesis on common components is needed.
+2. **Problem 5.29.** The conditions on `H` in (1) and (2) are also necessary; those in (3) are
+   not: there are cubics `F'`, `G'`, `H'` and a point `Q` where (3) fails although Noether's
+   conditions hold.
+3. **Corollary.** Let `d > 0` and `F` be prime to `H`. If (1) `V(F) ∩ V(G)` consists of `de`
+   distinct points and `H` vanishes at all of them, or (2) `F` is prime to `G`, every point of
+   `V(F) ∩ V(G)` is a simple point of `F` and `G • F ≤ H • F`, then `e ≤ r` and there is a
+   nonzero form `B` of degree `r - e` (possibly a constant), prime to `F`, with
+   `B • F = H • F - G • F`.
+
+Milestone: *Local criteria for Noether's conditions and the residual intersection corollary*. -/
+theorem noetherConditionsAt_of_intersectionNumber_eq_one_spec [IsAlgClosed k]
+    (hF : F.IsHomogeneous d) (hG : G.IsHomogeneous e) (hH : H.IsHomogeneous r) :
+    -- Proposition 1
+    ((∀ P : ℙ k (Fin 3 → k), intersectionNumber P F G = 1 → eval P.rep H = 0 →
+        NoetherConditionsAt P F G H) ∧
+      (∀ P : ℙ k (Fin 3 → k), IsSimplePoint F P →
+        intersectionNumber P F G ≤ intersectionNumber P F H → NoetherConditionsAt P F G H) ∧
+      ∀ P : ℙ k (Fin 3 → k), (¬∃ L, IsTangentAt F P L ∧ IsTangentAt G P L) →
+        mult F P + mult G P - 1 ≤ mult H P → NoetherConditionsAt P F G H) ∧
+    -- Problem 5.29
+    ((∀ P : ℙ k (Fin 3 → k), intersectionNumber P F G = 1 →
+        (NoetherConditionsAt P F G H ↔ eval P.rep H = 0)) ∧
+      (∀ P : ℙ k (Fin 3 → k), IsSimplePoint F P →
+        (NoetherConditionsAt P F G H ↔ intersectionNumber P F G ≤ intersectionNumber P F H)) ∧
+      ∃ (F' G' H' : MvPolynomial (Fin 3) k) (Q : ℙ k (Fin 3 → k)),
+        F'.IsHomogeneous 3 ∧ G'.IsHomogeneous 3 ∧ H'.IsHomogeneous 3 ∧
+        (¬∃ L, IsTangentAt F' Q L ∧ IsTangentAt G' Q L) ∧ NoetherConditionsAt Q F' G' H' ∧
+        mult H' Q < mult F' Q + mult G' Q - 1) ∧
+    -- the Corollary
+    (0 < d → IsRelPrime F H →
+      (∀ s : Finset (ℙ k (Fin 3 → k)), (∀ P, P ∈ s ↔ eval P.rep F = 0 ∧ eval P.rep G = 0) →
+        s.card = d * e → (∀ P ∈ s, eval P.rep H = 0) →
+        e ≤ r ∧ ∃ B : MvPolynomial (Fin 3) k, B.IsHomogeneous (r - e) ∧ B ≠ 0 ∧
+          IsRelPrime F B ∧
+          intersectionCycle B F = intersectionCycle H F - intersectionCycle G F) ∧
+      (IsRelPrime F G →
+        (∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 → IsSimplePoint F P) →
+        intersectionCycle G F ≤ intersectionCycle H F →
+        e ≤ r ∧ ∃ B : MvPolynomial (Fin 3) k, B.IsHomogeneous (r - e) ∧ B ≠ 0 ∧
+          IsRelPrime F B ∧
+          intersectionCycle B F = intersectionCycle H F - intersectionCycle G F)) :=
+  ⟨⟨fun _ h1 hHP ↦ noetherConditionsAt_of_intersectionNumber_eq_one hF hG hH h1 hHP,
+      fun _ hP h ↦ noetherConditionsAt_of_isSimplePoint hF hG hH hP h,
+      fun _ hT hm ↦ noetherConditionsAt_of_not_exists_isTangentAt hF hG hH hT hm⟩,
+    ⟨fun _ h1 ↦ noetherConditionsAt_iff_eval_rep_eq_zero hF hG hH h1,
+      fun _ hP ↦ noetherConditionsAt_iff_intersectionNumber_le hF hG hH hP,
+      exists_noetherConditionsAt_and_mult_lt⟩,
+    fun hd hFH ↦ ⟨fun _ hs h hHs ↦
+        exists_isHomogeneous_intersectionCycle_eq_sub_of_card_eq_mul hF hG hH hd hFH hs h hHs,
+      fun hFG hP hle ↦
+        exists_isHomogeneous_intersectionCycle_eq_sub_of_isSimplePoint hF hG hH hd hFG hFH hP
+          hle⟩⟩
 
 end PlaneCurves.Projective
 

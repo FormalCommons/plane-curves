@@ -47,6 +47,27 @@ Each entry has this form:
 
 ## atlas/02-projective-plane-curves.md
 
+### Residual intersection corollary for a constant F
+
+- **Where:** `atlas/02-projective-plane-curves.md`, milestone *Local criteria for Noether's
+  conditions and the residual intersection corollary*, the Corollary, read with the page's
+  convention that results are stated "for nonzero forms of any degree $d\ge0$".
+- **Error:** it says "Let $F,G,H$ be forms with $F,G$ and $F,H$ without common components. If
+  either (1) $V(F)\cap V(G)$ consists of $\deg F\cdot\deg G$ distinct points and $H$ vanishes at
+  all of them, or (2) every point of $V(F)\cap V(G)$ is a simple point of $F$ and
+  $H\bullet F\ge G\bullet F$, then there is a form $B$ of degree $\deg H-\deg G\ge0$". For the
+  constant $F = 1$, $G = X$ and $H = 1$, $V(F)\cap V(G)$ is empty, so it has
+  $0 = \deg F\cdot\deg G$ points, $H$ vanishes at all of them, every one is simple on $F$, and
+  $H\bullet F = 0 = G\bullet F$; but $\deg H-\deg G = -1$. Fulton's curves are nonconstant, so
+  the book needs no correction.
+- **Fix:** the Corollary assumes $\deg F > 0$:
+  `PlaneCurves.Projective.exists_isHomogeneous_intersectionCycle_eq_sub_of_card_eq_mul`,
+  `PlaneCurves.Projective.exists_isHomogeneous_intersectionCycle_eq_sub_of_isSimplePoint` and
+  `PlaneCurves.Projective.noetherConditionsAt_of_intersectionNumber_eq_one_spec` take
+  `0 < d`, and `PlaneCurves.Projective.exists_isHomogeneous_zero_and_not_le` is the
+  counterexample. $G$, $H$ and $B$ may still be constants.
+- **Issue:** #349.
+
 ## auxiliary/varieties-and-rational-maps.md
 
 ## atlas/03-resolution-of-singularities.md
