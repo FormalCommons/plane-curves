@@ -21,6 +21,8 @@ For a polynomial `p` in the variables `X j`, `j ∈ σ`, the substitution
   `X i`.
 * `MvPolynomial.X_dvd_of_bind₁_update_X_zero_eq_zero`: a polynomial that vanishes at `X i = 0` is
   divisible by `X i`.
+* `MvPolynomial.X_dvd_iff_bind₁_update_X_zero_eq_zero`: `X i` divides `p` exactly when `p`
+  vanishes at `X i = 0`.
 -/
 
 public section
@@ -55,6 +57,13 @@ theorem X_dvd_sub_bind₁_update_X_zero (i : σ) (p : MvPolynomial σ R) :
 theorem X_dvd_of_bind₁_update_X_zero_eq_zero {i : σ} {p : MvPolynomial σ R}
     (hp : bind₁ (Function.update X i 0) p = 0) : X i ∣ p := by
   simpa [hp] using X_dvd_sub_bind₁_update_X_zero i p
+
+/-- A polynomial is divisible by `X i` exactly when its value at `X i = 0` vanishes. -/
+theorem X_dvd_iff_bind₁_update_X_zero_eq_zero {i : σ} {p : MvPolynomial σ R} :
+    X i ∣ p ↔ bind₁ (Function.update X i 0) p = 0 := by
+  refine ⟨?_, X_dvd_of_bind₁_update_X_zero_eq_zero⟩
+  rintro ⟨q, rfl⟩
+  simp
 
 end MvPolynomial
 
