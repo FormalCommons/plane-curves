@@ -25,6 +25,10 @@ fundamental point `[eᵢ]` and no `Xᵢ` divides the *proper transform* `F'`. It
 nonzero form. It is proved at `Z` from the expansion `F^Q = ∑ⱼ Z^j Gⱼ(Y, X) (XY)^(n - j)`, and at
 the other two lines by permuting the variables.
 
+Steps (2) and (3), for a form with no exceptional component, compare the powers of each `Xᵢ` in
+`X^r₀ Y^r₁ Z^r₂ (F')^Q = (F^Q)^Q = (XYZ)^n F`: the multiplicity of `F'` at `[eᵢ]` is
+`n - rⱼ - rₗ`, and cancelling the monomials gives `(F')' = F`.
+
 ## Main definitions
 
 * `PlaneCurves.Projective.fundamentalPoint i`: the point `[eᵢ]` of `ℙ²`.
@@ -58,6 +62,16 @@ the other two lines by permuting the variables.
   the proper transform is multiplicative on forms and commutes with permutations of the variables.
 * `PlaneCurves.Projective.aeval_X_two_eq_zero_properTransform`: the restriction of `F'` to the
   line `Z = 0`, in terms of the tangent cone of `F` at `[0 : 0 : 1]`.
+* `PlaneCurves.Projective.quadraticTransform_properTransform`,
+  `PlaneCurves.Projective.properTransform_properTransform`: step (2) for a form `F` with no
+  exceptional component, `(F')^Q = X^(n - r₁ - r₂) Y^(n - r₀ - r₂) Z^(n - r₀ - r₁) F` and
+  `(F')' = F`.
+* `PlaneCurves.Projective.irreducible_properTransform`,
+  `PlaneCurves.Projective.dvd_quadraticTransform_iff`: for `F` irreducible as well, `F'` is
+  irreducible, and `F' ∣ H^Q ↔ F ∣ H`.
+* `PlaneCurves.Projective.mult_properTransform_fundamentalPoint_add`,
+  `PlaneCurves.Projective.mult_properTransform_fundamentalPoint`: step (3),
+  `m_{[eᵢ]}(F') = n - m_{[eⱼ]}(F) - m_{[eₗ]}(F)`.
 
 ## References
 
@@ -289,6 +303,20 @@ theorem quadraticTransform_quadraticTransform (hF : F.IsHomogeneous n) :
   simp only [Finsupp.coe_equivFunOnFinite_symm, Fin.isValue, Matrix.cons_val_zero,
     Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
   ring
+
+/-- The component of degree `2e` of `H^Q` is the quadratic transform of the component of degree
+`e` of `H`. -/
+theorem homogeneousComponent_quadraticTransform (e : ℕ) (H : MvPolynomial (Fin 3) R) :
+    homogeneousComponent (2 * e) (quadraticTransform H) =
+      quadraticTransform (homogeneousComponent e H) := by
+  conv_lhs => rw [← sum_homogeneousComponent H]
+  rw [map_sum, map_sum]
+  have hc (j : ℕ) := homogeneousComponent_of_mem (m := 2 * e)
+    ((homogeneousComponent_isHomogeneous j H).quadraticTransform)
+  simp only [hc, mul_right_inj' two_ne_zero, Finset.sum_ite_eq, Finset.mem_range]
+  split_ifs with h
+  · rfl
+  · rw [homogeneousComponent_eq_zero _ _ (by omega), map_zero]
 
 /-- The quadratic transformation commutes with every permutation of the variables. -/
 theorem quadraticTransform_rename (σ : Equiv.Perm (Fin 3)) (F : MvPolynomial (Fin 3) R) :
@@ -673,6 +701,195 @@ example :
   ring
 
 end ProperTransform
+
+section Involution
+
+variable {k : Type*} [Field k] {F H : MvPolynomial (Fin 3) k} {n : ℕ}
+
+private theorem X_mul_quadraticTransform_X (i : Fin 3) :
+    (X i * quadraticTransform (X i) : MvPolynomial (Fin 3) k) = X 0 * X 1 * X 2 := by
+  fin_cases i <;> simp <;> ring
+
+private theorem not_X_dvd_quadraticTransform_X (i : Fin 3) :
+    ¬ X i ∣ (quadraticTransform (X i) : MvPolynomial (Fin 3) k) := by
+  fin_cases i <;> simp [prime_X.dvd_mul, X_dvd_X]
+
+/-- If the exceptional line `V(Xᵢ)` is not a component of a form `F` of degree `n`, then `F^Q`
+has multiplicity `n` at the fundamental point `[eᵢ]`. -/
+theorem mult_quadraticTransform_fundamentalPoint (hF : F.IsHomogeneous n) {i : Fin 3}
+    (hXi : ¬ X i ∣ F) : mult (quadraticTransform F) (fundamentalPoint i) = n := by
+  have hF0 : F ≠ 0 := by rintro rfl; exact hXi (dvd_zero _)
+  have hQ0 : quadraticTransform F ≠ 0 := quadraticTransform_eq_zero_iff.not.2 hF0
+  have h := emultiplicity_X_quadraticTransform hF.quadraticTransform hQ0 i
+  rw [quadraticTransform_quadraticTransform hF, ← X_mul_quadraticTransform_X i, mul_pow,
+    mul_assoc, emultiplicity_mul prime_X, emultiplicity_pow_self_of_prime prime_X,
+    emultiplicity_mul prime_X, emultiplicity_pow prime_X,
+    emultiplicity_eq_zero.2 (not_X_dvd_quadraticTransform_X i), emultiplicity_eq_zero.2 hXi]
+    at h
+  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hQ0)]
+  simpa using h.symm
+
+/-- **Fulton's (3)**, as a sum: if `V(Xᵢ)` is not a component of a form `F` of degree `n`, and
+`i, j, l` are the three indices, then `m_{[eᵢ]}(F') + m_{[eⱼ]}(F) + m_{[eₗ]}(F) = n`. -/
+theorem mult_properTransform_fundamentalPoint_add (hF : F.IsHomogeneous n) {i j l : Fin 3}
+    (hXi : ¬ X i ∣ F) (hij : i ≠ j) (hil : i ≠ l) (hjl : j ≠ l) :
+    mult (properTransform F) (fundamentalPoint i) + mult F (fundamentalPoint j) +
+      mult F (fundamentalPoint l) = n := by
+  have hF0 : F ≠ 0 := by rintro rfl; exact hXi (dvd_zero _)
+  have hc (m : Fin 3) :
+      ((mult F (fundamentalPoint m)).toNat : ℕ∞) = mult F (fundamentalPoint m) :=
+    ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0)
+  have h := mult_quadraticTransform_fundamentalPoint hF hXi
+  rw [quadraticTransform_eq hF] at h
+  simp only [mult_mul, mult_pow, mult_X_fundamentalPoint, nsmul_eq_mul] at h
+  rw [← h]
+  fin_cases i <;> fin_cases j <;> fin_cases l <;> simp [hc] at hij hil hjl ⊢ <;> ring
+
+/-- If `V(Xᵢ)` is not a component of a form `F` of degree `n`, then the multiplicities of `F` at
+the two fundamental points on `V(Xᵢ)` add up to at most `n`. -/
+theorem mult_fundamentalPoint_add_le (hF : F.IsHomogeneous n) {i j l : Fin 3}
+    (hXi : ¬ X i ∣ F) (hij : i ≠ j) (hil : i ≠ l) (hjl : j ≠ l) :
+    mult F (fundamentalPoint j) + mult F (fundamentalPoint l) ≤ n := by
+  rw [← mult_properTransform_fundamentalPoint_add hF hXi hij hil hjl, add_assoc]
+  exact le_add_self
+
+/-- **Fulton's (3)**: if `V(Xᵢ)` is not a component of a form `F` of degree `n`, and `i, j, l`
+are the three indices, then `m_{[eᵢ]}(F') = n - m_{[eⱼ]}(F) - m_{[eₗ]}(F)`. -/
+theorem mult_properTransform_fundamentalPoint (hF : F.IsHomogeneous n) {i j l : Fin 3}
+    (hXi : ¬ X i ∣ F) (hij : i ≠ j) (hil : i ≠ l) (hjl : j ≠ l) :
+    mult (properTransform F) (fundamentalPoint i) =
+      (n - (mult F (fundamentalPoint j)).toNat - (mult F (fundamentalPoint l)).toNat : ℕ) := by
+  have hF0 : F ≠ 0 := by rintro rfl; exact hXi (dvd_zero _)
+  have hF0' : properTransform F ≠ 0 := (properTransform_eq_zero_iff hF).not.2 hF0
+  have h := mult_properTransform_fundamentalPoint_add hF hXi hij hil hjl
+  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0'),
+    ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint j) ≠ ⊤),
+    ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint l) ≠ ⊤)] at h
+  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0')]
+  norm_cast at h ⊢
+  omega
+
+/-- **Fulton's (3)** at `fundamentalPoint 0`. -/
+theorem mult_properTransform_fundamentalPoint_zero (hF : F.IsHomogeneous n) (hX0 : ¬ X 0 ∣ F) :
+    mult (properTransform F) (fundamentalPoint 0) =
+      (n - (mult F (fundamentalPoint 1)).toNat - (mult F (fundamentalPoint 2)).toNat : ℕ) :=
+  mult_properTransform_fundamentalPoint hF hX0 (by decide) (by decide) (by decide)
+
+/-- **Fulton's (3)** at `fundamentalPoint 1`. -/
+theorem mult_properTransform_fundamentalPoint_one (hF : F.IsHomogeneous n) (hX1 : ¬ X 1 ∣ F) :
+    mult (properTransform F) (fundamentalPoint 1) =
+      (n - (mult F (fundamentalPoint 0)).toNat - (mult F (fundamentalPoint 2)).toNat : ℕ) :=
+  mult_properTransform_fundamentalPoint hF hX1 (by decide) (by decide) (by decide)
+
+/-- **Fulton's (3)** at `fundamentalPoint 2`. -/
+theorem mult_properTransform_fundamentalPoint_two (hF : F.IsHomogeneous n) (hX2 : ¬ X 2 ∣ F) :
+    mult (properTransform F) (fundamentalPoint 2) =
+      (n - (mult F (fundamentalPoint 0)).toNat - (mult F (fundamentalPoint 1)).toNat : ℕ) :=
+  mult_properTransform_fundamentalPoint hF hX2 (by decide) (by decide) (by decide)
+
+/-- **The quadratic transformation inverts the proper transform**: for a form `F` of degree `n`
+with no exceptional component, `(F')^Q = X^(n - r₁ - r₂) Y^(n - r₀ - r₂) Z^(n - r₀ - r₁) F`,
+where `rᵢ` is the multiplicity of `F` at `[eᵢ]`. -/
+theorem quadraticTransform_properTransform (hF : F.IsHomogeneous n) (hX : ∀ i, ¬ X i ∣ F) :
+    quadraticTransform (properTransform F) =
+      X 0 ^ (n - (mult F (fundamentalPoint 1)).toNat - (mult F (fundamentalPoint 2)).toNat) *
+        X 1 ^ (n - (mult F (fundamentalPoint 0)).toNat - (mult F (fundamentalPoint 2)).toNat) *
+        X 2 ^ (n - (mult F (fundamentalPoint 0)).toNat - (mult F (fundamentalPoint 1)).toNat) *
+        F := by
+  have hF0 : F ≠ 0 := by rintro rfl; exact hX 0 (dvd_zero _)
+  have hle {i j l : Fin 3} (hij : i ≠ j) (hil : i ≠ l) (hjl : j ≠ l) :
+      (mult F (fundamentalPoint j)).toNat + (mult F (fundamentalPoint l)).toNat ≤ n := by
+    have h := mult_fundamentalPoint_add_le hF (hX i) hij hil hjl
+    rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint j) ≠ ⊤),
+      ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0 : mult F (fundamentalPoint l) ≠ ⊤)] at h
+    exact_mod_cast h
+  have e (i : Fin 3) {a b : ℕ} (hab : a + b ≤ n) :
+      (X i : MvPolynomial (Fin 3) k) ^ n = X i ^ (a + b) * X i ^ (n - a - b) := by
+    rw [← pow_add]
+    congr 1
+    omega
+  have h := quadraticTransform_quadraticTransform hF
+  rw [quadraticTransform_eq hF] at h
+  simp only [map_mul, map_pow, quadraticTransform_X_zero, quadraticTransform_X_one,
+    quadraticTransform_X_two] at h
+  refine mul_left_cancel₀ (by simp [X_ne_zero]) (h.trans ?_)
+  rw [mul_pow, mul_pow, e 0 (hle (i := 0) (j := 1) (l := 2) (by decide) (by decide) (by decide)),
+    e 1 (hle (i := 1) (j := 0) (l := 2) (by decide) (by decide) (by decide)),
+    e 2 (hle (i := 2) (j := 0) (l := 1) (by decide) (by decide) (by decide))]
+  ring
+
+/-- **Fulton's (2)**, the involution: `(F')' = F` for a form `F` with no exceptional
+component. -/
+theorem properTransform_properTransform (hF : F.IsHomogeneous n) (hX : ∀ i, ¬ X i ∣ F) :
+    properTransform (properTransform F) = F := by
+  refine properTransform_eq_of_quadraticTransform_eq ?_
+  rw [monomial_exceptionalExponent, mult_properTransform_fundamentalPoint_zero hF (hX 0),
+    mult_properTransform_fundamentalPoint_one hF (hX 1),
+    mult_properTransform_fundamentalPoint_two hF (hX 2), ENat.toNat_natCast, ENat.toNat_natCast,
+    ENat.toNat_natCast]
+  exact quadraticTransform_properTransform hF hX
+
+/-- Without its hypothesis, `properTransform_properTransform` fails: the proper transform of the
+exceptional line `X` is `1`, and so is that of `1`. -/
+example : properTransform (properTransform (X 0 : MvPolynomial (Fin 3) ℚ)) ≠ X 0 := by
+  rw [properTransform_X, properTransform_one]
+  intro h
+  simpa using congrArg totalDegree h
+
+private theorem isUnit_of_isUnit_properTransform (hF : F.IsHomogeneous n) (hX : ∀ i, ¬ X i ∣ F)
+    (h : IsUnit (properTransform F)) : IsUnit F := by
+  obtain ⟨c, hc, h⟩ := isUnit_iff_eq_C_of_isReduced.1 h
+  rw [← properTransform_properTransform hF hX, h, properTransform_C]
+  exact hc.map C
+
+/-- **Fulton's (2)**: the proper transform of an irreducible form with no exceptional
+component is irreducible. -/
+theorem irreducible_properTransform (hF : F.IsHomogeneous n) (hirr : Irreducible F)
+    (hX : ∀ i, ¬ X i ∣ F) : Irreducible (properTransform F) := by
+  have hF0 := hirr.ne_zero
+  refine ⟨fun h ↦ hirr.not_isUnit (isUnit_of_isUnit_properTransform hF hX h), fun G H hGH ↦ ?_⟩
+  have hP0 : properTransform F ≠ 0 := (properTransform_eq_zero_iff hF).not.2 hF0
+  have hGH0 := hGH ▸ hP0
+  have hP := hGH ▸ hF.properTransform
+  have hG := hP.of_mul_left (right_ne_zero_of_mul hGH0)
+  have hH := hP.of_mul_right (left_ne_zero_of_mul hGH0)
+  have hXG (i : Fin 3) : ¬ X i ∣ G := fun hi ↦
+    not_X_dvd_properTransform hF hF0 i (hGH ▸ dvd_mul_of_dvd_left hi _)
+  have hXH (i : Fin 3) : ¬ X i ∣ H := fun hi ↦
+    not_X_dvd_properTransform hF hF0 i (hGH ▸ dvd_mul_of_dvd_right hi _)
+  have h := properTransform_properTransform hF hX
+  rw [hGH, properTransform_mul hG hH] at h
+  exact (hirr.isUnit_or_isUnit h.symm).imp (isUnit_of_isUnit_properTransform hG hXG)
+    (isUnit_of_isUnit_properTransform hH hXH)
+
+private theorem dvd_of_properTransform_dvd_of_isHomogeneous (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) (hX : ∀ i, ¬ X i ∣ F) {m : ℕ} (hH : H.IsHomogeneous m)
+    (h : properTransform F ∣ quadraticTransform H) : F ∣ H := by
+  have h1 : F ∣ (X 0 * X 1 * X 2) ^ m * H := by
+    rw [← quadraticTransform_quadraticTransform hH]
+    refine dvd_trans ?_ (map_dvd quadraticTransform h)
+    rw [quadraticTransform_properTransform hF hX]
+    exact dvd_mul_left _ _
+  have hp := hirr.prime
+  have hXF (i : Fin 3) : ¬ F ∣ X i := fun h ↦ hX i (hirr.dvd_symm prime_X.irreducible h)
+  refine (hp.dvd_or_dvd h1).resolve_left fun h2 ↦ ?_
+  simpa [hp.dvd_mul, hXF] using hp.dvd_of_dvd_pow h2
+
+/-- For an irreducible form `F` with no exceptional component, `F'` divides `H^Q` exactly when
+`F` divides `H`. -/
+theorem dvd_quadraticTransform_iff (hF : F.IsHomogeneous n) (hirr : Irreducible F)
+    (hX : ∀ i, ¬ X i ∣ F) : properTransform F ∣ quadraticTransform H ↔ F ∣ H := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · rw [← sum_homogeneousComponent H]
+    refine Finset.dvd_sum fun e _ ↦ dvd_of_properTransform_dvd_of_isHomogeneous hF hirr hX
+      (homogeneousComponent_isHomogeneous e H) ?_
+    rw [← homogeneousComponent_quadraticTransform]
+    exact hF.properTransform.dvd_homogeneousComponent h _
+  · refine dvd_trans ?_ (map_dvd quadraticTransform h)
+    rw [quadraticTransform_eq hF]
+    exact dvd_mul_left _ _
+
+end Involution
 
 end PlaneCurves.Projective
 
