@@ -40,6 +40,7 @@ squarefree.
   the coefficient of `Y ^ r` in `F` vanishes, `r` being the multiplicity there.
 * `PlaneCurves.Affine.tangentMultiplicity_mul`, `PlaneCurves.Affine.tangentMultiplicity_pow`,
   `PlaneCurves.Affine.tangentMultiplicity_prod`: tangent multiplicities are additive.
+* `PlaneCurves.Affine.tangentMultiplicity_le_orderAt`: a tangent has multiplicity at most `m_P(F)`.
 * `PlaneCurves.Affine.tangentMultiplicity_linearSubst`: an invertible linear change of
   coordinates preserves tangent multiplicities.
 * `PlaneCurves.Affine.IsSimplePoint.isTangentAt_iff`: at a simple point the tangent is the
@@ -184,6 +185,15 @@ theorem tangentMultiplicity_pos_iff (hF : F ≠ 0) (hL : L.IsHomogeneous 1) (hL�
     .of_not_isUnit (irreducible_of_isHomogeneous_one hL hL₀).not_isUnit (leadingFormAt_ne_zero hF)
   rw [tangentMultiplicity_def, isTangentAt_def]
   exact ⟨fun h ↦ ⟨hL, hL₀, dvd_of_multiplicity_pos h⟩, fun h ↦ multiplicity_pos_of_dvd h.2.2 hfin⟩
+
+/-- The multiplicity of a tangent is at most the multiplicity of the point. -/
+theorem tangentMultiplicity_le_orderAt (hF : F ≠ 0) (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) :
+    (tangentMultiplicity F P L : ℕ∞) ≤ F.orderAt P := by
+  have hG₀ := leadingFormAt_ne_zero (a := P) hF
+  have hd := totalDegree_le_of_dvd_of_isDomain (pow_multiplicity_dvd L (F.leadingFormAt P)) hG₀
+  rw [(hL.pow _).totalDegree (pow_ne_zero _ hL₀),
+    (isHomogeneous_leadingFormAt F P).totalDegree hG₀, one_mul] at hd
+  exact (Nat.cast_le.2 hd).trans (ENat.natCast_toNat_le_self _)
 
 /-- Associated linear forms have the same tangent multiplicity. -/
 theorem tangentMultiplicity_eq_of_associated {L' : MvPolynomial (Fin 2) k} (h : Associated L L') :
