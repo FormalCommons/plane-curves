@@ -13,6 +13,7 @@ public import TauCeti.RingTheory.Length
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.LocalRing
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
 public import PlaneCurves.RingTheory.MvPolynomial.VanishingIdeal
+public import PlaneCurves.RingTheory.Length
 public import PlaneCurves.RingTheory.LocalRing.Length
 public import PlaneCurves.RingTheory.MvPolynomial.Factorization
 public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
@@ -226,18 +227,6 @@ theorem intersectionNumber_mul_right_of_eval_ne_zero (hU : eval P U ≠ 0) :
 
 /-! #### Changes of coordinates -/
 
-/-- An isomorphism of local rings carrying `F, G` to `F', G'` preserves intersection numbers. -/
-private theorem intersectionNumber_eq_of_ringEquiv {Q : Fin 2 → k}
-    (e : AffineSpace.localRing k P ≃+* AffineSpace.localRing k Q)
-    {F' G' : MvPolynomial (Fin 2) k} (hF : e (algebraMap _ _ F) = algebraMap _ _ F')
-    (hG : e (algebraMap _ _ G) = algebraMap _ _ G') :
-    intersectionNumber Q F' G' = intersectionNumber P F G := by
-  have h := Ideal.length_quotient_map_of_surjective
-    (Ideal.span {algebraMap _ (AffineSpace.localRing k P) F, algebraMap _ _ G}) e.surjective
-  rw [Ideal.map_span, Set.image_pair, hF, hG,
-    (RingHom.injective_iff_ker_eq_bot _).1 e.injective, sup_bot_eq] at h
-  rw [intersectionNumber_def, intersectionNumber_def, h]
-
 /-- **Property (3)**: intersection numbers are invariant under polynomial changes of coordinates.
 If `ψ` is a `k`-algebra automorphism of `k[X, Y]`, the substitution of a polynomial
 automorphism `T` of `𝔸²` with `T(Q) = P`, so that `(ψ g)(Q) = g(P)`, then
@@ -245,19 +234,23 @@ automorphism `T` of `𝔸²` with `T(Q) = P`, so that `(ψ g)(Q) = g(P)`, then
 theorem intersectionNumber_algEquiv {Q : Fin 2 → k}
     (ψ : MvPolynomial (Fin 2) k ≃ₐ[k] MvPolynomial (Fin 2) k) (h : ∀ g, eval Q (ψ g) = eval P g)
     (F G : MvPolynomial (Fin 2) k) :
-    intersectionNumber Q (ψ F) (ψ G) = intersectionNumber P F G :=
-  intersectionNumber_eq_of_ringEquiv (AffineSpace.localRing.mapEquiv ψ h).toRingEquiv
-    (AffineSpace.localRing.mapEquiv_algebraMap ψ h F)
-    (AffineSpace.localRing.mapEquiv_algebraMap ψ h G)
+    intersectionNumber Q (ψ F) (ψ G) = intersectionNumber P F G := by
+  rw [intersectionNumber_def, intersectionNumber_def]
+  exact Ideal.length_quotient_span_pair_eq_of_ringEquiv
+    (AffineSpace.localRing.mapEquiv ψ h).toRingEquiv
+    (.of_eq (AffineSpace.localRing.mapEquiv_algebraMap ψ h F))
+    (.of_eq (AffineSpace.localRing.mapEquiv_algebraMap ψ h G))
 
 /-- Translating `P` to the origin preserves intersection numbers:
 `I(0, F(X + P) ∩ G(X + P)) = I(P, F ∩ G)`. -/
 @[simp]
 theorem intersectionNumber_taylor (P : Fin 2 → k) (F G : MvPolynomial (Fin 2) k) :
-    intersectionNumber 0 (taylor P F) (taylor P G) = intersectionNumber P F G :=
-  intersectionNumber_eq_of_ringEquiv (AffineSpace.localRing.taylorEquiv P).toRingEquiv
-    (AffineSpace.localRing.taylorEquiv_algebraMap F)
-    (AffineSpace.localRing.taylorEquiv_algebraMap G)
+    intersectionNumber 0 (taylor P F) (taylor P G) = intersectionNumber P F G := by
+  rw [intersectionNumber_def, intersectionNumber_def]
+  exact Ideal.length_quotient_span_pair_eq_of_ringEquiv
+    (AffineSpace.localRing.taylorEquiv P).toRingEquiv
+    (.of_eq (AffineSpace.localRing.taylorEquiv_algebraMap F))
+    (.of_eq (AffineSpace.localRing.taylorEquiv_algebraMap G))
 
 /-- An invertible linear substitution `f ↦ f(M X)` preserves intersection numbers:
 `I(P, F(M X) ∩ G(M X)) = I(M P, F ∩ G)`. -/
@@ -265,11 +258,12 @@ theorem intersectionNumber_taylor (P : Fin 2 → k) (F G : MvPolynomial (Fin 2) 
 theorem intersectionNumber_linearSubst (M : Matrix.GeneralLinearGroup (Fin 2) k)
     (P : Fin 2 → k) (F G : MvPolynomial (Fin 2) k) :
     intersectionNumber P (linearSubst M.1 F) (linearSubst M.1 G) =
-      intersectionNumber (M.1.mulVec P) F G :=
-  intersectionNumber_eq_of_ringEquiv
+      intersectionNumber (M.1.mulVec P) F G := by
+  rw [intersectionNumber_def, intersectionNumber_def]
+  exact Ideal.length_quotient_span_pair_eq_of_ringEquiv
     (AffineSpace.localRing.linearSubstEquiv (P := P) M).toRingEquiv
-    (AffineSpace.localRing.linearSubstEquiv_algebraMap M F)
-    (AffineSpace.localRing.linearSubstEquiv_algebraMap M G)
+    (.of_eq (AffineSpace.localRing.linearSubstEquiv_algebraMap M F))
+    (.of_eq (AffineSpace.localRing.linearSubstEquiv_algebraMap M G))
 
 /-! #### Finiteness -/
 
