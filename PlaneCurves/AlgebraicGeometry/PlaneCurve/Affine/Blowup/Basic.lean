@@ -810,8 +810,7 @@ theorem exists_finset_eval_zero_blowupStrictTransform [IsAlgClosed k] (hF : F �
     intro L hL
     obtain ⟨α, hα⟩ := hL.exists_associated_X_one_sub_C_mul_X_zero hX
     refine ⟨_, Finset.mem_image_of_mem _ ((hA α).2 ((hfib α).2 ?_)), hα⟩
-    exact isTangentAt_def.2 ⟨isHomogeneous_X_one_sub_C_mul_X_zero α,
-      X_one_sub_C_mul_X_zero_ne_zero α, hα.symm.dvd.trans hL.dvd⟩
+    exact hL.isTangentAt_X_one_sub_C_mul_X_zero_of_associated hα
   obtain ⟨ε, hε, heq⟩ := leadingFormAt_eq_C_mul_prod_pow hs hpair hcov hF
   exact ⟨ε, hε, by rwa [Finset.prod_image fun α _ β _ h ↦
     X_one_sub_C_mul_X_zero_injective h] at heq⟩

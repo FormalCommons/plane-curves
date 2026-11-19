@@ -49,6 +49,11 @@ public section
 
 namespace MvPolynomial
 
+/-- The linear form `X₁ - α X₀` is a form of degree one. -/
+theorem isHomogeneous_X_one_sub_C_mul_X_zero {R : Type*} [CommRing R] {n : ℕ} (α : R) :
+    (X 1 - C α * X 0 : MvPolynomial (Fin (n + 2)) R).IsHomogeneous 1 :=
+  (isHomogeneous_X R 1).sub (isHomogeneous_C_mul_X α 0)
+
 section Domain
 
 variable {R : Type*} [CommRing R] [IsDomain R] {F : MvPolynomial (Fin 2) R} {d : ℕ}
@@ -189,11 +194,6 @@ theorem rel_associated_of_C_mul_prod_eq {ε ε' : K} (hε : ε ≠ 0) (hε' : ε
   refine (associated_unit_mul_left _ _ ((Ne.isUnit hε).map C)).symm.trans ?_
   rw [h]
   exact associated_unit_mul_left _ _ ((Ne.isUnit hε').map C)
-
-/-- The linear form `Y - α X` is a form of degree one. -/
-theorem isHomogeneous_X_one_sub_C_mul_X_zero (α : K) :
-    (X 1 - C α * X 0 : MvPolynomial (Fin 2) K).IsHomogeneous 1 :=
-  (isHomogeneous_X K 1).sub (isHomogeneous_C_mul_X α 0)
 
 /-- The linear form `Y - α X` is nonzero. -/
 theorem X_one_sub_C_mul_X_zero_ne_zero (α : K) : (X 1 - C α * X 0 : MvPolynomial (Fin 2) K) ≠ 0 :=
