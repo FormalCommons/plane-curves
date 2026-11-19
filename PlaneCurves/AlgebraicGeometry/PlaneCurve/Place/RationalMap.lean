@@ -113,12 +113,8 @@ theorem existsUnique_map_le_of_isDiscreteValuationRing [IsAlgClosed k]
 `ψ : k(C) → L` a `k`-embedding into an algebraic function field `L` of one variable. The
 valuation ring of every place of `L` dominates `ψ(𝒪_P(C))` for exactly one point `P ∈ C`. -/
 theorem existsUnique_isCenter_integers [IsAlgClosed k] (hL : IsFunctionField k L)
-    (ψ : functionField hF →ₐ[k] L) (Q : Place k L) : ∃! P, IsCenter hF ψ Q.integers P := by
-  refine existsUnique_isCenter_of_ne_top hL ψ Q.algebraMap_mem_integers fun h ↦ ?_
-  obtain ⟨z, -, hz⟩ := Q.exists_ne_zero_ord_eq (-1)
-  have hz' : z ∈ Q.integers := h ▸ ValuationSubring.mem_top _
-  rw [Place.mem_integers_iff_ord_nonneg, hz] at hz'
-  exact absurd hz' (by decide)
+    (ψ : functionField hF →ₐ[k] L) (Q : Place k L) : ∃! P, IsCenter hF ψ Q.integers P :=
+  existsUnique_isCenter_of_ne_top hL ψ Q.algebraMap_mem_integers Q.integers_ne_top
 
 /-- **Rational maps from a curve to a projective curve are defined at simple points.** Let `k` be
 algebraically closed, `C : F = 0` an irreducible projective plane curve with function field
