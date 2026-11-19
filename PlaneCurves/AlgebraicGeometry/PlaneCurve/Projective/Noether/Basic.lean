@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.QuotientPiLocalRing
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Basic
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.CurveLocalRing
 public import PlaneCurves.RingTheory.Ideal.Span
 public import PlaneCurves.RingTheory.MvPolynomial.HomogeneousIdeal
 
@@ -31,6 +32,10 @@ conditions say that the image of `H_*` in `∏_P 𝒪_P(𝔸²)/(F_*, G_*) ≅ k
 so `H_* ∈ (F_*, G_*)`; Step 2 of the proof of Bézout's theorem gives `H ∈ (F, G)`. The degrees of
 `A` and `B` come from homogeneous components.
 
+As a consequence, a rational function on an irreducible projective plane curve `C : F = 0` that
+is regular at every point of `C` is constant (Fulton, Problem 5.30): writing it as `H / G` with
+`F ∤ G`, Noether's conditions for `H` hold at every point, so `H = A F + b G` with `b ∈ k`.
+
 ## Main definitions
 
 * `PlaneCurves.Projective.NoetherConditionsAt P F G H`: `H_* ∈ (F_*, G_*)` in `𝒪_P(ℙⁿ)`.
@@ -50,10 +55,13 @@ so `H_* ∈ (F_*, G_*)`; Step 2 of the proof of Bézout's theorem gives `H ∈ (
   Noether's conditions hold at every point of `V(F) ∩ V(G)`.
 * `exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt`: its degree form.
 * `noetherConditionsAt_spec`: the milestone, both forms.
+* `exists_algebraMap_eq_of_forall_mem_localSubring`: a rational function on an irreducible
+  projective plane curve that lies in every local ring `𝒪_P(C)` is constant; and
+  `forall_mem_localSubring_iff_exists_algebraMap_eq`, the converse included.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.5
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.5, Problem 5.30
 -/
 
 public section
@@ -255,6 +263,49 @@ theorem noetherConditionsAt_spec (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous 
     mem_span_pair_iff_forall_noetherConditionsAt hF hG hH hFG,
     exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt hF hG hH hFG⟩
 
+/-! ### Regular functions on an irreducible curve -/
+
+/-- **Regular functions on an irreducible projective plane curve are constant** (Fulton,
+Problem 5.30). Let `k` be algebraically closed and `C : F = 0` an irreducible projective plane
+curve. A rational function `z ∈ k(C)` that lies in the local ring `𝒪_P(C)` at every point
+`P ∈ C` is a constant `a ∈ k`. -/
+theorem exists_algebraMap_eq_of_forall_mem_localSubring (hF : F.IsHomogeneous d)
+    [Fact (Irreducible F)] {z : functionField hF}
+    (hz : ∀ P, z ∈ (localSubring hF P).toSubring) : ∃ a : k, algebraMap k _ a = z := by
+  obtain ⟨m, H, G, hH, hG, hGF, rfl⟩ := ProjectiveSpace.functionField.exists_eq_mk z
+  have hrel : IsRelPrime F G := (Fact.out : Irreducible F).isRelPrime_iff_not_dvd.2
+    fun h ↦ hGF ((AlgebraicGeometry.projectivePlaneCurve.mem_ideal_iff hF).2 h)
+  obtain ⟨A, B, -, hB, -, -, hAB⟩ :=
+    (exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt hF hG hH hrel).2
+      fun P hPF _ ↦ by
+        obtain ⟨e, f, g, hf, hg, hgP, hfg⟩ :=
+          mem_localSubring_iff.1 (hz ⟨P, (mem_zeroLocus_ideal_iff hF).2 hPF⟩)
+        obtain ⟨c, hc⟩ := (AlgebraicGeometry.projectivePlaneCurve.mem_ideal_iff hF).1
+          ((ProjectiveSpace.functionField.mk_eq_mk_iff _ _ _ _ _ _).1 hfg)
+        obtain ⟨u, hu⟩ := ((isUnit_localEquation_iff hg).2 hgP).exists_left_inv
+        have h := congrArg (localEquation P) (sub_eq_iff_eq_add.1 hc)
+        simp only [map_add, map_mul] at h
+        rw [noetherConditionsAt_iff hF hG, Ideal.mem_span_pair]
+        exact ⟨u * localEquation P c, u * localEquation P f,
+          by linear_combination localEquation P H * hu - u * h⟩
+  rw [Nat.sub_self, ← totalDegree_zero_iff_isHomogeneous, totalDegree_eq_zero_iff_eq_C] at hB
+  have h1 : (1 : MvPolynomial (Fin 3) k) ∉ AlgebraicGeometry.projectivePlaneCurve.ideal hF :=
+    fun h ↦ (Fact.out : Irreducible F).not_isUnit
+      (isUnit_of_dvd_one ((AlgebraicGeometry.projectivePlaneCurve.mem_ideal_iff hF).1 h))
+  refine ⟨B.coeff 0, ?_⟩
+  rw [ProjectiveSpace.functionField.algebraMap_eq_mk _ h1,
+    ProjectiveSpace.functionField.mk_eq_mk_iff,
+    AlgebraicGeometry.projectivePlaneCurve.mem_ideal_iff hF, ← hAB, ← hB]
+  exact ⟨-A, by ring⟩
+
+/-- Let `k` be algebraically closed and `C : F = 0` an irreducible projective plane curve. A
+rational function `z ∈ k(C)` lies in `𝒪_P(C)` for every `P ∈ C` iff it is a constant. -/
+theorem forall_mem_localSubring_iff_exists_algebraMap_eq (hF : F.IsHomogeneous d)
+    [Fact (Irreducible F)] {z : functionField hF} :
+    (∀ P, z ∈ (localSubring hF P).toSubring) ↔ ∃ a : k, algebraMap k _ a = z := by
+  refine ⟨exists_algebraMap_eq_of_forall_mem_localSubring hF, ?_⟩
+  rintro ⟨a, rfl⟩ P
+  exact (algebraMap k (localSubring hF P).toSubring a).2
 end PlaneCurves.Projective
 
 end
