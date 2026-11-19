@@ -72,6 +72,25 @@ Each entry has this form:
 
 ## atlas/03-resolution-of-singularities.md
 
+### Blow-up of ℙ² at the ordinary multiple points stated through the nonsingular model
+
+- **Where:** `atlas/03-resolution-of-singularities.md`, §7.3, milestone *Resolution of a plane
+  curve with only ordinary multiple points by blowing up*.
+- **Error:** it says "Let $B \subseteq \mathbb{P}^2 \times (\mathbb{P}^1)^t$ be the blow-up of
+  $\mathbb{P}^2$ at $P_1, \dots, P_t$ … and $C'$ the closure in $B$ of
+  $\pi^{-1}(C \setminus \{P_1, \dots, P_t\})$". This is not a false statement but one the plan
+  gives no means to state: $B$ is a multiprojective variety, which the plan defers (the page's
+  formalization note: "Fulton's construction needs multiprojective varieties and the Segre
+  embedding"), so the library has no $B$ and no closure in it.
+- **Fix:** as `DESIGN.md` (departure 7) and the page's recommended route say, $C'$ is the
+  nonsingular model of $C$, the places of $k(C)$, and $f$ is the centre map.
+  `PlaneCurves.Projective.center_spec_of_isOrdinaryMultiplePoint` proves every conclusion for
+  it: finitely many multiple points, every local ring of $C'$ a discrete valuation ring, $f$
+  onto, exactly one place with valuation ring $\mathcal{O}_P(C)$ over every other point
+  (`centerEquivSimplePoints`), and over each $P_i$ exactly $m_{P_i}(C)$ places in bijection with
+  the tangents (`placesOverEquivTangents`). That $C'$ is the closure in $B$ is not proved.
+- **Issue:** #109.
+
 ## atlas/04-riemann-roch.md
 
 ## Other sources
