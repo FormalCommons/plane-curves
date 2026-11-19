@@ -33,8 +33,9 @@ affine ones of §3.3.
   `G_(i)` at the chart point of `P`, for every chart `Xᵢ ≠ 0` containing `P`.
 * `intersectionNumber_ne_top_iff`, property (1): `I(P, F ∩ G)` is finite iff `F` and `G` have no
   common component through `P`. In a chart this is `intersectProperlyAt_dehomogenize_iff`.
-* `intersectionNumber_eq_zero_iff`, property (2): `I(P, F ∩ G) = 0` iff `P ∉ V(F) ∩ V(G)`; and
-  `intersectionNumber_mul_left_of_eval_ne_zero`: components not through `P` do not count.
+* `intersectionNumber_eq_zero_iff`, property (2): `I(P, F ∩ G) = 0` iff `P ∉ V(F) ∩ V(G)`;
+  `intersectionNumber_mul_left_of_eval_ne_zero`: components not through `P` do not count;
+  `intersectionNumber_C_left`, `intersectionNumber_C_right`: nonzero constants meet nothing.
 * `intersectionNumber_linearSubst`, property (3): invariance under projective changes of
   coordinates; the local equations correspond by `associated_linearSubstEquiv_localEquation`
   in `PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.LocalRing`.
@@ -118,6 +119,21 @@ theorem intersectionNumber_eq_zero_iff (hF : F.IsHomogeneous d) (hG : G.IsHomoge
   rw [intersectionNumber_eq_affine hF hG hP, Affine.intersectionNumber_eq_zero_iff, Ne, Ne,
     eval_affineChart_dehomogenize_eq_zero_iff hP hF,
     eval_affineChart_dehomogenize_eq_zero_iff hP hG]
+
+/-- A nonzero constant meets no curve: `I(P, c ∩ G) = 0` for `c ≠ 0`. -/
+@[simp]
+theorem intersectionNumber_C_left {c : k} (hc : c ≠ 0) (P : ℙ k (Fin 3 → k))
+    (G : MvPolynomial (Fin 3) k) : intersectionNumber P (C c) G = 0 := by
+  have h : Ideal.span {C c, G} = ⊤ := Ideal.eq_top_of_isUnit_mem _
+    (Ideal.subset_span (by simp)) ((isUnit_iff_ne_zero.2 hc).map C)
+  rw [intersectionNumber_def, h, localIdeal_top]
+  exact Module.length_eq_zero
+
+/-- No curve meets a nonzero constant: `I(P, F ∩ c) = 0` for `c ≠ 0`. -/
+@[simp]
+theorem intersectionNumber_C_right {c : k} (hc : c ≠ 0) (P : ℙ k (Fin 3 → k))
+    (F : MvPolynomial (Fin 3) k) : intersectionNumber P F (C c) = 0 := by
+  rw [intersectionNumber_comm, intersectionNumber_C_left hc]
 
 /-- **Property (2)**, second part: components not through `P` do not count,
 `I(P, F U ∩ G) = I(P, F ∩ G)` for a form `U` with `U(P) ≠ 0`. -/
