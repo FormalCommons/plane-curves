@@ -581,8 +581,9 @@ with their files.
   **`IsAdjoint F G`**, and **`adjointSubmodule F m : Submodule k (MvPolynomial (Fin 3) k)`**
   (`V_m`). API: effectivity, support, `degree_adjointDivisor`, multiples of
   `F` are adjoint, `isAdjoint_iff_le_formDivisor`, the linear map
-  `V_m → TauCeti.riemannRochSpace (m • div L − E)` (`G ↦ G/L^m`), its kernel
-  and surjectivity.
+  `V_m → TauCeti.riemannRochSpace (m • div L − E)` (`G ↦ G/L^m`) and its
+  kernel. Its surjectivity needs D7's adjoint division lemma, so D8
+  (`Adjoint/RiemannRochSpace.lean`, **8-lem**) proves it.
 
 ### Differentials (`FieldTheory/FunctionField/KaehlerDifferential.lean`)
 
