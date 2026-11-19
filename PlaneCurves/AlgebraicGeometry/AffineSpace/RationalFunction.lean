@@ -48,6 +48,8 @@ prime ideals of `𝒪_P(V)`.
 * `PlaneCurves.AffineSpace.isFractionRing_localSubring`: `k(V)` is the field of fractions of
   `𝒪_P(V)`.
 * `PlaneCurves.AffineSpace.ker_evalAt`: the kernel of the value map is the maximal ideal.
+* `PlaneCurves.AffineSpace.surjective_algebraMap_residueField_localSubring`: the residue field
+  of `𝒪_P(V)` is `k`: the map from `k` to it is surjective.
 * `PlaneCurves.AffineSpace.isUnit_iff_evalAt_ne_zero`: the units of `𝒪_P(V)` are the functions
   not vanishing at `P`.
 * `PlaneCurves.AffineSpace.quotientAlgEquiv_eq_mk_mk'`: `𝒪_P(V) ≅ 𝒪_P(𝔸ⁿ) ⧸ I 𝒪_P(𝔸ⁿ)` sends
@@ -307,6 +309,12 @@ theorem residueFieldAlgEquiv_def : residueFieldAlgEquiv P hI =
 theorem residueFieldAlgEquiv_residue (f : (localSubring P hI).toSubring) :
     residueFieldAlgEquiv P hI (residue _ f) = evalAt P hI f :=
   quotientKerAlgEquivOfSurjective_mk (evalAt_surjective P hI) f
+
+/-- The residue field of `𝒪_P(V)` is `k`: the map `k → 𝒪_P(V) ⧸ 𝔪_P(V)` is surjective. -/
+theorem surjective_algebraMap_residueField_localSubring :
+    Function.Surjective (algebraMap k (ResidueField (localSubring P hI).toSubring)) := fun w ↦
+  ⟨residueFieldAlgEquiv P hI w, (residueFieldAlgEquiv P hI).injective (by
+    rw [AlgEquiv.commutes, Algebra.algebraMap_self, RingHom.id_apply])⟩
 
 /-- `𝒪_P(V)` is Noetherian. -/
 instance [Finite σ] : IsNoetherianRing (localSubring P hI).toSubring :=

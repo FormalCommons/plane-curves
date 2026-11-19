@@ -5,6 +5,7 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import PlaneCurves.AlgebraicGeometry.AffineSpace.Place
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.NonsingularModel.Normalization
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionNumber.Properties
 
@@ -23,6 +24,9 @@ The proof is the library route of the atlas: the integral closure `Õ` of `𝒪_
 holomorphy ring of the places over `P`, a finite `𝒪_P(C)`-module with a nonzero conductor
 element; so `ℓ(𝒪_P(C) ⧸ (g)) = ℓ(Õ ⧸ (g)) = ∑_Q ord_Q g`
 (`TauCeti.ord_eq_sum_ord_of_integralClosure_eq_holomorphyRing`).
+For an irreducible affine plane curve `F` the argument is the same, with the local ring
+`𝒪_P(F) ⊆ k(F)` and the places of `k(F)` whose valuation ring contains it
+(`PlaneCurves.AffineSpace.map_natCast_ord_localSubring_eq_sum_addValuation`).
 
 ## Main results
 
@@ -31,6 +35,11 @@ element; so `ℓ(𝒪_P(C) ⧸ (g)) = ℓ(Õ ⧸ (g)) = ∑_Q ord_Q g`
   `map_natCast_ord_localSubring_eq_sum_addValuation`, the same in `WithTop ℤ`.
 * `PlaneCurves.Projective.map_natCast_intersectionNumber_eq_sum_ordForm`: intersection numbers
   as sums of orders at places, `I(P, C ∩ G) = ∑_Q ord_Q(G)`.
+* `PlaneCurves.Affine.intersectionNumber_eq_ord_localSubring`: for an affine plane curve `F`,
+  `I(P, F ∩ G)` is the order of `G` in `𝒪_P(F) ⊆ k(F)`.
+* `PlaneCurves.Affine.map_natCast_intersectionNumber_eq_sum_addValuation`: intersection numbers as
+  sums of orders at places for an irreducible affine plane curve `F`, `I(P, F ∩ G) = ∑_Q ord_Q(G)`,
+  the sum running over the places of `k(F)` whose valuation ring contains `𝒪_P(F)`.
 
 ## References
 
@@ -144,5 +153,65 @@ theorem map_natCast_intersectionNumber_eq_sum_ordForm {m : ℕ} {G : MvPolynomia
   exact (Finset.sum_congr rfl hord).symm
 
 end PlaneCurves.Projective
+
+/-! ### Affine plane curves -/
+
+namespace PlaneCurves.Affine
+
+open AffineSpace
+
+variable {k : Type*} [Field k] {F : MvPolynomial (Fin 2) k} [(Ideal.span {F}).IsPrime]
+  {P : Fin 2 → k}
+
+/-- **The intersection number as an order in `𝒪_P(F)`.** For an affine plane curve `F` with
+`(F)` prime and `P ∈ V(F)`, `I(P, F ∩ G)` is the order of the class of `G` in the local ring
+`𝒪_P(F) ⊆ k(F)`: the length of `𝒪_P(F) ⧸ (G)`. -/
+theorem intersectionNumber_eq_ord_localSubring (hP : eval P F = 0) (G : MvPolynomial (Fin 2) k) :
+    intersectionNumber P F G = Ring.ord (localSubring P (span_le_vanishingIdeal hP)).toSubring
+      (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) G)) := by
+  have h : (Ideal.span {F}).map (algebraMap _ (localRing k P)) =
+      Ideal.span {algebraMap _ (localRing k P) F} := by
+    rw [Ideal.map_span, Set.image_singleton]
+  let e : (localSubring P (span_le_vanishingIdeal hP)).toSubring ≃+*
+      localRing k P ⧸ (Ideal.span {F}).map (algebraMap _ (localRing k P)) :=
+    (quotientAlgEquiv P (span_le_vanishingIdeal hP)).toRingEquiv
+  rw [intersectionNumber_eq_ord, ← h, ← TauCeti.Ring.ord_ringEquiv e]
+  simp [e]
+
+variable [IsAlgClosed k]
+
+/-- **Intersection numbers as sums of orders at places, for affine plane curves.** Let `k` be
+algebraically closed, `F` an irreducible affine plane curve, `P ∈ V(F)`, and `G` any polynomial.
+Then `I(P, F ∩ G) = ∑_Q ord_Q(G)`, the sum running over the places `Q` of `k(F)` over `P`, those
+whose valuation ring contains `𝒪_P(F)` (finitely many, by
+`PlaneCurves.AffineSpace.finite_setOf_localSubring_le_integers`), and `ord_Q(G)` being the order
+at `Q` of the class of `G`. The intersection number is cast from `ℕ∞` to `WithTop ℤ`; both sides
+are `⊤` exactly when `F ∣ G`. -/
+theorem map_natCast_intersectionNumber_eq_sum_addValuation (hF : Irreducible F)
+    (hP : eval P F = 0) (G : MvPolynomial (Fin 2) k) :
+    (intersectionNumber P F G).map (Nat.cast : ℕ → ℤ) =
+      ∑ Q ∈ (finite_setOf_localSubring_le_integers P (span_le_vanishingIdeal hP)
+          (isFunctionField_functionField_span_singleton hF)).toFinset,
+        Q.addValuation (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) G)) := by
+  have hK := isFunctionField_functionField_span_singleton hF
+  by_cases hFG : F ∣ G
+  · have hI : intersectionNumber P F G = ⊤ :=
+      intersectionNumber_eq_top_iff.2 fun h ↦ intersectProperlyAt_def.1 h F hF dvd_rfl hFG hP
+    have hG : Ideal.Quotient.mk (Ideal.span {F}) G = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton.2 hFG)
+    obtain ⟨Q, hQ⟩ := nonempty_setOf_localSubring_le_integers P (span_le_vanishingIdeal hP) hK
+    rw [hI, ENat.map_top, hG, map_zero, eq_comm]
+    exact WithTop.sum_eq_top.2 ⟨Q, (Set.Finite.mem_toFinset _).2 hQ, AddValuation.map_zero _⟩
+  have hg : (algebraMap _ (localSubring P (span_le_vanishingIdeal hP)).toSubring
+      (Ideal.Quotient.mk (Ideal.span {F}) G)) ≠ 0 := fun h ↦ hFG <| Ideal.mem_span_singleton.1 <|
+    Ideal.Quotient.eq_zero_iff_mem.1 <|
+      IsFractionRing.injective _ (AffineSpace.functionField _) <| by
+        rw [← AffineSpace.coe_algebraMap_localSubring P (span_le_vanishingIdeal hP), h,
+          ZeroMemClass.coe_zero, map_zero]
+  rw [intersectionNumber_eq_ord_localSubring hP,
+    map_natCast_ord_localSubring_eq_sum_addValuation _ _ hK hg]
+  rfl
+
+end PlaneCurves.Affine
 
 end
