@@ -30,6 +30,13 @@ fields agree: `k(V) ≅ k(V_*)`, `f / g ↦ f_* / g_*`. For a zero `P` of `I` in
 `Xᵢ ≠ 0`, this isomorphism restricts to the local rings: `𝒪_P(V) ≅ 𝒪_{φᵢ(P)}(V_*)`, compatibly
 with the values at `P` and `φᵢ(P)`.
 
+For a projective variety `W` not contained in `Xᵢ = 0`, `I(W)_* = I(W_*)`
+(`vanishingIdeal_affinePart`), and for an affine variety `V`, `I(V*)_* = I(V)`
+(`map_dehomogenize_vanishingIdeal_projectiveClosure`). Transporting the isomorphisms above
+along these equalities gives `Γ_h(W)_(xᵢ) ≅ Γ(W_*)`, `k(W) ≅ k(W_*)` and
+`𝒪_P(W) ≅ 𝒪_{φᵢ(P)}(W_*)` for `P ∈ W ∩ Uᵢ`, and `k(V*) ≅ k(V)` and
+`𝒪_{φᵢ(Q)}(V*) ≅ 𝒪_Q(V)` for `Q ∈ V`.
+
 ## Main definitions
 
 * `PlaneCurves.ProjectiveSpace.localRing.chartEquiv i hP`: the isomorphism
@@ -40,6 +47,14 @@ with the values at `P` and `φᵢ(P)`.
   `k(V) ≃ₐ[k] k(V_*)`, for `V = V(I)` and `V_* = V(J)`.
 * `PlaneCurves.ProjectiveSpace.varietyLocalRing.chartEquiv i P hP`: the isomorphism
   `𝒪_P(V) ≃ₐ[k] 𝒪_{φᵢ(P)}(V_*)`, for `P ∈ V` with `P ∈ Uᵢ`.
+* `PlaneCurves.ProjectiveSpace.awayEquivAffinePart i hW h`: `Γ_h(W)_(xᵢ) ≃ₐ[k] Γ(W_*)`.
+* `PlaneCurves.ProjectiveSpace.functionField.affinePartEquiv i hW h`: `k(W) ≃ₐ[k] k(W_*)`.
+* `PlaneCurves.ProjectiveSpace.varietyLocalRing.affinePartEquiv i hW P hP`:
+  `𝒪_P(W) ≃ₐ[k] 𝒪_{φᵢ(P)}(W_*)`.
+* `PlaneCurves.ProjectiveSpace.functionField.projectiveClosureEquiv i V`: `k(V*) ≃ₐ[k] k(V)`.
+* `PlaneCurves.ProjectiveSpace.projectiveClosurePoint i hQ`: the point `φᵢ(Q)` of `V*`.
+* `PlaneCurves.ProjectiveSpace.varietyLocalRing.projectiveClosureEquiv i hQ`:
+  `𝒪_{φᵢ(Q)}(V*) ≃ₐ[k] 𝒪_Q(V)`.
 
 ## Main results
 
@@ -55,6 +70,11 @@ with the values at `P` and `φᵢ(P)`.
 * `varietyLocalRing.coe_chartEquiv`: the local isomorphism is the restriction of the
   function-field isomorphism.
 * `varietyLocalRing.evalAt_chartEquiv`: it preserves values.
+* `functionField.affinePartEquiv_mk`, `functionField.projectiveClosureEquiv_mk`:
+  `f / g ↦ f_* / g_*`; `varietyLocalRing.coe_affinePartEquiv`,
+  `varietyLocalRing.coe_projectiveClosureEquiv`: the local isomorphisms are restrictions of the
+  function-field isomorphisms, and they preserve values.
+* `affineChart_spec`: the milestone, parts (a) and (b).
 
 ## References
 
@@ -630,6 +650,377 @@ theorem varietyLocalRing.evalAt_chartEquiv (z : varietyLocalRing I P) :
 end LocalRing
 
 end Variety
+
+/-! ### Projective varieties and their affine parts -/
+
+section Subvariety
+
+open HomogeneousLocalization
+
+variable {k : Type*} [Field k] {n : ℕ} {i : Fin (n + 1)}
+
+section affinePart
+
+variable {W : Set (ℙ k (Fin (n + 1) → k))} (hW : zeroLocus (vanishingIdeal W) = W)
+  [hp : (vanishingIdeal W).toIdeal.IsPrime]
+
+section
+
+variable (h : ¬ W ⊆ (affineOpen i)ᶜ)
+
+variable (i) in
+/-- **Affine charts preserve coordinate rings.** For a projective variety `W` not contained in
+the hyperplane `Xᵢ = 0`, the degree-zero part of `Γ_h(W)[1/xᵢ]` is the coordinate ring
+`Γ(W_*)` of the affine part `W_*`: the fraction `p / xᵢᵐ`, for a form `p` of degree `m`, goes to
+the class of `p_*` (`awayEquivAffinePart_mk`). -/
+noncomputable def awayEquivAffinePart :
+    Away (vanishingIdeal W).quotientGrading
+        (Ideal.Quotient.mk (vanishingIdeal W).toIdeal (X i)) ≃ₐ[k]
+      MvPolynomial (Fin n) k ⧸ MvPolynomial.vanishingIdeal k (affinePart i W) :=
+  ((vanishingIdeal W).awayEquivDehomogenize i).trans
+    (Ideal.quotientEquivAlgOfEq k (vanishingIdeal_affinePart hW hp h).symm)
+
+theorem awayEquivAffinePart_def : awayEquivAffinePart i hW h =
+    ((vanishingIdeal W).awayEquivDehomogenize i).trans
+      (Ideal.quotientEquivAlgOfEq k (vanishingIdeal_affinePart hW hp h).symm) :=
+  (rfl)
+
+/-- The isomorphism `Γ_h(W)_(xᵢ) ≅ Γ(W_*)` sends `p / xᵢᵐ` to the class of `p_*`. -/
+@[simp]
+theorem awayEquivAffinePart_mk {m : ℕ} {p : MvPolynomial (Fin (n + 1)) k}
+    (hpm : Ideal.Quotient.mk (vanishingIdeal W).toIdeal p ∈
+      (vanishingIdeal W).quotientGrading (m • 1)) :
+    awayEquivAffinePart i hW h
+        (Away.mk _ ((vanishingIdeal W).mk_X_mem_quotientGrading i) m _ hpm) =
+      Ideal.Quotient.mk _ (dehomogenize i p) := by
+  rw [awayEquivAffinePart_def, AlgEquiv.trans_apply,
+    HomogeneousIdeal.awayEquivDehomogenize_mk, Ideal.quotientEquivAlgOfEq_mk]
+
+variable (i) in
+/-- **Affine charts preserve function fields.** For a projective variety `W` not contained in
+the hyperplane `Xᵢ = 0`, the function field `k(W)` is the function field `k(W_*)` of the affine
+part: the isomorphism sends `f / g` to `f_* / g_*` (`affinePartEquiv_mk`). -/
+noncomputable def functionField.affinePartEquiv :
+    functionField (vanishingIdeal W) ≃ₐ[k]
+      AffineSpace.functionField (MvPolynomial.vanishingIdeal k (affinePart i W)) :=
+  (functionField.chartEquiv i (X_mem_vanishingIdeal_iff.not.2 h)).trans
+    (AffineSpace.functionField.equivOfEq (vanishingIdeal_affinePart hW hp h).symm)
+
+theorem functionField.affinePartEquiv_def : functionField.affinePartEquiv i hW h =
+    (functionField.chartEquiv i (X_mem_vanishingIdeal_iff.not.2 h)).trans
+      (AffineSpace.functionField.equivOfEq (vanishingIdeal_affinePart hW hp h).symm) :=
+  (rfl)
+
+/-- The isomorphism `k(W) ≅ k(W_*)` sends `f / g` to `f_* / g_*`. -/
+@[simp]
+theorem functionField.affinePartEquiv_mk {d : ℕ} {f g : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgI : g ∉ vanishingIdeal W) :
+    haveI := isPrime_vanishingIdeal_affinePart hW hp h
+    functionField.affinePartEquiv i hW h (functionField.mk hf hg hgI) =
+      algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k (affinePart i W))
+        (dehomogenize i f)) /
+        algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k (affinePart i W))
+          (dehomogenize i g)) := by
+  have := isPrime_vanishingIdeal_affinePart hW hp h
+  have := isPrime_map_dehomogenize (vanishingIdeal W) (X_mem_vanishingIdeal_iff.not.2 h)
+  rw [functionField.affinePartEquiv_def, AlgEquiv.trans_apply, functionField.chartEquiv_mk,
+    AffineSpace.functionField.equivOfEq_div]
+
+end
+
+variable (P : zeroLocus (vanishingIdeal W : Set (MvPolynomial (Fin (n + 1)) k)))
+  (hP : P.1 ∈ affineOpen i)
+include hP
+
+omit hp in
+/-- The affine part `W_*` contains the affine coordinates `φᵢ(P)` of a zero `P ∈ Uᵢ` of `I(W)`. -/
+theorem vanishingIdeal_affinePart_le_vanishingIdeal :
+    MvPolynomial.vanishingIdeal k (affinePart i W) ≤
+      MvPolynomial.vanishingIdeal k {affineChart i P.1} := by
+  refine MvPolynomial.vanishingIdeal_anti_mono (Set.singleton_subset_iff.2 ?_)
+  rw [affinePart_eq_preimage, Set.mem_preimage,
+    (affineChart i).left_inv (by rwa [affineChart_source])]
+  exact P.2
+
+include hW in
+omit hp in
+/-- A projective variety with a point in `Uᵢ` is not contained in the hyperplane `Xᵢ = 0`. -/
+theorem not_subset_compl_affineOpen_of_mem : ¬ W ⊆ (affineOpen i)ᶜ :=
+  fun hs ↦ hs (hW.subset P.2) hP
+
+variable (i) in
+/-- **Affine charts preserve local rings.** For a projective variety `W` and a point `P ∈ W` in
+the chart `Uᵢ`, the local ring `𝒪_P(W)` is the local ring `𝒪_{φᵢ(P)}(W_*)` of the affine part at
+the affine coordinates of `P`: the restriction of `functionField.affinePartEquiv`
+(`coe_affinePartEquiv`), sending `f / g` to `f_* / g_*`. -/
+noncomputable def varietyLocalRing.affinePartEquiv :
+    haveI := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+    varietyLocalRing (vanishingIdeal W) P ≃ₐ[k] (AffineSpace.localSubring (affineChart i P.1)
+      (vanishingIdeal_affinePart_le_vanishingIdeal P hP)).toSubring :=
+  haveI := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+  haveI := isPrime_map_dehomogenize (vanishingIdeal W) (X_notMem_of_mem_affineOpen P hP)
+  (varietyLocalRing.chartEquiv i P hP).trans (AffineSpace.localSubring.equivOfEq _
+    (vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)).symm rfl _)
+
+theorem varietyLocalRing.affinePartEquiv_def :
+    haveI := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+    haveI := isPrime_map_dehomogenize (vanishingIdeal W) (X_notMem_of_mem_affineOpen P hP)
+    varietyLocalRing.affinePartEquiv i hW P hP =
+      (varietyLocalRing.chartEquiv i P hP).trans (AffineSpace.localSubring.equivOfEq _
+        (vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)).symm rfl
+          (vanishingIdeal_affinePart_le_vanishingIdeal P hP)) :=
+  (rfl)
+
+/-- The isomorphism `𝒪_P(W) ≅ 𝒪_{φᵢ(P)}(W_*)` is the restriction of `k(W) ≅ k(W_*)`. -/
+@[simp]
+theorem varietyLocalRing.coe_affinePartEquiv (z : varietyLocalRing (vanishingIdeal W) P) :
+    haveI := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+    (varietyLocalRing.affinePartEquiv i hW P hP z :
+        AffineSpace.functionField (MvPolynomial.vanishingIdeal k (affinePart i W))) =
+      functionField.affinePartEquiv i hW (not_subset_compl_affineOpen_of_mem hW P hP)
+        (varietyLocalRing.toFunctionField _ P z) := by
+  have := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+  have := isPrime_map_dehomogenize (vanishingIdeal W) (X_notMem_of_mem_affineOpen P hP)
+  rw [varietyLocalRing.affinePartEquiv_def, AlgEquiv.trans_apply,
+    AffineSpace.localSubring.coe_equivOfEq, varietyLocalRing.coe_chartEquiv,
+    functionField.affinePartEquiv_def, AlgEquiv.trans_apply]
+
+/-- The isomorphism `𝒪_P(W) ≅ 𝒪_{φᵢ(P)}(W_*)` sends `f / g` to `f_* / g_*`. -/
+theorem varietyLocalRing.affinePartEquiv_mk {d : ℕ} {f g : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgP : eval P.1.rep g ≠ 0) :
+    haveI := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+    (varietyLocalRing.affinePartEquiv i hW P hP (varietyLocalRing.mk hf hg hgP) :
+        AffineSpace.functionField (MvPolynomial.vanishingIdeal k (affinePart i W))) =
+      algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k (affinePart i W))
+        (dehomogenize i f)) /
+        algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k (affinePart i W))
+          (dehomogenize i g)) := by
+  rw [varietyLocalRing.coe_affinePartEquiv, varietyLocalRing.toFunctionField_mk,
+    functionField.affinePartEquiv_mk]
+
+/-- The isomorphism `𝒪_P(W) ≅ 𝒪_{φᵢ(P)}(W_*)` preserves values. -/
+@[simp]
+theorem varietyLocalRing.evalAt_affinePartEquiv (z : varietyLocalRing (vanishingIdeal W) P) :
+    haveI := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+    AffineSpace.evalAt (affineChart i P.1) (vanishingIdeal_affinePart_le_vanishingIdeal P hP)
+        (varietyLocalRing.affinePartEquiv i hW P hP z) =
+      varietyLocalRing.evalAt (vanishingIdeal W) P z := by
+  have := isPrime_vanishingIdeal_affinePart hW hp (not_subset_compl_affineOpen_of_mem hW P hP)
+  have := isPrime_map_dehomogenize (vanishingIdeal W) (X_notMem_of_mem_affineOpen P hP)
+  rw [varietyLocalRing.affinePartEquiv_def, AlgEquiv.trans_apply,
+    AffineSpace.localSubring.evalAt_equivOfEq, varietyLocalRing.evalAt_chartEquiv]
+
+end affinePart
+
+section projectiveClosure
+
+variable {V : Set (Fin n → k)} [hV : (MvPolynomial.vanishingIdeal k V).IsPrime]
+
+variable (i V) in
+/-- **Affine charts preserve function fields.** For an affine variety `V`, the function field
+`k(V*)` of its projective closure is `k(V)`: the isomorphism sends `f / g` to `f_* / g_*`
+(`projectiveClosureEquiv_mk`). -/
+noncomputable def functionField.projectiveClosureEquiv :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    functionField (vanishingIdeal (projectiveClosure i V)) ≃ₐ[k]
+      AffineSpace.functionField (MvPolynomial.vanishingIdeal k V) :=
+  haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+  (functionField.chartEquiv i (X_notMem_vanishingIdeal_projectiveClosure hV.ne_top)).trans
+    (AffineSpace.functionField.equivOfEq (map_dehomogenize_vanishingIdeal_projectiveClosure V))
+
+theorem functionField.projectiveClosureEquiv_def :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    functionField.projectiveClosureEquiv i V =
+      (functionField.chartEquiv i (X_notMem_vanishingIdeal_projectiveClosure hV.ne_top)).trans
+        (AffineSpace.functionField.equivOfEq
+          (map_dehomogenize_vanishingIdeal_projectiveClosure V)) :=
+  (rfl)
+
+/-- The isomorphism `k(V*) ≅ k(V)` sends `f / g` to `f_* / g_*`. -/
+@[simp]
+theorem functionField.projectiveClosureEquiv_mk {d : ℕ} {f g : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d)
+    (hgI : g ∉ vanishingIdeal (projectiveClosure i V)) :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    functionField.projectiveClosureEquiv i V (functionField.mk hf hg hgI) =
+      algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k V) (dehomogenize i f)) /
+        algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k V)
+          (dehomogenize i g)) := by
+  have := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+  have := isPrime_map_dehomogenize _ (X_notMem_vanishingIdeal_projectiveClosure (i := i) hV.ne_top)
+  rw [functionField.projectiveClosureEquiv_def, AlgEquiv.trans_apply, functionField.chartEquiv_mk,
+    AffineSpace.functionField.equivOfEq_div]
+
+variable {Q : Fin n → k} (hQ : Q ∈ V)
+
+variable (i) in
+/-- The point `φᵢ(Q)` of the projective closure `V*`, for `Q ∈ V`, as a zero of `I(V*)`. -/
+def projectiveClosurePoint :
+    zeroLocus (vanishingIdeal (projectiveClosure i V) : Set (MvPolynomial (Fin (n + 1)) k)) :=
+  ⟨(affineChart i).symm Q,
+    (projectiveClosure_zeroLocus_vanishingIdeal V).ge
+      (image_subset_projectiveClosure V ⟨Q, hQ, rfl⟩)⟩
+
+omit hV in
+@[simp]
+theorem coe_projectiveClosurePoint : (projectiveClosurePoint i hQ).1 = (affineChart i).symm Q :=
+  (rfl)
+
+omit hV in
+/-- The point `φᵢ(Q)` lies in the chart `Uᵢ`. -/
+theorem projectiveClosurePoint_mem_affineOpen : (projectiveClosurePoint i hQ).1 ∈ affineOpen i :=
+  by rw [← affineChart_source]; exact (affineChart i).map_target (by simp)
+
+omit hV in
+/-- The affine coordinates of `φᵢ(Q)` are `Q`. -/
+theorem affineChart_projectiveClosurePoint : affineChart i (projectiveClosurePoint i hQ).1 = Q :=
+  (affineChart i).right_inv (by simp)
+
+variable (i) in
+/-- **Affine charts preserve local rings.** For an affine variety `V` and a point `Q ∈ V`, the
+local ring of the projective closure `V*` at `φᵢ(Q)` is the local ring `𝒪_Q(V)`: the restriction
+of `functionField.projectiveClosureEquiv` (`coe_projectiveClosureEquiv`), sending `f / g` to
+`f_* / g_*`. -/
+noncomputable def varietyLocalRing.projectiveClosureEquiv :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    varietyLocalRing (vanishingIdeal (projectiveClosure i V)) (projectiveClosurePoint i hQ) ≃ₐ[k]
+      (AffineSpace.localSubring Q
+        (MvPolynomial.vanishingIdeal_anti_mono (Set.singleton_subset_iff.2 hQ))).toSubring :=
+  haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+  haveI := isPrime_map_dehomogenize _ (X_notMem_vanishingIdeal_projectiveClosure (i := i) hV.ne_top)
+  (varietyLocalRing.chartEquiv i _ (projectiveClosurePoint_mem_affineOpen hQ)).trans
+    (AffineSpace.localSubring.equivOfEq _ (map_dehomogenize_vanishingIdeal_projectiveClosure V)
+      (affineChart_projectiveClosurePoint hQ) _)
+
+theorem varietyLocalRing.projectiveClosureEquiv_def :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    haveI := isPrime_map_dehomogenize _
+      (X_notMem_vanishingIdeal_projectiveClosure (i := i) hV.ne_top)
+    varietyLocalRing.projectiveClosureEquiv i hQ =
+      (varietyLocalRing.chartEquiv i _ (projectiveClosurePoint_mem_affineOpen hQ)).trans
+        (AffineSpace.localSubring.equivOfEq _ (map_dehomogenize_vanishingIdeal_projectiveClosure V)
+          (affineChart_projectiveClosurePoint hQ)
+          (MvPolynomial.vanishingIdeal_anti_mono (Set.singleton_subset_iff.2 hQ))) :=
+  (rfl)
+
+/-- The isomorphism `𝒪_{φᵢ(Q)}(V*) ≅ 𝒪_Q(V)` is the restriction of `k(V*) ≅ k(V)`. -/
+@[simp]
+theorem varietyLocalRing.coe_projectiveClosureEquiv
+    (z : varietyLocalRing (vanishingIdeal (projectiveClosure i V)) (projectiveClosurePoint i hQ)) :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    (varietyLocalRing.projectiveClosureEquiv i hQ z :
+        AffineSpace.functionField (MvPolynomial.vanishingIdeal k V)) =
+      functionField.projectiveClosureEquiv i V
+        (varietyLocalRing.toFunctionField _ (projectiveClosurePoint i hQ) z) := by
+  have := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+  have := isPrime_map_dehomogenize _ (X_notMem_vanishingIdeal_projectiveClosure (i := i) hV.ne_top)
+  rw [varietyLocalRing.projectiveClosureEquiv_def, AlgEquiv.trans_apply,
+    AffineSpace.localSubring.coe_equivOfEq, varietyLocalRing.coe_chartEquiv,
+    functionField.projectiveClosureEquiv_def, AlgEquiv.trans_apply]
+
+/-- The isomorphism `𝒪_{φᵢ(Q)}(V*) ≅ 𝒪_Q(V)` sends `f / g` to `f_* / g_*`. -/
+theorem varietyLocalRing.projectiveClosureEquiv_mk {d : ℕ}
+    {f g : MvPolynomial (Fin (n + 1)) k} (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d)
+    (hgP : eval (projectiveClosurePoint i hQ).1.rep g ≠ 0) :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    (varietyLocalRing.projectiveClosureEquiv i hQ (varietyLocalRing.mk hf hg hgP) :
+        AffineSpace.functionField (MvPolynomial.vanishingIdeal k V)) =
+      algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k V) (dehomogenize i f)) /
+        algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k V)
+          (dehomogenize i g)) := by
+  have := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+  rw [varietyLocalRing.coe_projectiveClosureEquiv, varietyLocalRing.toFunctionField_mk,
+    functionField.projectiveClosureEquiv_mk]
+
+/-- The isomorphism `𝒪_{φᵢ(Q)}(V*) ≅ 𝒪_Q(V)` preserves values. -/
+@[simp]
+theorem varietyLocalRing.evalAt_projectiveClosureEquiv
+    (z : varietyLocalRing (vanishingIdeal (projectiveClosure i V)) (projectiveClosurePoint i hQ)) :
+    haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+    AffineSpace.evalAt Q (MvPolynomial.vanishingIdeal_anti_mono (Set.singleton_subset_iff.2 hQ))
+        (varietyLocalRing.projectiveClosureEquiv i hQ z) =
+      varietyLocalRing.evalAt _ _ z := by
+  have := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+  have := isPrime_map_dehomogenize _ (X_notMem_vanishingIdeal_projectiveClosure (i := i) hV.ne_top)
+  rw [varietyLocalRing.projectiveClosureEquiv_def, AlgEquiv.trans_apply,
+    AffineSpace.localSubring.evalAt_equivOfEq, varietyLocalRing.evalAt_chartEquiv]
+
+end projectiveClosure
+
+variable (i) in
+/-- **Affine charts preserve function fields and local rings.** Fix a chart `i`, with
+`φᵢ : 𝔸ⁿ → Uᵢ ⊆ ℙⁿ`.
+
+* (a) For an affine variety `V`, there is an isomorphism `k(V*) ≅ k(V)` sending `f / g` to
+  `f_* / g_*`, and for each `Q ∈ V` it restricts to an isomorphism `𝒪_{φᵢ(Q)}(V*) ≅ 𝒪_Q(V)`.
+* (b) For a projective variety `W` not contained in the hyperplane `Xᵢ = 0`, `I(W_*) = I(W)_*`;
+  the degree-zero part of `Γ_h(W)[1/xᵢ]` is `Γ(W_*)`; there is an isomorphism `k(W) ≅ k(W_*)`
+  sending `f / g` to `f_* / g_*`; and for each `P ∈ W ∩ Uᵢ` it restricts to an isomorphism
+  `𝒪_P(W) ≅ 𝒪_{φᵢ(P)}(W_*)`.
+
+Here `φᵢ` maps `W_*` onto `W ∩ Uᵢ` (`affinePart_eq_preimage`, `image_affinePart_subset`), and
+`V* ∩ Uᵢ = φᵢ(V)` (`projectiveClosure_inter_affineOpen`). The isomorphisms are
+`functionField.projectiveClosureEquiv`, `varietyLocalRing.projectiveClosureEquiv`,
+`awayEquivAffinePart`, `functionField.affinePartEquiv` and `varietyLocalRing.affinePartEquiv`.
+
+Milestone: *Affine charts preserve function fields and local rings*. -/
+theorem affineChart_spec :
+    -- (a)
+    (∀ (V : Set (Fin n → k)) [hV : (MvPolynomial.vanishingIdeal k V).IsPrime],
+      haveI := isPrime_vanishingIdeal_projectiveClosure (i := i) hV
+      ∃ e : functionField (vanishingIdeal (projectiveClosure i V)) ≃ₐ[k]
+          AffineSpace.functionField (MvPolynomial.vanishingIdeal k V),
+        (∀ (d : ℕ) (f g : MvPolynomial (Fin (n + 1)) k) (hf : f.IsHomogeneous d)
+          (hg : g.IsHomogeneous d) (hgI : g ∉ vanishingIdeal (projectiveClosure i V)),
+          e (functionField.mk hf hg hgI) =
+            algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k V)
+              (dehomogenize i f)) /
+              algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k V)
+                (dehomogenize i g))) ∧
+        ∀ (Q : Fin n → k) (hQ : Q ∈ V),
+          ∃ e' : varietyLocalRing (vanishingIdeal (projectiveClosure i V))
+              (projectiveClosurePoint i hQ) ≃ₐ[k]
+            (AffineSpace.localSubring Q
+              (MvPolynomial.vanishingIdeal_anti_mono (Set.singleton_subset_iff.2 hQ))).toSubring,
+            ∀ z, (e' z : AffineSpace.functionField (MvPolynomial.vanishingIdeal k V)) =
+              e (varietyLocalRing.toFunctionField _ (projectiveClosurePoint i hQ) z)) ∧
+    -- (b)
+    (∀ (W : Set (ℙ k (Fin (n + 1) → k))) (hW : zeroLocus (vanishingIdeal W) = W)
+        [hp : (vanishingIdeal W).toIdeal.IsPrime] (h : ¬ W ⊆ (affineOpen i)ᶜ),
+      haveI := isPrime_vanishingIdeal_affinePart hW hp h
+      MvPolynomial.vanishingIdeal k (affinePart i W) =
+          (vanishingIdeal W).toIdeal.map (dehomogenize i) ∧
+        Nonempty (Away (vanishingIdeal W).quotientGrading
+            (Ideal.Quotient.mk (vanishingIdeal W).toIdeal (X i)) ≃ₐ[k]
+          MvPolynomial (Fin n) k ⧸ MvPolynomial.vanishingIdeal k (affinePart i W)) ∧
+        ∃ e : functionField (vanishingIdeal W) ≃ₐ[k]
+            AffineSpace.functionField (MvPolynomial.vanishingIdeal k (affinePart i W)),
+          (∀ (d : ℕ) (f g : MvPolynomial (Fin (n + 1)) k) (hf : f.IsHomogeneous d)
+            (hg : g.IsHomogeneous d) (hgI : g ∉ vanishingIdeal W),
+            e (functionField.mk hf hg hgI) =
+              algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k (affinePart i W))
+                (dehomogenize i f)) /
+                algebraMap _ _ (Ideal.Quotient.mk (MvPolynomial.vanishingIdeal k (affinePart i W))
+                  (dehomogenize i g))) ∧
+          ∀ (P : zeroLocus (vanishingIdeal W : Set (MvPolynomial (Fin (n + 1)) k)))
+            (hP : P.1 ∈ affineOpen i),
+            ∃ e' : varietyLocalRing (vanishingIdeal W) P ≃ₐ[k]
+              (AffineSpace.localSubring (affineChart i P.1)
+                (vanishingIdeal_affinePart_le_vanishingIdeal P hP)).toSubring,
+              ∀ z, (e' z : AffineSpace.functionField
+                  (MvPolynomial.vanishingIdeal k (affinePart i W))) =
+                e (varietyLocalRing.toFunctionField _ P z)) :=
+  ⟨fun V _ ↦ ⟨functionField.projectiveClosureEquiv i V,
+      fun _ _ _ hf hg hgI ↦ functionField.projectiveClosureEquiv_mk hf hg hgI,
+      fun _ hQ ↦ ⟨varietyLocalRing.projectiveClosureEquiv i hQ,
+        varietyLocalRing.coe_projectiveClosureEquiv hQ⟩⟩,
+    fun _ hW hp h ↦ ⟨vanishingIdeal_affinePart hW hp h, ⟨awayEquivAffinePart i hW h⟩,
+      functionField.affinePartEquiv i hW h,
+      fun _ _ _ hf hg hgI ↦ functionField.affinePartEquiv_mk hW h hf hg hgI,
+      fun P hP ↦ ⟨varietyLocalRing.affinePartEquiv i hW P hP,
+        varietyLocalRing.coe_affinePartEquiv hW P hP⟩⟩⟩
+
+end Subvariety
 
 end PlaneCurves.ProjectiveSpace
 

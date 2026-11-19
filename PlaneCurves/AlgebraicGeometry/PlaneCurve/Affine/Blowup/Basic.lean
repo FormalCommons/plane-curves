@@ -7,6 +7,8 @@ module
 
 public import Mathlib.Algebra.MvPolynomial.Division
 public import Mathlib.Algebra.MvPolynomial.Monad
+public import Mathlib.RingTheory.Localization.Away.Basic
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Line
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Multiplicity
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.SimplePoint
@@ -27,6 +29,11 @@ origin, and write `F = F_r + F_{r+1} + ⋯ + F_n` with `F_i` a form of degree `i
 the *strict transform* of `F`. It is not divisible by `X`, and on the exceptional line `X = 0` it
 is `F_r(1, Z)`, the leading form of `F` at the origin restricted to the chart.
 
+The substitution `X ↦ X, Y ↦ XZ` becomes an isomorphism after inverting `X`. So, for an
+irreducible `F` other than `X`, the strict transform is irreducible, the blow-up map
+`(x, z) ↦ (x, xz)` is a bijection away from `x = 0`, and the function fields `k(C)` and `k(C')`
+are isomorphic.
+
 Over a field, the points of the strict transform on the exceptional line, the fibre of the
 blow-up over the origin, are the points `(0, α)` for the tangents `Y - α X` of `F` at the
 origin, and the strict transform meets the exceptional line at `(0, α)` with intersection number
@@ -37,6 +44,8 @@ multiple point every point of the fibre is a simple point of the strict transfor
 
 * `PlaneCurves.Affine.blowupStrictTransform F`: the strict transform `F'`, the polynomial
   `F(X, XZ)` divided by `X ^ r`.
+* `PlaneCurves.Affine.blowupCoordinateRingHom F`: the map `Γ(C) → Γ(C')`, `x ↦ x`, `y ↦ xz`.
+* `PlaneCurves.Affine.blowupFunctionFieldEquiv`: the isomorphism `k(C) ≅ k(C')`.
 
 ## Main results
 
@@ -48,6 +57,18 @@ multiple point every point of the fibre is a simple point of the strict transfor
 * `PlaneCurves.Affine.blowupStrictTransform_eq_of_aeval_eq_of_not_dvd`: over a domain, a
   factorization `F(X, XZ) = X ^ n G` with `X ∤ G` is the one by the strict transform.
 * `PlaneCurves.Affine.blowupStrictTransform_mul`: over a domain, `(FG)' = F'G'`.
+* `PlaneCurves.Affine.aeval_X_X_mul_X_injective`: over a domain, `G ↦ G(X, XZ)` is injective.
+* `PlaneCurves.Affine.blowupStrictTransform_dvd_aeval_iff`: for a prime `F` not dividing `X`,
+  `F' ∣ G(X, XZ)` if and only if `F ∣ G`.
+* `PlaneCurves.Affine.prime_blowupStrictTransform`,
+  `PlaneCurves.Affine.irreducible_blowupStrictTransform`: the strict transform of an irreducible
+  curve other than `X = 0` is irreducible; `not_irreducible_blowupStrictTransform_X_zero` shows
+  that the hypothesis is needed.
+* `PlaneCurves.Affine.bijOn_blowupStrictTransform`: `(x, z) ↦ (x, xz)` maps
+  `{F' = 0, x ≠ 0}` bijectively onto `{F = 0, x ≠ 0}`.
+* `PlaneCurves.Affine.blowupFunctionFieldEquiv_x`, `PlaneCurves.Affine.blowupFunctionFieldEquiv_y`,
+  `PlaneCurves.Affine.blowupFunctionFieldEquiv_symm_z`: `k(C) ≅ k(C')` sends `x ↦ x`, `y ↦ xz`,
+  and its inverse sends `z ↦ y / x`.
 * `PlaneCurves.Affine.eval_zero_blowupStrictTransform_eq_zero_iff`: `F'(0, α) = 0` iff `Y - α X`
   is tangent to `F` at the origin.
 * `PlaneCurves.Affine.exists_finset_eval_zero_blowupStrictTransform`: over an algebraically
@@ -246,6 +267,32 @@ theorem not_X_dvd_blowupStrictTransform (hF : F ≠ 0) : ¬ X 0 ∣ blowupStrict
   exact leadingFormAt_ne_zero hF
     (((isHomogeneous_leadingFormAt F 0).aeval_one_X_eq_zero_iff).1 h.symm)
 
+/-- Up to a power of `X`, every polynomial in `X, Z` is a polynomial in `X, XZ`:
+`X ^ N g(X, Z) = G(X, XZ)` for some `N` and `G`. -/
+theorem exists_aeval_X_X_mul_X_eq_X_pow_mul (g : MvPolynomial (Fin 2) R) :
+    ∃ (N : ℕ) (G : MvPolynomial (Fin 2) R), aeval ![X 0, X 0 * X 1] G = X 0 ^ N * g := by
+  induction g using MvPolynomial.induction_on with
+  | C a => exact ⟨0, C a, by simp⟩
+  | add p q hp hq =>
+    obtain ⟨M, P, hP⟩ := hp
+    obtain ⟨N, Q, hQ⟩ := hq
+    refine ⟨M + N, X 0 ^ N * P + X 0 ^ M * Q, ?_⟩
+    simp only [map_add, map_mul, map_pow, aeval_X, hP, hQ]
+    simp only [Matrix.cons_val_zero]
+    ring
+  | mul_X p i hp =>
+    obtain ⟨N, P, hP⟩ := hp
+    fin_cases i
+    · exact ⟨N, P * X 0, by rw [map_mul, hP]; simp; ring⟩
+    · exact ⟨N + 1, P * X 1, by rw [map_mul, hP]; simp; ring⟩
+
+/-- If `F` divides `G`, then the strict transform `F'` divides `G(X, XZ)`. -/
+theorem blowupStrictTransform_dvd_aeval_of_dvd {g : MvPolynomial (Fin 2) R} (h : F ∣ g) :
+    blowupStrictTransform F ∣ aeval ![X 0, X 0 * X 1] g := by
+  obtain ⟨c, rfl⟩ := h
+  rw [map_mul, ← X_pow_mul_blowupStrictTransform]
+  exact dvd_mul_of_dvd_left (dvd_mul_left _ _) _
+
 end CommSemiring
 
 section Domain
@@ -319,7 +366,282 @@ theorem blowupStrictTransform_node :
   · rintro ⟨q, hq⟩
     simpa using congr(eval 0 $hq)
 
+/-- Over a domain, the substitution `X ↦ X, Y ↦ XZ` is injective. -/
+theorem aeval_X_X_mul_X_injective :
+    Function.Injective
+      (aeval ![X 0, X 0 * X 1] : MvPolynomial (Fin 2) R →ₐ[R] MvPolynomial (Fin 2) R) := by
+  let A := Localization.Away (X 0 : MvPolynomial (Fin 2) R)
+  let x : A := algebraMap _ A (X 0 : MvPolynomial (Fin 2) R)
+  let y : A := algebraMap _ A (X 1 : MvPolynomial (Fin 2) R)
+  let θ : MvPolynomial (Fin 2) R →ₐ[R] A :=
+    aeval ![x, y * IsLocalization.Away.invSelf (X 0 : MvPolynomial (Fin 2) R)]
+  have h : θ.comp (aeval ![X 0, X 0 * X 1]) = IsScalarTower.toAlgHom R _ A := by
+    ext i : 1
+    fin_cases i
+    · simp [θ, x]
+    · simp only [θ, x, y, AlgHom.comp_apply, aeval_X]
+      simp only [Fin.isValue, Nat.succ_eq_add_one, Nat.reduceAdd, Fin.mk_one, Matrix.cons_val_one,
+        Matrix.cons_val_fin_one, map_mul, aeval_X, Matrix.cons_val_zero,
+        IsScalarTower.coe_toAlgHom']
+      rw [mul_left_comm, IsLocalization.Away.mul_invSelf, mul_one]
+  have hinj : Function.Injective (algebraMap (MvPolynomial (Fin 2) R) A) :=
+    IsLocalization.injective A (powers_le_nonZeroDivisors_of_noZeroDivisors (X_ne_zero 0))
+  intro p q hpq
+  apply hinj
+  have e (p : MvPolynomial (Fin 2) R) : θ (aeval ![X 0, X 0 * X 1] p) = algebraMap _ A p :=
+    DFunLike.congr_fun h p
+  rw [← e, ← e, hpq]
+
+/-- If `q` divides `p ^ n * a` and the prime `p` does not divide `q`, then `q` divides `a`. -/
+theorem _root_.Prime.dvd_of_dvd_pow_mul {M : Type*} [CommMonoidWithZero M]
+    [IsCancelMulZero M] {p q a : M} (hp : Prime p) (hpq : ¬ p ∣ q) {n : ℕ}
+    (h : q ∣ p ^ n * a) : q ∣ a := by
+  induction n generalizing a with
+  | zero => simpa using h
+  | succ n ih =>
+    obtain ⟨c, hc⟩ := ih (a := p * a) (by rwa [← mul_assoc, ← pow_succ])
+    obtain ⟨d, rfl⟩ := (hp.dvd_or_dvd ⟨a, hc.symm⟩).resolve_left hpq
+    exact ⟨d, mul_left_cancel₀ hp.ne_zero (by rw [hc, mul_left_comm])⟩
+
+/-- For a prime `F` not dividing `X`, the strict transform `F'` divides `G(X, XZ)` if and only if
+`F` divides `G`. -/
+theorem blowupStrictTransform_dvd_aeval_iff (hF : Prime F) (hX : ¬ F ∣ X 0)
+    {g : MvPolynomial (Fin 2) R} :
+    blowupStrictTransform F ∣ aeval ![X 0, X 0 * X 1] g ↔ F ∣ g := by
+  constructor
+  · rintro ⟨c, hc⟩
+    obtain ⟨N, G, hG⟩ := exists_aeval_X_X_mul_X_eq_X_pow_mul c
+    have h : X 0 ^ (N + (F.orderAt 0).toNat) * g = F * G := by
+      apply aeval_X_X_mul_X_injective
+      rw [map_mul, map_mul, hG, ← X_pow_mul_blowupStrictTransform F, map_pow, aeval_X, hc]
+      simp only [Matrix.cons_val_zero]
+      ring
+    exact (hF.dvd_or_dvd ⟨G, h⟩).resolve_left fun h ↦ hX (hF.dvd_of_dvd_pow h)
+  · exact blowupStrictTransform_dvd_aeval_of_dvd
+
+/-- The strict transform of a prime `F` not dividing `X` is prime. -/
+theorem prime_blowupStrictTransform (hF : Prime F) (hX : ¬ F ∣ X 0) :
+    Prime (blowupStrictTransform F) := by
+  have hX' := not_X_dvd_blowupStrictTransform hF.ne_zero
+  have key (g : MvPolynomial (Fin 2) R) := blowupStrictTransform_dvd_aeval_iff hF hX (g := g)
+  refine ⟨fun h ↦ hX' (h ▸ dvd_zero _), fun h ↦ hF.not_isUnit ?_, fun a b hab ↦ ?_⟩
+  · exact isUnit_of_dvd_one ((key 1).1 (by simpa using h.dvd))
+  obtain ⟨M, A, hA⟩ := exists_aeval_X_X_mul_X_eq_X_pow_mul a
+  obtain ⟨N, B, hB⟩ := exists_aeval_X_X_mul_X_eq_X_pow_mul b
+  have h : blowupStrictTransform F ∣ aeval ![X 0, X 0 * X 1] (A * B) := by
+    rw [map_mul, hA, hB, mul_mul_mul_comm]
+    exact dvd_mul_of_dvd_right hab _
+  rcases hF.dvd_or_dvd ((key _).1 h) with h | h
+  · exact .inl (prime_X.dvd_of_dvd_pow_mul hX' (hA ▸ (key A).2 h))
+  · exact .inr (prime_X.dvd_of_dvd_pow_mul hX' (hB ▸ (key B).2 h))
+
+/-- Over a unique factorization domain, the strict transform of an irreducible curve `F` other
+than the line `X = 0` (that is, `F` not associated to `X`) is irreducible. The hypothesis is
+needed: the strict transform of `X` is `1` (`not_irreducible_blowupStrictTransform_X_zero`). -/
+theorem irreducible_blowupStrictTransform [UniqueFactorizationMonoid R] (hF : Irreducible F)
+    (hX : ¬ Associated F (X 0)) : Irreducible (blowupStrictTransform F) :=
+  (prime_blowupStrictTransform (UniqueFactorizationMonoid.irreducible_iff_prime.1 hF)
+    fun h ↦ hX (hF.associated_of_dvd prime_X.irreducible h)).irreducible
+
+/-- The line `X = 0` has strict transform `1`, which is not irreducible: the hypothesis of
+`irreducible_blowupStrictTransform` that `F` is not associated to `X` is needed. -/
+theorem not_irreducible_blowupStrictTransform_X_zero :
+    ¬ Irreducible (blowupStrictTransform (X 0 : MvPolynomial (Fin 2) R)) := by
+  simp [not_irreducible_one]
+
 end Domain
+
+section Field
+
+variable {k : Type*} [Field k]
+
+/-- Away from the exceptional line, the blow-up map `(x, z) ↦ (x, xz)` maps the points of the
+strict transform `F' = 0` with `x ≠ 0` bijectively onto the points of `F = 0` with `x ≠ 0`. -/
+theorem bijOn_blowupStrictTransform (F : MvPolynomial (Fin 2) k) :
+    Set.BijOn (fun p : Fin 2 → k ↦ ![p 0, p 0 * p 1])
+      {p | eval p (blowupStrictTransform F) = 0 ∧ p 0 ≠ 0} {p | eval p F = 0 ∧ p 0 ≠ 0} := by
+  have hp (p : Fin 2 → k) : ![p 0, p 1] = p := by
+    ext i
+    fin_cases i <;> rfl
+  refine ⟨?_, ?_, ?_⟩
+  · rintro p ⟨h0, hx⟩
+    refine ⟨?_, by simpa using hx⟩
+    change eval ![p 0, p 0 * p 1] F = 0
+    rw [eval_blowupStrictTransform, hp, h0, mul_zero]
+  · rintro p ⟨-, hx⟩ q ⟨-, -⟩ h
+    have h0 : p 0 = q 0 := by simpa using congr_fun h 0
+    have h1 : p 0 * p 1 = q 0 * q 1 := by simpa using congr_fun h 1
+    rw [← h0] at h1
+    rw [← hp p, ← hp q, h0, mul_left_cancel₀ hx h1]
+  · rintro p ⟨h0, hx⟩
+    refine ⟨![p 0, p 1 / p 0], ⟨?_, by simpa using hx⟩, ?_⟩
+    · have h := eval_blowupStrictTransform F (p 0) (p 1 / p 0)
+      rw [mul_div_cancel₀ _ hx, hp, h0, eq_comm, mul_eq_zero] at h
+      exact h.resolve_left (pow_ne_zero _ hx)
+    · simp [mul_div_cancel₀ _ hx, hp]
+
+variable (F : MvPolynomial (Fin 2) k)
+
+/-- The map of coordinate rings `Γ(C) → Γ(C')`, `x ↦ x`, `y ↦ xz`, induced by the blow-up map
+`(x, z) ↦ (x, xz)` from the strict transform `C' = V(F')` to `C = V(F)`. -/
+noncomputable def blowupCoordinateRingHom :
+    MvPolynomial (Fin 2) k ⧸ Ideal.span {F} →ₐ[k]
+      MvPolynomial (Fin 2) k ⧸ Ideal.span {blowupStrictTransform F} :=
+  Ideal.Quotient.liftₐ _ ((Ideal.Quotient.mkₐ k _).comp (aeval ![X 0, X 0 * X 1])) fun _ ha ↦
+    Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton.2
+      (blowupStrictTransform_dvd_aeval_of_dvd (Ideal.mem_span_singleton.1 ha)))
+
+theorem blowupCoordinateRingHom_def : blowupCoordinateRingHom F =
+    Ideal.Quotient.liftₐ _ ((Ideal.Quotient.mkₐ k _).comp (aeval ![X 0, X 0 * X 1])) fun _ ha ↦
+      Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton.2
+        (blowupStrictTransform_dvd_aeval_of_dvd (Ideal.mem_span_singleton.1 ha))) :=
+  (rfl)
+
+@[simp]
+theorem blowupCoordinateRingHom_mk (g : MvPolynomial (Fin 2) k) :
+    blowupCoordinateRingHom F (Ideal.Quotient.mk (Ideal.span {F}) g) =
+      Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) (aeval ![X 0, X 0 * X 1] g) :=
+  (rfl)
+
+variable {F}
+
+/-- For a prime `F` not dividing `X`, the map `Γ(C) → Γ(C')` is injective. -/
+theorem blowupCoordinateRingHom_injective (hF : Prime F) (hX : ¬ F ∣ X 0) :
+    Function.Injective (blowupCoordinateRingHom F) := by
+  refine (injective_iff_map_eq_zero _).2 fun a ha ↦ ?_
+  obtain ⟨g, rfl⟩ := Ideal.Quotient.mk_surjective a
+  rw [blowupCoordinateRingHom_mk, Ideal.Quotient.eq_zero_iff_mem, Ideal.mem_span_singleton,
+    blowupStrictTransform_dvd_aeval_iff hF hX] at ha
+  rwa [Ideal.Quotient.eq_zero_iff_mem, Ideal.mem_span_singleton]
+
+/-- The ideal of an irreducible plane curve is prime. -/
+private theorem isPrime_span (hF : Irreducible F) : (Ideal.span {F}).IsPrime :=
+  (Ideal.span_singleton_prime hF.ne_zero).2 (UniqueFactorizationMonoid.irreducible_iff_prime.1 hF)
+
+private theorem not_dvd_X_zero (hF : Irreducible F) (hX : ¬ Associated F (X 0)) : ¬ F ∣ X 0 :=
+  fun h ↦ hX (hF.associated_of_dvd prime_X.irreducible h)
+
+private theorem not_blowupStrictTransform_dvd_X_zero (hF : Irreducible F)
+    (hX : ¬ Associated F (X 0)) : ¬ blowupStrictTransform F ∣ X 0 := fun h ↦
+  not_X_dvd_blowupStrictTransform hF.ne_zero
+    ((irreducible_blowupStrictTransform hF hX).associated_of_dvd prime_X.irreducible h).symm.dvd
+
+/-- The image of `x` in `Frac(k[X, Y] ⧸ (G))` is nonzero if `G` does not divide `X`. -/
+private theorem algebraMap_mk_X_zero_ne_zero {G : MvPolynomial (Fin 2) k}
+    [(Ideal.span {G}).IsPrime] (hG : ¬ G ∣ X 0) :
+    algebraMap _ (FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {G}))
+      (Ideal.Quotient.mk (Ideal.span {G}) (X 0)) ≠ 0 := by
+  rwa [Ne, IsFractionRing.to_map_eq_zero_iff, Ideal.Quotient.eq_zero_iff_mem,
+    Ideal.mem_span_singleton]
+
+section FunctionFieldHom
+
+variable (hF : Irreducible F) (hX : ¬ Associated F (X 0)) [(Ideal.span {F}).IsPrime]
+  [(Ideal.span {blowupStrictTransform F}).IsPrime]
+
+include hF hX
+
+omit [(Ideal.span {F}).IsPrime] [(Ideal.span {blowupStrictTransform F}).IsPrime] in
+private theorem blowupFunctionFieldHom_injective :
+    Function.Injective ((IsScalarTower.toAlgHom k _
+      (FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {blowupStrictTransform F}))).comp
+        (blowupCoordinateRingHom F)) := fun _ _ h ↦
+  blowupCoordinateRingHom_injective (UniqueFactorizationMonoid.irreducible_iff_prime.1 hF)
+    (not_dvd_X_zero hF hX) (IsFractionRing.injective _
+      (FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {blowupStrictTransform F})) h)
+
+/-- The field map `k(C) → k(C')` extending `Γ(C) → Γ(C')`. -/
+private noncomputable def blowupFunctionFieldHom :
+    FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {F}) →ₐ[k]
+      FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {blowupStrictTransform F}) :=
+  IsFractionRing.liftAlgHom (blowupFunctionFieldHom_injective hF hX)
+
+private theorem blowupFunctionFieldHom_algebraMap (a : MvPolynomial (Fin 2) k ⧸ Ideal.span {F}) :
+    blowupFunctionFieldHom hF hX (algebraMap _ _ a) =
+      algebraMap _ _ (blowupCoordinateRingHom F a) := by
+  rw [blowupFunctionFieldHom, IsFractionRing.coe_liftAlgHom, IsFractionRing.lift_algebraMap]
+  rfl
+
+private theorem blowupFunctionFieldHom_surjective :
+    Function.Surjective (blowupFunctionFieldHom hF hX) := by
+  let γ : MvPolynomial (Fin 2) k →ₐ[k] FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {F}) :=
+    aeval ![algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
+        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))]
+  have hx' := algebraMap_mk_X_zero_ne_zero (not_blowupStrictTransform_dvd_X_zero hF hX)
+  have hγ (g : MvPolynomial (Fin 2) k) : blowupFunctionFieldHom hF hX (γ g) =
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) g) := by
+    have : (blowupFunctionFieldHom hF hX).comp γ = (IsScalarTower.toAlgHom k _
+        (FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {blowupStrictTransform F}))).comp
+          (Ideal.Quotient.mkₐ k (Ideal.span {blowupStrictTransform F})) := by
+      ext i : 1
+      fin_cases i
+      · simp [γ, blowupFunctionFieldHom_algebraMap]
+      · simp [γ, map_div₀, blowupFunctionFieldHom_algebraMap, hx']
+    exact DFunLike.congr_fun this g
+  intro w
+  obtain ⟨a, b, -, rfl⟩ := IsFractionRing.div_surjective
+    (A := MvPolynomial (Fin 2) k ⧸ Ideal.span {blowupStrictTransform F}) w
+  obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
+  obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective b
+  exact ⟨γ a / γ b, by rw [map_div₀, hγ, hγ]⟩
+
+end FunctionFieldHom
+
+/-- The blow-up is birational: for an irreducible curve `C = V(F)` other than the line `X = 0`,
+the function fields of `C` and of its strict transform `C' = V(F')` are isomorphic,
+`k(C) ≅ k(C')`, by `x ↦ x`, `y ↦ xz`, with inverse `z ↦ y / x`. -/
+noncomputable def blowupFunctionFieldEquiv (hF : Irreducible F) (hX : ¬ Associated F (X 0)) :
+    FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {F}) ≃ₐ[k]
+      FractionRing (MvPolynomial (Fin 2) k ⧸ Ideal.span {blowupStrictTransform F}) :=
+  haveI := isPrime_span hF
+  haveI := isPrime_span (irreducible_blowupStrictTransform hF hX)
+  AlgEquiv.ofBijective (blowupFunctionFieldHom hF hX)
+    ⟨RingHom.injective _, blowupFunctionFieldHom_surjective hF hX⟩
+
+variable (hF : Irreducible F) (hX : ¬ Associated F (X 0))
+
+/-- The isomorphism `k(C) ≅ k(C')` extends the map of coordinate rings `Γ(C) → Γ(C')`. -/
+theorem blowupFunctionFieldEquiv_algebraMap (a : MvPolynomial (Fin 2) k ⧸ Ideal.span {F}) :
+    blowupFunctionFieldEquiv hF hX (algebraMap _ _ a) =
+      algebraMap _ _ (blowupCoordinateRingHom F a) :=
+  haveI := isPrime_span hF
+  haveI := isPrime_span (irreducible_blowupStrictTransform hF hX)
+  blowupFunctionFieldHom_algebraMap hF hX a
+
+@[simp]
+theorem blowupFunctionFieldEquiv_algebraMap_mk (g : MvPolynomial (Fin 2) k) :
+    blowupFunctionFieldEquiv hF hX (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) g)) =
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F})
+        (aeval ![X 0, X 0 * X 1] g)) :=
+  blowupFunctionFieldEquiv_algebraMap hF hX _
+
+/-- The isomorphism `k(C) ≅ k(C')` sends `x` to `x`. -/
+theorem blowupFunctionFieldEquiv_x :
+    blowupFunctionFieldEquiv hF hX (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))) =
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) (X 0)) := by
+  simp
+
+/-- The isomorphism `k(C) ≅ k(C')` sends `y` to `xz`. -/
+theorem blowupFunctionFieldEquiv_y :
+    blowupFunctionFieldEquiv hF hX (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1))) =
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) (X 0)) *
+        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) (X 1)) := by
+  simp
+
+/-- The inverse of the isomorphism `k(C) ≅ k(C')` sends `z` to `y / x`. -/
+@[simp]
+theorem blowupFunctionFieldEquiv_symm_z [(Ideal.span {F}).IsPrime] :
+    (blowupFunctionFieldEquiv hF hX).symm
+        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) (X 1))) =
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
+        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) := by
+  have := isPrime_span (irreducible_blowupStrictTransform hF hX)
+  rw [AlgEquiv.symm_apply_eq, map_div₀, blowupFunctionFieldEquiv_x, blowupFunctionFieldEquiv_y,
+    mul_div_cancel_left₀ _ (algebraMap_mk_X_zero_ne_zero
+      (not_blowupStrictTransform_dvd_X_zero hF hX))]
+
+end Field
 
 section Fibre
 

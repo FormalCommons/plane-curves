@@ -33,7 +33,9 @@ Following Fulton (§4.3), this file defines
 * `affinePart_eq_preimage`: `W_* = φᵢ⁻¹(V(I(W)))`, so `W_* = φᵢ⁻¹(W)` for an algebraic `W`
   (`mem_affinePart_iff`).
 * `image_subset_projectiveClosure`: `φᵢ(V) ⊆ V*`.
-* `vanishingIdeal_projectiveClosure`: `I(V*) = I(V)*` for every set `V`, over any field.
+* `vanishingIdeal_projectiveClosure`: `I(V*) = I(V)*` for every set `V`, over any field; hence
+  `I(V*)_* = I(V)` (`map_dehomogenize_vanishingIdeal_projectiveClosure`) and, for `V ≠ ∅`,
+  `Xᵢ ∉ I(V*)` (`X_notMem_vanishingIdeal_projectiveClosure`).
 * `projectiveClosure_subset_iff`: `V*` is the smallest projective algebraic set containing
   `φᵢ(V)` (Proposition 3 (5)); `projectiveClosure_zeroLocus_vanishingIdeal`: `V*` is algebraic.
 * `projectiveClosure_mono`, `affinePart_mono`: both operations are monotone
@@ -197,6 +199,19 @@ theorem vanishingIdeal_projectiveClosure (V : Set (Fin n → k)) :
   le_antisymm (le_homogenization_vanishingIdeal_of_image_subset
       ((image_subset_projectiveClosure V).trans (subset_zeroLocus_vanishingIdeal _)))
     (le_vanishingIdeal_zeroLocus _)
+
+/-- `I(V*)_* = I(V)` for every set `V ⊆ 𝔸ⁿ`. -/
+theorem map_dehomogenize_vanishingIdeal_projectiveClosure (V : Set (Fin n → k)) :
+    (vanishingIdeal (projectiveClosure i V)).toIdeal.map (dehomogenize i) =
+      MvPolynomial.vanishingIdeal k V := by
+  rw [vanishingIdeal_projectiveClosure, Ideal.map_dehomogenize_homogenization]
+
+/-- If `I(V) ≠ (1)`, that is, if `V` is nonempty, then `Xᵢ ∉ I(V*)`. -/
+theorem X_notMem_vanishingIdeal_projectiveClosure {V : Set (Fin n → k)}
+    (hV : MvPolynomial.vanishingIdeal k V ≠ ⊤) : X i ∉ vanishingIdeal (projectiveClosure i V) :=
+  fun h ↦ hV ((Ideal.eq_top_iff_one _).2 (by
+    simpa [map_dehomogenize_vanishingIdeal_projectiveClosure] using
+      Ideal.mem_map_of_mem (dehomogenize i) (HomogeneousIdeal.mem_iff.1 h)))
 
 /-- **Fulton, §4.3, Proposition 3 (5).** `V*` is the smallest projective algebraic set
 containing `φᵢ(V)`. -/
@@ -408,6 +423,12 @@ theorem zeroLocus_vanishingIdeal_compl_affineOpen (i : Fin (n + 1)) :
   rw [← zeroLocus_singleton_X]
   exact zeroLocus_vanishingIdeal_zeroLocus_of_isHomogeneous fun f hf ↦
     ⟨1, (Set.mem_singleton_iff.1 hf) ▸ isHomogeneous_X k i⟩
+
+/-- The coordinate `Xᵢ` vanishes on `W` exactly when `W` lies in the hyperplane `Xᵢ = 0`. -/
+theorem X_mem_vanishingIdeal_iff {W : Set (ℙ k (Fin (n + 1) → k))} :
+    X i ∈ vanishingIdeal W ↔ W ⊆ (affineOpen i)ᶜ := by
+  rw [mem_vanishingIdeal_iff_of_isHomogeneous (isHomogeneous_X k i)]
+  simp [Set.subset_def, mem_affineOpen_iff]
 
 /-- The affine part of the hyperplane at infinity is empty. -/
 @[simp]
