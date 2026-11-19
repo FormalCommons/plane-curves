@@ -56,6 +56,8 @@ and `N(F) + g*(F)` in characteristic zero, where no point is terrible.
 * `PlaneCurves.Projective.exists_isChain_isQuadraticTransform_lt`: one or two quadratic
   transformations lower `N + g*`.
 * `PlaneCurves.Projective.exists_reduction`: **reduction to ordinary multiple points**.
+* `PlaneCurves.Projective.exists_ordinary_model`: an irreducible curve has a birational plane
+  model with only ordinary multiple points and virtual genus not larger.
 
 ## References
 
@@ -417,6 +419,22 @@ theorem exists_reduction [IsAlgClosed k] (hF : F.IsHomogeneous n) (hirr : Irredu
     simp only [List.nil_append, List.length_cons]
     push_cast
     omega
+
+/-- **An ordinary plane model** (Fulton, §7.4, Theorem 2). Let `F` be an irreducible form over an
+algebraically closed field. There is an irreducible form `G` with only ordinary multiple points,
+`g*(G) ≤ g*(F)`, and function field isomorphic to that of `F`. -/
+theorem exists_ordinary_model [IsAlgClosed k] (hF : F.IsHomogeneous n) (hirr : Irreducible F) :
+    ∃ (G : MvPolynomial (Fin 3) k) (d : ℕ) (hG : G.IsHomogeneous d) (hirrG : Irreducible G),
+      (∀ Q, IsMultiplePoint G Q → IsOrdinaryMultiplePoint G Q) ∧
+      virtualGenus G ≤ virtualGenus F ∧
+      haveI := Fact.mk hirr
+      haveI := Fact.mk hirrG
+      Nonempty (functionField hF ≃ₐ[k] functionField hG) := by
+  obtain ⟨l, G, d, hc, hlG, hG, hirrG, hord, -, -, hg⟩ := exists_reduction hF hirr
+  have := Fact.mk hirr
+  have := Fact.mk hirrG
+  exact ⟨G, d, hG, hirrG, hord, hg, nonempty_algEquiv_of_reflTransGen_isQuadraticTransform
+    (List.relationReflTransGen_of_exists_isChain_cons l hc hlG) hF hG⟩
 
 end PlaneCurves.Projective
 
