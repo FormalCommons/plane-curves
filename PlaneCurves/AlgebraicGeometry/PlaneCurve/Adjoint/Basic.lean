@@ -125,14 +125,6 @@ theorem isAdjoint_of_forall_not_isMultiplePoint (h : ∀ P, ¬IsMultiplePoint F 
     (G : MvPolynomial (Fin 3) k) : IsAdjoint F G :=
   isAdjoint_iff_forall_isMultiplePoint.2 fun P hP ↦ (h P hP).elim
 
-/-- A nonsingular form has no multiple points. -/
-theorem IsNonsingular.not_isMultiplePoint (hF : F.IsHomogeneous d) (hns : IsNonsingular F)
-    (P : ℙ k (Fin 3 → k)) : ¬IsMultiplePoint F P := by
-  intro hP
-  have hPF : P ∈ zeroLocus {F} :=
-    (mult_pos_iff hF).1 (lt_of_lt_of_le (by norm_num) (isMultiplePoint_def.1 hP))
-  exact hP.not_isSimplePoint ((isNonsingular_iff_forall_isSimplePoint hF).1 hns P hPF)
-
 /-- Every form is an adjoint of a nonsingular curve. -/
 theorem IsNonsingular.isAdjoint (hF : F.IsHomogeneous d) (hns : IsNonsingular F)
     (G : MvPolynomial (Fin 3) k) : IsAdjoint F G :=
@@ -362,11 +354,6 @@ theorem isAdjoint_iff_le_formDivisor (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
 
 /-! ### Adjoints and Riemann–Roch spaces -/
 
-omit [IsAlgClosed k] hord in
-private theorem not_dvd_pow {L : MvPolynomial (Fin 3) k} (hFL : ¬ F ∣ L) (n : ℕ) :
-    ¬ F ∣ L ^ n :=
-  fun h ↦ hFL ((Fact.out : Irreducible F).prime.dvd_of_dvd_pow h)
-
 variable {L : MvPolynomial (Fin 3) k} (hL : L.IsHomogeneous 1) (hFL : ¬ F ∣ L)
   (hLm : (L ^ m).IsHomogeneous m)
 
@@ -374,13 +361,13 @@ variable {L : MvPolynomial (Fin 3) k} (hL : L.IsHomogeneous 1) (hFL : ¬ F ∣ L
 private theorem mk_mem_riemannRochSpace {G : MvPolynomial (Fin 3) k}
     (hG : G ∈ adjointSubmodule F m) :
     functionField.mk (mem_adjointSubmodule_iff.1 hG).1 hLm
-        (projectivePlaneCurve.notMem_ideal_of_not_dvd hF (not_dvd_pow hFL m)) ∈
+        (projectivePlaneCurve.notMem_ideal_of_not_dvd hF (not_dvd_pow_of_not_dvd hFL m)) ∈
       riemannRochSpace (m • formDivisor hF hL - adjointDivisor hF) := by
   have hG' := (mem_adjointSubmodule_iff.1 hG).1
   by_cases hFG : F ∣ G
   · rw [(functionField.mk_eq_zero_iff _ _ _).2 ((projectivePlaneCurve.mem_ideal_iff hF).2 hFG)]
     exact zero_mem _
-  rw [← coe_formQuotient hG' hLm hFG (not_dvd_pow hFL m),
+  rw [← coe_formQuotient hG' hLm hFG (not_dvd_pow_of_not_dvd hFL m),
     mem_riemannRochSpace_iff_neg_le_ord (Units.ne_zero _)]
   intro Q
   have hE := Finsupp.le_def.1
@@ -414,7 +401,7 @@ theorem mem_ker_adjointToRiemannRochSpace_iff {G : adjointSubmodule F m} :
       F ∣ (G : MvPolynomial (Fin 3) k) := by
   rw [LinearMap.mem_ker, ← Subtype.coe_inj,
     coe_adjointToRiemannRochSpace_apply hord hL hFL (isHomogeneous_pow_of_one hL m) G
-      (projectivePlaneCurve.notMem_ideal_of_not_dvd hF (not_dvd_pow hFL m)),
+      (projectivePlaneCurve.notMem_ideal_of_not_dvd hF (not_dvd_pow_of_not_dvd hFL m)),
     ZeroMemClass.coe_zero, functionField.mk_eq_zero_iff, projectivePlaneCurve.mem_ideal_iff hF]
 
 end Divisor

@@ -37,7 +37,8 @@ simple; over an algebraically closed field such a curve is irreducible (§5.3, v
 * `PlaneCurves.Projective.isSimplePoint_iff_affine`: in an affine chart, simple points are the
   simple points of the dehomogenization.
 * `PlaneCurves.Projective.isNonsingular_iff_forall_isSimplePoint`: a form is nonsingular exactly
-  when every point of its zero locus is simple.
+  when every point of its zero locus is simple; so it has no multiple points
+  (`IsNonsingular.not_isMultiplePoint`).
 * `PlaneCurves.Projective.isNonsingular_linearSubst_iff`: nonsingularity is invariant under an
   invertible change of coordinates, and `isNonsingular_smul_iff` under a nonzero scalar.
 * `PlaneCurves.Projective.IsNonsingular.irreducible`: a nonsingular form of positive degree over
@@ -229,6 +230,14 @@ theorem isNonsingular_iff_forall_isSimplePoint (hF : F.IsHomogeneous d) :
     exact (isSimplePoint_mk_iff hF v hv).2 ⟨hFv, h v hv hFv⟩
   · exact ((isSimplePoint_mk_iff hF v hv).1 (h _ ((mk_mem_zeroLocus_iff hS v hv).2
       (by simpa using hFv)))).2
+
+/-- A nonsingular form has no multiple points. -/
+theorem IsNonsingular.not_isMultiplePoint (hF : F.IsHomogeneous d) (hns : IsNonsingular F)
+    (P : ℙ k (Fin 3 → k)) : ¬IsMultiplePoint F P := by
+  intro hP
+  have hPF : P ∈ zeroLocus {F} :=
+    (mult_pos_iff hF).1 (lt_of_lt_of_le (by norm_num) (isMultiplePoint_def.1 hP))
+  exact hP.not_isSimplePoint ((isNonsingular_iff_forall_isSimplePoint hF).1 hns P hPF)
 
 /-- **Nonsingular projective plane curves are irreducible.** Over an algebraically closed field
 `k`, a nonsingular form `F` of degree `d ≥ 1`, that is one whose points are all simple
