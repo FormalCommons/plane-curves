@@ -17,9 +17,9 @@ An invertible matrix `M` over a field `k` gives the linear change of coordinates
 `T = map M.mulVecLin` of `ℙⁿ`, with `F^T(Q) = F(T(Q))`. For a homogeneous ideal `I` with zero
 locus `V`, the ideal `I^T` has zero locus `V^T = T⁻¹(V)`. This file shows that `T` induces
 isomorphisms of the homogeneous coordinate rings `Γ_h(V) ≅ Γ_h(V^T)`, of the function fields
-`k(V) ≅ k(V^T)` and of the local rings `𝒪_P(V) ≅ 𝒪_Q(V^T)` for `T(Q) = P`, all explicit on
-fractions, and collects these with the description of `k(V)` and `𝒪_P(V)` from
-`PlaneCurves.AlgebraicGeometry.ProjectiveSpace.FunctionField`.
+`k(V) ≅ k(V^T)` and of the local rings `𝒪_P(V) ≅ 𝒪_Q(V^T)` and `𝒪_P(ℙⁿ) ≅ 𝒪_Q(ℙⁿ)` for
+`T(Q) = P`, all explicit on fractions, and collects these with the description of `k(V)`
+and `𝒪_P(V)` from `PlaneCurves.AlgebraicGeometry.ProjectiveSpace.FunctionField`.
 
 ## Main definitions
 
@@ -32,6 +32,8 @@ fractions, and collects these with the description of `k(V)` and `𝒪_P(V)` fro
   `k(V) ≅ k(V^T)`, `f / g ↦ f^T / g^T`, for a homogeneous prime `I`.
 * `PlaneCurves.ProjectiveSpace.localSubring.linearSubstEquiv M I hQP`: the isomorphism
   `𝒪_P(V) ≅ 𝒪_Q(V^T)` for `T(Q) = P`.
+* `PlaneCurves.ProjectiveSpace.localRing.linearSubstEquiv hQP`: the isomorphism
+  `𝒪_P(ℙⁿ) ≅ 𝒪_Q(ℙⁿ)` for `T(Q) = P`, `f / g ↦ f^T / g^T` (`localRing.linearSubstEquiv_mk`).
 
 ## Main results
 
@@ -44,6 +46,7 @@ fractions, and collects these with the description of `k(V)` and `𝒪_P(V)` fro
 * `coordinateRingLinearSubstEquiv_mem_quotientGrading_iff`: `Γ_h(V) ≅ Γ_h(V^T)` preserves
   degrees.
 * `functionField.linearSubstEquiv_mk`: `k(V) ≅ k(V^T)` sends `f / g` to `f^T / g^T`.
+* `pointIdeal_eq_linearSubstIdeal`: `I(Q) = I(T(Q))^T`.
 * `map_localSubring_linearSubstEquiv`: `k(V) ≅ k(V^T)` carries `𝒪_P(V)` onto `𝒪_Q(V^T)` when
   `T(Q) = P`.
 * `functionField_localSubring_and_linearSubstEquiv`: the function field and local rings of a
@@ -415,6 +418,80 @@ theorem coe_localSubring_linearSubstEquiv
     (localSubring.linearSubstEquiv M I hQP z : functionField (linearSubstIdeal M I)) =
       functionField.linearSubstEquiv M I z :=
   (rfl)
+
+/-! ### The local ring of `ℙⁿ` at a point -/
+
+/-- **`I(Q) = I(T(Q))^T`.** The ideal of a point `Q` is the image of the ideal of `T(Q)` under the
+change of coordinates `F ↦ F^T`. -/
+theorem pointIdeal_eq_linearSubstIdeal {P Q : ℙ k (Fin (n + 1) → k)}
+    (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q = P) :
+    pointIdeal Q = linearSubstIdeal M (pointIdeal P) := by
+  rw [pointIdeal_def, pointIdeal_def, ← vanishingIdeal_preimage_map_mulVecLin, ← hQP,
+    ← Set.image_singleton, Set.preimage_image_eq _ (bijective_map_mulVecLin M).1]
+
+/-- For `T(Q) = P`, the change of coordinates `F ↦ F^T` sends polynomials not vanishing at `P` to
+polynomials not vanishing at `Q`. -/
+theorem primeCompl_pointIdeal_le_comap_linearSubst {P Q : ℙ k (Fin (n + 1) → k)}
+    (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q = P) :
+    (pointIdeal P).toIdeal.primeCompl ≤
+      (pointIdeal Q).toIdeal.primeCompl.comap (linearSubstGradedRingHom M.1) := by
+  intro g hg
+  simpa only [Submonoid.mem_comap, Ideal.mem_primeCompl_iff, coe_linearSubstGradedRingHom,
+    HomogeneousIdeal.mem_iff, pointIdeal_eq_linearSubstIdeal hQP,
+    linearSubst_mem_linearSubstIdeal_iff] using hg
+
+/-- **`𝒪_P(ℙⁿ) ≅ 𝒪_Q(ℙⁿ)` for `T(Q) = P`.** A projective change of coordinates `T` with
+`T(Q) = P` induces an isomorphism of local rings, sending `f / g` to `f^T / g^T`
+(`localRing.linearSubstEquiv_mk`). -/
+def localRing.linearSubstEquiv {P Q : ℙ k (Fin (n + 1) → k)}
+    (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q = P) :
+    localRing P ≃ₐ[k] localRing Q :=
+  have hPQ : map (M⁻¹).1.mulVecLin (mulVec_injective_of_isUnit (M⁻¹).isUnit) P = Q := by
+    rw [← hQP, map_inv_map_mulVecLin]
+  AlgEquiv.ofRingEquiv (f := RingEquiv.ofRingHom
+    (HomogeneousLocalization.map (linearSubstGradedRingHom M.1)
+      (primeCompl_pointIdeal_le_comap_linearSubst hQP))
+    (HomogeneousLocalization.map (linearSubstGradedRingHom (M⁻¹).1)
+      (primeCompl_pointIdeal_le_comap_linearSubst hPQ))
+    (by
+      rw [← HomogeneousLocalization.map_comp]
+      have : (linearSubstGradedRingHom M.1).comp (linearSubstGradedRingHom (M⁻¹).1) =
+          GradedRingHom.id _ :=
+        GradedRingHom.ext fun x ↦ by
+          rw [GradedRingHom.comp_apply, GradedRingHom.id_apply, coe_linearSubstGradedRingHom,
+            coe_linearSubstGradedRingHom, linearSubst_linearSubst_inv]
+      simp only [this, HomogeneousLocalization.map_id])
+    (by
+      rw [← HomogeneousLocalization.map_comp]
+      have : (linearSubstGradedRingHom (M⁻¹).1).comp (linearSubstGradedRingHom M.1) =
+          GradedRingHom.id _ :=
+        GradedRingHom.ext fun x ↦ by
+          rw [GradedRingHom.comp_apply, GradedRingHom.id_apply, coe_linearSubstGradedRingHom,
+            coe_linearSubstGradedRingHom, linearSubst_inv_linearSubst]
+      simp only [this, HomogeneousLocalization.map_id]))
+    (HomogeneousLocalization.map_algebraMap _ (linearSubstGradedRingHom M.1)
+      (fun a ↦ by simp) (primeCompl_pointIdeal_le_comap_linearSubst hQP))
+
+/-- The isomorphism `𝒪_P(ℙⁿ) ≅ 𝒪_Q(ℙⁿ)`, for `T(Q) = P`, sends `f / g` to `f^T / g^T`. -/
+theorem localRing.linearSubstEquiv_mk {P Q : ℙ k (Fin (n + 1) → k)}
+    (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q = P)
+    (c : HomogeneousLocalization.NumDenSameDeg (homogeneousSubmodule (Fin (n + 1)) k)
+      (pointIdeal P).toIdeal.primeCompl) :
+    localRing.linearSubstEquiv hQP (HomogeneousLocalization.mk c) =
+      HomogeneousLocalization.mk (⟨c.deg, ⟨linearSubst M.1 c.num,
+        (mem_homogeneousSubmodule _ _).2
+          (((mem_homogeneousSubmodule _ _).1 c.num.2).linearSubst _)⟩,
+        ⟨linearSubst M.1 c.den,
+        (mem_homogeneousSubmodule _ _).2
+          (((mem_homogeneousSubmodule _ _).1 c.den.2).linearSubst _)⟩,
+        by simpa using primeCompl_pointIdeal_le_comap_linearSubst hQP c.den_mem⟩ :
+          HomogeneousLocalization.NumDenSameDeg (homogeneousSubmodule (Fin (n + 1)) k)
+            (pointIdeal Q).toIdeal.primeCompl) := by
+  change HomogeneousLocalization.map (linearSubstGradedRingHom M.1)
+    (primeCompl_pointIdeal_le_comap_linearSubst hQP) (HomogeneousLocalization.mk c) = _
+  rw [HomogeneousLocalization.map_mk]
+  congr 1
+  ext <;> simp
 
 /-! ### The milestone -/
 

@@ -34,6 +34,8 @@ dehomogenization.
 * `MvPolynomial.irreducible_dehomogenize_iff`: a form not divisible by `X i` is irreducible if and
   only if its dehomogenization is; `MvPolynomial.irreducible_homogenize_totalDegree`: `f*` is
   irreducible for irreducible `f`.
+* `MvPolynomial.homogenize_totalDegree_dvd_of_dvd_dehomogenize`: a factor `f` of `F_*` gives the
+  factor `f*` of `F`.
 * `MvPolynomial.isRelPrime_dehomogenize`: the dehomogenizations of relatively prime forms are
   relatively prime.
 * `MvPolynomial.homogenize_totalDegree_spec`: all of these together, with Tau Ceti's
@@ -192,20 +194,24 @@ theorem irreducible_homogenize_totalDegree {f : MvPolynomial (Fin n) R} (hf : Ir
     (not_X_dvd_homogenize_totalDegree hf.ne_zero)).1
     (by rwa [dehomogenize_homogenize_totalDegree])
 
+/-- Over a ring without zero divisors, a factor `f` of the dehomogenization `F_*` of a form `F`
+gives the factor `f* = homogenize i f.totalDegree f` of `F`. -/
+theorem homogenize_totalDegree_dvd_of_dvd_dehomogenize {F : MvPolynomial (Fin (n + 1)) R} {d : ℕ}
+    (hF : F.IsHomogeneous d) {f : MvPolynomial (Fin n) R} (hf : f ∣ dehomogenize i F) :
+    homogenize i f.totalDegree f ∣ F := by
+  obtain ⟨g, hg⟩ := hf
+  rw [← X_pow_mul_homogenize_dehomogenize (i := i) hF, hg, homogenize_totalDegree_mul]
+  exact (dvd_mul_right _ _).mul_left _
+
 /-- Over a ring without zero divisors, the dehomogenizations of relatively prime forms are
 relatively prime: a common factor `h` of `F_*` and `G_*` gives the common factor `h*` of `F`
 and `G`. -/
 theorem isRelPrime_dehomogenize {F G : MvPolynomial (Fin (n + 1)) R} {m d : ℕ}
     (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous d) (h : IsRelPrime F G) :
     IsRelPrime (dehomogenize i F) (dehomogenize i G) := by
-  have key {H : MvPolynomial (Fin (n + 1)) R} {e : ℕ} (hH : H.IsHomogeneous e)
-      {f : MvPolynomial (Fin n) R} (hf : f ∣ dehomogenize i H) :
-      homogenize i f.totalDegree f ∣ H := by
-    obtain ⟨g, hg⟩ := hf
-    rw [← X_pow_mul_homogenize_dehomogenize (i := i) hH, hg, homogenize_totalDegree_mul]
-    exact (dvd_mul_right _ _).mul_left _
   intro f hfF hfG
-  simpa using (h (key hF hfF) (key hG hfG)).map (dehomogenize i)
+  simpa using (h (homogenize_totalDegree_dvd_of_dvd_dehomogenize hF hfF)
+    (homogenize_totalDegree_dvd_of_dvd_dehomogenize hG hfG)).map (dehomogenize i)
 
 /-- Proposition 5 of §2.6 of Fulton's book and its corollary, for Fulton's homogenization
 `f* = homogenize i f.totalDegree f` and dehomogenization `F_* = dehomogenize i F` in any variable
