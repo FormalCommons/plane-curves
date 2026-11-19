@@ -408,8 +408,7 @@ private theorem sum_toNat_mult_mul_toNat_mult_le {G H : MvPolynomial (Fin 3) k} 
     (hG : G.IsHomogeneous a) (hH : H.IsHomogeneous b) (hG0 : G ≠ 0) (hH0 : H ≠ 0)
     (hGH : IsRelPrime G H) (s : Finset (ℙ k (Fin 3 → k))) :
     ∑ P ∈ s, (mult G P).toNat * (mult H P).toNat ≤ a * b := by
-  have h := (Finset.sum_le_sum fun P (_ : P ∈ s) ↦ mul_mult_le_intersectionNumber hG hH).trans
-    (sum_intersectionNumber_le_mul hG hH hGH s)
+  have h := sum_mult_mul_mult_le hG hH hGH s
   have hc : ((∑ P ∈ s, (mult G P).toNat * (mult H P).toNat : ℕ) : ℕ∞) =
       ∑ P ∈ s, mult G P * mult H P := by
     rw [Nat.cast_sum]
