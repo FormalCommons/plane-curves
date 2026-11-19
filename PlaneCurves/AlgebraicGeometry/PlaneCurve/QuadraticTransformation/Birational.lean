@@ -49,6 +49,9 @@ curves.
   `V(I(·))`, of the image of `V(F) ∖ V(XYZ)`.
 * `PlaneCurves.Projective.quadraticFunctionFieldEquiv_mk`: the isomorphism of function fields
   sends `G / H` to `G^Q / H^Q`.
+* `PlaneCurves.Projective.map_localSubring_quadraticFunctionFieldEquiv`: it carries the local
+  ring of `F` at a point `R` off the fundamental triangle onto the local ring of `F'` at the
+  image of `R`.
 * `PlaneCurves.Projective.properTransform_spec`: Fulton's properties (1)–(4) of the proper
   transform of an irreducible form with no exceptional component, together.
 
@@ -213,6 +216,19 @@ theorem mem_zeroLocus_quadraticTransform_iff (hF : F.IsHomogeneous n) {P : ℙ k
   rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨_, hF.quadraticTransform⟩),
     mem_zeroLocus_iff_eval_rep (by simpa using ⟨_, hF.properTransform⟩)]
   simp [quadraticTransform_eq hF, h]
+
+/-- Off the fundamental triangle, a form `G` vanishes at the image of a point under the point map
+iff `G^Q` vanishes at the point. -/
+theorem eval_rep_quadraticMap_eq_zero_iff {G : MvPolynomial (Fin 3) k} {d : ℕ}
+    (hG : G.IsHomogeneous d) {P : ℙ k (Fin 3 → k)} (hP : P ∉ fundamentalTriangle) :
+    eval (quadraticMap P).rep G = 0 ↔ eval P.rep (quadraticTransform G) = 0 := by
+  induction P using Projectivization.ind with | h v hv =>
+  have hw := quadVec_ne_zero_of_forall_ne_zero (forall_rep_ne_zero_of_notMem hP)
+  obtain ⟨a, ha⟩ := exists_smul_eq_mk_rep k _ hw
+  obtain ⟨b, hb⟩ := exists_smul_eq_mk_rep k v hv
+  rw [quadraticMap_mk v hv hw, ← ha, ← hb, Units.smul_def, Units.smul_def, hG.eval_smul,
+    eval_quadraticTransform, quadVec_smul, hG.eval_smul]
+  simp
 
 /-- Off the fundamental triangle, the point map sends the zeros of `F` to the zeros of `F^Q`,
 and only them. -/
@@ -454,6 +470,39 @@ theorem quadraticFunctionFieldEquiv_symm_mk (hF : F.IsHomogeneous n) (hX : ∀ i
             ((projectivePlaneCurve.mem_ideal_iff hF).1 hQ))) :=
   quadraticFunctionFieldHom_mk _ _
     (fun _ ↦ dvd_quadraticTransform_iff_properTransform_dvd hF Fact.out hX) hG hH hHF
+
+/-- **Local rings along the quadratic transformation.** For an irreducible form `F` with no
+exceptional component and a point `R` of `C : F = 0` off the fundamental triangle, the
+isomorphism `k(F) ≅ k(F')` carries the local ring `𝒪_R(F)` onto the local ring `𝒪_{R'}(F')` at
+the image `R'` of `R` under the point map. -/
+theorem map_localSubring_quadraticFunctionFieldEquiv (hF : F.IsHomogeneous n)
+    (hX : ∀ i, ¬ X i ∣ F)
+    {R : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))}
+    {R' : zeroLocus (projectivePlaneCurve.ideal hF.properTransform :
+      Set (MvPolynomial (Fin 3) k))}
+    (hR : R.1 ∉ fundamentalTriangle) (hRR' : quadraticMap R.1 = R'.1) :
+    (localSubring hF R).map
+        (quadraticFunctionFieldEquiv hF hX : Projective.functionField hF →+* _) =
+      localSubring hF.properTransform R' := by
+  have hR' : R'.1 ∉ fundamentalTriangle :=
+    hRR' ▸ bijOn_quadraticMap_compl_fundamentalTriangle.mapsTo hR
+  have hR'R : quadraticMap R'.1 = R.1 := by rw [← hRR', quadraticMap_quadraticMap hR]
+  refine LocalSubring.toSubring_injective (Subring.ext fun z ↦ ?_)
+  rw [LocalSubring.map_toSubring, Subring.mem_map]
+  constructor
+  · rintro ⟨y, hy, rfl⟩
+    obtain ⟨d, f, g, hf, hg, hgR, rfl⟩ := mem_localSubring_iff.1 hy
+    refine mem_localSubring_iff.2
+      ⟨_, _, _, hf.quadraticTransform, hg.quadraticTransform, ?_, ?_⟩
+    · rwa [Ne, ← eval_rep_quadraticMap_eq_zero_iff hg hR', hR'R]
+    · exact quadraticFunctionFieldEquiv_mk hF hX hf hg _
+  · intro hz
+    refine ⟨(quadraticFunctionFieldEquiv hF hX).symm z, ?_, by simp⟩
+    obtain ⟨d, f, g, hf, hg, hgR, rfl⟩ := mem_localSubring_iff.1 hz
+    rw [quadraticFunctionFieldEquiv_symm_mk]
+    refine mem_localSubring_iff.2
+      ⟨_, _, _, hf.quadraticTransform, hg.quadraticTransform, ?_, rfl⟩
+    rwa [Ne, ← eval_rep_quadraticMap_eq_zero_iff hg hR, hRR']
 
 end FunctionField
 
