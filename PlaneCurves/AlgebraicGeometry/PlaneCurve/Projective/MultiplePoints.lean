@@ -9,6 +9,9 @@ public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Corolla
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Finiteness
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.LinearSystem.Independence
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
+public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Factorization
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
+public import PlaneCurves.RingTheory.MvPolynomial.LeadingForm
 
 /-!
 # Bounds on the multiple points of an irreducible plane curve
@@ -27,6 +30,9 @@ Let `k` be algebraically closed and `F` an irreducible form of degree `n` in `k[
 * Its consequences: lines and irreducible conics are nonsingular, an irreducible cubic has at
   most one multiple point, a double point, and an irreducible quartic has either only double
   points, at most three, or one triple point and no other multiple point.
+* **Sharpness**: for `n ≥ 1` the form `Xⁿ + Yⁿ⁻¹Z` is irreducible, and its only multiple point is
+  `[0 : 0 : 1]`, of multiplicity `n - 1`, so equality holds in Theorem 2. This holds over every
+  field.
 
 The multiplicities are those of `PlaneCurves.Projective.mult`, with values in `ℕ∞`; the sums are
 over any finite set of points, or `finsum`s over all of `ℙ²`, whose terms vanish outside the
@@ -48,10 +54,16 @@ finitely many multiple points.
 * `PlaneCurves.Projective.finsum_mult_mul_mult_sub_one_le_mul_sub_one_spec` and
   `PlaneCurves.Projective.finsum_toNat_mult_mul_sub_one_div_two_le_spec`: the two bounds with
   their consequences, as Fulton states them.
+* `MvPolynomial.irreducible_X_pow_add_X_pow_mul_X`,
+  `PlaneCurves.Projective.mult_X_pow_add_X_pow_mul_X`,
+  `PlaneCurves.Projective.finsum_toNat_mult_X_pow_add_X_pow_mul_X` and
+  `PlaneCurves.Projective.exists_irreducible_finsum_toNat_mult_mul_sub_one_div_two_eq`: the bound
+  of Theorem 2 is sharp.
 
 ## References
 
 * [W. Fulton, *Algebraic Curves*][Fulton2008], §5.3, Problem 5.22; §5.4, Theorem 2
+  and the remark after it
 -/
 
 public section
@@ -353,7 +365,9 @@ finitely many multiple points. Consequently
 3. an irreducible quartic has either only double points, at most three of them, or one triple
    point and no other multiple point.
 
-Every characteristic.
+The bound is sharp: for every `n ≥ 1` the irreducible form `Xⁿ + Yⁿ⁻¹Z` has the single multiple
+point `[0 : 0 : 1]`, of multiplicity `n - 1`, and attains it
+(`exists_irreducible_finsum_toNat_mult_mul_sub_one_div_two_eq`). Every characteristic.
 
 Milestone: *Bound on the multiple points of an irreducible plane curve*. -/
 theorem finsum_toNat_mult_mul_sub_one_div_two_le_spec (hF : F.IsHomogeneous n)
@@ -371,6 +385,107 @@ theorem finsum_toNat_mult_mul_sub_one_div_two_le_spec (hF : F.IsHomogeneous n)
       fun _ ↦ mult_eq_two_of_degree_three hF hirr⟩
   · rintro rfl
     exact multiple_points_of_degree_four hF hirr
+
+/-! ### Sharpness: the curve `Xⁿ + Yⁿ⁻¹Z` -/
+
+/-- For `n ≠ 0`, `Xⁿ + Yⁿ⁻¹Z` is a form of degree `n`. -/
+theorem _root_.MvPolynomial.isHomogeneous_X_pow_add_X_pow_mul_X {R : Type*} [CommSemiring R]
+    (hn : n ≠ 0) :
+    (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) R).IsHomogeneous n := by
+  have h0 : (X 0 ^ n : MvPolynomial (Fin 3) R).IsHomogeneous n := by
+    simpa using (isHomogeneous_X R (0 : Fin 3)).pow n
+  refine h0.add ?_
+  convert ((isHomogeneous_X R (1 : Fin 3)).pow (n - 1)).mul (isHomogeneous_X R 2) using 1
+  omega
+
+/-- Over a domain, the form `Xⁿ + Yⁿ⁻¹Z`, for `n ≠ 0`, is irreducible: `Y` does not divide it,
+and in the chart `Y = 1` it becomes `xⁿ + z`. -/
+theorem _root_.MvPolynomial.irreducible_X_pow_add_X_pow_mul_X {R : Type*} [CommRing R]
+    [IsDomain R] (hn : n ≠ 0) :
+    Irreducible (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) R) := by
+  have hX : ¬ X 1 ∣ (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) R) := by
+    rintro ⟨G, hG⟩
+    have := congrArg (eval ![(1 : R), 0, 0]) hG
+    simp at this
+  rw [← irreducible_dehomogenize_iff (isHomogeneous_X_pow_add_X_pow_mul_X hn) hX]
+  convert irreducible_X_pow_add_X (R := R) n using 1
+  simp [Fin.insertNth]
+  rfl
+
+omit [IsAlgClosed k] in
+/-- `Xⁿ + Yⁿ⁻¹Z`, for `n ≠ 0`, vanishes to order `n - 1` at `(0, 0, 1)`: it is the sum of
+`Xⁿ`, of order `n`, and `Yⁿ⁻¹Z`, of order `n - 1`. -/
+theorem orderAt_X_pow_add_X_pow_mul_X (hn : n ≠ 0) :
+    (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = ↑(n - 1) := by
+  have h1 (i : Fin 3) (hi : ![(0 : k), 0, 1] i = 0) :
+      (X i : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = 1 := by
+    simpa [hi] using orderAt_X_sub_C (R := k) ![0, 0, 1] i
+  have hp : (X 0 ^ n : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = n := by
+    rw [orderAt_pow, h1 0 rfl]; simp
+  have hq : (X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = ↑(n - 1) := by
+    rw [orderAt_mul, orderAt_pow, h1 1 rfl, orderAt_eq_zero_iff.2 (by simp)]; simp
+  have hlt : (X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] <
+      (X 0 ^ n : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] := by
+    rw [hp, hq]; exact_mod_cast Nat.sub_lt (Nat.pos_of_ne_zero hn) one_pos
+  have hge := min_orderAt_le_orderAt_add (X 0 ^ n) (X 1 ^ (n - 1) * X 2) ![(0 : k), 0, 1]
+  rw [min_eq_right hlt.le, hq] at hge
+  refine le_antisymm ?_ hge
+  by_contra h
+  have := (orderAt_eq_and_leadingFormAt_eq_neg_of_orderAt_lt_orderAt_add
+    (p := X 1 ^ (n - 1) * X 2) (q := X 0 ^ n) (a := ![(0 : k), 0, 1])
+    (by rw [add_comm, hq]; exact not_le.1 h)).1
+  exact hlt.ne this.symm
+
+omit [IsAlgClosed k] in
+/-- For `n ≠ 0`, the curve `Xⁿ + Yⁿ⁻¹Z` has multiplicity `n - 1` at `[0 : 0 : 1]`. -/
+theorem mult_X_pow_add_X_pow_mul_X (hn : n ≠ 0) :
+    mult (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k) (mk k ![0, 0, 1] (by simp)) =
+      ↑(n - 1) := by
+  rw [mult_mk (isHomogeneous_X_pow_add_X_pow_mul_X hn), orderAt_X_pow_add_X_pow_mul_X hn]
+
+omit [IsAlgClosed k] in
+/-- The only possible multiple point of `Xⁿ + Yⁿ⁻¹Z` is `[0 : 0 : 1]`: the derivative `Yⁿ⁻¹` in
+`Z` forces `Y = 0` (and `n ≥ 2`), and then `Xⁿ = 0`. Every characteristic. -/
+theorem eq_of_isMultiplePoint_X_pow_add_X_pow_mul_X {P : ℙ k (Fin 3 → k)}
+    (hP : IsMultiplePoint (X 0 ^ n + X 1 ^ (n - 1) * X 2) P) :
+    P = mk k ![0, 0, 1] (by simp) := by
+  rcases eq_or_ne n 0 with rfl | hn
+  · have := (isMultiplePoint_iff_eval_rep.1 hP).2 2
+    simp [pderiv_X] at this
+  induction P using Projectivization.ind with | h v hv =>
+  obtain ⟨h0, hd⟩ :=
+    (isMultiplePoint_iff_eval_pderiv (isHomogeneous_X_pow_add_X_pow_mul_X hn) v hv).1 hP
+  obtain ⟨h1, hn1⟩ : v 1 = 0 ∧ n - 1 ≠ 0 := by simpa [pderiv_X] using hd 2
+  have h0 : v 0 = 0 := by simpa [h1, hn, zero_pow hn1] using h0
+  rw [mk_eq_mk_iff']
+  refine ⟨v 2, funext fun i ↦ ?_⟩
+  fin_cases i <;> simp [h0, h1]
+
+omit [IsAlgClosed k] in
+/-- For `n ≠ 0`, `∑_P m_P(m_P - 1)/2 = (n - 1)(n - 2)/2` for the curve `Xⁿ + Yⁿ⁻¹Z`, over any
+field: its only multiple point is `[0 : 0 : 1]`, of multiplicity `n - 1`. -/
+theorem finsum_toNat_mult_X_pow_add_X_pow_mul_X (hn : n ≠ 0) :
+    ∑ᶠ P, (mult (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k) P).toNat *
+      ((mult (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k) P).toNat - 1) / 2 =
+      (n - 1) * (n - 2) / 2 := by
+  rw [finsum_eq_single _ (mk k ![0, 0, 1] (by simp)), mult_X_pow_add_X_pow_mul_X hn,
+    ENat.toNat_natCast, Nat.sub_sub]
+  intro P hP
+  have h : ¬ 2 ≤ mult (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k) P :=
+    fun h ↦ hP (eq_of_isMultiplePoint_X_pow_add_X_pow_mul_X (isMultiplePoint_def.2 h))
+  have : (mult (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k) P).toNat ≤ 1 :=
+    ENat.toNat_le_of_le_natCast (Order.le_of_lt_add_one (not_le.1 h))
+  interval_cases (mult (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k) P).toNat <;> rfl
+
+omit [IsAlgClosed k] in
+/-- **The bound on the multiple points is sharp.** For every `n ≠ 0` there is an irreducible form
+`F` of degree `n`, namely `Xⁿ + Yⁿ⁻¹Z`, with `∑_P m_P(F) (m_P(F) - 1)/2 = (n - 1)(n - 2)/2`.
+Every field. -/
+theorem exists_irreducible_finsum_toNat_mult_mul_sub_one_div_two_eq (hn : n ≠ 0) :
+    ∃ F : MvPolynomial (Fin 3) k, F.IsHomogeneous n ∧ Irreducible F ∧
+      ∑ᶠ P, (mult F P).toNat * ((mult F P).toNat - 1) / 2 = (n - 1) * (n - 2) / 2 :=
+  ⟨_, isHomogeneous_X_pow_add_X_pow_mul_X hn, irreducible_X_pow_add_X_pow_mul_X hn,
+    finsum_toNat_mult_X_pow_add_X_pow_mul_X hn⟩
 
 end PlaneCurves.Projective
 
