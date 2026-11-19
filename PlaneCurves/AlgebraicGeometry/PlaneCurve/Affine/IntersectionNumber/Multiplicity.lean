@@ -51,6 +51,8 @@ so equality holds; if not, `ψ` is not injective and the inequality is strict.
   `I_P ^ t ⊆ (F, G) + I_P ^ (t + 1)` for `m, n ≤ t ≤ m + n - 1`.
 * `PlaneCurves.Affine.maximalIdeal_pow_le_span_pair`: `𝔪_P ^ t ⊆ (F, G) 𝒪_P` for
   `t ≥ m + n - 1`.
+* `PlaneCurves.Affine.algebraMap_mem_span_pair_of_isRelPrime_leadingFormAt`: every `H` of order
+  at least `m + n - 1` at `P` lies in `(F, G) 𝒪_P`.
 * `PlaneCurves.Affine.mem_pow_of_isRelPrime_leadingFormAt`: if the leading forms are relatively
   prime and `A F + B G ∈ I_P ^ (m + n)`, then `A ∈ I_P ^ n` and `B ∈ I_P ^ m`.
 * `PlaneCurves.Affine.exists_notMem_pow_of_not_isRelPrime_leadingFormAt`: if they are not, there
@@ -209,6 +211,19 @@ theorem map_vanishingIdeal_pow_le_span_pair {t : ℕ}
       Ideal.span {algebraMap _ (AffineSpace.localRing k P) F, algebraMap _ _ G} := by
   rw [AffineSpace.localRing.map_vanishingIdeal]
   exact maximalIdeal_pow_le_span_pair hFG ht
+
+/-- **Polynomials of high order lie in the ideal of two curves.** Let `F, G ∈ k[X, Y]` have
+orders `m` and `n` at `P` and relatively prime leading forms there. Every `H` of order at least
+`m + n - 1` at `P` lies in the ideal `(F, G) 𝒪_P(𝔸²)`. -/
+theorem algebraMap_mem_span_pair_of_isRelPrime_leadingFormAt {H : MvPolynomial (Fin 2) k}
+    (hFG : IsRelPrime (F.leadingFormAt P) (G.leadingFormAt P))
+    (hH : (((F.orderAt P).toNat + (G.orderAt P).toNat - 1 : ℕ) : ℕ∞) ≤ H.orderAt P) :
+    algebraMap _ (AffineSpace.localRing k P) H ∈
+      Ideal.span {algebraMap _ (AffineSpace.localRing k P) F, algebraMap _ _ G} := by
+  refine maximalIdeal_pow_le_span_pair (t := (F.orderAt P).toNat + (G.orderAt P).toNat - 1) hFG
+    (by omega) ?_
+  rw [← AffineSpace.localRing.map_vanishingIdeal_pow]
+  exact Ideal.mem_map_of_mem _ ((mem_pow_vanishingIdeal_singleton_iff _ _ _).2 hH)
 
 
 
