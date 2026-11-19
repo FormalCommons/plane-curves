@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Corollaries
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Finiteness
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionCycle
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionNumber.Properties
 
 /-!
@@ -32,6 +33,10 @@ Together with the polar derivative `D_P F`, which is nonzero when `deg F - m_P(F
 exactly `deg F - m_P(F)` points other than `P`, each with intersection number one (Fulton,
 Problem 5.26).
 
+The file also shows that two lines `L` and `B` prime to `F` agree when a cycle of degree 2 on
+simple points of `F` lies below both `L • F` and `B • F`: either they share two distinct points,
+or both are the tangent to `F` at one point.
+
 ## Main results
 
 * `intersectionNumber_eq_mult_iff_not_isTangentAt`: `I(P, F ∩ L) = m_P(F)` iff `L` is not
@@ -45,6 +50,12 @@ Problem 5.26).
 * `finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite`: finitely many lines through `P` meet a
   finite set of other points.
 * `infinite_setOf_eval_sum_C_mul_X_eq_zero`: infinitely many lines pass through a point.
+* `exists_associated_sum_C_rep_mul_X`: every line is associated to the line
+  `∑ i, c.rep i X i` of a point `c` of the dual plane.
+* `associated_of_eval_rep_eq_zero_of_ne`: two lines through two distinct points agree.
+* `eval_rep_eq_zero_of_le_intersectionCycle`: a point of a cycle below `L • F` lies on `L`.
+* `associated_of_le_intersectionCycle`: two lines whose intersection cycles with a curve contain
+  a common cycle of degree 2 on simple points of the curve agree.
 * `ncard_zeroLocus_pair_diff_add`, `ncard_zeroLocus_pair_diff`: counting the points of
   `V(F) ∩ V(L)` other than `P`.
 * `ncard_zeroLocus_pair_diff_lt_of_isTangentAt`: a line through `P` tangent to `F` at another
@@ -68,7 +79,7 @@ namespace PlaneCurves.Projective
 open MvPolynomial Projectivization TauCeti PlaneCurves.ProjectiveSpace
 open scoped LinearAlgebra.Projectivization Matrix
 
-variable {k : Type*} [Field k] {F L : MvPolynomial (Fin 3) k} {P Q : ℙ k (Fin 3 → k)} {d : ℕ}
+variable {k : Type*} [Field k] {F L B : MvPolynomial (Fin 3) k} {P Q : ℙ k (Fin 3 → k)} {d : ℕ}
 
 /-! ### Intersection numbers with a line -/
 
@@ -172,6 +183,79 @@ theorem infinite_setOf_eval_sum_C_mul_X_eq_zero [IsAlgClosed k] (P : ℙ k (Fin 
     one_ne_zero).mono fun c hc ↦ ?_
   rw [mem_zeroLocus_singleton_sum_C_mul_X_iff] at hc
   rwa [Set.mem_ofPred_eq, eval_sum_C_mul_X, dotProduct_comm]
+
+/-! ### Lines sharing points of a curve -/
+
+/-- A nonzero linear form `L` is associated to the line `∑ i, c.rep i X i` of a point `c` of the
+dual plane, which vanishes exactly where `L` does. -/
+theorem exists_associated_sum_C_rep_mul_X (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0) :
+    ∃ c : ℙ k (Fin 3 → k), Associated L (∑ i, C (c.rep i) * X i) ∧
+      ∀ v : Fin 3 → k, eval v (∑ i, C (c.rep i) * X i) = 0 ↔ eval v L = 0 := by
+  set a : Fin 3 → k := fun i ↦ L.coeff (Finsupp.single i 1)
+  have hLa : L = ∑ i, C (a i) * X i := hL.eq_sum_C_mul_X
+  have ha : a ≠ 0 := fun h ↦ hL0 (by rw [hLa, h]; simp)
+  obtain ⟨u, hu⟩ := exists_smul_eq_mk_rep k a ha
+  refine ⟨mk k a ha, ?_, fun v ↦ ?_⟩
+  · rw [hLa, associated_sum_C_mul_X_iff]
+    refine ⟨(u : k)⁻¹, by simp, fun i ↦ ?_⟩
+    rw [← hu, Pi.smul_apply, Units.smul_def, smul_eq_mul, inv_mul_cancel_left₀ u.ne_zero]
+  · rw [hLa, eval_sum_C_mul_X, eval_sum_C_mul_X, ← hu, smul_dotProduct, Units.smul_def,
+      smul_eq_mul, mul_eq_zero]
+    simp
+
+/-- Two nonzero linear forms that vanish at two distinct points of `ℙ²` are associated: one line
+passes through two distinct points. -/
+theorem associated_of_eval_rep_eq_zero_of_ne (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0)
+    (hB : B.IsHomogeneous 1) (hB0 : B ≠ 0) (hPQ : P ≠ Q) (hLP : eval P.rep L = 0)
+    (hLQ : eval Q.rep L = 0) (hBP : eval P.rep B = 0) (hBQ : eval Q.rep B = 0) :
+    Associated L B := by
+  obtain ⟨c, hc, hcv⟩ := exists_associated_sum_C_rep_mul_X hL hL0
+  obtain ⟨c', hc', hc'v⟩ := exists_associated_sum_C_rep_mul_X hB hB0
+  obtain rfl : c = c' := subsingleton_setOf_eval_sum_C_mul_X_eq_zero hPQ
+    ⟨(hcv _).2 hLP, (hcv _).2 hLQ⟩ ⟨(hc'v _).2 hBP, (hc'v _).2 hBQ⟩
+  exact hc.trans hc'.symm
+
+/-- A point of a zero-cycle below `L • F` lies on `L`, for `L` prime to the form `F`. -/
+theorem eval_rep_eq_zero_of_le_intersectionCycle (hF : F.IsHomogeneous d)
+    (hL : L.IsHomogeneous 1) (hFL : IsRelPrime F L) {T : ℙ k (Fin 3 → k) →₀ ℕ}
+    (hT : T ≤ intersectionCycle L F) (hP : P ∈ T.support) : eval P.rep L = 0 :=
+  ((mem_support_intersectionCycle_iff hL hF hFL.symm).1 (Finsupp.support_mono hT hP)).1
+
+/-- **Two lines sharing two points of a curve agree.** Let `F` be a form and `L`, `B` lines prime
+to `F`. If a zero-cycle `T` of degree 2, supported on simple points of `F`, lies below both
+`L • F` and `B • F`, then `L` and `B` are associated. Either `T` has two distinct points, which
+lie on both lines, or `T = 2R` and both lines are the tangent to `F` at the simple point `R`. -/
+theorem associated_of_le_intersectionCycle (hF : F.IsHomogeneous d) (hL : L.IsHomogeneous 1)
+    (hL0 : L ≠ 0) (hB : B.IsHomogeneous 1) (hB0 : B ≠ 0) (hFL : IsRelPrime F L)
+    (hFB : IsRelPrime F B) {T : ℙ k (Fin 3 → k) →₀ ℕ} (hT : T.degree = 2)
+    (hs : ∀ R ∈ T.support, IsSimplePoint F R) (hTL : T ≤ intersectionCycle L F)
+    (hTB : T ≤ intersectionCycle B F) : Associated L B := by
+  by_cases hsub : ∃ R ∈ T.support, ∃ S ∈ T.support, R ≠ S
+  · obtain ⟨R, hR, S, hS, hRS⟩ := hsub
+    exact associated_of_eval_rep_eq_zero_of_ne hL hL0 hB hB0 hRS
+      (eval_rep_eq_zero_of_le_intersectionCycle hF hL hFL hTL hR)
+      (eval_rep_eq_zero_of_le_intersectionCycle hF hL hFL hTL hS)
+      (eval_rep_eq_zero_of_le_intersectionCycle hF hB hFB hTB hR)
+      (eval_rep_eq_zero_of_le_intersectionCycle hF hB hFB hTB hS)
+  push Not at hsub
+  obtain ⟨R, hR⟩ : T.support.Nonempty := by
+    rw [Finset.nonempty_iff_ne_empty, Ne, Finsupp.support_eq_empty]
+    rintro rfl
+    simp at hT
+  have hTR : T R = 2 := by
+    rw [← hT, Finsupp.support_subset_singleton.1 fun S hS ↦ Finset.mem_singleton.2
+      (hsub S hS R hR), Finsupp.degree_single, Finsupp.single_eq_same]
+  have htan : ∀ M : MvPolynomial (Fin 3) k, M.IsHomogeneous 1 → M ≠ 0 → IsRelPrime F M →
+      T ≤ intersectionCycle M F → IsTangentAt F R M := fun M hM hM0 hFM hTM ↦ by
+    refine (isTangentAt_iff_mult_lt_intersectionNumber hF (hs R hR).ne_zero hM hM0
+      (eval_rep_eq_zero_of_le_intersectionCycle hF hM hFM hTM hR)).2 ?_
+    rw [isSimplePoint_def.1 (hs R hR), ← intersectionCycle_apply hF hM hFM,
+      intersectionCycle_comm]
+    have := hTM R
+    rw [hTR] at this
+    exact_mod_cast (by omega : 1 < intersectionCycle M F R)
+  exact ((hs R hR).associated_tangentLine_of_isTangentAt hF (htan L hL hL0 hFL hTL)).trans
+    ((hs R hR).associated_tangentLine_of_isTangentAt hF (htan B hB hB0 hFB hTB)).symm
 
 /-! ### Counting the points of a line on a curve -/
 
@@ -310,15 +394,10 @@ theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_z
         eval P.rep L = 0 → ¬IsTangentAt F P L → (∀ Q ∈ S, Q ≠ P → eval Q.rep L ≠ 0) →
         ∀ Q ∈ zeroLocus {F, L}, Q ≠ P → intersectionNumber Q F L = 1 := by
     rcases hD with hD0 | rfl
-    · have hrel : IsRelPrime F (polarDerivative P.rep F) := by
-        refine hirr.isRelPrime_iff_not_dvd.2 fun hdvd ↦ hD0 ?_
-        have := totalDegree_le_of_dvd_of_isDomain hdvd hD0
-        rw [hF.totalDegree hF0, (hF.polarDerivative _).totalDegree hD0] at this
-        rw [(totalDegree_eq_zero_iff_eq_C (p := F)).1 (by rw [hF.totalDegree hF0]; omega),
-          polarDerivative_C]
-      refine ⟨{Q | IsMultiplePoint F Q} ∪ zeroLocus {F, polarDerivative P.rep F},
+    · refine ⟨{Q | IsMultiplePoint F Q} ∪ zeroLocus {F, polarDerivative P.rep F},
         (finite_setOf_isMultiplePoint_of_irreducible hF hirr).union
-          (finite_zeroLocus_pair_of_isRelPrime hF (hF.polarDerivative _) hrel), ?_⟩
+          (finite_zeroLocus_pair_of_isRelPrime hF (hF.polarDerivative _)
+            (hF.isRelPrime_polarDerivative hirr hD0)), ?_⟩
       intro L hL hL0 _ hLP _ hS Q hQ hQP
       obtain ⟨hQF, hQL⟩ := (hmem hL Q).1 hQ
       have hQs : IsSimplePoint F Q :=
