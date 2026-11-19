@@ -304,6 +304,14 @@ theorem isTangentAt_smul_iff {c : k} (hc : c ≠ 0) :
   rw [isTangentAt_def, isTangentAt_def, leadingForm_def, leadingForm_def, leadingFormAt_smul,
     smul_eq_C_mul, (hc.isUnit.map C).dvd_mul_left]
 
+/-- Rescaling a curve by a nonzero constant does not change its ordinary multiple points. -/
+@[simp]
+theorem isOrdinaryMultiplePoint_smul_iff {c : k} (hc : c ≠ 0) :
+    IsOrdinaryMultiplePoint (c • F) P ↔ IsOrdinaryMultiplePoint F P := by
+  rw [isOrdinaryMultiplePoint_def, isOrdinaryMultiplePoint_def, isMultiplePoint_smul_iff hc,
+    leadingForm_def, leadingForm_def, leadingFormAt_smul, smul_eq_C_mul,
+    (associated_unit_mul_left _ _ (hc.isUnit.map C)).squarefree_iff]
+
 /-- A form vanishes at `P.rep` exactly when it vanishes at the point `Fin.insertNth i 1 a` of the
 chart `Xᵢ = 1` corresponding to `P`. -/
 private theorem eval_rep_eq_zero_iff_affine (hL : L.IsHomogeneous d) {i : Fin 3}
