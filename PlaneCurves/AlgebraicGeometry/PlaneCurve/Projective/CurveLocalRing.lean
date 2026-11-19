@@ -114,6 +114,20 @@ theorem mem_ideal_iff {R : Type*} [CommRing R] {G H : MvPolynomial (Fin 3) R}
     (hG : G.IsHomogeneous d) : H ∈ ideal hG ↔ G ∣ H := by
   rw [← HomogeneousIdeal.mem_iff, toIdeal_ideal, Ideal.mem_span_singleton]
 
+/-- The power `Xᵢᵐ` of a coordinate with `F ∤ Xᵢ` is not in the homogeneous ideal `(F)` of an
+irreducible form `F`. -/
+theorem X_pow_notMem_ideal (hF : F.IsHomogeneous d) [Fact (Irreducible F)] {i : Fin 3}
+    (hi : ¬ F ∣ X i) (m : ℕ) : X i ^ m ∉ ideal hF :=
+  (mem_ideal_iff hF).not.2 fun h ↦ hi ((Fact.out : Irreducible F).prime.dvd_of_dvd_pow h)
+
+/-- The class of a form of degree `m` lies in the degree `m • 1` part of the homogeneous coordinate
+ring, the degree in which Tau Ceti's charts take numerators. -/
+theorem mk_mem_quotientGrading_smul_one (hF : F.IsHomogeneous d) {m : ℕ}
+    {p : MvPolynomial (Fin 3) k} (hp : p.IsHomogeneous m) :
+    Ideal.Quotient.mk (ideal hF).toIdeal p ∈ (ideal hF).quotientGrading (m • 1) := by
+  rw [smul_eq_mul, mul_one]
+  exact (ideal hF).mk_mem_quotientGrading hp
+
 end TauCeti.AlgebraicGeometry.projectivePlaneCurve
 
 namespace PlaneCurves.Projective
@@ -467,21 +481,6 @@ theorem functionField.chartEquiv_mk (hi : ¬ F ∣ X i) {m : ℕ} {f g : MvPolyn
 
 /-! ### Tau Ceti's function field of the curve -/
 
-/-- The power `Xᵢᵐ` of a coordinate with `F ∤ Xᵢ` is not in the ideal `(F)`. -/
-theorem X_pow_notMem_ideal (hi : ¬ F ∣ X i) (m : ℕ) : X i ^ m ∉ projectivePlaneCurve.ideal hF :=
-  (projectivePlaneCurve.mem_ideal_iff hF).not.2 fun h ↦
-    hi ((Fact.out : Irreducible F).prime.dvd_of_dvd_pow h)
-
-omit [Fact (Irreducible F)] in
-/-- The class of a form of degree `m` lies in the degree `m • 1` part of the homogeneous coordinate
-ring, the degree in which Tau Ceti's charts take numerators. -/
-theorem mk_mem_quotientGrading_smul_one {m : ℕ} {p : MvPolynomial (Fin 3) k}
-    (hp : p.IsHomogeneous m) :
-    Ideal.Quotient.mk (projectivePlaneCurve.ideal hF).toIdeal p ∈
-      (projectivePlaneCurve.ideal hF).quotientGrading (m • 1) := by
-  rw [smul_eq_mul, mul_one]
-  exact (projectivePlaneCurve.ideal hF).mk_mem_quotientGrading hp
-
 /-- The chart isomorphisms `k(C) ≅ k(F_(j))` followed by Tau Ceti's
 `projectivePlaneCurve.functionFieldEquiv` in the same chart send `p / Xᵢᵐ`, for any chart `Xᵢ`, to
 the germ of the function `p / Xᵢᵐ` on `D₊(Xᵢ)`. -/
@@ -492,10 +491,10 @@ private theorem chartEquiv_trans_symm_mk {j : Fin 3} (hi : ¬ F ∣ X i) (hj : �
     ((Projective.functionField.chartEquiv hF j hj).trans
         (projectivePlaneCurve.functionFieldEquiv hF j hj).symm)
         (ProjectiveSpace.functionField.mk hp (isHomogeneous_X_pow i m)
-          (X_pow_notMem_ideal hF hi m)) =
+          (projectivePlaneCurve.X_pow_notMem_ideal hF hi m)) =
       (projectivePlaneCurve hF).germToFunctionField _ (AlgebraicGeometry.Proj.awayToSection _ _
         (Away.mk _ ((projectivePlaneCurve.ideal hF).mk_X_mem_quotientGrading i) m _
-          (mk_mem_quotientGrading_smul_one hF hp))) := by
+          (projectivePlaneCurve.mk_mem_quotientGrading_smul_one hF hp))) := by
   have := isPrime_span_dehomogenize hF hj
   have := projectivePlaneCurve.nonempty_basicOpen (hG := hF) hi
   have := projectivePlaneCurve.nonempty_basicOpen (hG := hF) hj
@@ -504,26 +503,27 @@ private theorem chartEquiv_trans_symm_mk {j : Fin 3} (hi : ¬ F ∣ X i) (hj : �
       ((Projective.functionField.chartEquiv hF j hj).trans
         (projectivePlaneCurve.functionFieldEquiv hF j hj).symm)
         (ProjectiveSpace.functionField.mk hq (isHomogeneous_X_pow j m)
-          (X_pow_notMem_ideal hF hj m)) =
+          (projectivePlaneCurve.X_pow_notMem_ideal hF hj m)) =
       (projectivePlaneCurve hF).germToFunctionField _ (AlgebraicGeometry.Proj.awayToSection _ _
         (Away.mk _ ((projectivePlaneCurve.ideal hF).mk_X_mem_quotientGrading j) m _
-          (mk_mem_quotientGrading_smul_one hF hq))) := fun hq ↦ by
+          (projectivePlaneCurve.mk_mem_quotientGrading_smul_one hF hq))) := fun hq ↦ by
     rw [AlgEquiv.trans_apply, AlgEquiv.symm_apply_eq,
       projectivePlaneCurve.functionFieldEquiv_germToFunctionField_mk, functionField.chartEquiv_mk]
     simp
   -- otherwise, `p / Xᵢᵐ = (p / Xⱼᵐ) / (Xᵢᵐ / Xⱼᵐ)`, and the germs on the two charts agree
   rw [← ProjectiveSpace.functionField.mk_div_mk hp (isHomogeneous_X_pow i m)
-    (isHomogeneous_X_pow j m) (X_pow_notMem_ideal hF hi m) (X_pow_notMem_ideal hF hj m),
+    (isHomogeneous_X_pow j m) (projectivePlaneCurve.X_pow_notMem_ideal hF hi m)
+    (projectivePlaneCurve.X_pow_notMem_ideal hF hj m),
     map_div₀, key hp, key (isHomogeneous_X_pow i m), div_eq_iff]
   · refine Eq.symm ?_
     convert AlgebraicGeometry.Proj.germToFunctionField_awayToSection_mul _
       ((projectivePlaneCurve.ideal hF).mk_X_mem_quotientGrading i)
       ((projectivePlaneCurve.ideal hF).mk_X_mem_quotientGrading j) m
-      (mk_mem_quotientGrading_smul_one hF hp) using 4
+      (projectivePlaneCurve.mk_mem_quotientGrading_smul_one hF hp) using 4
     simp
   · rw [← key (isHomogeneous_X_pow i m)]
     exact (AlgEquiv.injective _).ne_iff.2 (ProjectiveSpace.functionField.mk_ne_zero _ _ _
-      (X_pow_notMem_ideal hF hi m)) |>.trans_eq (map_zero _)
+      (projectivePlaneCurve.X_pow_notMem_ideal hF hi m)) |>.trans_eq (map_zero _)
 
 /-- **The function field as Tau Ceti's function field of the curve.** The function field `k(C)`
 of `C : F = 0`, for an irreducible form `F`, is the function field of the integral scheme
@@ -557,10 +557,10 @@ theorem functionField.schemeFunctionFieldEquiv_mk (hi : ¬ F ∣ X i) {m : ℕ}
     haveI := projectivePlaneCurve.nonempty_basicOpen (hG := hF) hi
     functionField.schemeFunctionFieldEquiv hF
         (ProjectiveSpace.functionField.mk hp (isHomogeneous_X_pow i m)
-          (X_pow_notMem_ideal hF hi m)) =
+          (projectivePlaneCurve.X_pow_notMem_ideal hF hi m)) =
       (projectivePlaneCurve hF).germToFunctionField _ (AlgebraicGeometry.Proj.awayToSection _ _
         (Away.mk _ ((projectivePlaneCurve.ideal hF).mk_X_mem_quotientGrading i) m _
-          (mk_mem_quotientGrading_smul_one hF hp))) :=
+          (projectivePlaneCurve.mk_mem_quotientGrading_smul_one hF hp))) :=
   chartEquiv_trans_symm_mk hF hi _ hp
 
 /-- The isomorphism of `k(C)` with Tau Ceti's function field does not depend on the chart: in
@@ -575,7 +575,8 @@ theorem functionField.functionFieldEquiv_schemeFunctionFieldEquiv (hi : ¬ F ∣
   rw [← AlgEquiv.eq_symm_apply, ← AlgEquiv.trans_apply]
   obtain ⟨m, f, g, hf, hg, hgI, rfl⟩ := ProjectiveSpace.functionField.exists_eq_mk z
   rw [← ProjectiveSpace.functionField.mk_div_mk hf hg (isHomogeneous_X_pow i m) hgI
-    (X_pow_notMem_ideal hF hi m), map_div₀, map_div₀, schemeFunctionFieldEquiv_mk hF hi,
+    (projectivePlaneCurve.X_pow_notMem_ideal hF hi m), map_div₀, map_div₀,
+    schemeFunctionFieldEquiv_mk hF hi,
     schemeFunctionFieldEquiv_mk hF hi, chartEquiv_trans_symm_mk hF hi hi,
     chartEquiv_trans_symm_mk hF hi hi]
 
