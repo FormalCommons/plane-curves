@@ -13,6 +13,7 @@ public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 public import Mathlib.RingTheory.KrullDimension.Polynomial
 public import Mathlib.RingTheory.Nullstellensatz
 public import TauCeti.RingTheory.KrullDimension.FiniteType
+public import TauCeti.FieldTheory.FunctionField.Basic
 
 /-!
 # Dimension of affine varieties of dimension zero and one
@@ -30,6 +31,9 @@ of `I` and proves the affine forms of parts (3)–(5) of Fulton's Proposition 10
   one are the irreducible plane curves.
 * `AffineSpace.trdeg_functionField_span_singleton`: the function field of an irreducible
   `F ∈ k[X₀, …, Xₙ]` has transcendence degree `n`.
+* `AffineSpace.isFunctionField_functionField_iff`: `k(V)` is an algebraic function field of one
+  variable iff `tr.deg k(V) = 1`; `AffineSpace.isFunctionField_functionField_span_singleton`:
+  this holds for an irreducible plane curve.
 * `AffineSpace.trdeg_functionField_eq_zero_iff`: over an algebraically closed field,
   `tr.deg k(V) = 0` if and only if `I` is the ideal of a point.
 * `AffineSpace.isMaximal_of_trdeg_functionField_le_one`: if `tr.deg k(V) ≤ 1`, every prime
@@ -70,6 +74,16 @@ theorem height_add_toNat_trdeg_functionField :
     (functionField I), MvPolynomial.ringKrullDim_of_isNoetherianRing_of_finite,
     ringKrullDim_eq_zero_of_field, zero_add] at h
   exact_mod_cast h
+
+/-- The function field of an affine variety `V(I)` is an algebraic function field of one variable
+over `k` iff it has transcendence degree one, that is, iff `V(I)` is a curve. -/
+theorem isFunctionField_functionField_iff :
+    TauCeti.IsFunctionField k (functionField I) ↔ Algebra.trdeg k (functionField I) = 1 := by
+  have : Algebra.EssFiniteType k (functionField I) :=
+    haveI := Algebra.EssFiniteType.of_isLocalization (R := MvPolynomial σ k ⧸ I)
+      (functionField I) (nonZeroDivisors _)
+    Algebra.EssFiniteType.comp k (MvPolynomial σ k ⧸ I) _
+  exact TauCeti.isFunctionField_iff_trdeg_eq_one
 
 end height
 
@@ -115,6 +129,15 @@ theorem trdeg_functionField_span_singleton {F : MvPolynomial (Fin (n + 1)) k}
     Algebra.trdeg k (functionField (Ideal.span {F})) = n :=
   haveI := (Ideal.span_singleton_prime hF.ne_zero).mpr hF.prime
   (trdeg_functionField_eq_iff _).mpr ⟨F, hF, rfl⟩
+
+/-- The function field of an irreducible affine plane curve `F = 0` is an algebraic function field
+of one variable over `k`. -/
+theorem isFunctionField_functionField_span_singleton {F : MvPolynomial (Fin 2) k}
+    (hF : Irreducible F) :
+    haveI := (Ideal.span_singleton_prime hF.ne_zero).mpr hF.prime
+    TauCeti.IsFunctionField k (functionField (Ideal.span {F})) :=
+  haveI := (Ideal.span_singleton_prime hF.ne_zero).mpr hF.prime
+  (isFunctionField_functionField_iff _).2 (trdeg_functionField_span_singleton (n := 1) hF)
 
 end hypersurface
 

@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ZeroLocus
 public import PlaneCurves.RingTheory.MvPolynomial.OrderAtDehomogenize
+public import PlaneCurves.LinearAlgebra.Matrix.MulVecLin
 
 /-!
 # Multiplicity of a projective plane curve at a point
@@ -137,8 +138,7 @@ theorem mult_eq_one_of_isHomogeneous_one (hF : F.IsHomogeneous 1) (hF0 : F ≠ 0
 theorem mult_linearSubst (hF : F.IsHomogeneous d) {M : Matrix (Fin 3) (Fin 3) k}
     (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
     mult (linearSubst M F) Q = mult F (Projectivization.map M.mulVecLin hM Q) := by
-  have hdet : IsUnit M.det :=
-    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
   conv_rhs => rw [← Q.mk_rep, map_mk]
   rw [mult_mk hF, mult_def, orderAt_linearSubst hdet, Matrix.mulVecLin_apply]
 

@@ -8,6 +8,7 @@ module
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.QuotientPiLocalRing
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.CurveLocalRing
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionCycle
 public import PlaneCurves.RingTheory.Ideal.Span
 public import PlaneCurves.RingTheory.MvPolynomial.HomogeneousIdeal
 
@@ -52,10 +53,11 @@ is regular at every point of `C` is constant (Fulton, Problem 5.30): writing it 
 * `mem_span_pair_iff_forall_noetherConditionsAt`: Max Noether's theorem, `H ∈ (F, G)` iff
   Noether's conditions hold at every point of `V(F) ∩ V(G)`.
 * `exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt`: its degree form.
-* `noetherConditionsAt_spec`: the milestone, both forms.
 * `exists_algebraMap_eq_of_forall_mem_localSubring`: a rational function on an irreducible
   projective plane curve that lies in every local ring `𝒪_P(C)` is constant; and
   `forall_mem_localSubring_iff_exists_algebraMap_eq`, the converse included.
+* `noetherConditionsAt_spec`: the milestone, combining the properties of intersection cycles
+  `F • G`, both forms of Max Noether's theorem, and Problem 5.30.
 
 ## References
 
@@ -216,31 +218,6 @@ theorem exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt
   exact ⟨A, B, (mem_homogeneousSubmodule _ _).1 hA, (mem_homogeneousSubmodule _ _).1 hB, hA0,
     hB0, hAB⟩
 
-/-- **Max Noether's fundamental theorem** (Fulton, §5.5). Let `k` be algebraically closed, `F`
-and `G` forms of degrees `m` and `e` in `k[X, Y, Z]` with no common component, and `H` a form of
-degree `r`; constants are allowed. Noether's conditions at `P`, `H_* ∈ (F_*, G_*)` in
-`𝒪_P(ℙ²)`, hold automatically at points off `V(F) ∩ V(G)`, and:
-
-1. `H ∈ (F, G)` if and only if Noether's conditions hold at every point of `V(F) ∩ V(G)`;
-2. `H = A F + B G` for forms `A` of degree `r - m` and `B` of degree `r - e` (with `A = 0` if
-   `r < m` and `B = 0` if `r < e`) if and only if Noether's conditions hold at every point of
-   `V(F) ∩ V(G)`.
-
-Milestone: *Max Noether's fundamental theorem*. -/
-theorem noetherConditionsAt_spec (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous e)
-    (hH : H.IsHomogeneous r) (hFG : IsRelPrime F G) :
-    (∀ P : ℙ k (Fin 3 → k), eval P.rep F ≠ 0 ∨ eval P.rep G ≠ 0 →
-      NoetherConditionsAt P F G H) ∧
-    (H ∈ Ideal.span {F, G} ↔ ∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 →
-      NoetherConditionsAt P F G H) ∧
-    ((∃ A B : MvPolynomial (Fin 3) k, A.IsHomogeneous (r - m) ∧ B.IsHomogeneous (r - e) ∧
-      (r < m → A = 0) ∧ (r < e → B = 0) ∧ A * F + B * G = H) ↔
-      ∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 →
-        NoetherConditionsAt P F G H) :=
-  ⟨fun _ ↦ noetherConditionsAt_of_eval_ne_zero hF hG,
-    mem_span_pair_iff_forall_noetherConditionsAt hF hG hH hFG,
-    exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt hF hG hH hFG⟩
-
 /-! ### Regular functions on an irreducible curve -/
 
 /-- **Regular functions on an irreducible projective plane curve are constant** (Fulton,
@@ -284,6 +261,53 @@ theorem forall_mem_localSubring_iff_exists_algebraMap_eq (hF : F.IsHomogeneous d
   refine ⟨exists_algebraMap_eq_of_forall_mem_localSubring hF, ?_⟩
   rintro ⟨a, rfl⟩ P
   exact (algebraMap k (localSubring hF P).toSubring a).2
+
+/-! ### The fundamental theorem -/
+
+/-- **Max Noether's fundamental theorem** (Fulton, §5.5), with intersection cycles and
+Problem 5.30. Let `k` be algebraically closed, `F` and `G` forms of degrees `m` and `e` in
+`k[X, Y, Z]` with no common component, and `H` a form of degree `r`; constants are allowed.
+
+1. **Intersection cycles.** The zero-cycle `F • G = ∑_P I(P, F ∩ G) P` has degree `m e`;
+   `F • G = G • F`; `F • G G' = F • G + F • G'` for every form `G'` prime to `F`; and
+   `F • (G + A F) = F • G` for every polynomial `A`.
+2. **The theorem.** Noether's conditions at `P`, `H_* ∈ (F_*, G_*)` in `𝒪_P(ℙ²)`, hold
+   automatically at points off `V(F) ∩ V(G)`; `H ∈ (F, G)` if and only if they hold at every
+   point of `V(F) ∩ V(G)`; and so does `H = A F + B G` for forms `A` of degree `r - m` and `B`
+   of degree `r - e` (with `A = 0` if `r < m` and `B = 0` if `r < e`).
+3. **Problem 5.30.** If `F` is irreducible, a rational function `z ∈ k(C)` on `C : F = 0` lies
+   in `𝒪_P(C)` for every `P ∈ C` if and only if it is a constant. (Every irreducible `F` is
+   prime to `G = 1`.)
+
+Milestone: *Max Noether's fundamental theorem*. -/
+theorem noetherConditionsAt_spec (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous e)
+    (hH : H.IsHomogeneous r) (hFG : IsRelPrime F G) :
+    -- intersection cycles
+    ((intersectionCycle F G).degree = m * e ∧
+      intersectionCycle F G = intersectionCycle G F ∧
+      (∀ {e' : ℕ} {G' : MvPolynomial (Fin 3) k}, G'.IsHomogeneous e' → IsRelPrime F G' →
+        intersectionCycle F (G * G') = intersectionCycle F G + intersectionCycle F G') ∧
+      ∀ A : MvPolynomial (Fin 3) k, intersectionCycle F (G + A * F) = intersectionCycle F G) ∧
+    -- the theorem
+    ((∀ P : ℙ k (Fin 3 → k), eval P.rep F ≠ 0 ∨ eval P.rep G ≠ 0 →
+      NoetherConditionsAt P F G H) ∧
+    (H ∈ Ideal.span {F, G} ↔ ∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 →
+      NoetherConditionsAt P F G H) ∧
+    ((∃ A B : MvPolynomial (Fin 3) k, A.IsHomogeneous (r - m) ∧ B.IsHomogeneous (r - e) ∧
+      (r < m → A = 0) ∧ (r < e → B = 0) ∧ A * F + B * G = H) ↔
+      ∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 →
+        NoetherConditionsAt P F G H)) ∧
+    -- Problem 5.30
+    ∀ [Fact (Irreducible F)] (z : functionField hF),
+      (∀ P, z ∈ (localSubring hF P).toSubring) ↔ ∃ a : k, algebraMap k _ a = z :=
+  ⟨⟨degree_intersectionCycle hF hG hFG, intersectionCycle_comm F G,
+      fun hG' hFG' ↦ intersectionCycle_mul_right hF hG hG' hFG hFG',
+      intersectionCycle_add_mul F G⟩,
+    ⟨fun _ ↦ noetherConditionsAt_of_eval_ne_zero hF hG,
+      mem_span_pair_iff_forall_noetherConditionsAt hF hG hH hFG,
+      exists_isHomogeneous_mul_add_mul_eq_iff_forall_noetherConditionsAt hF hG hH hFG⟩,
+    fun _ ↦ forall_mem_localSubring_iff_exists_algebraMap_eq hF⟩
+
 end PlaneCurves.Projective
 
 end

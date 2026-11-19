@@ -9,6 +9,7 @@ public import Mathlib.RingTheory.OrderOfVanishing.Noetherian
 public import TauCeti.FieldTheory.FunctionField.Place.Filtration
 public import TauCeti.RingTheory.DiscreteValuationRing.Basic
 public import TauCeti.RingTheory.Valuation.ToAdditive
+public import PlaneCurves.RingTheory.Length
 
 /-!
 # The additive valuation of a place
@@ -35,6 +36,8 @@ the normalized valuation of `Q`.
   `TauCeti.Place.map_natCast_ord_eq_addValuation`: on `𝒪_Q`, the order is the additive valuation
   `IsDiscreteValuationRing.addVal` of the discrete valuation ring `𝒪_Q`, and the order of
   vanishing `Ring.ord` (the length of `𝒪_Q/(z)`), both read in `WithTop ℤ`.
+* `TauCeti.Place.map_natCast_ord_ringEquiv_eq_addValuation`: the same in any ring isomorphic to
+  `𝒪_Q`.
 
 ## References
 
@@ -131,6 +134,13 @@ theorem map_natCast_addVal_eq_addValuation (z : Q.integers) :
 theorem map_natCast_ord_eq_addValuation (z : Q.integers) :
     (Ring.ord Q.integers z).map (Nat.cast : ℕ → ℤ) = Q.addValuation (z : K) := by
   rw [Ring.ord_eq_addVal, map_natCast_addVal_eq_addValuation]
+
+/-- The order of `Q` is the order of vanishing in any ring `R` isomorphic to `𝒪_Q`:
+`ord_Q (e x) = Ring.ord R x`, read in `WithTop ℤ`, for `e : R ≃+* 𝒪_Q`. -/
+theorem map_natCast_ord_ringEquiv_eq_addValuation {R : Type*} [CommRing R]
+    (e : R ≃+* Q.integers) (x : R) :
+    (Ring.ord R x).map (Nat.cast : ℕ → ℤ) = Q.addValuation (e x : K) := by
+  rw [← Ring.ord_ringEquiv e, map_natCast_ord_eq_addValuation]
 
 end TauCeti.Place
 

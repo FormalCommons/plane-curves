@@ -23,6 +23,8 @@ describes it and the algebraic sets around it.
   the `X i - C (P i)`.
 * `MvPolynomial.le_vanishingIdeal_singleton_iff`: an ideal lies in the ideal of a point `x`
   iff `x` lies in its zero locus.
+* `MvPolynomial.span_singleton_le_vanishingIdeal_singleton_iff`: `(f)` lies in the ideal of `x`
+  iff `f(x) = 0`.
 * `MvPolynomial.vanishingIdeal_singleton_injective`: distinct points have distinct ideals.
 * `MvPolynomial.quotientVanishingIdealSingletonAlgEquiv`: `k[X] ⧸ I(P) ≃ₐ[k] k`.
 * `MvPolynomial.zeroLocus_vanishingIdeal_singleton`: the zero locus of the ideal of a point is
@@ -97,6 +99,11 @@ theorem vanishingIdeal_singleton_eq_ker (P : σ → K) :
 theorem le_vanishingIdeal_singleton_iff {I : Ideal (MvPolynomial σ k)} {x : σ → K} :
     I ≤ vanishingIdeal k {x} ↔ x ∈ zeroLocus K I :=
   le_zeroLocus_iff_le_vanishingIdeal.symm.trans Set.singleton_subset_iff
+
+/-- A principal ideal `(f)` lies in the ideal of a point `x` iff `f` vanishes at `x`. -/
+theorem span_singleton_le_vanishingIdeal_singleton_iff {f : MvPolynomial σ k} {x : σ → K} :
+    Ideal.span {f} ≤ vanishingIdeal k {x} ↔ aeval x f = 0 := by
+  rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, mem_vanishingIdeal_singleton_iff]
 
 /-- Distinct points of `kⁿ` have distinct ideals. -/
 theorem vanishingIdeal_singleton_injective :

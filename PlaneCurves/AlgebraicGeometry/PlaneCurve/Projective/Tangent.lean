@@ -8,6 +8,7 @@ module
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Tangent
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
 public import PlaneCurves.RingTheory.MvPolynomial.LinearForm
+public import PlaneCurves.RingTheory.MvPolynomial.Taylor
 
 /-!
 # Tangent lines of projective plane curves
@@ -53,6 +54,9 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
   tangent there, up to a scalar.
 * `PlaneCurves.Projective.mult_eq_and_isTangentAt_iff_of_eq_sum`: Problem 5.5 of Fulton, the
   multiplicity and the tangent lines at `[0 : 1 : 0]` of `F = ∑ᵢ Fᵢ(X, Z) Y^{d-i}`.
+* `PlaneCurves.Projective.exists_isTangentAt`: over an algebraically closed field, a curve has a
+  tangent at each of its points; `PlaneCurves.Projective.mult_lt_of_irreducible`: so an
+  irreducible curve of degree `d ≥ 2` has multiplicity less than `d` everywhere.
 * `PlaneCurves.Projective.mult_sub_one_le_mult_pderiv`: Problem 5.6 of Fulton,
   `m_P(∂F/∂Xᵢ) ≥ m_P(F) - 1`, in every characteristic.
 
@@ -392,8 +396,7 @@ theorem leadingForm_linearSubst (hF : F.IsHomogeneous d) {M : Matrix (Fin 3) (Fi
     (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
     Associated (leadingForm (linearSubst M F) Q)
       (linearSubst M (leadingForm F (Projectivization.map M.mulVecLin hM Q))) := by
-  have hdet : IsUnit M.det :=
-    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
   conv_rhs => rw [← Q.mk_rep, map_mk]
   rw [leadingForm_def, leadingFormAt_linearSubst hdet]
   exact ((associated_leadingForm_mk hF _ _).map (linearSubst M)).symm
@@ -404,8 +407,7 @@ theorem isTangentAt_linearSubst_iff (hF : F.IsHomogeneous d) {M : Matrix (Fin 3)
     (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
     IsTangentAt (linearSubst M F) Q (linearSubst M L) ↔
       IsTangentAt F (Projectivization.map M.mulVecLin hM Q) L := by
-  have hdet : IsUnit M.det :=
-    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
   have hinv := linearSubst_nonsing_inv_linearSubst hdet
   have hhom : (linearSubst M L).IsHomogeneous 1 ↔ L.IsHomogeneous 1 :=
     ⟨fun h ↦ hinv L ▸ h.linearSubst M⁻¹, fun h ↦ h.linearSubst M⟩
@@ -522,6 +524,53 @@ theorem mult_sub_one_le_mult_pderiv (F : MvPolynomial (Fin 3) k) (P : ℙ k (Fin
     (i : Fin 3) : mult F P - 1 ≤ mult (pderiv i F) P := by
   rw [mult_def, mult_def]
   exact orderAt_sub_one_le_orderAt_pderiv F P.rep i
+
+/-! ### Existence of tangent lines -/
+
+section IsAlgClosed
+
+variable [IsAlgClosed k]
+
+/-- Over an algebraically closed field, a curve has a tangent line at each of its points. -/
+theorem exists_isTangentAt (hF : F.IsHomogeneous d) (hF0 : F ≠ 0) (hP : eval P.rep F = 0) :
+    ∃ L, IsTangentAt F P L := by
+  obtain ⟨i, hi⟩ := P.exists_mem_affineOpen
+  have hmult := mult_eq_orderAt_dehomogenize hF hi
+  have hf0 : dehomogenize i F ≠ 0 := by
+    rintro h
+    rw [h, orderAt_zero, mult_eq_top_iff] at hmult
+    exact hF0 hmult
+  obtain ⟨-, -, u, hcard, hu, -⟩ :=
+    Affine.exists_leadingFormAt_eq_C_mul_prod (P := affineChart i P) hf0
+  have hpos : 0 < mult F P := mult_pos_iff_eval_rep.2 hP
+  rw [hmult, ← hcard] at hpos
+  obtain ⟨L', hL'⟩ := Multiset.card_pos_iff_exists_mem.1 (by exact_mod_cast hpos)
+  exact ⟨_, (isTangentAt_aeval_chart_iff hF hi
+    (Affine.isTangentAt_def.1 (hu L' hL')).1).2 (hu L' hL')⟩
+
+/-- Over an algebraically closed field, an irreducible curve of degree `d ≥ 2` has multiplicity
+less than `d` at every point: a curve with a point of multiplicity `d` is a union of lines through
+that point. Over `ℝ`, the irreducible conic `X² + Z²` has multiplicity `2` at `[0 : 1 : 0]`. -/
+theorem mult_lt_of_irreducible (hF : F.IsHomogeneous d) (hirr : Irreducible F) (hd : 2 ≤ d)
+    (P : ℙ k (Fin 3 → k)) : mult F P < d := by
+  refine lt_of_le_of_ne (mult_le_degree hF hirr.ne_zero P) fun h ↦ ?_
+  have hdeg := hF.totalDegree hirr.ne_zero
+  obtain ⟨L, hL⟩ := exists_isTangentAt hF hirr.ne_zero
+    (mult_pos_iff_eval_rep.1 (by rw [h]; exact_mod_cast (by omega : 0 < d)))
+  -- `F(X + v)` is the leading form at `v = P.rep`, and it is irreducible, so it is the tangent.
+  have htaylor : taylor P.rep F = leadingForm F P := by
+    rw [leadingForm_def, taylor_eq_leadingFormAt]
+    rw [← mult_def, h, hdeg]
+  have hirr' : Irreducible (taylor P.rep F) := by
+    rw [← coe_taylorAlgEquiv]
+    exact (MulEquiv.irreducible_iff (taylorAlgEquiv P.rep).toMulEquiv).2 hirr
+  have hassoc := (irreducible_of_isHomogeneous_one hL.1 hL.2.1).associated_of_dvd hirr'
+    (htaylor ▸ hL.2.2.2)
+  have hle := totalDegree_le_of_dvd_of_isDomain hassoc.symm.dvd hL.2.1
+  rw [totalDegree_taylor, hdeg, hL.1.totalDegree hL.2.1] at hle
+  omega
+
+end IsAlgClosed
 
 end PlaneCurves.Projective
 
