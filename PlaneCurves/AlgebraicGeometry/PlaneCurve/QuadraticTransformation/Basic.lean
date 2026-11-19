@@ -31,7 +31,7 @@ involution off the *fundamental triangle* `xyz = 0`. On polynomials it is the su
   `fundamentalPoint i` is the order at `0` of its dehomogenization at `i`.
 * `PlaneCurves.Projective.mult_rename_fundamentalPoint`: permuting the variables moves the
   fundamental points along, with the same multiplicities.
-* `PlaneCurves.Projective.IsHomogeneous.quadraticTransform`: `F^Q` is a form of degree `2n`.
+* `MvPolynomial.IsHomogeneous.quadraticTransform`: `F^Q` is a form of degree `2n`.
 * `PlaneCurves.Projective.quadraticTransform_quadraticTransform`: `(F^Q)^Q = (XYZ)^n F`.
 * `PlaneCurves.Projective.quadraticTransform_injective`,
   `PlaneCurves.Projective.quadraticTransform_eq_zero_iff`: `F^Q = 0` only for `F = 0`.
@@ -200,7 +200,7 @@ theorem eval_quadraticTransform (v : Fin 3 → R) (F : MvPolynomial (Fin 3) R) :
   fin_cases i <;> simp
 
 /-- The quadratic transform of a form of degree `n` is a form of degree `2n`. -/
-theorem IsHomogeneous.quadraticTransform (hF : F.IsHomogeneous n) :
+theorem _root_.MvPolynomial.IsHomogeneous.quadraticTransform (hF : F.IsHomogeneous n) :
     (quadraticTransform F).IsHomogeneous (2 * n) := by
   refine hF.aeval _ fun i ↦ ?_
   fin_cases i <;> exact (isHomogeneous_X R _).mul (isHomogeneous_X R _)
