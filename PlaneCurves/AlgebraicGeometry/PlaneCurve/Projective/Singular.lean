@@ -39,7 +39,7 @@ simple; over an algebraically closed field such a curve is irreducible (§5.3, v
 * `PlaneCurves.Projective.isNonsingular_iff_forall_isSimplePoint`: a form is nonsingular exactly
   when every point of its zero locus is simple.
 * `PlaneCurves.Projective.isNonsingular_linearSubst_iff`: nonsingularity is invariant under an
-  invertible change of coordinates.
+  invertible change of coordinates, and `isNonsingular_smul_iff` under a nonzero scalar.
 * `PlaneCurves.Projective.IsNonsingular.irreducible`: a nonsingular form of positive degree over
   an algebraically closed field is irreducible.
 * `PlaneCurves.Projective.IsSimplePoint.tangentLine_ne_zero`,
@@ -250,6 +250,11 @@ theorem isNonsingular_linearSubst_iff {M : Matrix (Fin 3) (Fin 3) k}
   refine ⟨fun h ↦ ?_, key hdet.ne_zero⟩
   have := key (N := M⁻¹) (by simpa [Matrix.det_nonsing_inv] using hdet.ne_zero) h
   rwa [linearSubst_nonsing_inv_linearSubst hdet] at this
+
+/-- A nonzero scalar multiple of `F` is nonsingular exactly when `F` is. -/
+theorem isNonsingular_smul_iff {c : k} (hc : c ≠ 0) :
+    IsNonsingular (c • F) ↔ IsNonsingular F := by
+  simp [isNonsingular_def, smul_eq_C_mul, Derivation.leibniz, hc]
 
 /- A line is nonsingular. -/
 example : IsNonsingular (X 0 : MvPolynomial (Fin 3) k) :=
