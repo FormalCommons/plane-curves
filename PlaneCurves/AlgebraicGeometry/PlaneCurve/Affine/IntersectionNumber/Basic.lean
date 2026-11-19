@@ -225,6 +225,15 @@ theorem intersectionNumber_mul_right_of_eval_ne_zero (hU : eval P U ≠ 0) :
   rw [intersectionNumber_comm, intersectionNumber_mul_left_of_eval_ne_zero hU,
     intersectionNumber_comm]
 
+/-- If `H ≡ c G` modulo `F` for a nonzero constant `c`, then `I(P, H ∩ F) = I(P, G ∩ F)`. -/
+theorem intersectionNumber_eq_of_add_C_mul_mem_span {H : MvPolynomial (Fin 2) k} {c : k}
+    (hc : c ≠ 0) (hm : H + C c * G ∈ Ideal.span {F}) :
+    intersectionNumber P H F = intersectionNumber P G F := by
+  obtain ⟨A, hA⟩ := Ideal.mem_span_singleton'.1 hm
+  rw [show H = G * C (-c) + A * F by rw [map_neg]; linear_combination -hA,
+    intersectionNumber_comm, intersectionNumber_add_mul,
+    intersectionNumber_mul_right_of_eval_ne_zero (by simpa using hc), intersectionNumber_comm]
+
 /-! #### Changes of coordinates -/
 
 /-- **Property (3)**: intersection numbers are invariant under polynomial changes of coordinates.

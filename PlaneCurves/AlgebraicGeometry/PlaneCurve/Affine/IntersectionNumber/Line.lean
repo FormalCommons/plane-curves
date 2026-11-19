@@ -35,6 +35,7 @@ Polynomial.X) F`, as in Tau Ceti's `TauCeti/RingTheory/MvPolynomial/LineRestrict
   `I(a + t v, ℓ ∩ F) = rootMultiplicity t G`.
 * `PlaneCurves.Affine.finsum_intersectionNumber_line`: `∑_P I(P, ℓ ∩ F)` is the number of roots
   of `G`, counted with multiplicity.
+* `PlaneCurves.Affine.le_intersectionNumber_X_one_iff`: `I(0, Y ∩ F) ≥ m` iff `X^m ∣ F(X, 0)`.
 * `PlaneCurves.Affine.intersectionNumber_line_eq_rootMultiplicity_and_finsum_eq`: Problem 3.21.
 
 ## References
@@ -190,6 +191,57 @@ theorem finsum_intersectionNumber_line (hv : v ≠ 0)
     Finset.sum_image fun s _ t _ h ↦ smul_left_injective k hv (add_left_cancel h)]
   simp_rw [intersectionNumber_line_eq_rootMultiplicity hv hF, ← Polynomial.count_roots]
   rw [← Nat.cast_sum, Multiset.toFinset_sum_count_eq]
+
+/-- The component of degree `m` of `F`, at `(1, 0)`, is the coefficient of `X^m` in `F`. -/
+private theorem eval_one_zero_homogeneousComponent (F : MvPolynomial (Fin 2) k) (m : ℕ) :
+    eval ![1, 0] (homogeneousComponent m F) = F.coeff (Finsupp.single 0 m) := by
+  classical
+  rw [homogeneousComponent_apply, map_sum, Finset.sum_eq_single (Finsupp.single 0 m)]
+  · simp [eval_monomial, Finsupp.prod_single_index]
+  · intro d hd hdm
+    simp only [Finset.mem_filter] at hd
+    have h1 : d 1 ≠ 0 := by
+      intro h1
+      apply hdm
+      ext j
+      fin_cases j
+      · have := hd.2
+        simp [Finsupp.degree_eq_sum, Fin.sum_univ_two, h1] at this
+        simp [this]
+      · simp [h1]
+    simp [eval_monomial, Finsupp.prod_fintype, Fin.prod_univ_two, h1]
+  · intro h
+    have : F.coeff (Finsupp.single 0 m) = 0 := by
+      by_contra hc
+      exact h (Finset.mem_filter.2 ⟨mem_support_iff.2 hc, by simp⟩)
+    simp [this]
+
+/-- **Intersection with the axis `Y = 0`.** `I(0, Y ∩ F) ≥ m` iff the coefficients of
+`1, X, …, X^(m - 1)` in `F` vanish, that is, iff `X^m` divides `F(X, 0)`. -/
+theorem le_intersectionNumber_X_one_iff (m : ℕ) :
+    (m : ℕ∞) ≤ intersectionNumber 0 (X 1) F ↔ ∀ d < m, F.coeff (Finsupp.single 0 d) = 0 := by
+  have hv : (![1, 0] : Fin 2 → k) ≠ 0 := fun h ↦ by simpa using congrFun h 0
+  have hI : intersectionNumber 0 (X 1) F = intersectionNumber 0 (-X 1) F := by
+    rw [show (-X 1 : MvPolynomial (Fin 2) k) = X 1 * C (-1) by simp,
+      intersectionNumber_mul_left_of_eval_ne_zero (by simp)]
+  have hc (d : ℕ) : (aeval (fun i ↦ Polynomial.C ((![1, 0] : Fin 2 → k) i) * Polynomial.X)
+      F).coeff d = F.coeff (Finsupp.single 0 d) := by
+    rw [coeff_aeval_C_mul_X, eval_one_zero_homogeneousComponent]
+  simp_rw [← hc]
+  by_cases hG0 : aeval (fun i ↦ Polynomial.C ((![1, 0] : Fin 2 → k) i) * Polynomial.X) F = 0
+  · have hdvd := aeval_line_eq_zero_iff (a := 0) (F := F) hv
+    simp only [Pi.zero_apply, map_zero, zero_add, Matrix.cons_val_one, Matrix.cons_val_zero,
+      sub_zero, map_one, one_mul, zero_mul, zero_sub, neg_dvd] at hdvd
+    obtain ⟨A, rfl⟩ := hdvd.1 hG0
+    have : intersectionNumber 0 (X 1) (X 1 * A) = ⊤ := by
+      rw [show X 1 * A = 0 + A * X 1 by ring, intersectionNumber_add_mul,
+        intersectionNumber_comm, intersectionNumber_zero_left_eq_top_iff.2 (by simp)]
+    simp [this, hG0]
+  · have key := intersectionNumber_line_eq_rootMultiplicity (a := 0) hv (by simpa using hG0) 0
+    simp only [zero_smul, Pi.zero_apply, map_zero, sub_zero, Matrix.cons_val_one,
+      Matrix.cons_val_zero, map_one, one_mul, zero_mul, zero_sub, zero_add] at key
+    rw [hI, key, Nat.cast_le, Polynomial.le_rootMultiplicity_iff hG0, map_zero, sub_zero,
+      Polynomial.X_pow_dvd_iff]
 
 /-- **Intersection of a plane curve with a line** (Problem 3.21). Let `L` be the line through
 `a ∈ k²` with direction `v ≠ 0`, with equation `ℓ = v₁ (X - a₀) - v₀ (Y - a₁)`, and let `F` be a
