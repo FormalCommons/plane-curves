@@ -5,7 +5,10 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Line
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionNumber.Properties
+public import PlaneCurves.LinearAlgebra.Matrix.GeneralLinearGroup
 
 /-!
 # Flexes of projective plane curves
@@ -19,6 +22,14 @@ then a flex, as in Fulton.
 Since a simple point has only one tangent line up to a nonzero scalar, the definitions do not
 depend on the tangent line chosen (`isFlex_iff_of_isTangentAt`), nor on the representative of
 `P`, and they are invariant under nonzero scalars and projective changes of coordinates.
+
+**The Hessian criterion** (Problem 5.23). Let `F` have degree `n` and `H = det (Fᵢⱼ)` be its
+Hessian determinant. For `P` on `F = 0`, `H(P) = 0` iff `P` is a flex or a multiple point,
+when `2 (n - 1) ≠ 0` in `k`; and `I(P, H ∩ F) = 1` iff `P` is an ordinary flex, when
+`6 (n - 1) ≠ 0`. A simple point and its tangent are moved to `[0 : 0 : 1]` and `Y = 0`; in the
+chart `Z = 1`, `H ≡ -(n - 1)² g` modulo `f` for `g = f_y² f_xx + f_x² f_yy - 2 f_x f_y f_xy`
+(`MvPolynomial.IsHomogeneous.dehomogenize_det_hessian_add_mem_span`), and `g(0)`, `g_x(0)` are
+`2` and `6` times the coefficients of `x²` and `x³` in `f`.
 
 ## Main definitions
 
@@ -36,6 +47,12 @@ depend on the tangent line chosen (`isFlex_iff_of_isTangentAt`), nor on the repr
   of coordinates.
 * `PlaneCurves.Projective.isOrdinaryFlex_X_one_mul_X_two_sq_sub_X_zero_pow_three`: `[0 : 0 : 1]`
   is an ordinary flex of `Y Z² - X³`.
+* `PlaneCurves.Projective.IsMultiplePoint.eval_det_hessian_eq_zero`: the Hessian vanishes at
+  multiple points.
+* `PlaneCurves.Projective.eval_det_hessian_eq_zero_iff`: `H(P) = 0` iff `P` is a flex or a
+  multiple point.
+* `PlaneCurves.Projective.intersectionNumber_det_hessian_eq_one_iff`: `I(P, H ∩ F) = 1` iff `P`
+  is an ordinary flex.
 
 ## References
 
@@ -218,6 +235,316 @@ theorem isOrdinaryFlex_X_one_mul_X_two_sq_sub_X_zero_pow_three :
       simp
   exact (isOrdinaryFlex_iff_of_isTangentAt hF hS hT).2 hI
 
+end PlaneCurves.Projective
+
+/-! ### The local computation in the chart `Z = 1`
+
+Let `f ∈ k[x, y]` with `f(0) = 0`, `f_x(0) = 0` and `f_y(0) = 1`: the origin is a simple point of
+`f` with tangent `y = 0`. With `g = f_y² f_xx + f_x² f_yy - 2 f_x f_y f_xy`, the polynomial that
+the Hessian is congruent to modulo `f` (`MvPolynomial.IsHomogeneous.dehomogenize_det_hessian`),
+`g(0) = 2a` and `g_x(0) = 6b`, for `a` and `b` the coefficients of `x²` and `x³` in `f`. -/
+
+namespace PlaneCurves.Affine
+
+open MvPolynomial
+
+variable {k : Type*} [Field k] {f : MvPolynomial (Fin 2) k}
+
+private theorem eval_zero_eq_coeff (p : MvPolynomial (Fin 2) k) :
+    eval 0 p = p.coeff (Finsupp.single 0 0) := by
+  simp [eval_zero, constantCoeff_eq]
+
+private theorem eval_zero_pderiv_zero (p : MvPolynomial (Fin 2) k) :
+    eval 0 (pderiv 0 p) = p.coeff (Finsupp.single 0 1) := by
+  simp [eval_zero, constantCoeff_eq, coeff_pderiv]
+
+/-- `f_xx(0) = 2a`. -/
+private theorem eval_zero_pderiv_pderiv (p : MvPolynomial (Fin 2) k) :
+    eval 0 (pderiv 0 (pderiv 0 p)) = 2 * p.coeff (Finsupp.single 0 2) := by
+  simp [eval_zero, constantCoeff_eq, coeff_pderiv, ← Finsupp.single_add]
+  ring
+
+/-- `f_xxx(0) = 6b`. -/
+private theorem eval_zero_pderiv_pderiv_pderiv (p : MvPolynomial (Fin 2) k) :
+    eval 0 (pderiv 0 (pderiv 0 (pderiv 0 p))) = 6 * p.coeff (Finsupp.single 0 3) := by
+  simp [eval_zero, constantCoeff_eq, coeff_pderiv, ← Finsupp.single_add]
+  ring
+
+/-- `g(0) = 2a`. -/
+private theorem eval_zero_g (hfx : eval 0 (pderiv 0 f) = 0) (hfy : eval 0 (pderiv 1 f) = 1) :
+    eval 0 (pderiv 1 f ^ 2 * pderiv 0 (pderiv 0 f) + pderiv 0 f ^ 2 * pderiv 1 (pderiv 1 f) -
+      2 * pderiv 0 f * pderiv 1 f * pderiv 0 (pderiv 1 f)) = 2 * f.coeff (Finsupp.single 0 2) := by
+  simp only [map_add, map_sub, map_mul, map_pow, map_ofNat, hfx, hfy, eval_zero_pderiv_pderiv]
+  ring
+
+/-- `g_x(0) = 6b`. -/
+private theorem eval_zero_pderiv_g (hfx : eval 0 (pderiv 0 f) = 0) (hfy : eval 0 (pderiv 1 f) = 1) :
+    eval 0 (pderiv 0 (pderiv 1 f ^ 2 * pderiv 0 (pderiv 0 f) +
+      pderiv 0 f ^ 2 * pderiv 1 (pderiv 1 f) -
+      2 * pderiv 0 f * pderiv 1 f * pderiv 0 (pderiv 1 f))) =
+        6 * f.coeff (Finsupp.single 0 3) := by
+  have h2 : pderiv 0 (2 : MvPolynomial (Fin 2) k) = 0 := by
+    simpa using (pderiv 0 : Derivation k (MvPolynomial (Fin 2) k) _).map_natCast 2
+  simp only [map_add, map_sub, Derivation.leibniz, Derivation.leibniz_pow, smul_eq_mul, h2,
+    map_mul, map_pow, map_ofNat, nsmul_eq_mul, map_natCast, map_zero, hfx, hfy,
+    eval_zero_pderiv_pderiv_pderiv]
+  ring
+
+/-- A linear form `a X + b Y` associated with `Y` has `a = 0`. -/
+private theorem eq_zero_of_associated_X_one {a b : k}
+    (h : Associated (X 1 : MvPolynomial (Fin 2) k) (a • X 0 + b • X 1)) :
+    a = 0 := by
+  obtain ⟨u, hu⟩ := h
+  have := congrArg (fun p : MvPolynomial (Fin 2) k ↦ p.coeff (Finsupp.single 0 1)) hu
+  rw [mul_comm, coeff_mul_X'] at this
+  simpa [coeff_X, Finsupp.single_eq_single_iff] using this.symm
+
+/-- `I(0, g ∩ f) = 1` iff `a = 0` and `b ≠ 0`, when `2` and `6` are invertible. -/
+private theorem intersectionNumber_g_eq_one_iff (h2 : (2 : k) ≠ 0) (h6 : (6 : k) ≠ 0)
+    (hf0 : eval 0 f = 0) (hfx : eval 0 (pderiv 0 f) = 0) (hfy : eval 0 (pderiv 1 f) = 1) :
+    intersectionNumber 0 (pderiv 1 f ^ 2 * pderiv 0 (pderiv 0 f) +
+      pderiv 0 f ^ 2 * pderiv 1 (pderiv 1 f) -
+      2 * pderiv 0 f * pderiv 1 f * pderiv 0 (pderiv 1 f)) f = 1 ↔
+      f.coeff (Finsupp.single 0 2) = 0 ∧ f.coeff (Finsupp.single 0 3) ≠ 0 := by
+  set g := pderiv 1 f ^ 2 * pderiv 0 (pderiv 0 f) + pderiv 0 f ^ 2 * pderiv 1 (pderiv 1 f) -
+      2 * pderiv 0 f * pderiv 1 f * pderiv 0 (pderiv 1 f)
+  have hg0 : eval 0 g = 2 * f.coeff (Finsupp.single 0 2) := eval_zero_g hfx hfy
+  have hgx : eval 0 (pderiv 0 g) = 6 * f.coeff (Finsupp.single 0 3) := eval_zero_pderiv_g hfx hfy
+  have hfs : IsSimplePoint f 0 := isSimplePoint_def.2 ⟨hf0, 1, by rw [hfy]; exact one_ne_zero⟩
+  have hlf : f.leadingFormAt 0 = X 1 := by
+    rw [hfs.leadingFormAt_eq, Fin.sum_univ_two, hfx, hfy, zero_smul, zero_add, one_smul]
+  rw [intersectionNumber_eq_one_iff]
+  constructor
+  · rintro ⟨hgs, -, hna⟩
+    have hc2 : f.coeff (Finsupp.single 0 2) = 0 := by
+      have := hgs.eval_eq_zero
+      rw [hg0] at this
+      exact (mul_eq_zero.1 this).resolve_left h2
+    refine ⟨hc2, fun hc3 ↦ hna ?_⟩
+    have hgy : eval 0 (pderiv 1 g) ≠ 0 := by
+      obtain ⟨-, i, hi⟩ := isSimplePoint_def.1 hgs
+      fin_cases i
+      · simp only [Fin.zero_eta] at hi
+        rw [hgx, hc3, mul_zero] at hi
+        exact absurd rfl hi
+      · exact hi
+    rw [hgs.leadingFormAt_eq, hlf, Fin.sum_univ_two, hgx, hc3, mul_zero, zero_smul, zero_add,
+      smul_eq_C_mul]
+    exact associated_unit_mul_left _ _ ((Ne.isUnit hgy).map C)
+  · rintro ⟨hc2, hc3⟩
+    have hgs : IsSimplePoint g 0 :=
+      isSimplePoint_def.2 ⟨by rw [hg0, hc2, mul_zero], 0, by rw [hgx]; exact mul_ne_zero h6 hc3⟩
+    refine ⟨hgs, hfs, fun h ↦ ?_⟩
+    rw [hgs.leadingFormAt_eq, hlf, Fin.sum_univ_two, hgx] at h
+    exact mul_ne_zero h6 hc3 (eq_zero_of_associated_X_one h.symm)
+
+end PlaneCurves.Affine
+
+namespace PlaneCurves.Projective
+
+open MvPolynomial Projectivization TauCeti PlaneCurves.ProjectiveSpace
+open scoped LinearAlgebra.Projectivization Matrix
+
+variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k} {P : ℙ k (Fin 3 → k)} {n : ℕ}
+
+/-! ### The Hessian criterion -/
+
+/-- **The Hessian vanishes at multiple points.** If `P` is a multiple point of a form `F`, the
+Hessian determinant `H = det (Fᵢⱼ)` of `F` vanishes at `P`. -/
+theorem IsMultiplePoint.eval_det_hessian_eq_zero (hF : F.IsHomogeneous n)
+    (h : IsMultiplePoint F P) : eval P.rep (TauCeti.hessian pderiv F).det = 0 := by
+  have hz := (isMultiplePoint_iff_eval_rep.1 h).2
+  rw [RingHom.map_det]
+  refine Matrix.exists_mulVec_eq_zero_iff.1 ⟨P.rep, P.rep_ne_zero, ?_⟩
+  funext i
+  have := congrArg (eval P.rep) (congrFun hF.hessian_mulVec_X i)
+  simpa [Matrix.mulVec, dotProduct, hz] using this
+
+private theorem eval_dehomogenize_two (p : MvPolynomial (Fin 3) k) :
+    eval 0 (dehomogenize 2 p) = eval (Pi.single 2 1) p := by
+  rw [eval_dehomogenize]
+  rw [show (Fin.insertNth 2 1 0 : Fin 3 → k) = Pi.single 2 1 by
+    funext j; fin_cases j <;> simp [Fin.insertNth_apply_below]]
+
+private theorem eval_pderiv_dehomogenize_two (p : MvPolynomial (Fin 3) k) (j : Fin 2) :
+    eval 0 (pderiv j (dehomogenize 2 p)) = eval (Pi.single 2 1) (pderiv j.castSucc p) := by
+  rw [pderiv_dehomogenize, eval_dehomogenize_two, show (2 : Fin 3) = Fin.last 2 from rfl,
+    Fin.succAbove_last]
+
+private theorem affineChart_two_mk :
+    affineChart 2 (mk k (Pi.single 2 1 : Fin 3 → k) (by simp)) = 0 := by
+  funext j
+  fin_cases j <;> simp [Fin.succAbove, Fin.lt_def]
+
+/-- The chart `Z = 1` after moving a simple point `P` of `F` to `[0 : 0 : 1]` and its tangent to
+`Y = 0` by some `M`: with `f = F(M X)(x, y, 1)`, the origin is a simple point of `f` with
+`f_x(0) = 0`, `f_y(0) = 1`, and the intersection numbers of `F` with its tangent and with its
+Hessian `H` at `P`, and the vanishing of `H` at `P`, are read off in the chart. -/
+private theorem chart_data (hF : F.IsHomogeneous n) (h : IsSimplePoint F P) :
+    ∃ M : GL (Fin 3) k,
+      eval 0 (dehomogenize 2 (linearSubst M.1 F)) = 0 ∧
+      eval 0 (pderiv 0 (dehomogenize 2 (linearSubst M.1 F))) = 0 ∧
+      eval 0 (pderiv 1 (dehomogenize 2 (linearSubst M.1 F))) = 1 ∧
+      intersectionNumber P F (tangentLine F P.rep) =
+        Affine.intersectionNumber 0 (X 1) (dehomogenize 2 (linearSubst M.1 F)) ∧
+      (eval P.rep (TauCeti.hessian pderiv F).det = 0 ↔
+        eval 0 (dehomogenize 2 (TauCeti.hessian pderiv (linearSubst M.1 F)).det) = 0) ∧
+      intersectionNumber P (TauCeti.hessian pderiv F).det F =
+        Affine.intersectionNumber 0
+          (dehomogenize 2 (TauCeti.hessian pderiv (linearSubst M.1 F)).det)
+          (dehomogenize 2 (linearSubst M.1 F)) := by
+  set t : Fin 3 → k := fun i ↦ eval P.rep (pderiv i F)
+  have ht : t ≠ 0 := by
+    obtain ⟨-, i, hi⟩ := isSimplePoint_iff_eval_rep.1 h
+    exact fun h0 ↦ hi (congrFun h0 i)
+  have htp : t ⬝ᵥ P.rep = 0 := by
+    simpa [dotProduct] using eval_tangentLine_self hF h.eval_rep_eq_zero
+  obtain ⟨M, hMp, hMt⟩ :=
+    Matrix.exists_mulVec_single_eq_and_vecMul_eq_single ht P.rep_ne_zero htp
+  set e : Fin 3 → k := Pi.single 2 1
+  have he : e ≠ 0 := by simp [e]
+  set Q := mk k e he
+  have hQP : map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q = P := by
+    erw [map_mk]
+    simp only [Matrix.mulVecLin_apply, hMp]
+    exact P.mk_rep
+  have hQ : Q ∈ affineOpen 2 := by simp [Q, e]
+  have hF' := hF.linearSubst M.1
+  have hdet : M.1.det ^ 2 ≠ 0 :=
+    pow_ne_zero _ ((Matrix.isUnit_iff_isUnit_det _).1 M.isUnit).ne_zero
+  have hd (j : Fin 3) :
+      eval e (pderiv j (linearSubst M.1 F)) = (Pi.single 1 1 : Fin 3 → k) j := by
+    rw [← hMt]
+    simp [pderiv_linearSubst, eval_linearSubst, hMp, Matrix.vecMul, dotProduct, mul_comm, t]
+  have hT : linearSubst M.1 (tangentLine F P.rep) = X 1 := by
+    have : linearSubst M.1 (tangentLine F P.rep) = ∑ j, C ((t ᵥ* M.1) j) * X j := by
+      simp only [tangentLine_def, map_mul, linearSubst_X, Matrix.vecMul, dotProduct,
+        Fin.sum_univ_three, map_add, map_mul, algHom_C, t]
+      simp only [algebraMap_eq]
+      ring
+    rw [this, hMt]
+    simp [Fin.sum_univ_three]
+  refine ⟨M, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [eval_dehomogenize_two, eval_linearSubst, hMp]
+    exact h.eval_rep_eq_zero
+  · rw [eval_pderiv_dehomogenize_two]
+    simpa using hd 0
+  · rw [eval_pderiv_dehomogenize_two]
+    simpa using hd 1
+  · calc intersectionNumber P F (tangentLine F P.rep)
+        = intersectionNumber (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q)
+            F (tangentLine F P.rep) := by rw [hQP]
+      _ = intersectionNumber Q (linearSubst M.1 F) (X 1) := by
+        rw [← hT, intersectionNumber_linearSubst hF (isHomogeneous_tangentLine _ _)]
+      _ = _ := by
+        rw [intersectionNumber_eq_affine hF' (isHomogeneous_X k 1) hQ, affineChart_two_mk,
+          Affine.intersectionNumber_comm]
+        simp [dehomogenize_X, Fin.insertNth_apply_below]
+  · rw [eval_dehomogenize_two, eval_det_hessian_linearSubst, hMp, mul_eq_zero,
+      or_iff_right hdet]
+  · calc intersectionNumber P (TauCeti.hessian pderiv F).det F
+        = intersectionNumber (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q)
+            (TauCeti.hessian pderiv F).det F := by rw [hQP]
+      _ = intersectionNumber Q (TauCeti.hessian pderiv (linearSubst M.1 F)).det
+            (linearSubst M.1 F) := by
+        rw [det_hessian_linearSubst, ← smul_eq_C_mul, intersectionNumber_smul_left hdet,
+          intersectionNumber_linearSubst hF.det_hessian hF]
+      _ = _ := by
+        rw [intersectionNumber_eq_affine hF'.det_hessian hF' hQ, affineChart_two_mk]
+
+/-- A form with a simple point has positive degree. -/
+private theorem IsSimplePoint.degree_ne_zero (hF : F.IsHomogeneous n) (h : IsSimplePoint F P) :
+    n ≠ 0 := by
+  rintro rfl
+  obtain ⟨-, i, hi⟩ := isSimplePoint_iff_eval_rep.1 h
+  rw [(totalDegree_eq_zero_iff_eq_C (p := F)).1 (by simpa using hF.totalDegree h.ne_zero), pderiv_C,
+    map_zero] at hi
+  exact hi rfl
+
+/-- In the chart `Z = 1`, at the origin of a simple point with tangent `y = 0`, the Hessian
+of a form `F` of degree `n` is `-(n - 1)² g(0) = -2 (n - 1)² a`, for `a` the coefficient of `x²`
+in `f = F(x, y, 1)`. -/
+private theorem eval_zero_dehomogenize_det_hessian (hF : F.IsHomogeneous n)
+    (hf0 : eval 0 (dehomogenize 2 F) = 0) (hfx : eval 0 (pderiv 0 (dehomogenize 2 F)) = 0)
+    (hfy : eval 0 (pderiv 1 (dehomogenize 2 F)) = 1) :
+    eval 0 (dehomogenize 2 (TauCeti.hessian pderiv F).det) =
+      -(((n - 1 : ℕ) : k) ^ 2 * (2 * (dehomogenize 2 F).coeff (Finsupp.single 0 2))) := by
+  rw [hF.dehomogenize_det_hessian]
+  set f := dehomogenize 2 F
+  have hg := Affine.eval_zero_g hfx hfy
+  generalize pderiv 1 f ^ 2 * pderiv 0 (pderiv 0 f) + pderiv 0 f ^ 2 * pderiv 1 (pderiv 1 f) -
+    2 * pderiv 0 f * pderiv 1 f * pderiv 0 (pderiv 1 f) = g at hg ⊢
+  simp only [map_sub, map_mul, map_pow, map_natCast, hf0, hg, mul_zero, zero_mul, zero_sub]
+
+/-- **Hessian criterion for flexes** ([Fulton2008], Problem 5.23). Let `F` be a form of degree
+`n`, `H` its Hessian determinant and `P` a point of the curve `F = 0`. If `2 (n - 1) ≠ 0` in
+`k`, then `H(P) = 0` iff `P` is a flex or a multiple point of `F`. -/
+theorem eval_det_hessian_eq_zero_iff (hF : F.IsHomogeneous n)
+    (hP : P ∈ zeroLocus {F}) (h : (2 * (n - 1) : k) ≠ 0) :
+    eval P.rep (TauCeti.hessian pderiv F).det = 0 ↔ IsFlex F P ∨ IsMultiplePoint F P := by
+  rcases isSimplePoint_or_isMultiplePoint hF hP with hs | hm
+  · obtain ⟨M, hf0, hfx, hfy, hT, hH, -⟩ := chart_data hF hs
+    rw [← Nat.cast_pred (Nat.pos_of_ne_zero (hs.degree_ne_zero hF))] at h
+    have h2 : (2 : k) ≠ 0 := left_ne_zero_of_mul h
+    have hn : ((n - 1 : ℕ) : k) ≠ 0 := right_ne_zero_of_mul h
+    rw [isFlex_def, hT, hH, eval_zero_dehomogenize_det_hessian (hF.linearSubst M.1) hf0 hfx hfy,
+      neg_eq_zero, mul_eq_zero, or_iff_right (pow_ne_zero _ hn), mul_eq_zero, or_iff_right h2,
+      and_iff_right hs, or_iff_left fun hm ↦ hm.not_isSimplePoint hs,
+      show (3 : ℕ∞) = ((3 : ℕ) : ℕ∞) from rfl, Affine.le_intersectionNumber_X_one_iff]
+    rw [Affine.eval_zero_eq_coeff] at hf0
+    rw [Affine.eval_zero_pderiv_zero] at hfx
+    refine ⟨fun h2 d hd ↦ ?_, fun h ↦ h 2 (by norm_num)⟩
+    interval_cases d <;> assumption
+  · exact iff_of_true (hm.eval_det_hessian_eq_zero hF) (Or.inr hm)
+
+/-- If `h ≡ c g` modulo `f` for a nonzero constant `c`, then `I(P, h ∩ f) = I(P, g ∩ f)`. -/
+private theorem intersectionNumber_eq_of_add_C_mul_mem_span {h g f : MvPolynomial (Fin 2) k}
+    {c : k} (hc : c ≠ 0) (P : Fin 2 → k) (hm : h + C c * g ∈ Ideal.span {f}) :
+    Affine.intersectionNumber P h f = Affine.intersectionNumber P g f := by
+  obtain ⟨A, hA⟩ := Ideal.mem_span_singleton'.1 hm
+  rw [show h = g * C (-c) + A * f by rw [map_neg]; linear_combination -hA,
+    Affine.intersectionNumber_comm, Affine.intersectionNumber_add_mul,
+    Affine.intersectionNumber_mul_right_of_eval_ne_zero (by simpa using hc),
+    Affine.intersectionNumber_comm]
+
+/-- **Hessian criterion for ordinary flexes** ([Fulton2008], Problem 5.23). Let `F` be a form of
+degree `n`, `H` its Hessian determinant and `P` a point of the curve `F = 0`. If
+`6 (n - 1) ≠ 0` in `k`, then `I(P, H ∩ F) = 1` iff `P` is an ordinary flex of `F`. -/
+theorem intersectionNumber_det_hessian_eq_one_iff (hF : F.IsHomogeneous n)
+    (hP : P ∈ zeroLocus {F}) (h : (6 * (n - 1) : k) ≠ 0) :
+    intersectionNumber P (TauCeti.hessian pderiv F).det F = 1 ↔ IsOrdinaryFlex F P := by
+  rcases isSimplePoint_or_isMultiplePoint hF hP with hs | hm
+  · obtain ⟨M, hf0, hfx, hfy, hT, -, hI⟩ := chart_data hF hs
+    rw [← Nat.cast_pred (Nat.pos_of_ne_zero (hs.degree_ne_zero hF))] at h
+    have h6 : (6 : k) ≠ 0 := left_ne_zero_of_mul h
+    have h2 : (2 : k) ≠ 0 := fun h2 ↦
+      h6 (by rw [show (6 : k) = 2 * 3 by norm_num, h2, zero_mul])
+    have hn : ((n - 1 : ℕ) : k) ≠ 0 := right_ne_zero_of_mul h
+    have hmem := (hF.linearSubst M.1).dehomogenize_det_hessian_add_mem_span
+    rw [← map_natCast C, ← map_pow] at hmem
+    rw [isOrdinaryFlex_def, and_iff_right hs, hT, hI,
+      intersectionNumber_eq_of_add_C_mul_mem_span (pow_ne_zero 2 hn) 0 hmem,
+      Affine.intersectionNumber_g_eq_one_iff h2 h6 hf0 hfx hfy]
+    rw [Affine.eval_zero_eq_coeff] at hf0
+    rw [Affine.eval_zero_pderiv_zero] at hfx
+    have h34 (I : ℕ∞) :
+        I = 3 ↔ ((3 : ℕ) : ℕ∞) ≤ I ∧ ¬((4 : ℕ) : ℕ∞) ≤ I := by
+      refine ⟨by rintro rfl; norm_num, fun ⟨h3, h4⟩ ↦ le_antisymm ?_ h3⟩
+      rw [not_le] at h4
+      exact Order.le_of_lt_add_one h4
+    rw [h34, Affine.le_intersectionNumber_X_one_iff, Affine.le_intersectionNumber_X_one_iff]
+    refine ⟨fun ⟨hc2, hc3⟩ ↦ ⟨fun d hd ↦ ?_, fun h4 ↦ hc3 (h4 3 (by norm_num))⟩,
+      fun ⟨h3, h4⟩ ↦ ⟨h3 2 (by norm_num), fun hc3 ↦ h4 fun d hd ↦ ?_⟩⟩
+    · interval_cases d <;> assumption
+    · interval_cases d
+      exacts [h3 0 (by norm_num), h3 1 (by norm_num), h3 2 (by norm_num), hc3]
+  · refine iff_of_false (fun h1 ↦ ?_) fun h' ↦ hm.not_isSimplePoint h'.isSimplePoint
+    have hH : 1 ≤ mult (TauCeti.hessian pderiv F).det P :=
+      Order.one_le_iff_pos.2 (mult_pos_iff_eval_rep.2 (hm.eval_det_hessian_eq_zero hF))
+    have := (mul_le_mul' hH (isMultiplePoint_def.1 hm)).trans
+      (mul_mult_le_intersectionNumber hF.det_hessian hF)
+    rw [h1] at this
+    norm_num at this
 end PlaneCurves.Projective
 
 end
