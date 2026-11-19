@@ -82,16 +82,10 @@ theorem isRelPrime_bind₁_update_X_zero [IsAlgClosed k] (hF : F.IsHomogeneous m
     IsRelPrime (bind₁ (Function.update X i 0) F) (bind₁ (Function.update X i 0) G) := by
   classical
   set φ : MvPolynomial (Fin 3) k →ₐ[k] MvPolynomial (Fin 3) k := bind₁ (Function.update X i 0)
-  have hg (j : Fin 3) : (Function.update X i (0 : MvPolynomial (Fin 3) k) j).IsHomogeneous 1 := by
-    rcases eq_or_ne j i with rfl | hj
-    · simpa using isHomogeneous_zero (Fin 3) k 1
-    · simpa [hj] using isHomogeneous_X k j
-  have hφ {p : MvPolynomial (Fin 3) k} {d : ℕ} (hp : p.IsHomogeneous d) :
-      (φ p).IsHomogeneous d := by
-    simpa using hp.aeval _ hg
   by_contra hφFG
   obtain ⟨H', e, he, hH', hH'F, hH'G⟩ :=
-    (hφ hF).exists_isHomogeneous_dvd_of_not_isRelPrime (hφ hG) hφFG
+    (hF.bind₁_update_X_zero i).exists_isHomogeneous_dvd_of_not_isRelPrime
+      (hG.bind₁_update_X_zero i) hφFG
   obtain ⟨P, hP⟩ := zeroLocus_nonempty_of_card_le (s := {H', X i}) Finset.card_le_two (by
     simp only [Finset.mem_insert, Finset.mem_singleton]
     rintro f (rfl | rfl)
