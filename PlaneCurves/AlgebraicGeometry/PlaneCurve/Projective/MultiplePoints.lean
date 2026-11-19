@@ -9,11 +9,13 @@ public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Corolla
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Finiteness
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.LinearSystem.Independence
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
+public import PlaneCurves.RingTheory.MvPolynomial.Factorization
 
 /-!
-# Bounds on the multiple points of an irreducible plane curve
+# Bounds on the multiple points of a plane curve
 
-Let `k` be algebraically closed and `F` an irreducible form of degree `n` in `k[X, Y, Z]`.
+Let `k` be algebraically closed and `F` a form of degree `n` in `k[X, Y, Z]`, irreducible except
+in Problem 5.25.
 
 * **The polar bound** (Fulton, Problem 5.22): `∑_P m_P(F) (m_P(F) - 1) ≤ n(n - 1)`, so `F` has
   at most `n(n - 1)/2` multiple points. Some partial derivative `F_{Xᵢ}` is nonzero, of degree
@@ -27,6 +29,11 @@ Let `k` be algebraically closed and `F` an irreducible form of degree `n` in `k[
 * Its consequences: lines and irreducible conics are nonsingular, an irreducible cubic has at
   most one multiple point, a double point, and an irreducible quartic has either only double
   points, at most three, or one triple point and no other multiple point.
+* **Problem 5.25**: for a form `F` of degree `n` with no multiple components and `c`
+  irreducible factors, `∑_P m_P(F) (m_P(F) - 1)/2 ≤ (n - 1)(n - 2)/2 + c - 1 ≤ n(n - 1)/2`. With
+  `F = GH`, `G` irreducible of degree `a` and prime to `H` of degree `b`, `m_P(F) = m_P(G) +
+  m_P(H)`, and Corollary 1 of Bézout's theorem bounds `∑_P m_P(G) m_P(H)` by `ab`; induction on
+  the factors of `F` gives the bound from Theorem 2.
 
 The multiplicities are those of `PlaneCurves.Projective.mult`, with values in `ℕ∞`; the sums are
 over any finite set of points, or `finsum`s over all of `ℙ²`, whose terms vanish outside the
@@ -48,10 +55,12 @@ finitely many multiple points.
 * `PlaneCurves.Projective.finsum_mult_mul_mult_sub_one_le_mul_sub_one_spec` and
   `PlaneCurves.Projective.finsum_toNat_mult_mul_sub_one_div_two_le_spec`: the two bounds with
   their consequences, as Fulton states them.
+* `PlaneCurves.Projective.finsum_mult_mul_mult_sub_one_add_le` and
+  `PlaneCurves.Projective.finsum_toNat_mult_mul_sub_one_div_two_le_of_squarefree`: Problem 5.25.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.3, Problem 5.22; §5.4, Theorem 2
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.3, Problem 5.22; §5.4, Theorem 2, Problem 5.25
 -/
 
 public section
@@ -355,6 +364,9 @@ finitely many multiple points. Consequently
 
 Every characteristic.
 
+For a curve with no multiple components and `c` components, the bound becomes
+`(n - 1)(n - 2)/2 + c - 1`: see `finsum_toNat_mult_mul_sub_one_div_two_le_of_squarefree`.
+
 Milestone: *Bound on the multiple points of an irreducible plane curve*. -/
 theorem finsum_toNat_mult_mul_sub_one_div_two_le_spec (hF : F.IsHomogeneous n)
     (hirr : Irreducible F) :
@@ -371,6 +383,150 @@ theorem finsum_toNat_mult_mul_sub_one_div_two_le_spec (hF : F.IsHomogeneous n)
       fun _ ↦ mult_eq_two_of_degree_three hF hirr⟩
   · rintro rfl
     exact multiple_points_of_degree_four hF hirr
+
+/-! ### Curves with several components -/
+
+/-- `(g + h)(g + h - 1) = g(g - 1) + h(h - 1) + 2gh` in natural numbers. -/
+private theorem add_mul_add_sub_one (g h : ℕ) :
+    (g + h) * (g + h - 1) = g * (g - 1) + h * (h - 1) + 2 * (g * h) := by
+  rcases g with _ | g
+  · simp
+  rcases h with _ | h
+  · simp
+  rw [show g + 1 + (h + 1) - 1 = g + h + 1 by omega, Nat.add_sub_cancel, Nat.add_sub_cancel]
+  ring
+
+/-- `(d - 1)(d - 2) + 3d = d² + 2` for `d ≥ 1`, in natural numbers. -/
+private theorem sub_one_mul_sub_two_add {d : ℕ} (hd : d ≠ 0) :
+    (d - 1) * (d - 2) + 3 * d = d * d + 2 := by
+  obtain ⟨e, rfl⟩ := Nat.exists_eq_add_one.2 (Nat.pos_of_ne_zero hd)
+  rcases e with _ | e
+  · rfl
+  rw [show e + 1 + 1 - 1 = e + 1 by omega, show e + 1 + 1 - 2 = e by omega]
+  ring
+
+/-- Corollary 1 of Bézout's theorem in natural numbers: for relatively prime nonzero forms `G`
+and `H` of degrees `a` and `b`, `∑_{P ∈ s} m_P(G) m_P(H) ≤ ab`. -/
+private theorem sum_toNat_mult_mul_toNat_mult_le {G H : MvPolynomial (Fin 3) k} {a b : ℕ}
+    (hG : G.IsHomogeneous a) (hH : H.IsHomogeneous b) (hG0 : G ≠ 0) (hH0 : H ≠ 0)
+    (hGH : IsRelPrime G H) (s : Finset (ℙ k (Fin 3 → k))) :
+    ∑ P ∈ s, (mult G P).toNat * (mult H P).toNat ≤ a * b := by
+  have h := (Finset.sum_le_sum fun P (_ : P ∈ s) ↦ mul_mult_le_intersectionNumber hG hH).trans
+    (sum_intersectionNumber_le_mul hG hH hGH s)
+  have hc : ((∑ P ∈ s, (mult G P).toNat * (mult H P).toNat : ℕ) : ℕ∞) =
+      ∑ P ∈ s, mult G P * mult H P := by
+    rw [Nat.cast_sum]
+    refine Finset.sum_congr rfl fun P _ ↦ ?_
+    rw [Nat.cast_mul, ENat.natCast_toNat (mult_eq_top_iff.not.2 hG0),
+      ENat.natCast_toNat (mult_eq_top_iff.not.2 hH0)]
+  rw [← hc] at h
+  exact_mod_cast h
+
+/-- Problem 5.25 in natural numbers, over a finite set of points, in the form
+`∑_P m_P(m_P - 1) + 3n ≤ n² + 2c`, by induction on the factors of `F`. -/
+private theorem sum_toNat_mult_mul_sub_one_add_le (hF : F.IsHomogeneous n) (hsq : Squarefree F)
+    (s : Finset (ℙ k (Fin 3 → k))) :
+    ∑ P ∈ s, (mult F P).toNat * ((mult F P).toNat - 1) + 3 * n ≤
+      n * n + 2 * (UniqueFactorizationMonoid.factors F).card := by
+  induction F using WfDvdMonoid.induction_on_irreducible generalizing n with
+  | zero => exact absurd hsq not_squarefree_zero
+  | unit u hu =>
+    obtain ⟨v, hv⟩ := hu.exists_right_inv
+    have hdeg := totalDegree_mul_of_isDomain hu.ne_zero (right_ne_zero_of_mul_eq_one hv)
+    rw [hv, totalDegree_one, hF.totalDegree hu.ne_zero] at hdeg
+    have hn : n = 0 := by omega
+    subst hn
+    have hm (P : ℙ k (Fin 3 → k)) : (mult u P).toNat = 0 := by
+      have := mult_le_degree hF hu.ne_zero P
+      rw [Nat.cast_zero, nonpos_iff_eq_zero] at this
+      rw [this, ENat.toNat_zero]
+    simp [hm]
+  | mul a p ha hp ih =>
+    have hp0 := hp.ne_zero
+    have hpH : p.IsHomogeneous p.totalDegree := hF.of_mul_left ha
+    have haH : a.IsHomogeneous a.totalDegree := hF.of_mul_right hp0
+    have hn : n = p.totalDegree + a.totalDegree := (hF.inj_right (hpH.mul haH) (mul_ne_zero hp0 ha))
+    have hrel : IsRelPrime p a :=
+      hp.isRelPrime_iff_not_dvd.2 fun h ↦ hp.not_isUnit (hsq p (mul_dvd_mul_left p h))
+    have h1 := sum_toNat_mult_mul_sub_one_le hpH hp s
+    have h2 := ih haH hsq.of_mul_right
+    have h3 := sum_toNat_mult_mul_toNat_mult_le hpH haH hp0 ha hrel s
+    have h4 := sub_one_mul_sub_two_add (hpH.degree_ne_zero_of_irreducible hp)
+    have hm (P : ℙ k (Fin 3 → k)) :
+        (mult (p * a) P).toNat = (mult p P).toNat + (mult a P).toNat := by
+      rw [mult_mul, ENat.toNat_add (mult_eq_top_iff.not.2 hp0) (mult_eq_top_iff.not.2 ha)]
+    rw [Finset.sum_congr rfl fun P _ ↦ by rw [hm, add_mul_add_sub_one],
+      Finset.sum_add_distrib, Finset.sum_add_distrib, ← Finset.mul_sum,
+      Multiset.card_eq_card_of_rel (UniqueFactorizationMonoid.factors_mul hp0 ha),
+      Multiset.card_add, UniqueFactorizationMonoid.card_factors_of_irreducible hp]
+    have hnn : n * n = p.totalDegree * p.totalDegree + 2 * (p.totalDegree * a.totalDegree) +
+        a.totalDegree * a.totalDegree := by
+      rw [hn]; ring
+    linarith
+
+omit [IsAlgClosed k] in
+/-- `∑_P m_P(F)(m_P(F) - 1)` in natural numbers is twice the `finsum` of the halves of its
+terms, a sum over some finite set of points. -/
+private theorem exists_finset_two_mul_finsum_eq (F : MvPolynomial (Fin 3) k) :
+    ∃ s : Finset (ℙ k (Fin 3 → k)),
+      2 * ∑ᶠ P, (mult F P).toNat * ((mult F P).toNat - 1) / 2 =
+        ∑ P ∈ s, (mult F P).toNat * ((mult F P).toNat - 1) := by
+  by_cases hfin : (Function.support fun P ↦ (mult F P).toNat * ((mult F P).toNat - 1) / 2).Finite
+  · refine ⟨hfin.toFinset, ?_⟩
+    rw [finsum_eq_sum _ hfin, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun P _ ↦ Nat.mul_div_cancel' (Nat.even_mul_pred_self _).two_dvd
+  · exact ⟨∅, by rw [finsum_of_infinite_support hfin]; simp⟩
+
+/-- **Fulton, Problem 5.25**, over a finite set of points. Let `k` be algebraically closed and
+`F` a form of degree `n` with no multiple components, and `c` the number of its irreducible
+factors. Then `∑_{P ∈ s} m_P(F) (m_P(F) - 1) + 3n ≤ n² + 2c`, that is,
+`∑_{P ∈ s} m_P(F) (m_P(F) - 1) ≤ (n - 1)(n - 2) + 2(c - 1)`. -/
+theorem sum_mult_mul_mult_sub_one_add_le (hF : F.IsHomogeneous n) (hsq : Squarefree F)
+    (s : Finset (ℙ k (Fin 3 → k))) :
+    ∑ P ∈ s, mult F P * (mult F P - 1) + ↑(3 * n) ≤
+      ↑(n * n + 2 * (UniqueFactorizationMonoid.factors F).card) := by
+  rw [← natCast_sum_toNat_mult hsq.ne_zero, ← Nat.cast_add]
+  exact_mod_cast sum_toNat_mult_mul_sub_one_add_le hF hsq s
+
+/-- **Fulton, Problem 5.25.** Let `k` be algebraically closed and `F` a form of degree `n` with
+no multiple components, and `c` the number of its irreducible factors. Then
+`∑_P m_P(F) (m_P(F) - 1) + 3n ≤ n² + 2c`, that is,
+`∑_P m_P(F) (m_P(F) - 1) ≤ (n - 1)(n - 2) + 2(c - 1)`. -/
+theorem finsum_mult_mul_mult_sub_one_add_le (hF : F.IsHomogeneous n) (hsq : Squarefree F) :
+    ∑ᶠ P, mult F P * (mult F P - 1) + ↑(3 * n) ≤
+      ↑(n * n + 2 * (UniqueFactorizationMonoid.factors F).card) := by
+  by_cases hfin : (Function.support fun P ↦ mult F P * (mult F P - 1)).Finite
+  · rw [finsum_eq_sum _ hfin]
+    exact sum_mult_mul_mult_sub_one_add_le hF hsq _
+  · rw [finsum_of_infinite_support hfin]
+    simpa using sum_mult_mul_mult_sub_one_add_le hF hsq ∅
+
+/-- **Bound on the multiple points of a plane curve with `c` components** (Fulton,
+Problem 5.25). Let `k` be algebraically closed and `F` a form of degree `n` in `k[X, Y, Z]`
+with no multiple components (`Squarefree F`), and `c` the number of its irreducible factors.
+Then, in `ℤ`,
+`∑_P m_P(F) (m_P(F) - 1)/2 ≤ (n - 1)(n - 2)/2 + c - 1 ≤ n(n - 1)/2`,
+the sum running over the finitely many multiple points; the halves are exact. -/
+theorem finsum_toNat_mult_mul_sub_one_div_two_le_of_squarefree (hF : F.IsHomogeneous n)
+    (hsq : Squarefree F) :
+    ((∑ᶠ P, (mult F P).toNat * ((mult F P).toNat - 1) / 2 : ℕ) : ℤ) ≤
+        ((n : ℤ) - 1) * (n - 2) / 2 + (UniqueFactorizationMonoid.factors F).card - 1 ∧
+      ((n : ℤ) - 1) * (n - 2) / 2 + (UniqueFactorizationMonoid.factors F).card - 1 ≤
+        n * (n - 1) / 2 := by
+  set S := ∑ᶠ P, (mult F P).toNat * ((mult F P).toNat - 1) / 2
+  set c := (UniqueFactorizationMonoid.factors F).card
+  obtain ⟨s, hs⟩ := exists_finset_two_mul_finsum_eq F
+  have h := sum_toNat_mult_mul_sub_one_add_le hF hsq s
+  rw [← hs] at h
+  have hc : c ≤ n := hF.totalDegree hsq.ne_zero ▸ card_factors_le_totalDegree hsq.ne_zero
+  obtain ⟨q, hq⟩ : 2 ∣ ((n : ℤ) - 1) * (n - 2) := by
+    rw [show ((n : ℤ) - 1) * (n - 2) = (n - 2) * (n - 2 + 1) by ring]
+    exact (Int.even_mul_succ_self _).two_dvd
+  obtain ⟨q', hq'⟩ : 2 ∣ (n : ℤ) * (n - 1) := by
+    rw [show (n : ℤ) * (n - 1) = (n - 1) * (n - 1 + 1) by ring]
+    exact (Int.even_mul_succ_self _).two_dvd
+  rw [hq, hq', Int.mul_ediv_cancel_left _ two_ne_zero, Int.mul_ediv_cancel_left _ two_ne_zero]
+  constructor <;> nlinarith
 
 end PlaneCurves.Projective
 

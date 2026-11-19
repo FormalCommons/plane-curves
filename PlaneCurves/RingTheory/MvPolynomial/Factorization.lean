@@ -5,17 +5,21 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
 /-!
-# Splitting off the factors of a polynomial that vanish at a point
+# Factors of a multivariate polynomial
 
-Over a unique factorization domain `R`, a nonzero polynomial `F ∈ R[X_σ]` factors as `F' U`,
-where `U` does not vanish at a given point `P` and every irreducible factor of `F'` vanishes
-at `P`.
+Over a field, a nonzero polynomial has at most as many irreducible factors, counted with
+multiplicity, as its total degree. Over a unique factorization domain `R`, a nonzero polynomial
+`F ∈ R[X_σ]` factors as `F' U`, where `U` does not vanish at a given point `P` and every
+irreducible factor of `F'` vanishes at `P`.
 
 ## Main results
 
+* `MvPolynomial.card_factors_le_totalDegree`: over a field, a nonzero polynomial has at most
+  `deg F` irreducible factors, counted with multiplicity.
 * `MvPolynomial.exists_eq_mul_eval_ne_zero`: a nonzero polynomial is `F' U` with `U(P) ≠ 0` and
   every irreducible factor of `F'` vanishing at `P`.
 -/
@@ -43,6 +47,24 @@ theorem exists_eq_mul_eval_ne_zero (P : σ → R) {F : MvPolynomial σ R} (hF : 
         simp [hpP]
       · exact hF' H hH h
     · exact ⟨F', p * U, by ring, by simpa [hpP] using hU, hF'⟩
+
+/-- Over a field, a nonzero polynomial has at most as many irreducible factors, counted with
+multiplicity, as its total degree: the factors are nonconstant and degrees add. -/
+theorem card_factors_le_totalDegree {k : Type*} [Field k] {F : MvPolynomial σ k} (hF : F ≠ 0) :
+    (UniqueFactorizationMonoid.factors F).card ≤ F.totalDegree := by
+  induction F using WfDvdMonoid.induction_on_irreducible with
+  | zero => exact absurd rfl hF
+  | unit u hu => simp [UniqueFactorizationMonoid.factors_of_isUnit hu]
+  | mul a p ha hp ih =>
+    rw [Multiset.card_eq_card_of_rel (UniqueFactorizationMonoid.factors_mul hp.ne_zero ha),
+      Multiset.card_add, UniqueFactorizationMonoid.card_factors_of_irreducible hp,
+      totalDegree_mul_of_isDomain hp.ne_zero ha]
+    have hp0 : p.totalDegree ≠ 0 := fun h0 ↦ hp.not_isUnit <| by
+      rw [totalDegree_eq_zero_iff_eq_C.1 h0, isUnit_map_iff, isUnit_iff_ne_zero]
+      rintro hc
+      exact hp.ne_zero (by rw [totalDegree_eq_zero_iff_eq_C.1 h0, hc, map_zero])
+    have := ih ha
+    omega
 
 end MvPolynomial
 
