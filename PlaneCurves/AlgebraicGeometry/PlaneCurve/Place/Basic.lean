@@ -35,6 +35,7 @@ dehomogenization `G_(i)`.
   degree of `G` with `H(center Q) ≠ 0`; `ordForm_eq_addValuation_mk_pow` for `H = Lᵐ`.
 * `ordForm_eq_addValuation_mk_add`: `ord_Q(G) = ord_Q(G / H) + ord_Q(H)` when `F ∤ H`.
 * `ordForm_mul`, `ordForm_eq_top_iff`, `ordForm_nonneg`, `ordForm_pos_iff`, `ordForm_eq_zero_iff`.
+* `ordForm_eq_of_dvd_sub`: `ord_Q(G)` depends only on `G` modulo `F`.
 * `ordForm_eq_addValuation_chartEquiv_symm`: the order in a chart.
 * `mem_placesOver_iff_localSubring_le_map_chartEquiv`, `ordForm_eq_addValuation_map_chartEquiv`:
   the places over a point of a chart, and their orders, read in the affine curve of the chart;
@@ -271,6 +272,14 @@ theorem ordForm_mul (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') :
 theorem ordForm_eq_top_iff (hG : G.IsHomogeneous m) : ordForm hF Q hG = ⊤ ↔ F ∣ G := by
   rw [ordForm_def, Q.addValuation_eq_top_iff, functionField.mk_eq_zero_iff,
     projectivePlaneCurve.mem_ideal_iff]
+
+/-- The order of a form at `Q` depends only on the form modulo `F`: forms `G`, `G'` of the same
+degree with `F ∣ G - G'` have the same order. -/
+theorem ordForm_eq_of_dvd_sub (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m)
+    (h : F ∣ G - G') : ordForm hF Q hG = ordForm hF Q hG' := by
+  rw [ordForm_def, ordForm_def, (functionField.mk_eq_mk_iff _ _ _ _ _ _).2]
+  rw [projectivePlaneCurve.mem_ideal_iff, ← sub_mul]
+  exact dvd_mul_of_dvd_left h _
 
 /-- The order of a form at a place is nonnegative. -/
 theorem ordForm_nonneg (hG : G.IsHomogeneous m) : 0 ≤ ordForm hF Q hG := by
