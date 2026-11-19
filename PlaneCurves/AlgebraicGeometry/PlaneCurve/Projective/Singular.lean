@@ -265,6 +265,12 @@ theorem pderiv_tangentLine (F : MvPolynomial (Fin 3) k) (v : Fin 3 → k) (j : F
     pderiv j (tangentLine F v) = C (eval v (pderiv j F)) := by
   simp [tangentLine_def, pderiv_X, Pi.single_apply]
 
+/-- The tangent line of `c • F` is `c` times that of `F`. -/
+@[simp]
+theorem tangentLine_smul (c : k) (F : MvPolynomial (Fin 3) k) (v : Fin 3 → k) :
+    tangentLine (c • F) v = c • tangentLine F v := by
+  simp [tangentLine_def, Finset.smul_sum, smul_eq_C_mul, mul_assoc]
+
 /-- By Euler's identity, the tangent line of a form at a zero `v` vanishes at `v`. -/
 theorem eval_tangentLine_self (hF : F.IsHomogeneous d) {v : Fin 3 → k} (h : eval v F = 0) :
     eval v (tangentLine F v) = 0 := by

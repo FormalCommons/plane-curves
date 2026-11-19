@@ -77,6 +77,13 @@ theorem intersectionNumber_congr (h : Ideal.span {F, G} = Ideal.span {F', G'}) :
     intersectionNumber P F G = intersectionNumber P F' G' := by
   rw [intersectionNumber_def, intersectionNumber_def, h]
 
+/-- Replacing the second curve by an associated polynomial, such as a nonzero scalar multiple,
+does not change the intersection number. -/
+theorem intersectionNumber_congr_right_of_associated (h : Associated G G') :
+    intersectionNumber P F G = intersectionNumber P F G' :=
+  intersectionNumber_congr (by
+    rw [Ideal.span_insert, Ideal.span_insert, Ideal.span_singleton_eq_span_singleton.2 h])
+
 /-- **Property (4)**: the intersection number is symmetric, `I(P, F ∩ G) = I(P, G ∩ F)`. -/
 theorem intersectionNumber_comm (P : ℙ k (Fin 3 → k)) (F G : MvPolynomial (Fin 3) k) :
     intersectionNumber P F G = intersectionNumber P G F :=
