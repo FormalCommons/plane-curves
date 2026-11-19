@@ -7,8 +7,11 @@ module
 
 public import Mathlib.RingTheory.Adjoin.Polynomial.Basic
 public import Mathlib.RingTheory.IntegralClosure.IsIntegral.Basic
+public import Mathlib.RingTheory.Ideal.GoingUp
+public import Mathlib.RingTheory.Spectrum.Prime.Topology
 public import TauCeti.RingTheory.Conductor
 public import TauCeti.RingTheory.Ideal.AffineBlowup
+public import PlaneCurves.AlgebraicGeometry.AffineSpace.PlaneZeroLocus
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Blowup.Basic
 
 /-!
@@ -25,9 +28,12 @@ the equation `F'(x, z) = 0` of the strict transform with its high powers of `z` 
 `xz = y`. It has degree at most `r` in `z`, and its coefficient of `z ^ r` is `H(x, y)` for the
 polynomial `H = ∑_j a_{0j} Y ^ (j - r)`, whose value `H(0, 0) = a_{0r}` is nonzero exactly when
 `X` is not tangent to `F` at the origin. So, once `H(x, y)` is inverted, as on the open set
-`W = C_H` of the curve `C = V(F)`, the element `z = y/x` is integral of degree `r`, the affine
-blow-up algebra `Γ(W') = Γ(W)[y/x]` is module-finite over `Γ(W)`, and `x ^ (r - 1)` lies in its
-conductor (Step (3) of §7.2 of Fulton).
+`W = C_{gH}` of the curve `C = V(F)` for any `g`, the element `z = y/x` is integral of degree `r`,
+the affine blow-up algebra `Γ(W') = Γ(W)[y/x]` is module-finite over `Γ(W)`, and `x ^ (r - 1)`
+lies in its conductor (Step (3) of §7.2 of Fulton). When `F` is prime and does not divide `X`,
+`Γ(W)` embeds in `Γ(W')`, so every point of `W` lies under a point of `W'`, and the map
+`Spec Γ(W') → Spec Γ(W)` is closed. A shear `X ↦ X + dY` makes `W` contain any given finite set of
+points (Fulton's Remarks).
 
 ## Main definitions
 
@@ -40,30 +46,40 @@ conductor (Step (3) of §7.2 of Fulton).
 
 * `PlaneCurves.Affine.algebraMap_pow_mul_aeval_blowupChartPolynomial`: for `xz = y`,
   `x ^ r P(z) = F(x, y)`.
-* `PlaneCurves.Affine.coeff_blowupChartPolynomial`: the coefficient of `T ^ r` is `H(x, y)`, and
-  `PlaneCurves.Affine.eval_zero_blowupChartLeadingCoeff`: `H(0, 0) = a_{0r}`.
-* `PlaneCurves.Affine.exists_monic_aeval_eq_zero`, `PlaneCurves.Affine.isIntegral_of_isUnit`,
-  `PlaneCurves.Affine.finite_adjoin_of_isUnit`,
-  `PlaneCurves.Affine.pow_mem_conductor_adjoin_of_isUnit`: if `H(x, y)` is a unit, `z` is a root
-  of a monic polynomial of degree `r`, `A[z]` is module-finite over `A` and `x ^ (r - 1)` lies in
-  the conductor of `A[z]`.
+* `PlaneCurves.Affine.coeff_blowupChartPolynomial`: the coefficient of `T ^ r` is `H(x, y)`;
+  `PlaneCurves.Affine.eval_zero_blowupChartLeadingCoeff`: `H(0, 0) = a_{0r}`; and, for `r ≥ 1`,
+  `PlaneCurves.Affine.pow_mul_aeval_blowupChartLeadingCoeff`: `y ^ r H(x, y) = F(0, y)`.
+* `PlaneCurves.Affine.exists_monic_aeval_eq_zero_of_isUnit_aeval_blowupChartLeadingCoeff`,
+  `PlaneCurves.Affine.isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff`,
+  `PlaneCurves.Affine.finite_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff`,
+  `PlaneCurves.Affine.pow_mem_conductor_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff`: if
+  `H(x, y)` is a unit, `z` is a root of a monic polynomial of degree `r`, `A[z]` is module-finite
+  over `A` and `x ^ (r - 1)` lies in the conductor of `A[z]`.
 * `PlaneCurves.Affine.affineBlowup_span_pair_eq_adjoin`,
-  `PlaneCurves.Affine.finite_affineBlowup_of_isUnit`,
-  `PlaneCurves.Affine.pow_mem_conductor_affineBlowup_of_isUnit`: the same for the affine blow-up
-  algebra `A[(x, y)/x] = A[y/x]`.
+  `PlaneCurves.Affine.finite_affineBlowup_of_isUnit_aeval_blowupChartLeadingCoeff`,
+  `PlaneCurves.Affine.pow_mem_conductor_affineBlowup_of_isUnit_aeval_blowupChartLeadingCoeff`,
+  `PlaneCurves.Affine.exists_monic_aeval_divBy_eq_zero_of_isUnit_aeval_blowupChartLeadingCoeff`:
+  the same for the affine blow-up algebra `A[(x, y)/x] = A[y/x]`.
 * `PlaneCurves.Affine.finite_affineBlowup_blowupChart`,
   `PlaneCurves.Affine.exists_monic_aeval_divBy_blowupChart`,
   `PlaneCurves.Affine.pow_mem_conductor_affineBlowup_blowupChart`: Step (3) for a plane curve:
-  on `W = C_H`, a neighbourhood of the origin when `X` is not tangent
+  on `W = C_{gH}`, a neighbourhood of the origin when `g(0) ≠ 0` and `X` is not tangent
   (`PlaneCurves.Affine.isTangentAt_zero_X_zero_iff`), `Γ(W') = Γ(W)[y/x]` is module-finite over
   `Γ(W)`, `y/x` is integral of degree `r` and `x ^ (r - 1)` lies in the conductor.
+* `PlaneCurves.Affine.injective_algebraMap_affineBlowup_blowupChart`,
+  `PlaneCurves.Affine.exists_isPrime_comap_affineBlowup_blowupChart`,
+  `PlaneCurves.Affine.isClosedMap_comap_affineBlowup_blowupChart`: `Γ(W) → Γ(W')` is injective,
+  so `f(W') = W`, and `Spec Γ(W') → Spec Γ(W)` is closed.
+* `PlaneCurves.Affine.exists_linearSubst_eval_blowupChartLeadingCoeff_ne_zero`: after a shear
+  `X ↦ X + dY`, `H` does not vanish at any given finite set of points.
 * `PlaneCurves.Affine.blowupStrictTransform_fibre_finite`: the milestone, Steps (1)–(3) of §7.2
-  together.
+  together, with the Remarks.
 
 ## References
 
 * [W. Fulton, *Algebraic Curves*][Fulton2008], §7.2
 -/
+
 
 public section
 
@@ -186,6 +202,40 @@ theorem eval_zero_blowupChartLeadingCoeff (F : MvPolynomial (Fin 2) R) :
   rw [h0] at h
   simpa [MvPolynomial.coe_aeval_eq_eval] using h.symm
 
+
+/-- For `r ≥ 1`, `H(x, y) = ∑_j a_{0j} y ^ (j - r)`. -/
+theorem aeval_blowupChartLeadingCoeff (F : MvPolynomial (Fin 2) R)
+    (hr : 0 < (F.orderAt 0).toNat) (x y : A) :
+    aeval ![x, y] (blowupChartLeadingCoeff F) = ∑ m ∈ F.support,
+      if m 0 = 0 then algebraMap R A (F.coeff m) * y ^ (m 1 - (F.orderAt 0).toNat) else 0 := by
+  classical
+  rw [← coeff_blowupChartPolynomial, blowupChartPolynomial_def, Polynomial.finsetSum_coeff]
+  refine Finset.sum_congr rfl fun m _ ↦ ?_
+  by_cases h : m 0 = 0
+  · simp [h, Polynomial.coeff_monomial]
+  · rw [Polynomial.coeff_monomial_of_ne _ (by omega)]
+    simp [h]
+
+/-- For `r ≥ 1`, `H` does not involve `X`: `H(x, y) = H(0, y)`. -/
+theorem aeval_blowupChartLeadingCoeff_eq_aeval_zero (F : MvPolynomial (Fin 2) R)
+    (hr : 0 < (F.orderAt 0).toNat) (x y : A) :
+    aeval ![x, y] (blowupChartLeadingCoeff F) = aeval ![0, y] (blowupChartLeadingCoeff F) := by
+  rw [aeval_blowupChartLeadingCoeff F hr, aeval_blowupChartLeadingCoeff F hr]
+
+/-- For `r ≥ 1`, `y ^ r H(x, y) = F(0, y)`: `H` is `F(0, Y) / Y ^ r`. -/
+theorem pow_mul_aeval_blowupChartLeadingCoeff (F : MvPolynomial (Fin 2) R)
+    (hr : 0 < (F.orderAt 0).toNat) (x y : A) :
+    y ^ (F.orderAt 0).toNat * aeval ![x, y] (blowupChartLeadingCoeff F) = aeval ![0, y] F := by
+  rw [aeval_blowupChartLeadingCoeff F hr, Finset.mul_sum, aeval_def, eval₂_eq']
+  refine Finset.sum_congr rfl fun m hm ↦ ?_
+  have := toNat_orderAt_zero_le hm
+  simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.cons_val_fin_one]
+  by_cases h : m 0 = 0
+  · simp only [h, ↓reduceIte, pow_zero, one_mul]
+    rw [mul_left_comm, ← pow_add, Nat.add_sub_cancel' (by omega)]
+  · simp only [h, ↓reduceIte, zero_pow h, zero_mul, mul_zero]
+
 end Polynomial
 
 section Integral
@@ -223,27 +273,31 @@ private theorem exists_monic_natDegree_le (hF : aeval ![x, y] F = 0)
 /-- **`y/x` is integral of degree `r`.** If `F(x, y) = 0`, `H(x, y)` is a unit and `xz = y`
 with `x` a nonzerodivisor, then `z` is a root of a monic polynomial over `A` of degree the
 multiplicity `r` of `F` at the origin. -/
-theorem exists_monic_aeval_eq_zero [Nontrivial A] (hF : aeval ![x, y] F = 0)
-    (hz : algebraMap A B x * z = algebraMap A B y) (hx : IsLeftRegular (algebraMap A B x))
+theorem exists_monic_aeval_eq_zero_of_isUnit_aeval_blowupChartLeadingCoeff [Nontrivial A]
+    (hF : aeval ![x, y] F = 0) (hz : algebraMap A B x * z = algebraMap A B y)
+    (hx : IsLeftRegular (algebraMap A B x))
     (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
     ∃ p : Polynomial A, p.Monic ∧ p.natDegree = (F.orderAt 0).toNat ∧
       Polynomial.aeval z p = 0 := by
   obtain ⟨p, hp, hd, h1, h0⟩ := exists_monic_natDegree_le hF hz hx hH
   exact ⟨p, hp, le_antisymm hd (Polynomial.le_natDegree_of_ne_zero (by simp [h1])), h0⟩
 
-/-- Under the hypotheses of `exists_monic_aeval_eq_zero`, `z` is integral over `A`. -/
-theorem isIntegral_of_isUnit (hF : aeval ![x, y] F = 0)
+/-- If `F(x, y) = 0`, `H(x, y)` is a unit and `xz = y` with `x` a nonzerodivisor, then `z` is
+integral over `A`. -/
+theorem isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff (hF : aeval ![x, y] F = 0)
     (hz : algebraMap A B x * z = algebraMap A B y) (hx : IsLeftRegular (algebraMap A B x))
     (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) : IsIntegral A z := by
   obtain ⟨p, hp, -, -, h0⟩ := exists_monic_natDegree_le hF hz hx hH
   exact ⟨p, hp, by rwa [← Polynomial.aeval_def]⟩
 
-/-- Under the hypotheses of `exists_monic_aeval_eq_zero`, `A[z]` is module-finite over `A`. -/
-theorem finite_adjoin_of_isUnit (hF : aeval ![x, y] F = 0)
+/-- If `F(x, y) = 0`, `H(x, y)` is a unit and `xz = y` with `x` a nonzerodivisor, then `A[z]`
+is module-finite over `A`. -/
+theorem finite_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff (hF : aeval ![x, y] F = 0)
     (hz : algebraMap A B x * z = algebraMap A B y) (hx : IsLeftRegular (algebraMap A B x))
     (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
     Module.Finite A (Algebra.adjoin A {z}) :=
-  Algebra.finite_adjoin_simple_of_isIntegral (isIntegral_of_isUnit hF hz hx hH)
+  Algebra.finite_adjoin_simple_of_isIntegral
+    (isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff hF hz hx hH)
 
 /-- If `xz = y`, then `x ^ (r - 1) s(z)` lies in the image of `A` for every polynomial `s` of
 degree less than `r`. -/
@@ -263,10 +317,12 @@ private theorem exists_algebraMap_eq_pow_mul_aeval {r : ℕ}
   conv_rhs => rw [← Nat.sub_add_cancel hi, pow_add]
   ring
 
-/-- **The conductor.** Under the hypotheses of `exists_monic_aeval_eq_zero`, `x ^ (r - 1)`
-lies in the conductor of `A[z]` over `A`: it carries `A[z]` into `A`. -/
-theorem pow_mem_conductor_adjoin_of_isUnit (hF : aeval ![x, y] F = 0)
-    (hz : algebraMap A B x * z = algebraMap A B y) (hx : IsLeftRegular (algebraMap A B x))
+/-- **The conductor.** If `F(x, y) = 0`, `H(x, y)` is a unit and `xz = y` with `x` a
+nonzerodivisor, then `x ^ (r - 1)` lies in the conductor of `A[z]` over `A`: it carries `A[z]`
+into `A`. -/
+theorem pow_mem_conductor_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff
+    (hF : aeval ![x, y] F = 0) (hz : algebraMap A B x * z = algebraMap A B y)
+    (hx : IsLeftRegular (algebraMap A B x))
     (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
     x ^ ((F.orderAt 0).toNat - 1) ∈ TauCeti.Algebra.conductor A (Algebra.adjoin A {z}) := by
   rcases subsingleton_or_nontrivial A with hA | hA
@@ -301,63 +357,68 @@ theorem affineBlowup_span_pair_eq_adjoin (x y : A) [IsLocalization.Away x S] :
   · exact one_mem _
   · exact Algebra.subset_adjoin rfl
 
-private theorem algebraMap_mul_divBy_eq (x y : A) [IsLocalization.Away x S] :
-    algebraMap A S x * divBy y x = algebraMap A S y :=
-  algebraMap_mul_divBy y x
-
 private theorem isLeftRegular_algebraMap (x : A) [IsLocalization.Away x S] :
     IsLeftRegular (algebraMap A S x) :=
   (IsLocalization.Away.algebraMap_isUnit (S := S) x).isRegular.left
 
 /-- **Local finiteness of the blow-up.** If `F(x, y) = 0` and `H(x, y)` is a unit, the affine
 blow-up algebra `A[(x, y)/x]` is module-finite over `A`. -/
-theorem finite_affineBlowup_of_isUnit (hF : aeval ![x, y] F = 0)
+theorem finite_affineBlowup_of_isUnit_aeval_blowupChartLeadingCoeff (hF : aeval ![x, y] F = 0)
     (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
     Module.Finite A ((Ideal.span {x, y}).affineBlowup x S) := by
   rw [affineBlowup_span_pair_eq_adjoin]
-  exact finite_adjoin_of_isUnit hF (algebraMap_mul_divBy_eq x y) (isLeftRegular_algebraMap x) hH
+  exact finite_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff hF (algebraMap_mul_divBy y x)
+    (isLeftRegular_algebraMap x) hH
 
 /-- If `F(x, y) = 0` and `H(x, y)` is a unit, `x ^ (r - 1)` lies in the conductor of the affine
 blow-up algebra `A[(x, y)/x]` over `A`. -/
-theorem pow_mem_conductor_affineBlowup_of_isUnit (hF : aeval ![x, y] F = 0)
-    (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
+theorem pow_mem_conductor_affineBlowup_of_isUnit_aeval_blowupChartLeadingCoeff
+    (hF : aeval ![x, y] F = 0) (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
     x ^ ((F.orderAt 0).toNat - 1) ∈
       TauCeti.Algebra.conductor A ((Ideal.span {x, y}).affineBlowup x S) := by
   rw [affineBlowup_span_pair_eq_adjoin]
-  exact pow_mem_conductor_adjoin_of_isUnit hF (algebraMap_mul_divBy_eq x y)
-    (isLeftRegular_algebraMap x) hH
+  exact pow_mem_conductor_adjoin_of_isUnit_aeval_blowupChartLeadingCoeff hF
+    (algebraMap_mul_divBy y x) (isLeftRegular_algebraMap x) hH
 
 /-- If `F(x, y) = 0` and `H(x, y)` is a unit, `y/x` is a root of a monic polynomial over `A` of
 degree `r`. -/
-theorem exists_monic_aeval_divBy_eq_zero [Nontrivial A] (hF : aeval ![x, y] F = 0)
-    (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
+theorem exists_monic_aeval_divBy_eq_zero_of_isUnit_aeval_blowupChartLeadingCoeff [Nontrivial A]
+    (hF : aeval ![x, y] F = 0) (hH : IsUnit (aeval ![x, y] (blowupChartLeadingCoeff F))) :
     ∃ p : Polynomial A, p.Monic ∧ p.natDegree = (F.orderAt 0).toNat ∧
       Polynomial.aeval (divBy y x : S) p = 0 :=
-  exists_monic_aeval_eq_zero hF (algebraMap_mul_divBy_eq x y) (isLeftRegular_algebraMap x) hH
+  exists_monic_aeval_eq_zero_of_isUnit_aeval_blowupChartLeadingCoeff hF
+    (algebraMap_mul_divBy y x) (isLeftRegular_algebraMap x) hH
 
 end AffineBlowup
+
 section Curve
 
 /-! ### The chart over a neighbourhood of the origin of a plane curve
 
-For the curve `C = V(F)` with coordinate ring `Γ = R[X, Y] ⧸ (F)`, let `W = C_H` be the open
-subset where `H = blowupChartLeadingCoeff F` does not vanish, with coordinate ring
-`Γ(W) = Γ_H`, and `x, y` the coordinates in it. The ring of the chart `W'` of the strict
-transform over `W` is `Γ(W') = Γ(W)[y/x]`, the affine blow-up algebra `Γ(W)[(x, y)/x]`. -/
+For the curve `C = V(F)` with coordinate ring `Γ = R[X, Y] ⧸ (F)`, a polynomial `g` and
+`H = blowupChartLeadingCoeff F`, let `W = C_{gH}` be the open subset of `C` where `gH` does not
+vanish, with coordinate ring `Γ(W) = Γ_{gH}`, and `x, y` the coordinates in it. The ring of the
+chart `W'` of the strict transform over `W` is `Γ(W') = Γ(W)[y/x]`, the affine blow-up algebra
+`Γ(W)[(x, y)/x]`. As `g` varies over the polynomials with `g(P) ≠ 0`, the open sets `C_g` form a
+base of neighbourhoods of `P`, so `W` can be taken inside any given neighbourhood of `P`. -/
 
 variable {R : Type*} [CommRing R]
 
-/-- The ring `Γ(W) = Γ_H` of the open subset `W = C_H` of the curve `C = V(F)`. -/
-local notation "ΓW[" F "]" =>
-  Localization.Away (Ideal.Quotient.mk (Ideal.span {F}) (blowupChartLeadingCoeff F))
+/-- The ring `Γ(W) = Γ_{gH}` of the open subset `W = C_{gH}` of the curve `C = V(F)`. -/
+local notation "ΓW[" F ", " g "]" =>
+  Localization.Away (Ideal.Quotient.mk (Ideal.span {F}) (g * blowupChartLeadingCoeff F))
 
 /-- The coordinate `x` in `Γ(W)`. -/
-local notation "xW[" F "]" => algebraMap (MvPolynomial (Fin 2) _ ⧸ Ideal.span {F}) ΓW[F]
-  (Ideal.Quotient.mk (Ideal.span {F}) (X 0))
+local notation "xW[" F ", " g "]" => algebraMap (MvPolynomial (Fin 2) _ ⧸ Ideal.span {F})
+  ΓW[F, g] (Ideal.Quotient.mk (Ideal.span {F}) (X 0))
 
 /-- The coordinate `y` in `Γ(W)`. -/
-local notation "yW[" F "]" => algebraMap (MvPolynomial (Fin 2) _ ⧸ Ideal.span {F}) ΓW[F]
-  (Ideal.Quotient.mk (Ideal.span {F}) (X 1))
+local notation "yW[" F ", " g "]" => algebraMap (MvPolynomial (Fin 2) _ ⧸ Ideal.span {F})
+  ΓW[F, g] (Ideal.Quotient.mk (Ideal.span {F}) (X 1))
+
+/-- The ring `Γ(W') = Γ(W)[(x, y)/x]` of the chart of the strict transform over `W`. -/
+local notation "ΓW'[" F ", " g "]" =>
+  Ideal.affineBlowup (Ideal.span {xW[F, g], yW[F, g]}) xW[F, g] (Localization.Away xW[F, g])
 
 /-- Evaluating at the images of `X` and `Y` under an `R`-algebra map is applying the map. -/
 private theorem aeval_algHom_X {A : Type*} [CommSemiring A] [Algebra R A]
@@ -369,51 +430,223 @@ private theorem aeval_algHom_X {A : Type*} [CommSemiring A] [Algebra R A]
   rw [h, ← aeval_unique f]
 
 /-- In `Γ(W)`, `F(x, y) = 0` and `H(x, y)` is a unit. -/
-private theorem aeval_xW_yW (F : MvPolynomial (Fin 2) R) :
-    aeval ![xW[F], yW[F]] F = 0 ∧ IsUnit (aeval ![xW[F], yW[F]] (blowupChartLeadingCoeff F)) := by
-  set f := (IsScalarTower.toAlgHom R (MvPolynomial (Fin 2) R ⧸ Ideal.span {F}) ΓW[F]).comp
+private theorem aeval_xW_yW (F g : MvPolynomial (Fin 2) R) :
+    aeval ![xW[F, g], yW[F, g]] F = 0 ∧
+      IsUnit (aeval ![xW[F, g], yW[F, g]] (blowupChartLeadingCoeff F)) := by
+  set f := (IsScalarTower.toAlgHom R (MvPolynomial (Fin 2) R ⧸ Ideal.span {F}) ΓW[F, g]).comp
     (Ideal.Quotient.mkₐ R (Ideal.span {F}))
-  have h (G : MvPolynomial (Fin 2) R) : aeval ![xW[F], yW[F]] G =
-      algebraMap _ ΓW[F] (Ideal.Quotient.mk (Ideal.span {F}) G) :=
+  have h (G : MvPolynomial (Fin 2) R) : aeval ![xW[F, g], yW[F, g]] G =
+      algebraMap _ ΓW[F, g] (Ideal.Quotient.mk (Ideal.span {F}) G) :=
     aeval_algHom_X f G
   rw [h, h, Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.subset_span (Set.mem_singleton F)), map_zero]
-  exact ⟨rfl, IsLocalization.Away.algebraMap_isUnit _⟩
+  refine ⟨rfl, isUnit_of_mul_isUnit_right
+    (x := algebraMap _ ΓW[F, g] (Ideal.Quotient.mk (Ideal.span {F}) g)) ?_⟩
+  rw [← map_mul, ← map_mul]
+  exact IsLocalization.Away.algebraMap_isUnit _
 
 /-- **Local finiteness of the blow-up.** The ring `Γ(W') = Γ(W)[(x, y)/x]` of the chart of the
-strict transform over `W = C_H` is module-finite over `Γ(W)`. -/
-theorem finite_affineBlowup_blowupChart (F : MvPolynomial (Fin 2) R) :
-    Module.Finite ΓW[F]
-      ((Ideal.span {xW[F], yW[F]}).affineBlowup xW[F] (Localization.Away xW[F])) :=
-  finite_affineBlowup_of_isUnit (aeval_xW_yW F).1 (aeval_xW_yW F).2
+strict transform over `W = C_{gH}` is module-finite over `Γ(W)`. -/
+theorem finite_affineBlowup_blowupChart (F g : MvPolynomial (Fin 2) R) :
+    Module.Finite ΓW[F, g] ΓW'[F, g] :=
+  finite_affineBlowup_of_isUnit_aeval_blowupChartLeadingCoeff (aeval_xW_yW F g).1
+    (aeval_xW_yW F g).2
 
 /-- **The conductor of the blow-up.** `x ^ (r - 1)` carries `Γ(W') = Γ(W)[(x, y)/x]` into
-`Γ(W)`, for `W = C_H`. -/
-theorem pow_mem_conductor_affineBlowup_blowupChart (F : MvPolynomial (Fin 2) R) :
-    xW[F] ^ ((F.orderAt 0).toNat - 1) ∈ TauCeti.Algebra.conductor ΓW[F]
-      ((Ideal.span {xW[F], yW[F]}).affineBlowup xW[F] (Localization.Away xW[F])) :=
-  pow_mem_conductor_affineBlowup_of_isUnit (aeval_xW_yW F).1 (aeval_xW_yW F).2
+`Γ(W)`, for `W = C_{gH}`. -/
+theorem pow_mem_conductor_affineBlowup_blowupChart (F g : MvPolynomial (Fin 2) R) :
+    xW[F, g] ^ ((F.orderAt 0).toNat - 1) ∈ TauCeti.Algebra.conductor ΓW[F, g] ΓW'[F, g] :=
+  pow_mem_conductor_affineBlowup_of_isUnit_aeval_blowupChartLeadingCoeff (aeval_xW_yW F g).1
+    (aeval_xW_yW F g).2
 
-/-- If the origin lies on `F` and `a_{0r}` is a unit, then `W = C_H` contains the origin, so
-`Γ(W)` is not the zero ring. -/
-theorem nontrivial_blowupChart [Nontrivial R] {F : MvPolynomial (Fin 2) R} (h0 : eval 0 F = 0)
-    (hX : IsUnit (F.coeff (Finsupp.single 1 (F.orderAt 0).toNat))) : Nontrivial ΓW[F] := by
+/-- If the origin lies on `F`, `g(0)` is a unit and `a_{0r}` is a unit, then `W = C_{gH}`
+contains the origin, so `Γ(W)` is not the zero ring. -/
+theorem nontrivial_blowupChart [Nontrivial R] {F g : MvPolynomial (Fin 2) R} (h0 : eval 0 F = 0)
+    (hg : IsUnit (eval 0 g)) (hX : IsUnit (F.coeff (Finsupp.single 1 (F.orderAt 0).toNat))) :
+    Nontrivial ΓW[F, g] := by
   let φ : MvPolynomial (Fin 2) R ⧸ Ideal.span {F} →+* R :=
     Ideal.Quotient.lift _ (eval 0) fun G hG ↦ by
       obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.1 hG
       rw [map_mul, h0, mul_zero]
-  have hφ : IsUnit (φ (Ideal.Quotient.mk _ (blowupChartLeadingCoeff F))) := by
-    rw [Ideal.Quotient.lift_mk, eval_zero_blowupChartLeadingCoeff]
-    exact hX
-  exact (IsLocalization.Away.lift _ hφ : ΓW[F] →+* R).domain_nontrivial
+  have hφ : IsUnit (φ (Ideal.Quotient.mk _ (g * blowupChartLeadingCoeff F))) := by
+    rw [Ideal.Quotient.lift_mk, map_mul, eval_zero_blowupChartLeadingCoeff]
+    exact hg.mul hX
+  exact (IsLocalization.Away.lift _ hφ : ΓW[F, g] →+* R).domain_nontrivial
 
-/-- **`y/x` is integral of degree `r`.** If the origin lies on `F` and `a_{0r}` is a unit, then
-`y/x` is a root of a monic polynomial of degree `r` over `Γ(W)`, for `W = C_H`. -/
-theorem exists_monic_aeval_divBy_blowupChart [Nontrivial R] {F : MvPolynomial (Fin 2) R}
-    (h0 : eval 0 F = 0) (hX : IsUnit (F.coeff (Finsupp.single 1 (F.orderAt 0).toNat))) :
-    ∃ p : Polynomial ΓW[F], p.Monic ∧ p.natDegree = (F.orderAt 0).toNat ∧
-      Polynomial.aeval (divBy yW[F] xW[F] : Localization.Away xW[F]) p = 0 :=
-  haveI := nontrivial_blowupChart h0 hX
-  exists_monic_aeval_divBy_eq_zero (aeval_xW_yW F).1 (aeval_xW_yW F).2
+/-- **`y/x` is integral of degree `r`.** If the origin lies on `F`, `g(0)` is a unit and
+`a_{0r}` is a unit, then `y/x` is a root of a monic polynomial of degree `r` over `Γ(W)`, for
+`W = C_{gH}`. -/
+theorem exists_monic_aeval_divBy_blowupChart [Nontrivial R] {F g : MvPolynomial (Fin 2) R}
+    (h0 : eval 0 F = 0) (hg : IsUnit (eval 0 g))
+    (hX : IsUnit (F.coeff (Finsupp.single 1 (F.orderAt 0).toNat))) :
+    ∃ p : Polynomial ΓW[F, g], p.Monic ∧ p.natDegree = (F.orderAt 0).toNat ∧
+      Polynomial.aeval (divBy yW[F, g] xW[F, g] : Localization.Away xW[F, g]) p = 0 :=
+  have := nontrivial_blowupChart h0 hg hX
+  exists_monic_aeval_divBy_eq_zero_of_isUnit_aeval_blowupChartLeadingCoeff (aeval_xW_yW F g).1
+    (aeval_xW_yW F g).2
+
+/-- If `F` is prime and does not divide `X`, then `x` is a nonzerodivisor of `Γ(W)`, so `Γ(W)`
+embeds in `Γ(W') ⊆ Γ(W)_x`: `Γ(W')` is the ring of the open set `f⁻¹(W)` of the strict
+transform. -/
+theorem injective_algebraMap_affineBlowup_blowupChart [IsDomain R] {F : MvPolynomial (Fin 2) R}
+    (hF : Prime F) (hX : ¬F ∣ X 0) (g : MvPolynomial (Fin 2) R) :
+    Function.Injective (algebraMap ΓW[F, g] ΓW'[F, g]) := by
+  have : (Ideal.span {F}).IsPrime := (Ideal.span_singleton_prime hF.ne_zero).2 hF
+  have hx0 : Ideal.Quotient.mk (Ideal.span {F}) (X 0) ∈
+      nonZeroDivisors (MvPolynomial (Fin 2) R ⧸ Ideal.span {F}) :=
+    mem_nonZeroDivisors_of_ne_zero fun h ↦
+      hX (Ideal.mem_span_singleton.1 (Ideal.Quotient.eq_zero_iff_mem.1 h))
+  have hx : xW[F, g] ∈ nonZeroDivisors ΓW[F, g] :=
+    IsLocalization.map_nonZeroDivisors_le
+      (Submonoid.powers (Ideal.Quotient.mk (Ideal.span {F}) (g * blowupChartLeadingCoeff F)))
+      ΓW[F, g] ⟨_, hx0, rfl⟩
+  have hinj : Function.Injective (algebraMap ΓW[F, g] (Localization.Away xW[F, g])) :=
+    IsLocalization.injective _ (Submonoid.powers_le.2 hx)
+  exact fun a b h ↦ hinj (congrArg Subtype.val h)
+
+/-- **`f(W') = W`.** If `F` is prime and does not divide `X`, every prime of `Γ(W)` lies under a
+prime of `Γ(W')`: every point of `W` is the image of a point of `W'`. -/
+theorem exists_isPrime_comap_affineBlowup_blowupChart [IsDomain R] {F : MvPolynomial (Fin 2) R}
+    (hF : Prime F) (hX : ¬F ∣ X 0) (g : MvPolynomial (Fin 2) R) (p : Ideal ΓW[F, g])
+    [p.IsPrime] :
+    ∃ Q : Ideal ΓW'[F, g], Q.IsPrime ∧ Q.comap (algebraMap ΓW[F, g] ΓW'[F, g]) = p := by
+  have := finite_affineBlowup_blowupChart F g
+  have : Algebra.IsIntegral ΓW[F, g] ΓW'[F, g] := Algebra.IsIntegral.of_finite _ _
+  obtain ⟨Q, -, hQ, hQp⟩ := Ideal.exists_ideal_over_prime_of_isIntegral (S := ΓW'[F, g]) p
+    (⊥ : Ideal ΓW'[F, g]) (by
+      rw [Ideal.under_def, ← RingHom.ker_eq_comap_bot, (RingHom.injective_iff_ker_eq_bot _).1
+        (injective_algebraMap_affineBlowup_blowupChart hF hX g)]
+      exact bot_le)
+  exact ⟨Q, hQ, hQp⟩
+
+/-- The map `Spec Γ(W') → Spec Γ(W)` is closed, `Γ(W')` being integral over `Γ(W)`. So, for every
+open set `U'` containing the points over a point `P` of `W`, some basic open neighbourhood
+`D(h)` of `P` has its preimage in `U'`: `W'` can be taken inside any given neighbourhood of the
+fibre over `P`. -/
+theorem isClosedMap_comap_affineBlowup_blowupChart (F g : MvPolynomial (Fin 2) R) :
+    IsClosedMap (PrimeSpectrum.comap (algebraMap ΓW[F, g] ΓW'[F, g])) :=
+  have := finite_affineBlowup_blowupChart F g
+  PrimeSpectrum.isClosedMap_comap_of_isIntegral (R := ΓW[F, g]) (S := ΓW'[F, g]) _
+    (algebraMap_isIntegral_iff.2 (Algebra.IsIntegral.of_finite _ _))
+
+section Shear
+
+/-! ### Fulton's Remarks: `W` containing a given finite set of points
+
+`H(x, y) = F(0, y) / y ^ r` vanishes at a point `(a, b)` with `b ≠ 0` exactly when `(0, b)` lies
+on `C`, and at a point `(a, 0)` exactly when `X` is tangent to `F` at the origin. After the shear
+`(x, y) ↦ (x - d y, y)`, that is `F ↦ F(X + dY, Y)`, the first condition becomes `F(db, b) = 0`,
+and the second that `X - dY` is tangent to `F`; each fails for all but finitely many `d`. -/
+
+variable {k : Type*} [Field k] {F : MvPolynomial (Fin 2) k}
+
+private theorem linearSubst_shear_X_zero (d : k) :
+    linearSubst !![1, d; 0, 1] (X 0 - C d * X 1 : MvPolynomial (Fin 2) k) = X 0 := by
+  simp [linearSubst_X, Fin.sum_univ_two]
+
+private theorem shear_mulVec (d : k) (p : Fin 2 → k) :
+    Matrix.mulVec !![1, d; 0, 1] p = ![p 0 + d * p 1, p 1] := by
+  ext i
+  fin_cases i <;> simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+
+/-- Only finitely many lines `X - dY` are tangent to `F ≠ 0` at the origin. -/
+private theorem finite_setOf_isTangentAt_shear [IsAlgClosed k] (hF : F ≠ 0) :
+    {d : k | IsTangentAt F 0 (X 0 - C d * X 1)}.Finite := by
+  obtain ⟨s, -, -, hs⟩ := exists_finset_isTangentAt (P := 0) hF
+  refine (s.finite_toSet.biUnion fun L _ ↦
+    (?_ : {d : k | Associated (X 0 - C d * X 1) L}.Subsingleton).finite).subset fun d hd ↦ ?_
+  · intro d hd d' hd'
+    have hd : Associated (X 0 - C d * X 1) L := hd
+    have hd' : Associated (X 0 - C d' * X 1) L := hd'
+    obtain ⟨c, hc⟩ := (hd.trans hd'.symm).dvd
+    have h := congrArg (eval ![d, 1]) hc
+    simp only [map_sub, map_mul, eval_X, eval_C, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_fin_one, mul_one, sub_self, zero_mul] at h
+    exact sub_eq_zero.1 h
+  · obtain ⟨L, hL, hdL⟩ := hs _ hd
+    exact Set.mem_biUnion hL hdL
+
+/-- If `F` is irreducible and passes through the origin, then for `b ≠ 0` there are only
+finitely many `d` with `F(db, b) = 0`. -/
+private theorem finite_setOf_eval_mul_eq_zero (hF : Irreducible F) (h0 : eval 0 F = 0) {b : k}
+    (hb : b ≠ 0) : {d : k | eval ![d * b, b] F = 0}.Finite := by
+  have hrel : IsRelPrime F (X 1 - C b) := by
+    refine hF.isRelPrime_iff_not_dvd.2 fun ⟨c, hc⟩ ↦ hb ?_
+    have h := congrArg (eval 0) hc
+    rw [map_mul, h0, zero_mul] at h
+    simpa using h
+  refine ((finite_zeroLocus_span_pair_of_isRelPrime hrel k).preimage
+    (f := fun d : k ↦ ![d * b, b]) fun d _ d' _ h ↦ ?_).subset fun d hd ↦ ?_
+  · exact mul_right_cancel₀ hb (by simpa using congrFun h 0)
+  · intro p hp
+    obtain ⟨u, v, rfl⟩ := Ideal.mem_span_pair.1 hp
+    simp [show eval ![d * b, b] F = 0 from hd]
+
+/-- **Fulton's Remarks.** Let `F` be irreducible through the origin and `S` a finite set of
+points. After a shear `F ↦ F(X + dY, Y)`, which carries a point `Q` of `F` to the point
+`(Q₀ - d Q₁, Q₁)` of the new curve, the curve is still irreducible, through the origin and not
+associated to `X`, the line `X` is not tangent to it at the origin, and `H` does not vanish at the
+images of the points of `S`: the open set `W = C_H` of Step (3) contains them. -/
+theorem exists_linearSubst_eval_blowupChartLeadingCoeff_ne_zero [IsAlgClosed k]
+    (hF : Irreducible F)
+    (h0 : eval 0 F = 0) (S : Finset (Fin 2 → k)) :
+    ∃ d : k, Irreducible (linearSubst !![1, d; 0, 1] F) ∧
+      ¬Associated (linearSubst !![1, d; 0, 1] F) (X 0) ∧
+      eval 0 (linearSubst !![1, d; 0, 1] F) = 0 ∧
+      ¬IsTangentAt (linearSubst !![1, d; 0, 1] F) 0 (X 0) ∧
+      ∀ Q ∈ S, eval ![Q 0 - d * Q 1, Q 1]
+        (blowupChartLeadingCoeff (linearSubst !![1, d; 0, 1] F)) ≠ 0 := by
+  classical
+  set B := (S.image (· 1)).filter (· ≠ 0)
+  have hB : (⋃ b ∈ (B : Set k), {d : k | eval ![d * b, b] F = 0}).Finite :=
+    B.finite_toSet.biUnion fun b hb ↦
+      finite_setOf_eval_mul_eq_zero hF h0 (Finset.mem_filter.1 hb).2
+  obtain ⟨d, hd⟩ := ((finite_setOf_isTangentAt_shear hF.ne_zero).union hB).exists_notMem
+  simp only [Set.mem_union, Set.mem_ofPred_eq, Set.mem_iUnion, not_or, not_exists] at hd
+  obtain ⟨hdT, hdS⟩ := hd
+  have hdet : IsUnit (!![1, d; 0, 1] : Matrix (Fin 2) (Fin 2) k).det := by
+    simp [Matrix.det_fin_two_of]
+  set G := linearSubst !![1, d; 0, 1] F with hGdef
+  have hG : Irreducible G := by
+    have : G = linearSubstAlgEquiv (Matrix.nonsingInvUnit _ hdet) F := by
+      rw [linearSubstAlgEquiv_apply]
+      rfl
+    rw [this, MulEquiv.irreducible_iff]
+    exact hF
+  have hG0 : eval 0 G = 0 := by rw [hGdef, eval_linearSubst, Matrix.mulVec_zero, h0]
+  have hT : ¬IsTangentAt G 0 (X 0) := by
+    rw [hGdef, ← linearSubst_shear_X_zero d, isTangentAt_linearSubst_iff hdet,
+      Matrix.mulVec_zero]
+    exact hdT
+  have ha : G.coeff (Finsupp.single 1 (G.orderAt 0).toNat) ≠ 0 :=
+    fun h ↦ hT (isTangentAt_zero_X_zero_iff.2 h)
+  have hr : 0 < (G.orderAt 0).toNat :=
+    ENat.toNat_pos (orderAt_eq_zero_iff.not.2 (not_not.2 hG0))
+      (orderAt_eq_top_iff.not.2 hG.ne_zero)
+  refine ⟨d, hG, fun hA ↦ ha ?_, hG0, hT, fun Q hQ ↦ ?_⟩
+  · rw [← hGdef] at hA
+    obtain ⟨c, hc⟩ := hA.symm.dvd
+    rw [hc, coeff_X_mul']
+    simp
+  · rw [← hGdef]
+    have hx : eval ![Q 0 - d * Q 1, Q 1] (blowupChartLeadingCoeff G) =
+        eval ![0, Q 1] (blowupChartLeadingCoeff G) :=
+      aeval_blowupChartLeadingCoeff_eq_aeval_zero G hr _ _
+    rw [hx]
+    by_cases hb : Q 1 = 0
+    · have h00 : (![0, Q 1] : Fin 2 → k) = 0 := by
+        ext i : 1
+        fin_cases i <;> simp [hb]
+      rwa [h00, eval_zero_blowupChartLeadingCoeff]
+    · intro h
+      have : Q 1 ^ (G.orderAt 0).toNat * eval ![0, Q 1] (blowupChartLeadingCoeff G) =
+          eval ![0, Q 1] G :=
+        pow_mul_aeval_blowupChartLeadingCoeff G hr 0 (Q 1)
+      rw [h, mul_zero, hGdef, eval_linearSubst, shear_mulVec] at this
+      refine hdS (Q 1) (Finset.mem_filter.2 ⟨Finset.mem_image_of_mem _ hQ, hb⟩) ?_
+      simpa using this.symm
+
+end Shear
+
 section Milestone
 
 variable {k : Type*} [Field k] [IsAlgClosed k] {F : MvPolynomial (Fin 2) k}
@@ -433,10 +666,20 @@ Suppose that `X` is not tangent to `F` at `P`.
    at `P`, the leading form being `F_r = ε ∏ (Y - α X) ^ rₐ`; at `(0, α)`,
    `m(F') ≤ I((0, α), F' ∩ E) = rₐ`. If `P` is an ordinary multiple point, every point of the
    fibre is a simple point of `F'`, where `F'` meets `E` with intersection number one.
-3. The open set `W = C_H` contains `P` (`H(P) = a_{0r} ≠ 0`); the ring
-   `Γ(W') = Γ(W)[(x, y)/x] = Γ(W)[y/x]` of the chart over it is module-finite over `Γ(W)`,
-   `y/x` is a root of a monic polynomial of degree `r` over `Γ(W)`, and `x ^ (r - 1)` lies in
-   the conductor of `Γ(W')` over `Γ(W)`.
+3. `H(P) = a_{0r} ≠ 0`. For every `g` with `g(P) ≠ 0`, the affine open set `W = C_{gH}`
+   contains `P`, and the ring `Γ(W') = Γ(W)[(x, y)/x] = Γ(W)[y/x]` of the chart over it is
+   module-finite over `Γ(W)`, `y/x` is a root of a monic polynomial of degree `r` over `Γ(W)`,
+   and `x ^ (r - 1)` lies in the conductor of `Γ(W')` over `Γ(W)`. Moreover `Γ(W)` embeds in
+   `Γ(W')`, so that `Γ(W')` is the ring of `W' = f⁻¹(W)`; every prime of `Γ(W)` lies under a
+   prime of `Γ(W')`, that is `f(W') = W`; and `Spec Γ(W') → Spec Γ(W)` is a closed map.
+
+   The sets `C_g` with `g(P) ≠ 0` form a base of neighbourhoods of `P`, so `W` can be taken
+   inside any neighbourhood of `P`. As the map is closed, for every open `U'` containing the
+   fibre over `P`, the image of its complement is closed and misses `P`, so some `C_g` has its
+   preimage in `U'`: `W'` can be taken inside any neighbourhood of the fibre. Finally, for
+   every finite set `S` of points, after a shear `F ↦ F(X + dY, Y)` the curve still satisfies
+   all the hypotheses, and `H` does not vanish at the images of the points of `S`, so that
+   `W = C_H` contains them.
 
 Milestone: *Blowing up a plane curve at a point: strict transform, fibre and local
 finiteness*. -/
@@ -467,14 +710,25 @@ theorem blowupStrictTransform_fibre_finite (hF : Irreducible F) (hX : ¬Associat
       IsSimplePoint (blowupStrictTransform F) ![0, α] ∧
         intersectionNumber ![0, α] (blowupStrictTransform F) (X 0) = 1) ∧
     eval 0 (blowupChartLeadingCoeff F) ≠ 0 ∧
-    Module.Finite ΓW[F]
-      ((Ideal.span {xW[F], yW[F]}).affineBlowup xW[F] (Localization.Away xW[F])) ∧
-    (∃ p : Polynomial ΓW[F], p.Monic ∧ p.natDegree = (F.orderAt 0).toNat ∧
-      Polynomial.aeval (divBy yW[F] xW[F] : Localization.Away xW[F]) p = 0) ∧
-    xW[F] ^ ((F.orderAt 0).toNat - 1) ∈ TauCeti.Algebra.conductor ΓW[F]
-      ((Ideal.span {xW[F], yW[F]}).affineBlowup xW[F] (Localization.Away xW[F])) := by
+    (∀ g : MvPolynomial (Fin 2) k, eval 0 g ≠ 0 →
+      Nontrivial ΓW[F, g] ∧ Module.Finite ΓW[F, g] ΓW'[F, g] ∧
+      (∃ p : Polynomial ΓW[F, g], p.Monic ∧ p.natDegree = (F.orderAt 0).toNat ∧
+        Polynomial.aeval (divBy yW[F, g] xW[F, g] : Localization.Away xW[F, g]) p = 0) ∧
+      xW[F, g] ^ ((F.orderAt 0).toNat - 1) ∈ TauCeti.Algebra.conductor ΓW[F, g] ΓW'[F, g] ∧
+      Function.Injective (algebraMap ΓW[F, g] ΓW'[F, g]) ∧
+      (∀ p : Ideal ΓW[F, g], p.IsPrime →
+        ∃ Q : Ideal ΓW'[F, g], Q.IsPrime ∧ Q.comap (algebraMap ΓW[F, g] ΓW'[F, g]) = p) ∧
+      IsClosedMap (PrimeSpectrum.comap (algebraMap ΓW[F, g] ΓW'[F, g]))) ∧
+    ∀ S : Finset (Fin 2 → k), ∃ d : k, Irreducible (linearSubst !![1, d; 0, 1] F) ∧
+      ¬Associated (linearSubst !![1, d; 0, 1] F) (X 0) ∧
+      eval 0 (linearSubst !![1, d; 0, 1] F) = 0 ∧
+      ¬IsTangentAt (linearSubst !![1, d; 0, 1] F) 0 (X 0) ∧
+      ∀ Q ∈ S, eval ![Q 0 - d * Q 1, Q 1]
+        (blowupChartLeadingCoeff (linearSubst !![1, d; 0, 1] F)) ≠ 0 := by
   have ha : F.coeff (Finsupp.single 1 (F.orderAt 0).toNat) ≠ 0 :=
     fun h ↦ hT (isTangentAt_zero_X_zero_iff.2 h)
+  have hP : Prime F := UniqueFactorizationMonoid.irreducible_iff_prime.1 hF
+  have hXd : ¬F ∣ X 0 := fun h ↦ hX (hF.associated_of_dvd prime_X.irreducible h)
   refine ⟨X_pow_mul_blowupStrictTransform F, blowupStrictTransform_eq_sum F,
     not_X_dvd_blowupStrictTransform hF.ne_zero, irreducible_blowupStrictTransform hF hX,
     bijOn_blowupStrictTransform F, ⟨blowupFunctionFieldEquiv hF hX,
@@ -484,9 +738,14 @@ theorem blowupStrictTransform_fibre_finite (hF : Irreducible F) (hX : ¬Associat
       intersectionNumber_blowupStrictTransform_X_zero hF.ne_zero α⟩,
     fun h α hα ↦ h.isSimplePoint_blowupStrictTransform
       ((eval_zero_blowupStrictTransform_eq_zero_iff hF.ne_zero α).1 hα),
-    by rwa [eval_zero_blowupChartLeadingCoeff], finite_affineBlowup_blowupChart F,
-    exists_monic_aeval_divBy_blowupChart h0 (isUnit_iff_ne_zero.2 ha),
-    pow_mem_conductor_affineBlowup_blowupChart F⟩
+    by rwa [eval_zero_blowupChartLeadingCoeff], fun g hg ↦ ⟨?_, finite_affineBlowup_blowupChart F g,
+      exists_monic_aeval_divBy_blowupChart h0 (isUnit_iff_ne_zero.2 hg) (isUnit_iff_ne_zero.2 ha),
+      pow_mem_conductor_affineBlowup_blowupChart F g,
+      injective_algebraMap_affineBlowup_blowupChart hP hXd g,
+      fun p _ ↦ exists_isPrime_comap_affineBlowup_blowupChart hP hXd g p,
+      isClosedMap_comap_affineBlowup_blowupChart F g⟩,
+    exists_linearSubst_eval_blowupChartLeadingCoeff_ne_zero hF h0⟩
+  exact nontrivial_blowupChart h0 (isUnit_iff_ne_zero.2 hg) (isUnit_iff_ne_zero.2 ha)
 
 end Milestone
 
