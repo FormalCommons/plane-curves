@@ -310,15 +310,10 @@ theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_z
         eval P.rep L = 0 → ¬IsTangentAt F P L → (∀ Q ∈ S, Q ≠ P → eval Q.rep L ≠ 0) →
         ∀ Q ∈ zeroLocus {F, L}, Q ≠ P → intersectionNumber Q F L = 1 := by
     rcases hD with hD0 | rfl
-    · have hrel : IsRelPrime F (polarDerivative P.rep F) := by
-        refine hirr.isRelPrime_iff_not_dvd.2 fun hdvd ↦ hD0 ?_
-        have := totalDegree_le_of_dvd_of_isDomain hdvd hD0
-        rw [hF.totalDegree hF0, (hF.polarDerivative _).totalDegree hD0] at this
-        rw [(totalDegree_eq_zero_iff_eq_C (p := F)).1 (by rw [hF.totalDegree hF0]; omega),
-          polarDerivative_C]
-      refine ⟨{Q | IsMultiplePoint F Q} ∪ zeroLocus {F, polarDerivative P.rep F},
+    · refine ⟨{Q | IsMultiplePoint F Q} ∪ zeroLocus {F, polarDerivative P.rep F},
         (finite_setOf_isMultiplePoint_of_irreducible hF hirr).union
-          (finite_zeroLocus_pair_of_isRelPrime hF (hF.polarDerivative _) hrel), ?_⟩
+          (finite_zeroLocus_pair_of_isRelPrime hF (hF.polarDerivative _)
+            (hF.isRelPrime_polarDerivative hirr hD0)), ?_⟩
       intro L hL hL0 _ hLP _ hS Q hQ hQP
       obtain ⟨hQF, hQL⟩ := (hmem hL Q).1 hQ
       have hQs : IsSimplePoint F Q :=
