@@ -9,6 +9,7 @@ public import Mathlib.LinearAlgebra.CrossProduct
 public import Mathlib.LinearAlgebra.Projectivization.Constructions
 public import Mathlib.Algebra.CharP.Two
 public import Mathlib.Data.ZMod.Basic
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.GenericLine
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
 public import PlaneCurves.RingTheory.MvPolynomial.PDeriv
 public import PlaneCurves.RingTheory.MvPolynomial.PolarDerivative
@@ -30,6 +31,11 @@ field an irreducible form has at most one terrible point: if `D_v F = D_w F = 0`
 `v` and `w`, then after a change of coordinates `F_Y = F_Z = 0`, and Euler's identity
 `X F_X = n F` makes `F` either divisible by `X` or have all its partial derivatives zero.
 
+At a point `P` that is not terrible, `D_P F ≠ 0` or `m_P(F) = deg F`, so the generic-line
+argument of `GenericLine.lean` applies in every characteristic: all but finitely many lines
+through `P` meet an irreducible `F` in `deg F - m_P(F)` further points, transversally. Taking
+`P` off `F` gives lines meeting `F` transversally in `deg F` points and avoiding any finite set.
+
 ## Main definitions
 
 * `PlaneCurves.Projective.IsTerriblePoint F v`: `2 ≤ deg F` and `D_v F = 0`.
@@ -48,6 +54,14 @@ field an irreducible form has at most one terrible point: if `D_v F = D_w F = 0`
 * `PlaneCurves.Projective.not_isTerriblePoint`: in characteristic zero no point is terrible.
 * `PlaneCurves.Projective.IsTerriblePoint.mk_eq_mk`: over a perfect field an irreducible form has
   at most one terrible point.
+* `PlaneCurves.Projective.polarDerivative_ne_zero_or_eq_of_not_isTerriblePoint`: at a point `P`
+  that is not terrible, `D_P F ≠ 0` or `m_P(F) = deg F`.
+* `eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint`:
+  if `P` is not terrible for an irreducible `F` of degree `n` and `r = m_P(F)`, all but finitely
+  many lines through `P` meet `F` in exactly `n - r` points other than `P`, transversally, and
+  have `I(P, F ∩ L) = r`.
+* `PlaneCurves.Projective.exists_ncard_zeroLocus_pair_sum_C_mul_X_eq`: a line through no
+  point of a given finite set meets an irreducible `F` of degree `n` transversally in `n` points.
 
 ## References
 
@@ -58,7 +72,7 @@ public section
 
 namespace PlaneCurves.Projective
 
-open MvPolynomial Projectivization
+open MvPolynomial Projectivization PlaneCurves.ProjectiveSpace
 open scoped LinearAlgebra.Projectivization
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k} {v w : Fin 3 → k} {n : ℕ}
@@ -223,6 +237,74 @@ theorem IsTerriblePoint.mk_eq_mk [PerfectField k] (hF : F.IsHomogeneous n) (hirr
     ((irreducible_linearSubst_iff hdet).2 hirr) hn
     (by rw [hcol 1]; simp [h₁.polarDerivative_eq_zero])
     (by rw [hcol 2]; simp [h₂.polarDerivative_eq_zero])
+
+
+/-! ### Lines through a point that is not terrible -/
+
+/-- At a point `P` that is not terrible for a nonzero form `F` of degree `n`, either the polar
+derivative `D_P F` is nonzero or `P` has multiplicity `n`. For `n ≥ 2` this is the definition;
+for a line it holds since `D_P F ≠ 0` when `m_P(F) < n ≤ 1`. -/
+theorem polarDerivative_ne_zero_or_eq_of_not_isTerriblePoint (hF : F.IsHomogeneous n)
+    (hF0 : F ≠ 0) {P : ℙ k (Fin 3 → k)} (h : ¬IsTerriblePoint F P.rep) {r : ℕ}
+    (hr : mult F P = r) : polarDerivative P.rep F ≠ 0 ∨ n = r := by
+  by_cases h2 : 2 ≤ F.totalDegree
+  · exact .inl fun h0 ↦ h ⟨h2, h0⟩
+  have hrn : r ≤ n := by exact_mod_cast hr ▸ mult_le_degree hF hF0 P
+  rw [hF.totalDegree hF0] at h2
+  rcases hrn.eq_or_lt with hrn | hrn
+  · exact .inr hrn.symm
+  · refine .inl (hF.polarDerivative_ne_zero (by rw [← mult_def, hr]) ?_)
+    rw [show n - r = 1 by omega, Nat.cast_one]
+    exact one_ne_zero
+
+/-- **Lines through a point that is not terrible.** Let `k` be algebraically closed, `F` an
+irreducible form of degree `n`, and `P` a point of `ℙ²` that is not terrible for `F`, with
+`r = m_P(F)`. Then for all but finitely many lines `L = ∑ i, c i X i` through `P`, the line `L`
+meets `F` in exactly `n - r` points other than `P`, with `I(Q, F ∩ L) = 1` at each of them, and
+`I(P, F ∩ L) = r`. In characteristic `p` the hypothesis is needed: at a terrible point every
+line through `P` is tangent to `F` at each simple point `Q ≠ P` it meets. -/
+theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint [IsAlgClosed k]
+    (hF : F.IsHomogeneous n) (hirr : Irreducible F) {P : ℙ k (Fin 3 → k)}
+    (hP : ¬IsTerriblePoint F P.rep) {r : ℕ} (hr : mult F P = r) :
+    ∀ᶠ c : ℙ k (Fin 3 → k) in Filter.cofinite, eval P.rep (∑ i, C (c.rep i) * X i) = 0 →
+      (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard = n - r ∧
+      (∀ Q ∈ zeroLocus {F, ∑ i, C (c.rep i) * X i}, Q ≠ P →
+        intersectionNumber Q F (∑ i, C (c.rep i) * X i) = 1) ∧
+      intersectionNumber P F (∑ i, C (c.rep i) * X i) = r :=
+  eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_zero hF hirr hr
+    (polarDerivative_ne_zero_or_eq_of_not_isTerriblePoint hF hirr.ne_zero hP hr)
+
+/-- **Lines meeting a plane curve in `n` distinct points.** Let `k` be algebraically closed and
+`F` an irreducible form of degree `n`. For every finite set `S` of points of `ℙ²` there is a line
+`L = ∑ i, c i X i` through no point of `S` that meets `F` in exactly `n` points, with
+`I(Q, F ∩ L) = 1` at each of them. Such lines pass through a point off `F` that is not terrible;
+there are such points since `F` has at most one terrible point. -/
+theorem exists_ncard_zeroLocus_pair_sum_C_mul_X_eq [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite) :
+    ∃ c : ℙ k (Fin 3 → k), (∀ Q ∈ S, eval Q.rep (∑ i, C (c.rep i) * X i) ≠ 0) ∧
+      (zeroLocus {F, ∑ i, C (c.rep i) * X i}).ncard = n ∧
+      ∀ Q ∈ zeroLocus {F, ∑ i, C (c.rep i) * X i},
+        intersectionNumber Q F (∑ i, C (c.rep i) * X i) = 1 := by
+  have hT : {Q : ℙ k (Fin 3 → k) | IsTerriblePoint F Q.rep}.Subsingleton := fun Q hQ Q' hQ' ↦ by
+    simpa using hQ.mk_eq_mk hF hirr Q.rep_ne_zero Q'.rep_ne_zero hQ'
+  obtain ⟨P, hPF, hPS⟩ := exists_eval_rep_ne_zero_notMem two_ne_zero hF hirr.ne_zero
+    (hS.union hT.finite)
+  rw [Set.mem_union, not_or] at hPS
+  have hPF' : P ∉ zeroLocus {F} := by
+    rwa [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩), Set.forall_mem_singleton]
+  have hr : mult F P = (0 : ℕ) := by rw [Nat.cast_zero, mult_eq_zero_iff hF]; exact hPF'
+  have hgood := eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF hirr
+    hPS.2 hr
+  rw [Filter.eventually_cofinite] at hgood
+  obtain ⟨c, hcP, hc⟩ := ((infinite_setOf_eval_sum_C_mul_X_eq_zero P).sdiff
+    (hgood.union (finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite hS P))).nonempty
+  simp only [Set.mem_ofPred_eq, Set.mem_union, not_or, not_not] at hcP hc
+  obtain ⟨hn, h1, -⟩ := hc.1 hcP
+  have hPZ : P ∉ zeroLocus {F, ∑ i, C (c.rep i) * X i} :=
+    fun h ↦ hPF' (zeroLocus_anti_mono (by simp) h)
+  rw [Set.sdiff_singleton_eq_self hPZ, Nat.sub_zero] at hn
+  refine ⟨c, fun Q hQ hQc ↦ hc.2 ⟨hcP, Q, hQ, fun h ↦ hPS.1 (h ▸ hQ), hQc⟩, hn, fun Q hQ ↦
+    h1 Q hQ fun h ↦ hPZ (h ▸ hQ)⟩
 
 end PlaneCurves.Projective
 
