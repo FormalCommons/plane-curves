@@ -204,6 +204,9 @@ noncomputable instance : Algebra k (localSubring P hI).toSubring :=
 instance : IsScalarTower k (MvPolynomial σ k ⧸ I) (localSubring P hI).toSubring :=
   IsScalarTower.of_algebraMap_eq (R := k) (S := MvPolynomial σ k ⧸ I) fun _ => rfl
 
+instance : IsScalarTower k (localSubring P hI).toSubring (functionField I) :=
+  .of_algebraMap_eq fun _ => rfl
+
 instance : (RingHom.ker (coordinateEval P hI)).IsPrime := RingHom.ker_isPrime _
 
 omit [I.IsPrime] in
