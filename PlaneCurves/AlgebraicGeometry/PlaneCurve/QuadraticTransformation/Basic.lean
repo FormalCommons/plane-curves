@@ -68,7 +68,8 @@ Steps (2) and (3), for a form with no exceptional component, compare the powers 
   `(F')' = F`.
 * `PlaneCurves.Projective.irreducible_properTransform`,
   `PlaneCurves.Projective.dvd_quadraticTransform_iff`: for `F` irreducible as well, `F'` is
-  irreducible, and `F' ∣ H^Q ↔ F ∣ H`.
+  irreducible, and `F' ∣ H^Q ↔ F ∣ H`; `dvd_quadraticTransform_iff_properTransform_dvd`:
+  `F ∣ H^Q ↔ F' ∣ H`.
 * `PlaneCurves.Projective.mult_properTransform_fundamentalPoint_add`,
   `PlaneCurves.Projective.mult_properTransform_fundamentalPoint`: step (3),
   `m_{[eᵢ]}(F') = n - m_{[eⱼ]}(F) - m_{[eₗ]}(F)`.
@@ -899,6 +900,16 @@ theorem dvd_quadraticTransform_iff (hF : F.IsHomogeneous n) (hirr : Irreducible 
   · refine dvd_trans ?_ (map_dvd quadraticTransform h)
     rw [quadraticTransform_eq hF]
     exact dvd_mul_left _ _
+
+/-- For an irreducible form `F` with no exceptional component, `F` divides `H^Q` exactly when
+the proper transform `F'` divides `H`: `dvd_quadraticTransform_iff` for `F'`, since
+`(F')' = F`. -/
+theorem dvd_quadraticTransform_iff_properTransform_dvd (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) (hX : ∀ i, ¬ X i ∣ F) :
+    F ∣ quadraticTransform H ↔ properTransform F ∣ H := by
+  have h := dvd_quadraticTransform_iff (H := H) hF.properTransform
+    (irreducible_properTransform hF hirr hX) (not_X_dvd_properTransform hF hirr.ne_zero)
+  rwa [properTransform_properTransform hF hX] at h
 
 end Involution
 
