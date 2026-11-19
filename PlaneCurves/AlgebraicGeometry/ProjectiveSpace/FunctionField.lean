@@ -63,6 +63,7 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
 * `mem_localSubring_iff`: an element of `k(V)` lies in `𝒪_P(V)` iff it is `f / g` with `f`, `g`
   forms of the same degree and `g(P) ≠ 0`; `mem_maximalIdeal_localSubring_iff`: it lies in the
   maximal ideal iff moreover `f(P) = 0` for some such `f / g`.
+* `isFractionRing_localSubring`: `k(V)` is the field of fractions of `𝒪_P(V)`.
 * `exists_algebraMap_notMem_range_toFractionRing`: `Γ_h(V) ⊄ k(V)` inside the fraction field of
   `Γ_h(V)`, when `V` is nonempty.
 * `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`.
@@ -566,6 +567,20 @@ theorem mem_maximalIdeal_localSubring_iff {z : (localSubring I P).toSubring} :
     rw [← varietyLocalRing.toFunctionField_mk hf hg hgP] at h
     rw [varietyLocalRing.toFunctionField_injective I P h, varietyLocalRing.evalAt_mk_rep, hfP,
       zero_div]
+
+/-- **`k(V)` is the field of fractions of `𝒪_P(V)`**: `f / g = (f / Xᵢᵐ) / (g / Xᵢᵐ)` for a
+coordinate `Xᵢ` not vanishing at `P`. -/
+instance isFractionRing_localSubring :
+    IsFractionRing (localSubring I P).toSubring (functionField I) := by
+  refine IsFractionRing.of_field _ _ fun z ↦ ?_
+  obtain ⟨i, hi⟩ := P.1.exists_mem_affineOpen
+  have hiP : eval P.1.rep (X i) ≠ 0 := by simpa using (mem_affineOpen_iff _ _).1 hi
+  obtain ⟨m, f, g, hf, hg, hgI, rfl⟩ := functionField.exists_eq_mk z
+  have hXP : eval P.1.rep (X i ^ m) ≠ 0 := by simpa using pow_ne_zero m hiP
+  have hXI := notMem_of_eval_rep_ne_zero P.2 (isHomogeneous_X_pow i m) hXP
+  refine ⟨⟨_, mem_localSubring_iff.2 ⟨m, f, _, hf, isHomogeneous_X_pow i m, hXP, rfl⟩⟩,
+    ⟨_, mem_localSubring_iff.2 ⟨m, g, _, hg, isHomogeneous_X_pow i m, hXP, rfl⟩⟩, ?_⟩
+  exact (functionField.mk_div_mk hf hg (isHomogeneous_X_pow i m) hgI hXI).symm
 
 /-! ### The coordinate ring is not contained in the function field -/
 

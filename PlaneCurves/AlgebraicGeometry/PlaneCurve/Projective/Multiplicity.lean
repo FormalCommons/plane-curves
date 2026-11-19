@@ -126,6 +126,13 @@ theorem mult_le_degree (hF : F.IsHomogeneous d) (hF0 : F ≠ 0) (P : ℙ k (Fin 
   rw [mult_def, ← hF.totalDegree hF0]
   exact orderAt_le_totalDegree hF0 _
 
+/-- A line has multiplicity one at each of its points: for a nonzero form `L` of degree one and
+`L(P) = 0`, `m_P(L) = 1`. -/
+theorem mult_eq_one_of_isHomogeneous_one (hF : F.IsHomogeneous 1) (hF0 : F ≠ 0)
+    (hP : eval P.rep F = 0) : mult F P = 1 :=
+  le_antisymm (by exact_mod_cast mult_le_degree hF hF0 P)
+    (Order.one_le_iff_pos.2 (mult_pos_iff_eval_rep.2 hP))
+
 /-- **Change of coordinates.** For a form `F` and an invertible matrix `M`, the multiplicity of
 `F^M = F(M X)` at `Q` is the multiplicity of `F` at the image `[M v]` of `Q = [v]`. -/
 theorem mult_linearSubst (hF : F.IsHomogeneous d) {M : Matrix (Fin 3) (Fin 3) k}

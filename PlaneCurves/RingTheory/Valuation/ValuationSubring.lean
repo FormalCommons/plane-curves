@@ -7,6 +7,7 @@ module
 
 public import Mathlib.RingTheory.Valuation.LocalSubring
 public import Mathlib.RingTheory.Algebraic.Integral
+public import Mathlib.RingTheory.DiscreteValuationRing.Basic
 
 /-!
 # Valuation subrings containing a large subfield
@@ -16,6 +17,10 @@ subfield `E` over which `L` is algebraic, then `R = L`
 (`ValuationSubring.eq_top_of_forall_algebraMap_mem`): every element of `L` is integral over `E`,
 hence over `R`. In particular a valuation subring that is not `L` itself does not contain such a
 subfield (Fulton, Problem 1.50, in the form used in §7.1).
+
+A local subring `B` of `L` that is a valuation ring with fraction field `L` is a valuation subring
+of `L` (`LocalSubring.toValuationSubring`); if `B` is a discrete valuation ring, it is not `L`
+itself (`LocalSubring.toValuationSubring_ne_top`).
 
 ## References
 
@@ -47,5 +52,44 @@ theorem exists_algebraMap_notMem_of_ne_top [Algebra.IsAlgebraic E L] {R : Valuat
   exact hR (eq_top_of_forall_algebraMap_mem h)
 
 end ValuationSubring
+
+namespace LocalSubring
+
+variable {L : Type*} [Field L] (B : LocalSubring L)
+
+/-- A local subring `B` of a field `L` that is a valuation ring with fraction field `L`, as a
+valuation subring of `L`: for `x : L`, either `x` or `x⁻¹` lies in `B`. -/
+def toValuationSubring [ValuationRing B.toSubring] [IsFractionRing B.toSubring L] :
+    ValuationSubring L :=
+  .ofSubring B.toSubring fun x ↦ by
+    rcases ValuationRing.isInteger_or_isInteger B.toSubring x with ⟨y, hy⟩ | ⟨y, hy⟩
+    · exact .inl (hy ▸ y.2)
+    · exact .inr (hy ▸ y.2)
+
+variable [ValuationRing B.toSubring] [IsFractionRing B.toSubring L]
+
+@[simp]
+theorem toSubring_toValuationSubring : B.toValuationSubring.toSubring = B.toSubring :=
+  (rfl)
+
+variable {B} in
+@[simp]
+theorem mem_toValuationSubring {x : L} : x ∈ B.toValuationSubring ↔ x ∈ B.toSubring :=
+  Iff.rfl
+
+@[simp]
+theorem toLocalSubring_toValuationSubring : B.toValuationSubring.toLocalSubring = B :=
+  toSubring_injective (rfl)
+
+/-- A local subring of `L` that is a discrete valuation ring with fraction field `L` is not all
+of `L`, as a valuation subring: the inverse of a uniformizer is not in it. -/
+theorem toValuationSubring_ne_top [IsDiscreteValuationRing B.toSubring] :
+    B.toValuationSubring ≠ ⊤ := fun h ↦ by
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible B.toSubring
+  refine hϖ.not_isUnit (isUnit_iff_exists_inv.2 ⟨⟨(ϖ : L)⁻¹, ?_⟩, Subtype.ext ?_⟩)
+  · exact mem_toValuationSubring.1 (h ▸ ValuationSubring.mem_top _)
+  · exact mul_inv_cancel₀ fun h0 ↦ hϖ.ne_zero (Subtype.ext h0)
+
+end LocalSubring
 
 end

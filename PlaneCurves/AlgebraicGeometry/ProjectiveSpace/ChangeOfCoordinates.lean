@@ -7,6 +7,7 @@ module
 
 public import Mathlib.RingTheory.GradedAlgebra.Homogeneous.Maps
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.FunctionField
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 
 /-!
@@ -38,6 +39,8 @@ and `𝒪_P(V)` from `PlaneCurves.AlgebraicGeometry.ProjectiveSpace.FunctionFiel
 ## Main results
 
 * `bijective_map_mulVecLin`: a projective change of coordinates is a bijection of `ℙⁿ`.
+* `exists_linearSubst_forall_mem_affineOpen_last`: over an infinite field, a change of
+  coordinates moves a finite set of points into the chart `Xₙ ≠ 0`.
 * `zeroLocus_linearSubstIdeal`: `V(I^T) = T⁻¹(V(I))`, and
   `vanishingIdeal_preimage_map_mulVecLin`: `I(T⁻¹(X)) = I(X)^T`.
 * `isPrime_linearSubstIdeal_iff`, `zeroLocus_vanishingIdeal_preimage_map_mulVecLin_eq_iff`,
@@ -109,6 +112,26 @@ theorem eval_rep_linearSubst_eq_zero_iff {f : MvPolynomial (Fin (n + 1)) k} {d :
     ← mem_pointIdeal_iff_of_isHomogeneous hf]
   conv_rhs => rw [← Q.mk_rep]; erw [map_mk]
   rfl
+
+/-- **Moving finitely many points into a chart.** Over an infinite field, for a finite set `S`
+of points of `ℙⁿ` there is a projective change of coordinates `T` such that every `Q` with
+`T(Q) ∈ S` lies in the chart `Xₙ ≠ 0`: carry a hyperplane missing `S` to `Xₙ = 0`. -/
+theorem exists_linearSubst_forall_mem_affineOpen_last [Infinite k]
+    {S : Set (ℙ k (Fin (n + 1) → k))} (hS : S.Finite) :
+    ∃ M : GL (Fin (n + 1)) k, ∀ Q : ℙ k (Fin (n + 1) → k),
+      map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) Q ∈ S →
+        Q ∈ affineOpen (Fin.last n) := by
+  obtain ⟨a, ha0, ha⟩ := exists_sum_C_mul_X_forall_notMem_zeroLocus hS
+  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X (a := fun _ : Unit ↦ a)
+    (linearIndependent_unique_iff.2 ha0) (τ := fun _ ↦ Fin.last n)
+    (Function.injective_of_subsingleton _)
+  have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.1 hM
+  refine ⟨hU.unit, fun Q hQ ↦ (mem_affineOpen_iff _ Q).2 fun hQn ↦ ha _ hQ ?_⟩
+  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
+  rintro f rfl
+  rw [← eval_rep_linearSubst_eq_zero_iff hU.unit (isHomogeneous_sum_C_mul_X a), hU.unit_spec,
+    hMa ()]
+  simpa using hQn
 
 /-! ### The ideal of `V^T` -/
 
