@@ -72,23 +72,6 @@ theorem orthogonal_iff_dotProduct_rep {v w : ℙ K (m → K)} :
 
 end Projectivization
 
-namespace Finsupp
-
-/-- A finitely supported function to `ℕ` has degree one iff it is `single a 1` for some `a`. -/
-theorem degree_eq_one_iff {σ : Type*} {f : σ →₀ ℕ} : f.degree = 1 ↔ ∃ a, f = single a 1 := by
-  refine ⟨fun h ↦ ?_, by rintro ⟨a, rfl⟩; exact degree_single a 1⟩
-  obtain ⟨a, ha⟩ : f.support.Nonempty := by
-    rw [support_nonempty_iff]
-    rintro rfl
-    simp at h
-  have hle : single a 1 ≤ f := single_le_iff.2 (Nat.one_le_iff_ne_zero.2 (mem_support_iff.1 ha))
-  have h' := congrArg degree (add_tsub_cancel_of_le hle)
-  rw [map_add, degree_single, h] at h'
-  refine ⟨a, ?_⟩
-  rw [← add_tsub_cancel_of_le hle, (degree_eq_zero_iff (f - single a 1)).1 (by omega), add_zero]
-
-end Finsupp
-
 namespace PlaneCurves.Projective
 
 open MvPolynomial Projectivization
@@ -300,9 +283,10 @@ theorem intersectionCycle_chordLine (hF : F.IsHomogeneous 3) (hirr : Irreducible
       (isRelPrime_chordLine hF hirr (by norm_num) (Or.inr hP))
     have h := congrArg Finsupp.degree (add_tsub_cancel_of_le hle)
     rw [map_add, map_add, Finsupp.degree_single, Finsupp.degree_single, hdeg] at h
-    obtain ⟨R, hR⟩ := Finsupp.degree_eq_one_iff.1 (show
-      (intersectionCycle (chordLine F P Q) F - (single P 1 + single Q 1)).degree = 1 by omega)
-    exact ⟨R, by rw [← hR, add_tsub_cancel_of_le hle]⟩
+    obtain ⟨R, hR⟩ : intersectionCycle (chordLine F P Q) F - (single P 1 + single Q 1) ∈
+        Set.range (single · 1) := by
+      rw [Finsupp.range_single_one, Set.mem_ofPred_eq]; omega
+    exact ⟨R, by rw [show single R 1 = _ from hR, add_tsub_cancel_of_le hle]⟩
   rw [thirdPoint_def, dite_eq_left_of_eq_true (eq_true hex)]
   exact hex.choose_spec
 
