@@ -7,6 +7,7 @@ module
 
 public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 public import Mathlib.RingTheory.OrderOfVanishing.Basic
+public import PlaneCurves.RingTheory.Ideal.Span
 public import TauCeti.RingTheory.Length
 
 /-!
@@ -41,12 +42,8 @@ theorem Ideal.length_quotient_span_pair_eq_of_ringEquiv {R S : Type*} [CommRing 
     [CommRing S] (φ : R ≃+* S) {a b : R} {a' b' : S} (ha : Associated (φ a) a')
     (hb : Associated (φ b) b') :
     Module.length S (S ⧸ Ideal.span {a', b'}) = Module.length R (R ⧸ Ideal.span {a, b}) := by
-  obtain ⟨u, rfl⟩ := ha
-  obtain ⟨v, rfl⟩ := hb
-  rw [Ideal.span_insert, Ideal.span_singleton_mul_right_unit u.isUnit,
-    Ideal.span_singleton_mul_right_unit v.isUnit, ← Ideal.span_insert, ← Set.image_pair,
-    ← Ideal.map_span, Ideal.length_quotient_map_of_surjective _ φ.surjective,
-    RingHom.ker_equiv φ, sup_bot_eq]
+  rw [← Ideal.map_span_pair_eq_of_associated φ ha hb,
+    Ideal.length_quotient_map_of_surjective _ φ.surjective, RingHom.ker_equiv φ, sup_bot_eq]
 
 /-- Ring isomorphisms preserve orders of vanishing: `ord_S (φ x) = ord_R x` for `φ : R ≃+* S`. -/
 theorem Ring.ord_ringEquiv {R S : Type*} [CommRing R] [CommRing S] (φ : R ≃+* S) (x : R) :
