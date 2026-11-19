@@ -27,7 +27,9 @@ An affine plane curve is a nonzero `F : MvPolynomial (Fin 2) k`, and its multipl
   `m_P(F) = 1`; `PlaneCurves.Affine.isSimplePoint_of_totalDegree_eq_one`: a line through `P`
   is smooth at `P`.
 * `PlaneCurves.Affine.isMultiplePoint_iff_eval_pderiv`: `P` is multiple exactly when `F` and
-  both partial derivatives vanish at `P`.
+  both partial derivatives vanish at `P`;
+  `PlaneCurves.Affine.IsMultiplePoint.not_associated_X_sub_C`: then `F` is not the line
+  `Xᵢ = Pᵢ`.
 * `PlaneCurves.Affine.isSimplePoint_mul_iff`: `P` is simple on `FG` exactly when it is simple
   on one factor and not on the other.
 * `PlaneCurves.Affine.isSimplePoint_prod_pow_iff`: `P` is simple on `∏ᵢ Fᵢ ^ eᵢ` exactly when
@@ -174,6 +176,14 @@ tangent line at `P` is `F_X(P) (X - a) + F_Y(P) (Y - b)`. -/
 theorem IsSimplePoint.leadingFormAt_eq (h : IsSimplePoint F P) :
     F.leadingFormAt P = ∑ i, eval P (pderiv i F) • X i :=
   leadingFormAt_eq_sum_pderiv (isSimplePoint_iff_orderAt_eq_one.1 h)
+
+/-- At a multiple point `P`, the curve `F` is not, up to a unit, the line `Xᵢ = Pᵢ`, which has
+multiplicity one at `P`. -/
+theorem IsMultiplePoint.not_associated_X_sub_C [Nontrivial R] (h : IsMultiplePoint F P)
+    (i : Fin 2) : ¬Associated F (X i - C (P i)) := fun ha ↦ by
+  have h2 := isMultiplePoint_def.1 h
+  rw [orderAt_eq_of_associated ha, orderAt_X_sub_C] at h2
+  exact absurd h2 (by norm_num)
 
 variable [NoZeroDivisors R]
 

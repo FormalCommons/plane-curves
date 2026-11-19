@@ -59,7 +59,9 @@ squarefree.
 * `PlaneCurves.Affine.IsOrdinaryMultiplePoint.orderAt_le_of_forall_isTangentAt`: a curve `G`
   tangent to every tangent of `F` at an ordinary multiple point `P` has `m_P(F) ≤ m_P(G)`.
 * `PlaneCurves.Affine.IsTangentAt.exists_associated_X_one_sub_C_mul_X_zero`: if `X` is not a
-  tangent, every tangent is `Y - α X` up to a nonzero scalar.
+  tangent, every tangent is `Y - α X` up to a nonzero scalar;
+  `PlaneCurves.Affine.IsOrdinaryMultiplePoint.ncard_setOf_isTangentAt_X_one_sub_C_mul_X_zero`:
+  at an ordinary multiple point there are then exactly `m_P(F)` tangents `Y - α X`.
 * `PlaneCurves.Affine.multiplicity_tangent_mul`: multiplicity and tangent lines of a product of
   plane curves, as in §3.1 of Fulton.
 
@@ -308,6 +310,12 @@ theorem IsTangentAt.exists_associated_X_one_sub_C_mul_X_zero (hL : IsTangentAt F
       linear_combination (X 0 : MvPolynomial (Fin 2) k) * hc
     exact hrepr ▸ associated_mul_unit_left _ _ ((isUnit_iff_ne_zero.2 hb).map C)
 
+/-- A line `Y - α X` associated to a tangent of `F` at `P` is tangent to `F` at `P`. -/
+theorem IsTangentAt.isTangentAt_X_one_sub_C_mul_X_zero_of_associated (hL : IsTangentAt F P L)
+    {α : k} (hLα : Associated L (X 1 - C α * X 0)) : IsTangentAt F P (X 1 - C α * X 0) :=
+  isTangentAt_def.2 ⟨isHomogeneous_X_one_sub_C_mul_X_zero α, X_one_sub_C_mul_X_zero_ne_zero α,
+    hLα.symm.dvd.trans hL.dvd⟩
+
 /-- A curve with an ordinary multiple point is nonzero. -/
 theorem IsOrdinaryMultiplePoint.ne_zero (h : IsOrdinaryMultiplePoint F P) : F ≠ 0 := by
   rintro rfl
@@ -505,6 +513,29 @@ theorem isOrdinaryMultiplePoint_iff (hF : F ≠ 0) :
   rw [isOrdinaryMultiplePoint_def, hsq, ← hsum, Nat.cast_inj, Finset.card_eq_sum_ones,
     Finset.sum_eq_sum_iff_of_le hpos]
   simp only [eq_comm (a := 1)]
+
+
+omit hs hpair hcov in
+/-- At an ordinary multiple point `P` at which `X = 0` is not tangent, exactly `m_P(F)` lines
+`Y - α X` are tangent to `F`. -/
+theorem IsOrdinaryMultiplePoint.ncard_setOf_isTangentAt_X_one_sub_C_mul_X_zero
+    (h : IsOrdinaryMultiplePoint F P) (hT : ¬IsTangentAt F P (X 0)) :
+    {α : k | IsTangentAt F P (X 1 - C α * X 0)}.ncard = (F.orderAt P).toNat := by
+  classical
+  obtain ⟨s, hs, hpair, hcov⟩ := exists_finset_isTangentAt (P := P) h.ne_zero
+  have hcard := ((isOrdinaryMultiplePoint_iff hs hpair hcov h.ne_zero).1 h).2
+  have hb (L : MvPolynomial (Fin 2) k) (hL : L ∈ s) :=
+    (hs L hL).exists_associated_X_one_sub_C_mul_X_zero hT
+  rw [← hcard, ENat.toNat_natCast, ← Set.ncard_coe_finset]
+  refine (Set.ncard_congr (fun L hL ↦ (hb L hL).choose)
+    (fun L hL ↦ (hs L hL).isTangentAt_X_one_sub_C_mul_X_zero_of_associated (hb L hL).choose_spec)
+    (fun L L' hL hL' he ↦ ?_) (fun α hα ↦ ?_)).symm
+  · by_contra hne
+    have hLL := (hb L hL).choose_spec
+    rw [he] at hLL
+    exact hpair hL hL' hne (hLL.trans (hb L' hL').choose_spec.symm)
+  · obtain ⟨L, hL, hαL⟩ := hcov _ hα
+    exact ⟨L, hL, (associated_X_one_sub_C_mul_X_zero_iff.1 (hαL.trans (hb L hL).choose_spec)).symm⟩
 
 end IsAlgClosed
 

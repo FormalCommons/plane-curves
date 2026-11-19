@@ -55,7 +55,9 @@ of forms at them are as for affine curves.
   `PlaneCurves.Affine.eq_blowupPlace_of_valuation_div_sub_lt_one`: a place over the origin at
   which `z` takes the value `α` is `blowupPlace` for the tangent `Y - α X`.
 * `PlaneCurves.Affine.existsUnique_eq_blowupPlace`: every place over the origin is `blowupPlace`
-  for exactly one tangent.
+  for exactly one tangent; `PlaneCurves.Affine.exists_forall_eq_blowupPlace` chooses it.
+* `PlaneCurves.Affine.ncard_setOf_localSubring_le_integers`: exactly `m_0(F)` places lie over the
+  origin.
 * `PlaneCurves.Affine.addValuation_x_blowupPlace`: `x` has order one at each `blowupPlace`.
 * `PlaneCurves.Affine.addValuation_blowupPlace_algebraMap_mk`: a polynomial `G` has order
   `m_0(G) + ord_{(0, α)}(G')` at the place over `Y - α X`, `G'` being its strict transform;
@@ -285,7 +287,6 @@ theorem eq_of_blowupPlace_eq {α β : k} (hα : IsTangentAt F 0 (X 1 - C α * X 
   Place.eq_of_valuation_sub_lt_one _ (valuation_blowupPlace_div_sub_lt_one hF hX h hα)
     (he ▸ valuation_blowupPlace_div_sub_lt_one hF hX h hβ)
 
-
 /-- At a place `Q` over the origin at which `z = y / x` takes the value `α`, every function
 `G(x, z)` on the strict transform takes its value `G(0, α)`. -/
 private theorem valuation_blowupFunctionFieldEquiv_symm_sub_lt_one
@@ -375,6 +376,47 @@ theorem existsUnique_eq_blowupPlace (hT : ¬IsTangentAt F 0 (X 0))
   exact ⟨α, ⟨_, eq_blowupPlace_of_valuation_div_sub_lt_one hF hX h hQ hα hzQ⟩,
     fun β ⟨hβ, hQβ⟩ ↦ Place.eq_of_valuation_sub_lt_one Q
       (hQβ ▸ valuation_blowupPlace_div_sub_lt_one hF hX h hβ) hα⟩
+
+omit [IsAlgClosed k] in
+/-- `blowupPlace` depends only on the slope `α` of the tangent `Y - α X`. -/
+theorem blowupPlace_congr {α β : k} (hαβ : α = β) (hα : IsTangentAt F 0 (X 1 - C α * X 0))
+    (hβ : IsTangentAt F 0 (X 1 - C β * X 0)) :
+    blowupPlace hF hX h hα = blowupPlace hF hX h hβ := by
+  subst hαβ
+  rfl
+
+/-- A choice, for every place `Q` over an ordinary multiple point at the origin at which `X = 0` is
+not tangent, of the slope `α` of the tangent `Y - α X` with `Q = blowupPlace`. -/
+theorem exists_forall_eq_blowupPlace (hT : ¬IsTangentAt F 0 (X 0)) :
+    ∃ a : Place k (functionField (Ideal.span {F})) → k, ∀ Q,
+      (AffineSpace.localSubring 0
+        (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
+          Q.integers.toSubring →
+      ∃ hα : IsTangentAt F 0 (X 1 - C (a Q) * X 0), Q = blowupPlace hF hX h hα := by
+  classical
+  refine ⟨fun Q ↦ if hQ : (AffineSpace.localSubring 0
+      (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
+        Q.integers.toSubring then (existsUnique_eq_blowupPlace hF hX h hT hQ).exists.choose
+      else 0, fun Q hQ ↦ ?_⟩
+  simp only [hQ, ↓reduceDIte]
+  exact (existsUnique_eq_blowupPlace hF hX h hT hQ).exists.choose_spec
+
+include hF hX in
+/-- **The number of places over an ordinary multiple point.** If the origin is an ordinary
+multiple point of the irreducible curve `F`, at which `X = 0` is not tangent, exactly `m_0(F)`
+places of `k(F)` lie over the origin. -/
+theorem ncard_setOf_localSubring_le_integers (hT : ¬IsTangentAt F 0 (X 0)) :
+    {Q : Place k (functionField (Ideal.span {F})) | (AffineSpace.localSubring 0
+      (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
+        Q.integers.toSubring}.ncard = (F.orderAt 0).toNat := by
+  obtain ⟨a, ha⟩ := exists_forall_eq_blowupPlace hF hX h hT
+  rw [← h.ncard_setOf_isTangentAt_X_one_sub_C_mul_X_zero hT]
+  refine Set.ncard_congr (fun Q _ ↦ a Q) (fun Q hQ ↦ (ha Q hQ).1)
+    (fun Q Q' hQ hQ' haQ ↦ ?_) fun α hα ↦ ⟨_, localSubring_le_integers_blowupPlace hF hX h hα,
+      (eq_of_blowupPlace_eq hF hX h hα _
+        (ha _ (localSubring_le_integers_blowupPlace hF hX h hα)).2).symm⟩
+  rw [(ha Q hQ).2, (ha Q' hQ').2]
+  exact blowupPlace_congr hF hX h haQ _ _
 
 /-! ### Orders of polynomials at the places over an ordinary multiple point -/
 
@@ -473,39 +515,37 @@ open scoped LinearAlgebra.Projectivization
 section
 variable {k : Type*} [Field k] {P : ℙ k (Fin 3 → k)} {m : ℕ} {G : MvPolynomial (Fin 3) k}
 
-/-- Forms of the same degree whose dehomogenizations are associated are associated. -/
-private theorem associated_of_associated_dehomogenize {G' : MvPolynomial (Fin 3) k}
-    (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m)
-    (h : Associated (dehomogenize 2 G) (dehomogenize 2 G')) : Associated G G' := by
-  obtain ⟨u, hu⟩ := h
-  obtain ⟨c, hc, hcu⟩ := (isUnit_iff_eq_C_of_isReduced (R := k)).1 u.isUnit
-  refine ⟨(hc.map C).unit, dehomogenize_injOn 2 m (by simpa using hG.mul (isHomogeneous_C _ c))
-    hG' ?_⟩
-  simpa [hcu] using hu
+/-- The line `X₁ - α X₀` of the chart `X₂ ≠ 0`, as a line of the plane. -/
+private theorem rename_succAbove_X_one_sub_C_mul_X_zero (α : k) :
+    rename (2 : Fin 3).succAbove (X 1 - C α * X 0 : MvPolynomial (Fin 2) k) =
+      X 1 - C α * X 0 := by
+  rw [map_sub, map_mul, rename_X, rename_X, rename_C]
+  rfl
 
-/-- At the point with chart coordinates `0` in the chart `X₂ ≠ 0`, a line `L(X₀, X₁)` is tangent
-to `G` iff it is tangent to the dehomogenization `G_(2)` at the origin. -/
-private theorem isTangentAt_rename_iff (hG : G.IsHomogeneous m) (hP : P ∈ affineOpen 2)
-    (h0 : affineChart 2 P = 0) {L : MvPolynomial (Fin 2) k} (hL : L.IsHomogeneous 1) :
-    IsTangentAt G P (rename Fin.castSucc L) ↔ Affine.IsTangentAt (dehomogenize 2 G) 0 L := by
-  have hc : (fun j : Fin 2 ↦ X ((2 : Fin 3).succAbove j) - C (affineChart 2 P j) * X 2 :
-      Fin 2 → MvPolynomial (Fin 3) k) = X ∘ Fin.castSucc := by
-    funext j
-    fin_cases j
-    · simp [h0]
-    · simp only [Fin.isValue, h0, Pi.zero_apply, map_zero, zero_mul, sub_zero,
-        Function.comp_apply]
-      rfl
-  have h := isTangentAt_aeval_chart_iff hG hP hL
-  rwa [hc, h0, ← aeval_rename, aeval_X_left_apply] at h
+/-- The line `X₁ - α X₀` of the plane, dehomogenized at `X₂`. -/
+private theorem dehomogenize_X_one_sub_C_mul_X_zero (α : k) :
+    dehomogenize 2 (X 1 - C α * X 0 : MvPolynomial (Fin 3) k) = X 1 - C α * X 0 := by
+  rw [← rename_succAbove_X_one_sub_C_mul_X_zero, dehomogenize_rename_succAbove]
 
-/-- A line through the point with chart coordinates `0` in the chart `X₂ ≠ 0` is tangent to `G`
-iff its dehomogenization, a line through the origin, is tangent to `G_(2)` there. -/
-private theorem isTangentAt_iff_dehomogenize (hG : G.IsHomogeneous m) (hP : P ∈ affineOpen 2)
-    (h0 : affineChart 2 P = 0) {L : MvPolynomial (Fin 3) k} (hL : L.IsHomogeneous 1)
-    (hLP : eval P.rep L = 0) :
-    IsTangentAt G P L ↔ Affine.IsTangentAt (dehomogenize 2 G) 0 (dehomogenize 2 L) := by
-  rw [isTangentAt_iff_affine hG hP hL hLP, h0, taylor_zero]
+private theorem isHomogeneous_X_one_sub_C_mul_X_zero' (α : k) :
+    (X 1 - C α * X 0 : MvPolynomial (Fin 3) k).IsHomogeneous 1 :=
+  (isHomogeneous_X k 1).sub (isHomogeneous_C_mul_X α 0)
+
+variable (hP : P ∈ affineOpen 2) (h0 : affineChart 2 P = 0)
+include hP h0
+
+/-- At the point with chart coordinates `0` of the chart `X₂ ≠ 0`, the line `X₁ - α X₀` is tangent
+to `G` iff it is tangent to `G_(2)` at the origin. -/
+private theorem isTangentAt_X_one_sub_C_mul_X_zero_iff (hG : G.IsHomogeneous m) (α : k) :
+    IsTangentAt G P (X 1 - C α * X 0) ↔
+      Affine.IsTangentAt (dehomogenize 2 G) 0 (X 1 - C α * X 0) := by
+  rw [← isTangentAt_rename_succAbove_iff hP h0 hG (isHomogeneous_X_one_sub_C_mul_X_zero α),
+    rename_succAbove_X_one_sub_C_mul_X_zero]
+
+/-- At the point with chart coordinates `0` of the chart `X₂ ≠ 0`, `m_P(G) = m_0(G_(2))`. -/
+private theorem mult_eq_orderAt_dehomogenize_zero (hG : G.IsHomogeneous m) :
+    mult G P = (dehomogenize 2 G).orderAt 0 := by
+  rw [mult_eq_orderAt_dehomogenize hG hP, h0]
 
 end
 
@@ -539,6 +579,199 @@ private theorem localSubring_le_iff_of_eq {f : MvPolynomial (Fin 2) k} [(Ideal.s
   subst hab
   rfl
 
+/-! ### At the point `(0, 0)` of the chart `X₂ ≠ 0`
+
+Here `P` has chart coordinates `0` in the chart `X₂ ≠ 0`, the origin is an ordinary multiple
+point of `F_(2)`, and `e = functionField.chartEquiv` identifies `k(C)` with `k(F_(2))`. The places
+over `P` are the places `blowupPlace` of `F_(2)`, carried to `k(C)` by `e⁻¹`. -/
+
+/-- A place `Q` lies over `P` iff `e Q` lies over the origin of `F_(2)`. -/
+private theorem mem_placesOver_iff_of_chart (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0) {Q : Place k (functionField hF)} :
+    Q ∈ placesOver hF P ↔ (AffineSpace.localSubring 0 (Affine.span_le_vanishingIdeal
+        (Affine.isOrdinaryMultiplePoint_def.1 h').1.eval_eq_zero)).toSubring ≤
+      (Q.map (functionField.chartEquiv hF 2
+        (not_dvd_X_of_mem_affineOpen hF P hP))).integers.toSubring := by
+  rw [mem_placesOver_iff_localSubring_le_map_chartEquiv hP]
+  exact localSubring_le_iff_of_eq h0
+
+/-- The place over the tangent `Y - α X` of `F_(2)`, carried to `k(C)`, lies over `P`. -/
+private theorem map_symm_blowupPlace_mem_placesOver (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0) {α : k}
+    (hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C α * X 0)) :
+    (Affine.blowupPlace hf hX h' hα).map
+      (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm ∈
+        placesOver hF P := by
+  rw [mem_placesOver_iff_of_chart hP h0 h', Place.map_map_symm]
+  exact Affine.localSubring_le_integers_blowupPlace hf hX h' hα
+
+/-- Every place over `P` is the place over a tangent `Y - α X` of `F_(2)`, carried to `k(C)`; this
+chooses `α` for each place. -/
+private theorem exists_eq_map_symm_blowupPlace (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0)
+    (hT : ¬Affine.IsTangentAt (dehomogenize 2 F) 0 (X 0)) :
+    ∃ a : Place k (functionField hF) → k, ∀ Q ∈ placesOver hF P,
+      ∃ hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C (a Q) * X 0),
+        Q = (Affine.blowupPlace hf hX h' hα).map
+          (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm := by
+  set e := functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)
+  obtain ⟨a, ha⟩ := Affine.exists_forall_eq_blowupPlace hf hX h' hT
+  refine ⟨fun Q ↦ a (Q.map e), fun Q hQ ↦ ?_⟩
+  obtain ⟨hα, hQα⟩ := ha _ ((mem_placesOver_iff_of_chart hP h0 h').1 hQ)
+  exact ⟨hα, by rw [← hQα, Place.map_symm_map]⟩
+
+/-- **The count in the chart.** Exactly `m_P(F)` places lie over `P`. -/
+private theorem ncard_placesOver_of_chart (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0)
+    (hT : ¬Affine.IsTangentAt (dehomogenize 2 F) 0 (X 0)) :
+    (placesOver hF P).ncard = (mult F P.1).toNat := by
+  set e := functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)
+  rw [mult_eq_orderAt_dehomogenize_zero hP h0 hF,
+    ← Affine.ncard_setOf_localSubring_le_integers hf hX h' hT]
+  exact Set.ncard_congr (fun Q _ ↦ Q.map e) (fun Q hQ ↦ (mem_placesOver_iff_of_chart hP h0 h').1 hQ)
+    (fun Q Q' _ _ hQQ' ↦ by rw [← Place.map_symm_map e Q, hQQ', Place.map_symm_map])
+    fun R hR ↦ ⟨R.map e.symm, (mem_placesOver_iff_of_chart hP h0 h').2
+      (by rwa [Place.map_map_symm]), Place.map_map_symm _ _⟩
+
+/-- At the place over the tangent `Y - α X` of `F_(2)`, the order of a form `G` is the order of
+its dehomogenization `G_(2)`. -/
+private theorem ordForm_eq_addValuation_blowupPlace (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0) {α : k}
+    (hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C α * X 0))
+    {Q : Place k (functionField hF)} (hQ : Q = (Affine.blowupPlace hf hX h' hα).map
+      (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm)
+    {m : ℕ} {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) :
+    ordForm hF Q hG = (Affine.blowupPlace hf hX h' hα).addValuation
+      (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {dehomogenize 2 F}) (dehomogenize 2 G))) := by
+  subst hQ
+  rw [ordForm_eq_addValuation_map_chartEquiv hP
+    (map_symm_blowupPlace_mem_placesOver hP h0 hf hX h' hα) hG, Place.map_map_symm]
+
+/-- **The tangents in the chart.** If each place `Q` over `P` is the place over the tangent
+`Y - a(Q) X` of `F_(2)`, then every tangent of `F` at `P` is associated to `X₁ - a(Q) X₀` for
+exactly one place `Q` over `P`. -/
+private theorem existsUnique_mem_placesOver_associated (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0)
+    (hT : ¬Affine.IsTangentAt (dehomogenize 2 F) 0 (X 0)) (a : Place k (functionField hF) → k)
+    (ha : ∀ Q ∈ placesOver hF P,
+      ∃ hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C (a Q) * X 0),
+        Q = (Affine.blowupPlace hf hX h' hα).map
+          (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm)
+    {L : MvPolynomial (Fin 3) k} (hL : IsTangentAt F P.1 L) :
+    ∃! Q, Q ∈ placesOver hF P ∧ Associated L (X 1 - C (a Q) * X 0) := by
+  obtain ⟨hLh, -, hLP, -⟩ := isTangentAt_def.1 hL
+  have hLa := (isTangentAt_iff_affine_of_affineChart_eq_zero hP h0 hF hLh hLP).1 hL
+  obtain ⟨α, hLα⟩ := hLa.exists_associated_X_one_sub_C_mul_X_zero hT
+  have hα := hLa.isTangentAt_X_one_sub_C_mul_X_zero_of_associated hLα
+  have hLα' : Associated L (X 1 - C α * X 0) :=
+    (associated_dehomogenize_iff hLh (isHomogeneous_X_one_sub_C_mul_X_zero' α)).1
+      (by rwa [dehomogenize_X_one_sub_C_mul_X_zero])
+  have hmem := map_symm_blowupPlace_mem_placesOver hP h0 hf hX h' hα
+  have haα : a ((Affine.blowupPlace hf hX h' hα).map
+      (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm) = α := by
+    obtain ⟨hβ, hQβ⟩ := ha _ hmem
+    have := congrArg (fun R ↦ R.map
+      (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP))) hQβ
+    simp only [Place.map_map_symm] at this
+    exact (Affine.eq_of_blowupPlace_eq hf hX h' hα hβ this).symm
+  refine ⟨_, ⟨hmem, by rwa [haα]⟩, fun Q ⟨hQ, hLQ⟩ ↦ ?_⟩
+  obtain ⟨hβ, hQβ⟩ := ha Q hQ
+  have h2 := (associated_dehomogenize_iff (i := 2) (isHomogeneous_X_one_sub_C_mul_X_zero' α)
+    (isHomogeneous_X_one_sub_C_mul_X_zero' (a Q))).2 (hLα'.symm.trans hLQ)
+  rw [dehomogenize_X_one_sub_C_mul_X_zero, dehomogenize_X_one_sub_C_mul_X_zero] at h2
+  exact hQβ.trans (congrArg (fun R ↦ R.map
+    (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm)
+    (Affine.blowupPlace_congr hf hX h'
+      (associated_X_one_sub_C_mul_X_zero_iff.1 h2).symm hβ hα))
+
+/-- **A line that is not tangent, in the chart.** A line through `P` that is not tangent to `F`
+has order one at the place over each tangent of `F_(2)`. -/
+private theorem ordForm_eq_one_of_chart (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0) {α : k}
+    (hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C α * X 0))
+    {Q : Place k (functionField hF)} (hQ : Q = (Affine.blowupPlace hf hX h' hα).map
+      (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm)
+    {L : MvPolynomial (Fin 3) k} (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0)
+    (hLP : eval P.1.rep L = 0) (hLT : ¬IsTangentAt F P.1 L) :
+    ordForm hF Q hL = 1 := by
+  rw [ordForm_eq_addValuation_blowupPlace hP h0 hf hX h' hα hQ hL]
+  exact Affine.addValuation_blowupPlace_eq_one hf hX h' hα
+    (isHomogeneous_dehomogenize_of_affineChart_eq_zero hP h0 hL hLP)
+    (dehomogenize_ne_zero_of_isHomogeneous 2 hL hL0)
+    ((isTangentAt_iff_affine_of_affineChart_eq_zero hP h0 hF hL hLP).not.1 hLT)
+
+/-- **(1) in the chart.** At the place over the tangent `Y - α X` of `F_(2)`, a nonzero form `G`
+has order at least `m_P(G)`, with equality if `X₁ - α X₀` is not tangent to `G` at `P`. -/
+private theorem mult_le_ordForm_and_eq_of_chart (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0) {α : k}
+    (hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C α * X 0))
+    {Q : Place k (functionField hF)} (hQ : Q = (Affine.blowupPlace hf hX h' hα).map
+      (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm)
+    {m : ℕ} {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) (hG0 : G ≠ 0) :
+    ((mult G P.1).toNat : WithTop ℤ) ≤ ordForm hF Q hG ∧
+      (¬IsTangentAt G P.1 (X 1 - C α * X 0) → ordForm hF Q hG = (mult G P.1).toNat) := by
+  rw [ordForm_eq_addValuation_blowupPlace hP h0 hf hX h' hα hQ hG,
+    mult_eq_orderAt_dehomogenize_zero hP h0 hG]
+  exact ⟨Affine.natCast_orderAt_le_addValuation_blowupPlace hf hX h' hα _,
+    fun hGT ↦ (Affine.addValuation_blowupPlace_eq_iff hf hX h' hα
+      (dehomogenize_ne_zero_of_isHomogeneous 2 hG hG0)).2
+        ((isTangentAt_X_one_sub_C_mul_X_zero_iff hP h0 hG α).not.1 hGT)⟩
+
+/-- **(2) in the chart.** For a nonzero form `G` and `s ≤ m_P(F)`, `m_P(G) ≥ s` iff `G` has order
+at least `s` at every place over `P`. -/
+private theorem le_mult_iff_of_chart (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0)
+    (hT : ¬Affine.IsTangentAt (dehomogenize 2 F) 0 (X 0)) (a : Place k (functionField hF) → k)
+    (ha : ∀ Q ∈ placesOver hF P,
+      ∃ hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C (a Q) * X 0),
+        Q = (Affine.blowupPlace hf hX h' hα).map
+          (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm)
+    {m : ℕ} {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) (hG0 : G ≠ 0) {s : ℕ}
+    (hs : (s : ℕ∞) ≤ mult F P.1) :
+    (s : ℕ∞) ≤ mult G P.1 ↔ ∀ Q ∈ placesOver hF P, (s : WithTop ℤ) ≤ ordForm hF Q hG := by
+  rw [mult_eq_orderAt_dehomogenize_zero hP h0 hF] at hs
+  rw [mult_eq_orderAt_dehomogenize_zero hP h0 hG,
+    Affine.le_orderAt_iff_forall_le_addValuation_blowupPlace hf hX h' hT
+      (dehomogenize_ne_zero_of_isHomogeneous 2 hG hG0) hs]
+  refine ⟨fun H Q hQ ↦ ?_, fun H α hα ↦ ?_⟩
+  · obtain ⟨hα, hQα⟩ := ha Q hQ
+    rw [ordForm_eq_addValuation_blowupPlace hP h0 hf hX h' hα hQα hG]
+    exact H _ hα
+  · rw [← ordForm_eq_addValuation_blowupPlace hP h0 hf hX h' hα rfl hG]
+    exact H _ (map_symm_blowupPlace_mem_placesOver hP h0 hf hX h' hα)
+
+/-- **(3) in the chart.** `∂F/∂Y` has order `m_P(F) - 1` at the place over each tangent of
+`F_(2)`. -/
+private theorem ordForm_pderiv_one_of_chart (hP : P.1 ∈ affineOpen 2)
+    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
+    (hf : Irreducible (dehomogenize 2 F)) (hX : ¬Associated (dehomogenize 2 F) (X 0))
+    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0) {α : k}
+    (hα : Affine.IsTangentAt (dehomogenize 2 F) 0 (X 1 - C α * X 0))
+    {Q : Place k (functionField hF)} (hQ : Q = (Affine.blowupPlace hf hX h' hα).map
+      (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm) :
+    ordForm hF Q (hF.pderiv (i := 1)) = ((mult F P.1).toNat - 1 : ℕ) := by
+  have hd : dehomogenize 2 (pderiv 1 F) = pderiv 1 (dehomogenize 2 F) :=
+    (pderiv_dehomogenize 2 1 F).symm
+  rw [ordForm_eq_addValuation_blowupPlace hP h0 hf hX h' hα hQ, hd,
+    Affine.addValuation_blowupPlace_pderiv_one, mult_eq_orderAt_dehomogenize_zero hP h0 hF]
+
 /-- **The milestone in a chart.** At the point `(0, 0)` of the chart `X₂ ≠ 0`, with `X₀` not
 tangent, the places over `P` are the places `blowupPlace` of the affine curve `F_(2)`, carried to
 `k(C)`; the milestone and the order of `∂F/∂Y` follow from their affine counterparts. -/
@@ -546,169 +779,26 @@ private theorem ordinaryPlacesSpec_of_chart (h : IsOrdinaryMultiplePoint F P.1)
     (hP : P.1 ∈ affineOpen 2) (h0 : affineChart 2 P.1 = 0) (hT : ¬IsTangentAt F P.1 (X 0)) :
     OrdinaryPlacesSpec hF P ∧ ∀ Q ∈ placesOver hF P,
       ordForm hF Q (hF.pderiv (i := 1)) = ((mult F P.1).toNat - 1 : ℕ) := by
-  classical
-  have hi := not_dvd_X_of_mem_affineOpen hF P hP
-  have := isPrime_span_dehomogenize hF hi
-  set f := dehomogenize 2 F
-  set e := functionField.chartEquiv hF 2 hi
-  have h' : Affine.IsOrdinaryMultiplePoint f 0 :=
+  have := isPrime_span_dehomogenize hF (not_dvd_X_of_mem_affineOpen hF P hP)
+  have h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0 :=
     h0 ▸ (isOrdinaryMultiplePoint_iff_affine hF hP).1 h
-  have hf : Irreducible f := ((Ideal.span_singleton_prime h'.ne_zero).1 inferInstance).irreducible
-  have hX : ¬Associated f (X 0) := fun ha ↦ by
-    have h2 := Affine.isMultiplePoint_def.1 (Affine.isOrdinaryMultiplePoint_def.1 h').1
-    rw [orderAt_eq_of_associated ha] at h2
-    have h1 := orderAt_X_sub_C (0 : Fin 2 → k) 0
-    simp only [Pi.zero_apply, map_zero, sub_zero] at h1
-    rw [h1] at h2
-    exact absurd h2 (by norm_num)
-  have hrep (j : Fin 2) : P.1.rep ((2 : Fin 3).succAbove j) = 0 := by
-    have h1 := rep_div_rep_eq_insertNth_affineChart ((2 : Fin 3).succAbove j) hP
-    rw [h0, Fin.insertNth_apply_succAbove] at h1
-    simpa [(mem_affineOpen_iff 2 P.1).1 hP] using h1
-  have hP0 : eval P.1.rep (X 0) = 0 := by simpa using hrep 0
-  have hT' : ¬Affine.IsTangentAt f 0 (X 0) := by
-    rwa [isTangentAt_iff_dehomogenize hF hP h0 (isHomogeneous_X k 0) hP0, dehomogenize_X] at hT
-  -- the projective tangent `X₁ - α X₀`
-  have hLα (α : k) : rename Fin.castSucc (X 1 - C α * X 0 : MvPolynomial (Fin 2) k) =
-      (X 1 - C α * X 0 : MvPolynomial (Fin 3) k) := by simp
-  have htan {m : ℕ} {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) (α : k) :
-      IsTangentAt G P.1 (X 1 - C α * X 0) ↔
-        Affine.IsTangentAt (dehomogenize 2 G) 0 (X 1 - C α * X 0) := by
-    rw [← isTangentAt_rename_iff hG hP h0 (isHomogeneous_X_one_sub_C_mul_X_zero α), hLα]
-  have hmult {m : ℕ} {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) :
-      mult G P.1 = (dehomogenize 2 G).orderAt 0 := by
-    rw [mult_eq_orderAt_dehomogenize hG hP, h0]
-  have hmem (Q : Place k (functionField hF)) : Q ∈ placesOver hF P ↔
-      (AffineSpace.localSubring 0 (Affine.span_le_vanishingIdeal
-        (Affine.isOrdinaryMultiplePoint_def.1 h').1.eval_eq_zero)).toSubring ≤
-        (Q.map e).integers.toSubring := by
-    rw [mem_placesOver_iff_localSubring_le_map_chartEquiv hP]
-    exact localSubring_le_iff_of_eq h0
-  have hord {Q : Place k (functionField hF)} (hQ : Q ∈ placesOver hF P) {m : ℕ}
-      {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) :
-      ordForm hF Q hG = (Q.map e).addValuation
-        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {f}) (dehomogenize 2 G))) :=
-    ordForm_eq_addValuation_map_chartEquiv hP hQ hG
-  -- the place over the tangent `Y - α X`
-  have hover {α : k} (hα : Affine.IsTangentAt f 0 (X 1 - C α * X 0)) :
-      (Affine.blowupPlace hf hX h' hα).map e.symm ∈ placesOver hF P := by
-    rw [hmem, Place.map_map_symm]
-    exact Affine.localSubring_le_integers_blowupPlace hf hX h' hα
-  have hex (Q : Place k (functionField hF)) (hQ : Q ∈ placesOver hF P) :=
-    Affine.existsUnique_eq_blowupPlace hf hX h' hT' ((hmem Q).1 hQ)
-  let a : Place k (functionField hF) → k := fun Q ↦
-    if hQ : Q ∈ placesOver hF P then (hex Q hQ).exists.choose else 0
-  have ha {Q : Place k (functionField hF)} (hQ : Q ∈ placesOver hF P) :
-      ∃ hα : Affine.IsTangentAt f 0 (X 1 - C (a Q) * X 0),
-        Q.map e = Affine.blowupPlace hf hX h' hα := by
-    simp only [a, hQ, ↓reduceDIte]
-    exact (hex Q hQ).exists.choose_spec
-  have hordα {Q : Place k (functionField hF)} (hQ : Q ∈ placesOver hF P) {m : ℕ}
-      {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) :
-      ordForm hF Q hG = (Affine.blowupPlace hf hX h' (ha hQ).1).addValuation
-        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {f}) (dehomogenize 2 G))) := by
-    rw [hord hQ hG, (ha hQ).2]
-  have hbl {α β : k} (hαβ : α = β) (hα : Affine.IsTangentAt f 0 (X 1 - C α * X 0))
-      (hβ : Affine.IsTangentAt f 0 (X 1 - C β * X 0)) :
-      Affine.blowupPlace hf hX h' hα = Affine.blowupPlace hf hX h' hβ := by
-    subst hαβ
-    rfl
-  have haeq {Q : Place k (functionField hF)} (hQ : Q ∈ placesOver hF P) {α : k}
-      (hα : Affine.IsTangentAt f 0 (X 1 - C α * X 0))
-      (hQα : Q.map e = Affine.blowupPlace hf hX h' hα) : a Q = α :=
-    (hex Q hQ).unique (ha hQ) ⟨hα, hQα⟩
-  have hinj {Q Q' : Place k (functionField hF)} (hQ : Q ∈ placesOver hF P)
-      (hQ' : Q' ∈ placesOver hF P) (haQ : a Q = a Q') : Q = Q' := by
-    rw [← Place.map_symm_map e Q, ← Place.map_symm_map e Q', (ha hQ).2, (ha hQ').2,
-      hbl haQ]
-  have hdeh (α : k) : dehomogenize 2 (X 1 - C α * X 0 : MvPolynomial (Fin 3) k) =
-      X 1 - C α * X 0 := by
-    simp only [map_sub, map_mul, dehomogenize_X, algHom_C, algebraMap_eq]
-    rw [show (1 : Fin 3) = (2 : Fin 3).succAbove 1 from rfl,
-      show (0 : Fin 3) = (2 : Fin 3).succAbove 0 from rfl, Fin.insertNth_apply_succAbove,
-      Fin.insertNth_apply_succAbove]
-  have hL1 (α : k) : (X 1 - C α * X 0 : MvPolynomial (Fin 3) k).IsHomogeneous 1 :=
-    (isHomogeneous_X k 1).sub (isHomogeneous_C_mul_X α 0)
-  have hcov {L : MvPolynomial (Fin 2) k} (hL : Affine.IsTangentAt f 0 L) :
-      ∃ α, Affine.IsTangentAt f 0 (X 1 - C α * X 0) ∧ Associated L (X 1 - C α * X 0) := by
-    obtain ⟨α, hα⟩ := hL.exists_associated_X_one_sub_C_mul_X_zero hT'
-    exact ⟨α, Affine.isTangentAt_def.2 ⟨isHomogeneous_X_one_sub_C_mul_X_zero α,
-      X_one_sub_C_mul_X_zero_ne_zero α, hα.symm.dvd.trans hL.dvd⟩, hα⟩
-  -- the count
-  have hA : {α : k | Affine.IsTangentAt f 0 (X 1 - C α * X 0)}.ncard =
-      (placesOver hF P).ncard :=
-    (Set.ncard_congr (fun Q _ ↦ a Q) (fun Q hQ ↦ (ha hQ).1)
-      (fun Q Q' hQ hQ' h ↦ hinj hQ hQ' h)
-      (fun α hα ↦ ⟨_, hover hα, haeq (hover hα) hα (Place.map_map_symm _ _)⟩)).symm
-  have hAfin : {α : k | Affine.IsTangentAt f 0 (X 1 - C α * X 0)}.Finite := by
-    refine ((placesOver_finite hF P).image a).subset fun α hα ↦ ?_
-    exact ⟨_, hover hα, haeq (hover hα) hα (Place.map_map_symm _ _)⟩
-  let s := hAfin.toFinset.image fun α ↦ (X 1 - C α * X 0 : MvPolynomial (Fin 2) k)
-  have hs : ∀ L ∈ s, Affine.IsTangentAt f 0 L := by
-    intro L hL
-    obtain ⟨α, hα, rfl⟩ := Finset.mem_image.1 hL
-    exact hAfin.mem_toFinset.1 hα
-  have hpair : (s : Set (MvPolynomial (Fin 2) k)).Pairwise (fun L L' ↦ ¬Associated L L') := by
-    intro L hL L' hL' hne hLL'
-    obtain ⟨α, -, rfl⟩ := Finset.mem_image.1 hL
-    obtain ⟨β, -, rfl⟩ := Finset.mem_image.1 hL'
-    exact hne (by rw [associated_X_one_sub_C_mul_X_zero_iff.1 hLL'])
-  have hcov' : ∀ L, Affine.IsTangentAt f 0 L → ∃ L' ∈ s, Associated L L' := by
-    intro L hL
-    obtain ⟨α, hα, hLα⟩ := hcov hL
-    exact ⟨_, Finset.mem_image_of_mem _ (hAfin.mem_toFinset.2 hα), hLα⟩
-  have hcard := ((Affine.isOrdinaryMultiplePoint_iff hs hpair hcov' h'.ne_zero).1 h').2
-  rw [Finset.card_image_of_injective _ X_one_sub_C_mul_X_zero_injective,
-    ← Set.ncard_eq_toFinset_card _ hAfin, hA, ← hmult hF] at hcard
-  refine ⟨⟨by rw [← hcard, ENat.toNat_natCast], fun Q ↦ X 1 - C (a Q) * X 0,
-    fun Q hQ ↦ (htan hF (a Q)).2 (ha hQ).1, fun L hL ↦ ?_, ?_, fun hG hG0 ↦ ⟨?_, ?_⟩⟩, ?_⟩
-  · -- the tangents
-    obtain ⟨α, hα, hLα⟩ := hcov ((isTangentAt_iff_dehomogenize hF hP h0 (isTangentAt_def.1 hL).1
-      (isTangentAt_def.1 hL).2.2.1).1 hL)
-    have hLα' : Associated L (X 1 - C α * X 0) :=
-      associated_of_associated_dehomogenize (isTangentAt_def.1 hL).1 (hL1 α) (by rwa [hdeh])
-    have hQα := haeq (hover hα) hα (Place.map_map_symm _ _)
-    refine ⟨_, ⟨hover hα, by dsimp only; rwa [hQα]⟩, fun Q ⟨hQ, hLQ⟩ ↦ hinj hQ (hover hα) ?_⟩
-    rw [hQα]
-    have h2 := (hLα'.symm.trans hLQ).map (dehomogenize 2)
-    rw [hdeh, hdeh] at h2
-    exact (associated_X_one_sub_C_mul_X_zero_iff.1 h2).symm
-  · -- a line through `P` that is not tangent
-    intro L hL hL0 hLP hLT Q hQ
-    have hPmk : P.1 = mk k (Fin.insertNth (α := fun _ ↦ k) 2 1 0)
-        (Fin.insertNth_one_ne_zero 2 0) := by
-      rw [← affineChart_symm_apply, ← h0]
-      exact ((affineChart 2).left_inv (by rwa [affineChart_source])).symm
-    have hLa : eval (Fin.insertNth (α := fun _ ↦ k) 2 1 0) L = 0 := by
-      rw [← hL.eval_rep_mk_eq_zero_iff (Fin.insertNth_one_ne_zero 2 0), ← hPmk]
-      exact hLP
-    have hLh : (dehomogenize 2 L).IsHomogeneous 1 := by
-      simpa only [taylor_zero] using isHomogeneous_taylor_dehomogenize 2 0 hL hLa
-    rw [hordα hQ hL]
-    exact Affine.addValuation_blowupPlace_eq_one hf hX h' (ha hQ).1 hLh
-      (dehomogenize_ne_zero_of_isHomogeneous 2 hL hL0)
-      ((isTangentAt_iff_dehomogenize hF hP h0 hL hLP).not.1 hLT)
-  · -- (1)
-    intro Q hQ
-    rw [hordα hQ hG, hmult hG]
-    exact ⟨Affine.natCast_orderAt_le_addValuation_blowupPlace hf hX h' (ha hQ).1 _,
-      fun hGT ↦ (Affine.addValuation_blowupPlace_eq_iff hf hX h' (ha hQ).1
-        (dehomogenize_ne_zero_of_isHomogeneous 2 hG hG0)).2 ((htan hG (a Q)).not.1 hGT)⟩
-  · -- (2)
-    intro s hs
-    rw [hmult hF] at hs
-    rw [hmult hG, Affine.le_orderAt_iff_forall_le_addValuation_blowupPlace hf hX h' hT'
-      (dehomogenize_ne_zero_of_isHomogeneous 2 hG hG0) hs]
-    refine ⟨fun H Q hQ ↦ ?_, fun H α hα ↦ ?_⟩
-    · rw [hordα hQ hG]
-      exact H _ (ha hQ).1
-    · have := H _ (hover hα)
-      rwa [hord (hover hα) hG, Place.map_map_symm] at this
-  · -- (3)
-    intro Q hQ
-    have hd : dehomogenize 2 (pderiv 1 F) = pderiv 1 f := (pderiv_dehomogenize 2 1 F).symm
-    rw [hordα hQ, hd, Affine.addValuation_blowupPlace_pderiv_one, hmult hF]
-
+  have hf : Irreducible (dehomogenize 2 F) :=
+    ((Ideal.span_singleton_prime h'.ne_zero).1 inferInstance).irreducible
+  have hX : ¬Associated (dehomogenize 2 F) (X 0) := by
+    simpa using (Affine.isOrdinaryMultiplePoint_def.1 h').1.not_associated_X_sub_C 0
+  have hT' : ¬Affine.IsTangentAt (dehomogenize 2 F) 0 (X 0) := by
+    rw [← isTangentAt_rename_succAbove_iff hP h0 hF (isHomogeneous_X k 0), rename_X]
+    exact hT
+  obtain ⟨a, ha⟩ := exists_eq_map_symm_blowupPlace hP h0 hf hX h' hT'
+  exact ⟨⟨ncard_placesOver_of_chart hP h0 hf hX h' hT', fun Q ↦ X 1 - C (a Q) * X 0,
+    fun Q hQ ↦ (isTangentAt_X_one_sub_C_mul_X_zero_iff hP h0 hF (a Q)).2 (ha Q hQ).1,
+    fun _ hL ↦ existsUnique_mem_placesOver_associated hP h0 hf hX h' hT' a ha hL,
+    fun hL hL0 hLP hLT Q hQ ↦
+      ordForm_eq_one_of_chart hP h0 hf hX h' (ha Q hQ).1 (ha Q hQ).2 hL hL0 hLP hLT,
+    fun hG hG0 ↦ ⟨fun Q hQ ↦
+      mult_le_ordForm_and_eq_of_chart hP h0 hf hX h' (ha Q hQ).1 (ha Q hQ).2 hG hG0,
+      fun _ hs ↦ le_mult_iff_of_chart hP h0 hf hX h' hT' a ha hG hG0 hs⟩⟩,
+    fun Q hQ ↦ ordForm_pderiv_one_of_chart hP h0 hf hX h' (ha Q hQ).1 (ha Q hQ).2⟩
 
 /-- The statement of the milestone moves along a change of coordinates. -/
 private theorem ordinaryPlacesSpec_of_linearSubst (M : GL (Fin 3) k)
@@ -767,7 +857,6 @@ private theorem ordinaryPlacesSpec_of_linearSubst (M : GL (Fin 3) k)
         exact H _ (hover.2 hQ)
       · have := H _ (hover'.1 hR)
         rwa [← ordForm_linearSubst (M := M), Place.map_map_symm] at this
-
 
 /-- The milestone's statement holds at every ordinary multiple point. -/
 private theorem ordinaryPlacesSpec (h : IsOrdinaryMultiplePoint F P.1) :

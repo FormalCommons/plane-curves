@@ -45,6 +45,9 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
 * `PlaneCurves.Projective.isTangentAt_aeval_chart_iff`,
   `PlaneCurves.Projective.exists_isTangentAt_iff_affine`: conversely, every tangent of the
   dehomogenization comes from a tangent of `F`, so common tangents correspond.
+* `PlaneCurves.Projective.isTangentAt_iff_affine_of_affineChart_eq_zero`,
+  `PlaneCurves.Projective.isTangentAt_rename_succAbove_iff`: at the point with chart coordinates
+  `0`, tangents are tangents of the dehomogenization at the origin, with no Taylor shift.
 * `PlaneCurves.Projective.leadingForm_linearSubst`,
   `PlaneCurves.Projective.isTangentAt_linearSubst_iff`,
   `PlaneCurves.Projective.isOrdinaryMultiplePoint_linearSubst_iff`: leading forms, tangent lines
@@ -329,6 +332,42 @@ theorem isTangentAt_aeval_chart_iff (hF : F.IsHomogeneous d) {i : Fin 3}
     obtain ⟨c, hc⟩ : ∃ c : Fin 2 → k, L' = ∑ r, C (c r) * X r := ⟨_, hL'.eq_sum_C_mul_X⟩
     simp [hc, a]
   rw [isTangentAt_iff_affine hF hP hL hLP, taylor_dehomogenize_aeval_chart]
+
+section ChartOrigin
+
+variable {i : Fin 3} (hP : P ∈ affineOpen i) (h0 : affineChart i P = 0)
+include hP h0
+
+/-- **Lines through a chart origin.** If `P` is the point with chart coordinates `0` of the chart
+`Xᵢ ≠ 0`, the dehomogenization `L_(i)` of a linear form `L` vanishing at `P` is a linear form. -/
+theorem isHomogeneous_dehomogenize_of_affineChart_eq_zero (hL : L.IsHomogeneous 1)
+    (hLP : eval P.rep L = 0) : (dehomogenize i L).IsHomogeneous 1 := by
+  have h := isHomogeneous_taylor_dehomogenize i (affineChart i P) hL
+    ((eval_rep_eq_zero_iff_affine hL hP).1 hLP)
+  rwa [h0, taylor_zero] at h
+
+/-- **Tangents at a chart origin.** If `P` is the point with chart coordinates `0` of the chart
+`Xᵢ ≠ 0`, a linear form `L` vanishing at `P` is tangent to the form `F` at `P` exactly when its
+dehomogenization `L_(i)` is tangent to `F_(i)` at the origin. -/
+theorem isTangentAt_iff_affine_of_affineChart_eq_zero (hF : F.IsHomogeneous d)
+    (hL : L.IsHomogeneous 1) (hLP : eval P.rep L = 0) :
+    IsTangentAt F P L ↔ Affine.IsTangentAt (dehomogenize i F) 0 (dehomogenize i L) := by
+  rw [isTangentAt_iff_affine hF hP hL hLP, h0, taylor_zero]
+
+/-- **Affine tangents at a chart origin.** If `P` is the point with chart coordinates `0` of the
+chart `Xᵢ ≠ 0`, a linear form `L'` in `Y₀, Y₁` is tangent to `F_(i)` at the origin exactly when
+`L'(X (i.succAbove 0), X (i.succAbove 1))` is tangent to `F` at `P`. -/
+theorem isTangentAt_rename_succAbove_iff (hF : F.IsHomogeneous d) {L' : MvPolynomial (Fin 2) k}
+    (hL' : L'.IsHomogeneous 1) :
+    IsTangentAt F P (rename i.succAbove L') ↔ Affine.IsTangentAt (dehomogenize i F) 0 L' := by
+  have hc : (fun j ↦ X (i.succAbove j) - C (affineChart i P j) * X i :
+      Fin 2 → MvPolynomial (Fin 3) k) = X ∘ i.succAbove := by
+    funext j
+    simp [h0]
+  have h := isTangentAt_aeval_chart_iff hF hP hL'
+  rwa [hc, h0, ← aeval_rename, aeval_X_left_apply] at h
+
+end ChartOrigin
 
 /-- **Common tangents in an affine chart.** If `P` lies in the chart `Xᵢ ≠ 0`, the forms `F` and
 `G` have a common tangent at `P` exactly when their dehomogenizations `F_(i)` and `G_(i)` have a
