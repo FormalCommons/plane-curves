@@ -5,9 +5,18 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.SimplePoint
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Finiteness
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.RegularFunctions
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Hypersurface
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
+public import PlaneCurves.FieldTheory.FunctionField.HolomorphyRing.Length
+public import PlaneCurves.RingTheory.Adjoin.FG
 public import PlaneCurves.RingTheory.Conductor
 public import PlaneCurves.RingTheory.Japanese
+public import PlaneCurves.RingTheory.KrullDimension.TrdegOne
+public import TauCeti.FieldTheory.FunctionField.AffineModel.IntegralClosure
+public import TauCeti.FieldTheory.FunctionField.RiemannRoch.Genus
 public import TauCeti.RingTheory.UniversallyJapanese
 
 /-!
@@ -28,6 +37,13 @@ places over `P`. It is a finite `𝒪_P(C)`-module, since `𝒪_P(C)` is a local
 So a nonzero `t ∈ 𝒪_P(C)` carries it into `𝒪_P(C)`, and a function whose order at every place
 over `P` is large enough is regular at `P`.
 
+For every set `U` of points of `C`, the ring `Γ(U)` of functions regular on `U` has as its integral
+closure in `K` the ring `Γ(U')` of the places centred in `U`: a place centred outside `U` is the
+pole of some function regular on `U`. Near a point `P`, a basic open set `U = D(G)` avoiding a
+given finite set has a finitely generated ring `Γ(U)`, caught between `A_G` and its integral
+closure, and the normalization `Γ(U')` is an affine model of `K`, finite over `Γ(U)`, with
+`Γ(U')/Γ(U)` finite-dimensional over `k`.
+
 ## Main results
 
 * `setOf_awaySubalgebra_subset_integers`: the places at which `A_G` is regular are the places
@@ -42,16 +58,28 @@ over `P` is large enough is regular at `P`.
 * `exists_ne_zero_mul_mem_localSubring`: a nonzero `t ∈ 𝒪_P(C)` carries it into `𝒪_P(C)`.
 * `exists_forall_le_addValuation_mem_localSubring`: a function of large enough order at every
   place over `P` lies in `𝒪_P(C)`.
+* `setOf_regularFunctions_subset_integers`, `restrictScalars_integralClosure_regularFunctions`:
+  the places at which `Γ(U)` is regular are those centred in `U`, so the integral closure of
+  `Γ(U)` in `K` is `Γ(U')`, for every set `U`.
+* `regularFunctions_univ`: a function regular at every point of `C` is constant.
+* `exists_basicOpen_normalization`: a basic open neighbourhood `D(G)` of `P` avoiding a finite
+  set.
+* `finiteType_regularFunctions_basicOpen`, `isFractionRing_regularFunctions_basicOpen`,
+  `finiteType_holomorphyRing_basicOpen`, `isDedekindDomain_holomorphyRing_basicOpen`,
+  `isFractionRing_holomorphyRing_basicOpen`, `finite_integralClosure_regularFunctions_basicOpen`,
+  `exists_ne_zero_mul_mem_regularFunctions_basicOpen`, `finite_quotient_regularFunctions_basicOpen`:
+  the rings of `D(G)` and of the places over it.
+* `finite_normalization_spec`: finiteness of the normalization of a plane curve near a point.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.5
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.5, Lemma 2 and Problem 7.20
 -/
 
 public section
 
 open MvPolynomial Projectivization PlaneCurves.ProjectiveSpace TauCeti TauCeti.Ring
-open TauCeti.AlgebraicGeometry
+open TauCeti.AlgebraicGeometry PlaneCurves.Projective
 
 namespace PlaneCurves.Projective
 
@@ -109,6 +137,27 @@ shortcut spares instance search a slow detour through the normed instances on `k
 noncomputable instance moduleIntegralClosure (S : Subalgebra k (functionField hF)) :
     Module S (integralClosure S (functionField hF)) :=
   @Algebra.toModule _ _ _ _ (Subalgebra.algebra _)
+
+omit [IsAlgClosed k] in
+/-- The algebra structure of the integral closure in `k(C)` of a `k`-subalgebra `S` over `S`, a
+shortcut like `moduleIntegralClosure`. -/
+noncomputable instance algebraIntegralClosure (S : Subalgebra k (functionField hF)) :
+    Algebra S (integralClosure S (functionField hF)) :=
+  Subalgebra.algebra _
+
+omit [IsAlgClosed k] in
+/-- The action of a `k`-subalgebra `S` of `k(C)` on its integral closure in `k(C)`, a shortcut
+like `moduleIntegralClosure`. -/
+noncomputable instance smulIntegralClosure (S : Subalgebra k (functionField hF)) :
+    SMul S (integralClosure S (functionField hF)) :=
+  Algebra.toSMul
+
+omit [IsAlgClosed k] in
+/-- The integral closure in `k(C)` of a `k`-subalgebra `S` is an `S`-algebra between `S` and
+`k(C)`. -/
+instance isScalarTower_integralClosure (S : Subalgebra k (functionField hF)) :
+    IsScalarTower S (integralClosure S (functionField hF)) (functionField hF) :=
+  ⟨fun x y z ↦ mul_assoc (x : functionField hF) y z⟩
 
 omit [IsAlgClosed k] in
 /-- `A_G` is a Japanese domain: it is a domain of finite type over the field `k`. -/
@@ -214,6 +263,378 @@ theorem exists_forall_le_addValuation_mem_localSubring :
       have := Int.self_le_toNat (Q.ord t)
       omega
   simpa [mul_div_cancel₀ _ ht0] using ht _ hzt
+
+/-! ### The integral closure of `Γ(U)`, for every set `U` -/
+
+variable {hF} in
+/-- A place `Q` not centred in `U` is not regular on `Γ(U)`: some `w ∈ Γ(U)` has a pole at `Q`.
+Such a `w` is built from a function `x` whose only pole is `Q` and a function `y` regular away
+from `Q` with large orders at the places over the multiple points of `C` in `U`. -/
+private theorem exists_mem_regularFunctions_ord_neg
+    {U : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))}
+    {Q : Place k (functionField hF)} (hQ : center hF Q ∉ U) :
+    ∃ w ∈ regularFunctions hF U, Q.ord w < 0 := by
+  classical
+  have hK := functionField.isFunctionField hF
+  set M : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))) :=
+    {P' | P' ∈ U ∧ IsMultiplePoint F P'.1}
+  have hM : M.Finite :=
+    (((finite_setOf_isMultiplePoint_of_irreducible hF Fact.out).preimage
+      Subtype.val_injective.injOn).subset fun P' hP' ↦ hP'.2)
+  have hZ : (center hF ⁻¹' M).Finite := hM.preimage' fun P' _ ↦
+    (placesOver_finite hF P').subset fun _ hR ↦ mem_placesOver_iff.2 hR
+  choose e he using fun P' ↦ exists_forall_le_addValuation_mem_localSubring hF P'
+  set E : ℕ := hM.toFinset.sup e
+  obtain ⟨u, hu0, hu⟩ := exists_holomorphyRing_forall_ord_eq (S := hZ.toFinset) fun _ ↦ E
+  obtain ⟨y, hy0, hy, hyu⟩ := exists_ne_zero_mem_holomorphyRing_and_mul_mem hK
+    (S := {Q}ᶜ) (Q := Q) (by simp) (u : functionField hF)⁻¹
+  obtain ⟨x, hxQ, hx⟩ := Q.exists_ord_neg_and_forall_ne_ord_nonneg hK
+  have hx0 : x ≠ 0 := by rintro rfl; simp at hxQ
+  set N : ℕ := (Q.ord y).toNat + 1
+  have hw0 : x ^ N * y ≠ 0 := mul_ne_zero (pow_ne_zero _ hx0) hy0
+  have hord : ∀ R : Place k (functionField hF), R.ord (x ^ N * y) = N * R.ord x + R.ord y :=
+    fun R ↦ by rw [R.ord_mul (pow_ne_zero _ hx0) hy0, R.ord_pow]
+  have hyR : ∀ R : Place k (functionField hF), R ≠ Q → 0 ≤ R.ord y := fun R hR ↦
+    mem_holomorphyRing_iff_forall_ord_nonneg.1 hy R hR
+  have hR : ∀ R : Place k (functionField hF), R ≠ Q → 0 ≤ R.ord (x ^ N * y) := fun R hRQ ↦ by
+    rw [hord]
+    exact add_nonneg (mul_nonneg (by positivity) (hx R hRQ)) (hyR R hRQ)
+  have hRZ : ∀ R ∈ center hF ⁻¹' M, (E : ℤ) ≤ R.ord (x ^ N * y) := fun R hRM ↦ by
+    have hRQ : R ≠ Q := by rintro rfl; exact hQ hRM.1
+    have h := mem_holomorphyRing_iff_forall_ord_nonneg.1 hyu R hRQ
+    rw [R.ord_mul hy0 (inv_ne_zero hu0), R.ord_inv, hu R (hZ.mem_toFinset.2 hRM)] at h
+    rw [hord]
+    have := mul_nonneg (Int.natCast_nonneg N) (hx R hRQ)
+    omega
+  refine ⟨x ^ N * y, mem_regularFunctions_iff.2 fun P' hP' ↦ ?_, ?_⟩
+  · by_cases hm : IsMultiplePoint F P'.1
+    · refine he P' _ fun R hR ↦ ?_
+      have hle : e P' ≤ E := Finset.le_sup (hM.mem_toFinset.2 ⟨hP', hm⟩)
+      have h := hRZ R (show center hF R ∈ M from (mem_placesOver_iff.1 hR) ▸ ⟨hP', hm⟩)
+      rw [R.addValuation_of_ne_zero hw0]
+      exact_mod_cast (show (e P' : ℤ) ≤ R.ord (x ^ N * y) by omega)
+    · have hs : IsSimplePoint F P'.1 := by
+        by_contra h
+        exact hm (isMultiplePoint_iff_not_isSimplePoint.2 ⟨(mem_zeroLocus_ideal_iff hF).1 P'.2, h⟩)
+      have hne : placeAt hF hs ≠ Q := by
+        rintro rfl
+        exact hQ ((center_placeAt hs).symm ▸ hP')
+      rw [← integers_toSubring_placeAt hs, ValuationSubring.mem_toSubring]
+      exact (placeAt hF hs).mem_integers_iff_ord_nonneg.2 (hR _ hne)
+  · rw [hord]
+    have h1 : (Q.ord y) ≤ (Q.ord y).toNat := Int.self_le_toNat _
+    have h2 : ((N : ℕ) : ℤ) = (Q.ord y).toNat + 1 := by push_cast [N]; rfl
+    nlinarith
+
+/-- **The places at which `Γ(U)` is regular** are the places centred in `U`, for every set `U` of
+points of `C`. -/
+theorem setOf_regularFunctions_subset_integers
+    (U : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))) :
+    {Q : Place k (functionField hF) |
+        (regularFunctions hF U : Set (functionField hF)) ⊆ Q.integers} = center hF ⁻¹' U := by
+  ext Q
+  refine ⟨fun h ↦ ?_, fun hQ z hz ↦
+    localSubring_center_le Q (mem_regularFunctions_iff.1 hz _ hQ)⟩
+  by_contra hQ
+  obtain ⟨w, hw, hwQ⟩ := exists_mem_regularFunctions_ord_neg hQ
+  exact hwQ.not_ge (Q.mem_integers_iff_ord_nonneg.1 (h hw))
+
+/-- **The integral closure of `Γ(U)`** in `k(C)` is the ring `Γ(U')` of the places centred in
+`U`, for every set `U` of points of `C`. This is the last sentence of Problem 7.20 (c) of
+Fulton, for every subset `U` and not only for open ones. -/
+theorem restrictScalars_integralClosure_regularFunctions
+    (U : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))) :
+    (integralClosure (regularFunctions hF U) (functionField hF)).restrictScalars k =
+      holomorphyRing (center hF ⁻¹' U) := by
+  rw [restrictScalars_integralClosure_eq_holomorphyRing (functionField.isFunctionField hF),
+    setOf_regularFunctions_subset_integers]
+
+/-- **A function regular at every point of `C` is constant.** -/
+@[simp]
+theorem regularFunctions_univ : regularFunctions hF Set.univ = ⊥ := by
+  refine le_bot_iff.1 ((regularFunctions_le_holomorphyRing hF Set.univ).trans ?_)
+  rw [Set.preimage_univ, holomorphyRing_univ (functionField.isFunctionField hF),
+    IntermediateField.eq_bot_of_isAlgClosed_of_isAlgebraic (algebraicClosure k _),
+    IntermediateField.bot_toSubalgebra]
+
+/-! ### The ring of a basic open set `D(G)` -/
+
+include hG hFG in
+omit [IsAlgClosed k] [Fact (Irreducible F)] in
+/-- A form not divisible by `F` with a zero on `C` has positive degree. -/
+private theorem ne_zero_of_exists_eval_eq_zero
+    (hz : ∃ Q : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)),
+      eval Q.1.rep G = 0) : m ≠ 0 := by
+  rintro rfl
+  obtain ⟨Q, hQ⟩ := hz
+  have hG0 : G ≠ 0 := by rintro rfl; exact hFG (dvd_zero F)
+  have hGC := totalDegree_eq_zero_iff_eq_C.1 (hG.totalDegree hG0)
+  rw [hGC, eval_C] at hQ
+  exact hG0 (by rw [hGC, hQ, C_0])
+
+include hG hFG in
+/-- **`Γ(D(G))` is a finitely generated `k`-algebra**: it lies between `A_G` and the integral
+closure of `A_G` in `k(C)`, which is a finite `A_G`-module. -/
+theorem finiteType_regularFunctions_basicOpen :
+    Algebra.FiniteType k (regularFunctions hF {P | eval P.1.rep G ≠ 0}) := by
+  have hfin := finite_integralClosure_awaySubalgebra hF hG hFG
+  have : IsNoetherianRing (awaySubalgebra hF hG hFG) := Algebra.FiniteType.isNoetherianRing k _
+  refine (Subalgebra.fg_iff_finiteType _).1 <| Subalgebra.fg_of_le_of_subset_fg
+    ((Subalgebra.fg_iff_finiteType _).2 inferInstance)
+    (awaySubalgebra_le_regularFunctions hF hG hFG)
+    (M := Subalgebra.toSubmodule (integralClosure (awaySubalgebra hF hG hFG) (functionField hF)))
+    (Module.Finite.iff_fg.1 hfin) fun z hz ↦ ?_
+  have h := regularFunctions_le_holomorphyRing hF _ hz
+  rw [← restrictScalars_integralClosure_awaySubalgebra hF hG hFG] at h
+  exact h
+
+include hG hFG in
+omit [IsAlgClosed k] in
+/-- **`k(C)` is the fraction field of `Γ(D(G))`**, if `G` has a zero on `C`: it is already the
+fraction field of `A_G ⊆ Γ(D(G))`. -/
+theorem isFractionRing_regularFunctions_basicOpen
+    (hz : ∃ Q : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)),
+      eval Q.1.rep G = 0) :
+    IsFractionRing (regularFunctions hF {P | eval P.1.rep G ≠ 0}) (functionField hF) := by
+  have := isFractionRing_awaySubalgebra hF hG hFG (ne_zero_of_exists_eval_eq_zero hF hG hFG hz)
+  refine IsFractionRing.of_field _ _ fun z ↦ ?_
+  obtain ⟨a, b, -, rfl⟩ := IsFractionRing.div_surjective (A := awaySubalgebra hF hG hFG) z
+  exact ⟨⟨_, awaySubalgebra_le_regularFunctions hF hG hFG a.2⟩,
+    ⟨_, awaySubalgebra_le_regularFunctions hF hG hFG b.2⟩, rfl⟩
+
+include hG hFG in
+/-- **The integral closure of `Γ(D(G))` in `k(C)` is a finite `Γ(D(G))`-module**: `Γ(D(G))` is
+a domain of finite type over `k`, hence Japanese. -/
+theorem finite_integralClosure_regularFunctions_basicOpen :
+    Module.Finite (regularFunctions hF {P | eval P.1.rep G ≠ 0})
+      (integralClosure (regularFunctions hF {P | eval P.1.rep G ≠ 0}) (functionField hF)) := by
+  have := finiteType_regularFunctions_basicOpen hF hG hFG
+  have : IsJapanese (regularFunctions hF {P | eval P.1.rep G ≠ 0}) :=
+    IsUniversallyJapanese.isJapanese k _
+  have := (functionField.isFunctionField hF).essFiniteType
+  have : Algebra.EssFiniteType (regularFunctions hF {P | eval P.1.rep G ≠ 0})
+    (functionField hF) := .of_comp k _ _
+  exact IsJapanese.finite_integralClosure_of_injective Subtype.val_injective
+
+include hG hFG in
+/-- Only finitely many places are centred outside `D(G)`: the zeros of `G` on `C` are finitely
+many, and so are the places over each. -/
+theorem finite_compl_preimage_center_basicOpen :
+    (center hF ⁻¹' {P | eval P.1.rep G ≠ 0})ᶜ.Finite := by
+  rw [← Set.preimage_compl]
+  have hfin : {P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) |
+      eval P.1.rep G ≠ 0}ᶜ.Finite := by
+    refine ((finite_zeroLocus_pair_of_isRelPrime hF hG
+      ((Fact.out : Irreducible F).isRelPrime_iff_not_dvd.2 hFG)).preimage
+      Subtype.val_injective.injOn).subset fun P hP ↦ ?_
+    rw [Set.mem_preimage, mem_zeroLocus_iff_eval_rep (by
+      rintro f (rfl | rfl)
+      exacts [⟨d, hF⟩, ⟨m, hG⟩])]
+    rintro f (rfl | rfl)
+    · exact (mem_zeroLocus_ideal_iff hF).1 P.2
+    · exact not_not.1 hP
+  exact hfin.preimage' fun P _ ↦
+    (placesOver_finite hF P).subset fun _ hR ↦ mem_placesOver_iff.2 hR
+
+include hG hFG in
+/-- **The ring of the places over `D(G)` is a finitely generated `k`-algebra.** -/
+theorem finiteType_holomorphyRing_basicOpen :
+    Algebra.FiniteType k (holomorphyRing (center hF ⁻¹' {P | eval P.1.rep G ≠ 0})) := by
+  have h := finiteType_holomorphyRing_compl (functionField.isFunctionField hF)
+    (finite_compl_preimage_center_basicOpen hF hG hFG)
+  rwa [compl_compl] at h
+
+include hG hFG in
+/-- **The ring of the places over `D(G)` is a Dedekind domain.** -/
+theorem isDedekindDomain_holomorphyRing_basicOpen :
+    IsDedekindDomain (holomorphyRing (center hF ⁻¹' {P | eval P.1.rep G ≠ 0})) := by
+  have h := isDedekindDomain_holomorphyRing_compl (functionField.isFunctionField hF)
+    (finite_compl_preimage_center_basicOpen hF hG hFG)
+  rwa [compl_compl] at h
+
+/-- **`k(C)` is the fraction field of the ring of the places over `D(G)`**, if `G` has a zero on
+`C`: a place over that zero is not centred in `D(G)`. -/
+theorem isFractionRing_holomorphyRing_basicOpen
+    (hz : ∃ Q : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)),
+      eval Q.1.rep G = 0) :
+    IsFractionRing (holomorphyRing (center hF ⁻¹' {P | eval P.1.rep G ≠ 0}))
+      (functionField hF) := by
+  obtain ⟨Q, hQ⟩ := hz
+  obtain ⟨R, hR⟩ := placesOver_nonempty hF Q
+  refine isFractionRing_holomorphyRing (functionField.isFunctionField hF) ⟨R, fun h ↦ h ?_⟩
+  rwa [mem_placesOver_iff.1 hR]
+
+include hG hFG in
+/-- **A conductor element on `D(G)`**, if `G` has a zero on `C`: some nonzero `t ∈ Γ(D(G))`
+carries the ring of the places over `D(G)` into `Γ(D(G))`. -/
+theorem exists_ne_zero_mul_mem_regularFunctions_basicOpen
+    (hz : ∃ Q : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)),
+      eval Q.1.rep G = 0) :
+    ∃ t ∈ regularFunctions hF {P | eval P.1.rep G ≠ 0}, t ≠ 0 ∧
+      ∀ z ∈ holomorphyRing (center hF ⁻¹' {P | eval P.1.rep G ≠ 0}),
+        t * z ∈ regularFunctions hF {P | eval P.1.rep G ≠ 0} := by
+  have := finite_integralClosure_regularFunctions_basicOpen hF hG hFG
+  have := isFractionRing_regularFunctions_basicOpen hF hG hFG hz
+  obtain ⟨a, ha, hac⟩ := TauCeti.Algebra.exists_mem_conductor_of_isLocalization
+    (A := regularFunctions hF {P | eval P.1.rep G ≠ 0})
+    (B := integralClosure (regularFunctions hF {P | eval P.1.rep G ≠ 0}) (functionField hF))
+    (L := functionField hF) (nonZeroDivisors _) Subtype.val_injective
+  refine ⟨a, a.2, fun h ↦ nonZeroDivisors.ne_zero ha (Subtype.ext h), fun z hz' ↦ ?_⟩
+  rw [← restrictScalars_integralClosure_regularFunctions] at hz'
+  obtain ⟨c, hc⟩ := TauCeti.Algebra.mem_conductor_iff.1 hac ⟨z, hz'⟩
+  have hc' : (c : functionField hF) = a * z := congrArg Subtype.val hc
+  exact hc' ▸ c.2
+
+include hG hFG in
+/-- **`Γ(D(G)')/Γ(D(G))` is finite-dimensional**, if `G` has a zero on `C`: the cokernel of
+`Γ(D(G)) ↪ Γ(D(G)')` embeds into `Γ(D(G))/(t)` by `z ↦ t z`, for a conductor element `t`, and
+that quotient of the ring of a curve is finite-dimensional over `k`. -/
+theorem finite_quotient_regularFunctions_basicOpen
+    (hz : ∃ Q : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)),
+      eval Q.1.rep G = 0) :
+    Module.Finite k (holomorphyRing (center hF ⁻¹' {P | eval P.1.rep G ≠ 0}) ⧸
+      LinearMap.range (Subalgebra.inclusion
+        (regularFunctions_le_holomorphyRing hF {P | eval P.1.rep G ≠ 0})).toLinearMap) := by
+  obtain ⟨t, ht, ht0, htz⟩ := exists_ne_zero_mul_mem_regularFunctions_basicOpen hF hG hFG hz
+  have := finiteType_regularFunctions_basicOpen hF hG hFG
+  have := isFractionRing_regularFunctions_basicOpen hF hG hFG hz
+  have htr : Algebra.trdeg k (regularFunctions hF {P | eval P.1.rep G ≠ 0}) ≤ 1 := by
+    have h := Algebra.lift_trdeg_eq_of_isFractionRing k
+      (regularFunctions hF {P | eval P.1.rep G ≠ 0}) (functionField hF)
+    rw [Cardinal.lift_id, Cardinal.lift_id, (functionField.isFunctionField hF).trdeg_eq_one] at h
+    exact h.le
+  have ht0' : (⟨t, ht⟩ : regularFunctions hF {P | eval P.1.rep G ≠ 0}) ≠ 0 :=
+    fun h ↦ ht0 (congrArg Subtype.val h)
+  have := Module.finite_quotient_span_singleton_of_trdeg_le_one htr ht0'
+  let f : holomorphyRing (center hF ⁻¹' {P | eval P.1.rep G ≠ 0}) →ₗ[k]
+      regularFunctions hF {P | eval P.1.rep G ≠ 0} ⧸
+        Ideal.span {(⟨t, ht⟩ : regularFunctions hF {P | eval P.1.rep G ≠ 0})} :=
+    (Ideal.Quotient.mkₐ k _).toLinearMap ∘ₗ
+      { toFun z := ⟨t * z, htz z z.2⟩
+        map_add' _ _ := Subtype.ext (mul_add _ _ _)
+        map_smul' _ _ := Subtype.ext (mul_smul_comm _ _ _) }
+  have hker : LinearMap.ker f = LinearMap.range (Subalgebra.inclusion
+      (regularFunctions_le_holomorphyRing hF {P | eval P.1.rep G ≠ 0})).toLinearMap := by
+    ext z
+    simp only [LinearMap.mem_ker, f, LinearMap.comp_apply, AlgHom.toLinearMap_apply,
+      Ideal.Quotient.mkₐ_eq_mk, Ideal.Quotient.eq_zero_iff_mem, Ideal.mem_span_singleton',
+      LinearMap.mem_range]
+    constructor
+    · rintro ⟨a, ha⟩
+      refine ⟨a, Subtype.ext ?_⟩
+      have ha' : (a : functionField hF) * t = t * z := congrArg Subtype.val ha
+      exact mul_right_cancel₀ ht0 (ha'.trans (mul_comm _ _))
+    · rintro ⟨y, rfl⟩
+      exact ⟨y, Subtype.ext (mul_comm _ _)⟩
+  exact Module.Finite.of_injective (Submodule.liftQ _ f hker.ge)
+    (LinearMap.ker_eq_bot.1 (Submodule.ker_liftQ_eq_bot _ _ _ hker.le))
+
+/-! ### The milestone -/
+
+omit [IsAlgClosed k] [Fact (Irreducible F)] in
+/-- For a point `P` of `C` outside a finite set `T` of points of `C`, some form vanishes on `T`
+and not at `P`: a product of linear forms, one through each point of `T` and not through `P`. -/
+private theorem exists_isHomogeneous_eval_ne_zero_forall_eval_eq_zero
+    (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))
+    (T : Finset (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))))
+    (hPT : P ∉ T) :
+    ∃ (m : ℕ) (G : MvPolynomial (Fin 3) k), G.IsHomogeneous m ∧ eval P.1.rep G ≠ 0 ∧
+      ∀ s ∈ T, eval s.1.rep G = 0 := by
+  classical
+  induction T using Finset.induction_on with
+  | empty => exact ⟨0, 1, isHomogeneous_one _ _, by simp, by simp⟩
+  | insert s T _ ih =>
+    obtain ⟨m, G, hG, hGP, hGT⟩ := ih fun h ↦ hPT (Finset.mem_insert_of_mem h)
+    have hsP : s.1 ≠ P.1 := fun h ↦ hPT (Subtype.ext h ▸ Finset.mem_insert_self s T)
+    obtain ⟨a, has, haP⟩ := exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus hsP
+    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩),
+      Set.forall_mem_singleton] at has haP
+    refine ⟨1 + m, (∑ i, C (a i) * X i) * G, (isHomogeneous_sum_C_mul_X a).mul hG,
+      by rw [eval_mul]; exact mul_ne_zero haP hGP, fun s' hs' ↦ ?_⟩
+    rcases Finset.mem_insert.1 hs' with rfl | hs'
+    · rw [eval_mul, has, zero_mul]
+    · rw [eval_mul, hGT s' hs', mul_zero]
+
+/-- **A basic open neighbourhood avoiding a finite set.** For a point `P` of `C` and a finite set
+`S` of points of `C` not containing `P`, there is a form `G` not divisible by `F` with
+`G(P) ≠ 0`, vanishing on `S` and at some point of `C`. So `D(G)` is a neighbourhood of `P`
+disjoint from `S`, and not all of `C`. -/
+theorem exists_basicOpen_normalization
+    (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))
+    {S : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))}
+    (hS : S.Finite) (hPS : P ∉ S) :
+    ∃ (m : ℕ) (G : MvPolynomial (Fin 3) k) (_ : G.IsHomogeneous m) (_ : ¬ F ∣ G),
+      eval P.1.rep G ≠ 0 ∧ (∀ s ∈ S, eval s.1.rep G = 0) ∧
+      ∃ Q : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)),
+        eval Q.1.rep G = 0 := by
+  classical
+  have hinf : (zeroLocus (projectivePlaneCurve.ideal hF :
+      Set (MvPolynomial (Fin 3) k))).Infinite := by
+    convert zeroLocus_singleton_infinite (n := 2) le_rfl hF
+      (hF.degree_ne_zero_of_irreducible Fact.out) using 1
+    ext P'
+    rw [mem_zeroLocus_ideal_iff hF, mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩),
+      Set.forall_mem_singleton]
+  obtain ⟨P₀, hP₀, hP₀P⟩ := (hinf.sdiff (Set.finite_singleton P.1)).nonempty
+  have hP₀P' : (⟨P₀, hP₀⟩ : zeroLocus _) ≠ P := fun h ↦ hP₀P (congrArg Subtype.val h)
+  obtain ⟨m, G, hG, hGP, hGS⟩ := exists_isHomogeneous_eval_ne_zero_forall_eval_eq_zero hF P
+    (hS.insert ⟨P₀, hP₀⟩).toFinset (by simpa [hPS] using hP₀P'.symm)
+  refine ⟨m, G, hG, fun ⟨H, hH⟩ ↦ hGP ?_, hGP, fun s hs ↦ hGS s (by simp [hs]),
+    ⟨P₀, hP₀⟩, hGS _ (by simp)⟩
+  rw [hH, eval_mul, (mem_zeroLocus_ideal_iff hF).1 P.2, zero_mul]
+
+/-- **Finiteness of the normalization of a plane curve near a point.** Let `C : F = 0` be an
+irreducible projective plane curve over an algebraically closed field, with nonsingular model
+the places of `k(C)` and their centres. For `P ∈ C` and a finite `S ⊆ C` with `P ∉ S` there is
+a basic open set `U = D(G) ∋ P` with `U ∩ S = ∅`, whose ring `Γ(U)` is a finitely generated
+`k`-algebra with fraction field `k(C)`, such that (1) the ring `Γ(U')` of the places `U'` over
+`U` is an affine model of `k(C)`, (2) the integral closure of `Γ(U)` is a finite `Γ(U)`-module,
+(3) `t Γ(U') ⊆ Γ(U)` for some `t ≠ 0` in `Γ(U)`, and (4) `Γ(U') / Γ(U)` is finite-dimensional
+over `k`. Moreover, for every `U ⊆ C`, `Γ(U')` is the integral closure of `Γ(U)` in `k(C)`.
+
+In (1), `Γ(U')` is a finitely generated `k`-algebra and a Dedekind domain with fraction field
+`k(C)`; Tau Ceti's `holomorphyRingHeightOneSpectrumEquiv` then identifies the places over `U`
+with the maximal ideals of `Γ(U')`.
+
+Milestone: *Finiteness of the normalization of a plane curve near a point*. -/
+theorem finite_normalization_spec
+    (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))
+    {S : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))}
+    (hS : S.Finite) (hPS : P ∉ S) :
+    (∃ U : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))),
+      (∃ (m : ℕ) (G : MvPolynomial (Fin 3) k), G.IsHomogeneous m ∧ ¬ F ∣ G ∧
+        U = {P' | eval P'.1.rep G ≠ 0}) ∧
+      P ∈ U ∧ Disjoint U S ∧
+      Algebra.FiniteType k (regularFunctions hF U) ∧
+      IsFractionRing (regularFunctions hF U) (functionField hF) ∧
+      -- (1)
+      Algebra.FiniteType k (holomorphyRing (center hF ⁻¹' U)) ∧
+      IsDedekindDomain (holomorphyRing (center hF ⁻¹' U)) ∧
+      IsFractionRing (holomorphyRing (center hF ⁻¹' U)) (functionField hF) ∧
+      -- (2)
+      Module.Finite (regularFunctions hF U)
+        (integralClosure (regularFunctions hF U) (functionField hF)) ∧
+      -- (3)
+      (∃ t ∈ regularFunctions hF U, t ≠ 0 ∧
+        ∀ z ∈ holomorphyRing (center hF ⁻¹' U), t * z ∈ regularFunctions hF U) ∧
+      -- (4)
+      Module.Finite k (holomorphyRing (center hF ⁻¹' U) ⧸
+        LinearMap.range
+          (Subalgebra.inclusion (regularFunctions_le_holomorphyRing hF U)).toLinearMap)) ∧
+    ∀ U : Set (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))),
+      (integralClosure (regularFunctions hF U) (functionField hF)).restrictScalars k =
+        holomorphyRing (center hF ⁻¹' U) := by
+  obtain ⟨m, G, hG, hFG, hGP, hGS, hz⟩ := exists_basicOpen_normalization hF P hS hPS
+  exact ⟨⟨_, ⟨m, G, hG, hFG, rfl⟩, hGP, Set.disjoint_left.2 fun s hs hsS ↦ hs (hGS s hsS),
+    finiteType_regularFunctions_basicOpen hF hG hFG,
+    isFractionRing_regularFunctions_basicOpen hF hG hFG hz,
+    finiteType_holomorphyRing_basicOpen hF hG hFG,
+    isDedekindDomain_holomorphyRing_basicOpen hF hG hFG,
+    isFractionRing_holomorphyRing_basicOpen hF hz,
+    finite_integralClosure_regularFunctions_basicOpen hF hG hFG,
+    exists_ne_zero_mul_mem_regularFunctions_basicOpen hF hG hFG hz,
+    finite_quotient_regularFunctions_basicOpen hF hG hFG hz⟩,
+    restrictScalars_integralClosure_regularFunctions hF⟩
 
 end PlaneCurves.Projective
 
