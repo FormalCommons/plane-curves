@@ -33,6 +33,7 @@ dehomogenization `G_(i)`.
 * `mem_placesOver_iff`, `mem_placesOver_iff_le`, `placesOver_finite`, `placesOver_nonempty`.
 * `ordForm_eq_addValuation_mk`: `ord_Q(G)` is the order of `G / H` for any form `H` of the
   degree of `G` with `H(center Q) ≠ 0`; `ordForm_eq_addValuation_mk_pow` for `H = Lᵐ`.
+* `ordForm_eq_addValuation_mk_add`: `ord_Q(G) = ord_Q(G / H) + ord_Q(H)` when `F ∤ H`.
 * `ordForm_mul`, `ordForm_eq_top_iff`, `ordForm_nonneg`, `ordForm_pos_iff`, `ordForm_eq_zero_iff`.
 * `ordForm_eq_addValuation_chartEquiv_symm`: the order in a chart.
 * `mem_placesOver_iff_localSubring_le_map_chartEquiv`, `ordForm_eq_addValuation_map_chartEquiv`:
@@ -201,6 +202,22 @@ theorem ordForm_eq_addValuation_mk_pow {L : MvPolynomial (Fin 3) k} (hG : G.IsHo
       (notMem_of_eval_rep_ne_zero (center hF Q).2 (one_mul m ▸ hL.pow m)
         (by simpa using pow_ne_zero m hLQ))) :=
   ordForm_eq_addValuation_mk hG _ (by simpa using pow_ne_zero m hLQ)
+
+/-- **`ord_Q(G / H) = ord_Q(G) - ord_Q(H)`**, in the additive form
+`ord_Q(G) = ord_Q(G / H) + ord_Q(H)`, for forms `G`, `H` of the same degree with `F ∤ H`. -/
+theorem ordForm_eq_addValuation_mk_add (Q : Place k (functionField hF)) (hG : G.IsHomogeneous m)
+    (hH : H.IsHomogeneous m) (hFH : ¬ F ∣ H) :
+    ordForm hF Q hG = Q.addValuation
+      (functionField.mk hG hH (projectivePlaneCurve.notMem_ideal_of_not_dvd hF hFH)) +
+      ordForm hF Q hH := by
+  obtain ⟨i, hi⟩ := (center hF Q).1.exists_mem_affineOpen
+  have hXQ : eval (center hF Q).1.rep (X i ^ m) ≠ 0 := by
+    simpa using pow_ne_zero m ((mem_affineOpen_iff _ _).1 hi)
+  rw [ordForm_eq_addValuation_mk hG (isHomogeneous_X_pow i m) hXQ,
+    ordForm_eq_addValuation_mk hH (isHomogeneous_X_pow i m) hXQ, ← Q.addValuation.map_mul,
+    functionField.mk_mul_mk]
+  congr 1
+  exact functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
 
 /-- The order of a form at `Q` in terms of the coordinate functions `Xⱼ / Xᵢ`, for a coordinate
 `Xᵢ` not vanishing at the centre of `Q`. -/
