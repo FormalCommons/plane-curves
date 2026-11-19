@@ -6,10 +6,24 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.MultiplePoints
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Projective.VariableChange
 
 /-!
-# Weierstrass form of a plane cubic at a flex
+# Normal forms of irreducible cubics
+
+This file describes an irreducible plane cubic `F` near its special points: its multiple point,
+if it has one, and its flexes.
+
+## Singular points
+
+Over an algebraically closed field, in every characteristic, `F` has at most one multiple point
+(`eq_of_isMultiplePoint_of_degree_three`), by the bound on the multiple points, and it is a
+double point (`mult_eq_two_of_degree_three`) (Problem 5.13 of Fulton). A double point is a
+*node*, an ordinary double point with two distinct tangents, or a *cusp*, with a single tangent
+of multiplicity `2` (`isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two`).
+
+## Weierstrass form at a flex
 
 Let `F` be an irreducible cubic form over a field `k` and `O` a flex of `F`. Then a projective
 change of coordinates sends `[0 : 1 : 0]` to `O` and the tangent line at `O` to `Z = 0`, and
@@ -29,19 +43,26 @@ Changes of coordinates are Tau Ceti's `MvPolynomial.linearSubst M`, `F ↦ F(M X
 
 ## Main results
 
+All in the namespace `PlaneCurves.Projective`, except the first.
+
 * `MvPolynomial.IsHomogeneous.eq_of_fin_three_three`: a cubic form in three variables is the sum
   of its ten monomials.
-* `PlaneCurves.Projective.tangentLine_weierstrassCurve_polynomial`: the tangent line of a
+* `tangentLine_weierstrassCurve_polynomial`: the tangent line of a
   Weierstrass cubic at `[0 : 1 : 0]` is `Z = 0`.
-* `PlaneCurves.Projective.IsFlex.exists_linearSubst_eq_smul_polynomial`: an irreducible cubic is
+* `IsFlex.exists_linearSubst_eq_smul_polynomial`: an irreducible cubic is
   in Weierstrass form after moving a flex to `[0 : 1 : 0]`.
-* `PlaneCurves.Projective.IsFlex.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero`: the same
+* `IsFlex.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero`: the same
   with `a₁ = a₃ = 0`, when `2 ≠ 0`.
+* `isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two_of_degree_three`:
+  a multiple point of an irreducible cubic is a node or a cusp.
+* `isNonsingular_or_exists_isMultiplePoint_iff_of_degree_three`: an
+  irreducible cubic is nonsingular, or it has exactly one multiple point, a double point that is a
+  node or a cusp.
 
 ## References
 
 * [W. Fulton, *Algebraic Curves: An Introduction to Algebraic Geometry*][Fulton2008],
-  Problem 5.24
+  Problems 5.13 and 5.24
 -/
 
 public section
@@ -281,6 +302,38 @@ theorem IsFlex.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero (h2 : (2 : k
   · simp [V, WeierstrassCurve.variableChange_a₃]
     field_simp
     ring
+
+section IsAlgClosed
+
+variable [IsAlgClosed k]
+
+/-- A multiple point `P` of an irreducible cubic `F` is a *node*, an ordinary double point, or a
+*cusp*: `F` has a single tangent `L` at `P`, of multiplicity `2`. -/
+theorem isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two_of_degree_three
+    (hF : F.IsHomogeneous 3) (hirr : Irreducible F) {P : ℙ k (Fin 3 → k)}
+    (hP : IsMultiplePoint F P) :
+    IsOrdinaryMultiplePoint F P ∨ ∃ L, IsTangentAt F P L ∧ tangentMultiplicity F P L = 2 :=
+  isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two hF
+    (mult_eq_two_of_degree_three hF hirr hP)
+
+/-- **Singular points of an irreducible cubic.** An irreducible plane cubic `F` over an
+algebraically closed field is nonsingular, or it has exactly one multiple point `P`; then `P` is a
+double point, and it is a node (an ordinary double point) or a cusp (a single tangent `L`, of
+multiplicity `2`). -/
+theorem isNonsingular_or_exists_isMultiplePoint_iff_of_degree_three (hF : F.IsHomogeneous 3)
+    (hirr : Irreducible F) :
+    IsNonsingular F ∨ ∃ P : ℙ k (Fin 3 → k), (∀ Q, IsMultiplePoint F Q ↔ Q = P) ∧
+      mult F P = 2 ∧
+        (IsOrdinaryMultiplePoint F P ∨ ∃ L, IsTangentAt F P L ∧ tangentMultiplicity F P L = 2) := by
+  refine or_iff_not_imp_left.2 fun hns ↦ ?_
+  obtain ⟨P, hPF, hPs⟩ : ∃ P ∈ zeroLocus {F}, ¬IsSimplePoint F P := by
+    simpa [isNonsingular_iff_forall_isSimplePoint hF] using hns
+  have hP := (isSimplePoint_or_isMultiplePoint hF hPF).resolve_left hPs
+  refine ⟨P, fun Q ↦ ⟨fun hQ ↦ eq_of_isMultiplePoint_of_degree_three hF hirr hQ hP,
+    fun h ↦ h ▸ hP⟩, mult_eq_two_of_degree_three hF hirr hP,
+    isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two_of_degree_three hF hirr hP⟩
+
+end IsAlgClosed
 
 end PlaneCurves.Projective
 
