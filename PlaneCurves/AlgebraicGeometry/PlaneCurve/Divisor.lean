@@ -31,7 +31,7 @@ the same degree not divisible by `F` is a unit of `K`, with divisor `div G - div
 
 * `coeff_formDivisor`: the coefficient of `div G` at `Q` is `ord_Q(G)`.
 * `formDivisor_nonneg`, `coeff_formDivisor_pos_iff`, `formDivisor_mul`,
-  `not_dvd_pow_of_not_dvd`, `formDivisor_pow`.
+  `formDivisor_eq_of_dvd_sub`, `not_dvd_pow_of_not_dvd`, `formDivisor_pow`.
 * `principal_formQuotient`: `div (G / H) = div G - div H`; `exists_formQuotient_eq`.
 * `sum_coeff_formDivisor_center`: `∑_{Q over P} ord_Q(G) = I(P, C ∩ G)`;
   `coeff_formDivisor_of_isSimplePoint`: `ord_Q(G) = I(P, C ∩ G)` at the place over a simple point.
@@ -200,6 +200,13 @@ theorem formDivisor_congr {G' : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m)
   · rw [formDivisor_eq_zero_of_dvd _ (dvd_zero F), formDivisor_eq_zero_of_dvd _ (dvd_zero F)]
   · obtain rfl := hG.inj_right hG' h0
     rfl
+
+/-- `div G` depends only on `G` modulo `F`: forms `G`, `G'` of the same degree with
+`F ∣ G - G'` cut out the same divisor. -/
+theorem formDivisor_eq_of_dvd_sub {G' : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m)
+    (hG' : G'.IsHomogeneous m) (h : F ∣ G - G') : formDivisor hF hG = formDivisor hF hG' :=
+  WeilDivisor.ext fun Q ↦ by
+    rw [coeff_formDivisor_eq_untopD, coeff_formDivisor_eq_untopD, ordForm_eq_of_dvd_sub hG hG' h]
 
 /-- A nonzero constant cuts out the zero divisor. -/
 @[simp]
