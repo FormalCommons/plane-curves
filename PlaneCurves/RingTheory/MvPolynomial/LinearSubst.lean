@@ -5,6 +5,7 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Data.Matrix.PEquiv
 public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 public import Mathlib.RingTheory.GradedAlgebra.RingHom
@@ -31,6 +32,8 @@ the change of variables along `M⁻¹`.
   `MvPolynomial.linearSubst_linearSubst_nonsing_inv`: for `M` with invertible determinant, the
   changes of variables along `M` and `M⁻¹` are inverse to each other.
 * `MvPolynomial.linearSubst_injective`: such a change of variables is injective.
+* `MvPolynomial.linearSubst_toPEquiv_toMatrix`: renaming the variables along a permutation is the
+  change of variables along its permutation matrix.
 -/
 
 public section
@@ -101,6 +104,14 @@ omit [DecidableEq σ] in
 theorem coe_linearSubstGradedRingHom (M : Matrix σ σ R) :
     ⇑(linearSubstGradedRingHom M) = ⇑(linearSubst M) :=
   (rfl)
+
+/-- Renaming the variables along a permutation `e` is the change of variables along the
+permutation matrix of `e`. -/
+theorem linearSubst_toPEquiv_toMatrix (e : Equiv.Perm σ) (p : MvPolynomial σ R) :
+    linearSubst e.toPEquiv.toMatrix p = rename e p := by
+  have h : linearSubst (R := R) e.toPEquiv.toMatrix = rename e :=
+    algHom_ext fun i ↦ by simp [linearSubst_X, PEquiv.toMatrix_apply]
+  exact DFunLike.congr_fun h p
 
 end CommSemiring
 

@@ -41,6 +41,9 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
   `PlaneCurves.Projective.tangentMultiplicity_eq_affine`,
   `PlaneCurves.Projective.isOrdinaryMultiplePoint_iff_affine`: tangent lines, their
   multiplicities and ordinary multiple points are those of the dehomogenization in any chart.
+* `PlaneCurves.Projective.leadingForm_linearSubst`,
+  `PlaneCurves.Projective.isTangentAt_linearSubst_iff`: leading forms and tangent lines under an
+  invertible linear change of coordinates.
 * `PlaneCurves.Projective.IsSimplePoint.isTangentAt_tangentLine`: at a simple point the line
   `F_X(v) X + F_Y(v) Y + F_Z(v) Z` is tangent.
 * `PlaneCurves.Projective.mult_eq_and_isTangentAt_iff_of_eq_sum`: Problem 5.5 of Fulton, the
@@ -253,6 +256,12 @@ theorem IsTangentAt.eval_rep_eq_zero (h : IsTangentAt F P L) : eval P.rep F = 0 
   exact (irreducible_of_isHomogeneous_one h.1 h.2.1).not_isUnit
     (isUnit_of_dvd_unit h.2.2.2 ((isUnit_iff_ne_zero.2 hP).map C))
 
+/-- Rescaling a curve by a nonzero constant does not change its tangent lines. -/
+theorem isTangentAt_smul_iff {c : k} (hc : c ≠ 0) :
+    IsTangentAt (c • F) P L ↔ IsTangentAt F P L := by
+  rw [isTangentAt_def, isTangentAt_def, leadingForm_def, leadingForm_def, leadingFormAt_smul,
+    smul_eq_C_mul, (hc.isUnit.map C).dvd_mul_left]
+
 /-- A form vanishes at `P.rep` exactly when it vanishes at the point `Fin.insertNth i 1 a` of the
 chart `Xᵢ = 1` corresponding to `P`. -/
 private theorem eval_rep_eq_zero_iff_affine (hL : L.IsHomogeneous d) {i : Fin 3}
@@ -316,6 +325,41 @@ theorem IsSimplePoint.isTangentAt_tangentLine (hF : F.IsHomogeneous d) (h : IsSi
   rw [leadingForm_def, leadingFormAt_eq_sum_pderiv (by rwa [isSimplePoint_def, mult_def] at h),
     tangentLine_def]
   simp only [smul_eq_C_mul, dvd_refl]
+
+/-! ### Linear changes of coordinates -/
+
+/-- **The leading form under a change of coordinates.** For an invertible matrix `M`, the leading
+form of `F(MX)` at `Q` is, up to a nonzero scalar, the leading form of `F` at `MQ` with the
+variables changed along `M`. -/
+theorem leadingForm_linearSubst (hF : F.IsHomogeneous d) {M : Matrix (Fin 3) (Fin 3) k}
+    (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
+    Associated (leadingForm (linearSubst M F) Q)
+      (linearSubst M (leadingForm F (Projectivization.map M.mulVecLin hM Q))) := by
+  have hdet : IsUnit M.det :=
+    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  conv_rhs => rw [← Q.mk_rep, map_mk]
+  rw [leadingForm_def, leadingFormAt_linearSubst hdet]
+  exact ((associated_leadingForm_mk hF _ _).map (linearSubst M)).symm
+
+/-- **Tangent lines under a change of coordinates.** For an invertible matrix `M`, the line
+`L(MX) = 0` is tangent to `F(MX)` at `Q` exactly when `L = 0` is tangent to `F` at `MQ`. -/
+theorem isTangentAt_linearSubst_iff (hF : F.IsHomogeneous d) {M : Matrix (Fin 3) (Fin 3) k}
+    (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
+    IsTangentAt (linearSubst M F) Q (linearSubst M L) ↔
+      IsTangentAt F (Projectivization.map M.mulVecLin hM Q) L := by
+  have hdet : IsUnit M.det :=
+    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  have hinv := linearSubst_nonsing_inv_linearSubst hdet
+  have hhom : (linearSubst M L).IsHomogeneous 1 ↔ L.IsHomogeneous 1 :=
+    ⟨fun h ↦ hinv L ▸ h.linearSubst M⁻¹, fun h ↦ h.linearSubst M⟩
+  have hdvd {p q : MvPolynomial (Fin 3) k} : linearSubst M p ∣ linearSubst M q ↔ p ∣ q :=
+    ⟨fun h ↦ by simpa only [hinv] using map_dvd (linearSubst M⁻¹) h, map_dvd _⟩
+  rw [isTangentAt_def, isTangentAt_def, hhom,
+    (leadingForm_linearSubst hF hM Q).dvd_iff_dvd_right, hdvd,
+    map_ne_zero_iff _ (linearSubst_injective hdet)]
+  refine and_congr_right fun hL ↦ and_congr_right fun _ ↦ and_congr_left fun _ ↦ ?_
+  conv_rhs => rw [← Q.mk_rep, map_mk]
+  rw [eval_linearSubst, hL.eval_rep_mk_eq_zero_iff, Matrix.mulVecLin_apply]
 
 /-! ### Problems 5.5 and 5.6 -/
 
