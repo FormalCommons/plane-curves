@@ -377,11 +377,7 @@ private theorem isRelPrime_of_intersectionNumber_eq_one [IsAlgClosed k] (hF : F.
     IsRelPrime F L := by
   rw [hirr.isRelPrime_iff_not_dvd]
   intro hFL
-  have hn : n ≠ 0 := by
-    rintro rfl
-    have hC := totalDegree_eq_zero_iff_eq_C.1 (hF.totalDegree hirr.ne_zero)
-    rw [hC] at hirr
-    exact hirr.not_isUnit ((isUnit_iff_ne_zero.2 fun h0 ↦ hirr.ne_zero (by simp [h0])).map C)
+  have hn : n ≠ 0 := hF.degree_ne_zero_of_irreducible hirr
   obtain ⟨Q, hQF, hQP⟩ :=
     ((zeroLocus_singleton_infinite (n := 2) le_rfl hF hn).sdiff (Set.finite_singleton P)).nonempty
   have hQF' := (eval_rep_eq_zero_iff_mem hF).2 hQF
@@ -393,6 +389,67 @@ private theorem isRelPrime_of_intersectionNumber_eq_one [IsAlgClosed k] (hF : F.
     exact (intersectionNumber_ne_top_iff hF hL).1 hne F hirr dvd_rfl hFL hQF'
   rw [h Q (mem_zeroLocus_pair_iff.2 ⟨hQF, hQL⟩) hQP] at htop
   exact ENat.one_ne_top htop
+
+/-- **The excellent-position conditions in new coordinates.** Let `M` carry the linear forms
+`ℓⱼ = ∑ i, a j i * X i` to the coordinates `X j` and send `[0 : 0 : 1]` to `P`. Suppose that every
+point `Q ≠ P` of `F` on `ℓⱼ` has `I(Q, F ∩ ℓⱼ) = 1`, that `I(P, F ∩ ℓⱼ) = m_P(F)` for `j ≠ 2`,
+and that no point of `F` on `ℓ₀` or `ℓ₁` is on `ℓ₂`. Then `F(M X)` is in excellent position. -/
+private theorem isExcellentPosition_linearSubst_of_lines [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {M : Matrix (Fin 3) (Fin 3) k} (hM : Function.Injective M.mulVecLin)
+    {a : Fin 3 → Fin 3 → k} (hMa : ∀ j, linearSubst M (∑ i, C (a j i) * X i) = X j)
+    {P : ℙ k (Fin 3 → k)} (hTP : map M.mulVecLin hM (fundamentalPoint 2) = P)
+    (hI : ∀ j, ∀ Q ∈ zeroLocus {F, ∑ i, C (a j i) * X i}, Q ≠ P →
+      intersectionNumber Q F (∑ i, C (a j i) * X i) = 1)
+    (hIP : ∀ j ≠ 2, intersectionNumber P F (∑ i, C (a j i) * X i) = mult F P)
+    (h2 : ∀ j ≠ 2, ∀ Q ∈ zeroLocus {F, ∑ i, C (a j i) * X i},
+      Q ∉ zeroLocus {∑ i, C (a 2 i) * X i}) :
+    IsExcellentPosition (linearSubst M F) := by
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
+  set T := map M.mulVecLin hM
+  set G := linearSubst M F
+  have hG : G.IsHomogeneous n := hF.linearSubst M
+  have hG0 : G ≠ 0 := ((irreducible_linearSubst_iff hdet).2 hirr).ne_zero
+  have hzero (H : MvPolynomial (Fin 3) k) (Q : ℙ k (Fin 3 → k)) :
+      Q ∈ zeroLocus {linearSubst M H} ↔ T Q ∈ zeroLocus {H} := by
+    rw [← Set.image_singleton, zeroLocus_linearSubst]
+    rfl
+  have hmemX {Q : ℙ k (Fin 3 → k)} {j : Fin 3} :
+      Q ∈ zeroLocus {X j} ↔ T Q ∈ zeroLocus {∑ i, C (a j i) * X i} := by
+    rw [← hMa j, hzero]
+  have hIX (Q : ℙ k (Fin 3 → k)) (j : Fin 3) :
+      intersectionNumber Q G (X j) = intersectionNumber (T Q) F (∑ i, C (a j i) * X i) := by
+    rw [← hMa j]
+    exact intersectionNumber_linearSubst hF (isHomogeneous_sum_C_mul_X _)
+      (Matrix.nonsingInvUnit M hdet) Q
+  -- `T` sends `[1 : 0 : 0]` and `[0 : 1 : 0]` off `F`.
+  have hfund {i : Fin 3} (hi : i ≠ 2) : T (fundamentalPoint i) ∉ zeroLocus {F} := by
+    intro hiF
+    have hℓ {j : Fin 3} (hj : j ≠ i) : T (fundamentalPoint i) ∈ zeroLocus {∑ l, C (a j l) * X l} :=
+      hmemX.1 (fundamentalPoint_mem_zeroLocus_X_iff.2 hj.symm)
+    obtain rfl | rfl : i = 0 ∨ i = 1 := by fin_cases i <;> simp at hi ⊢
+    · exact h2 1 (by decide) _ (mem_zeroLocus_pair_iff.2 ⟨hiF, hℓ (by decide)⟩) (hℓ hi.symm)
+    · exact h2 0 (by decide) _ (mem_zeroLocus_pair_iff.2 ⟨hiF, hℓ (by decide)⟩) (hℓ hi.symm)
+  refine ⟨?_, fun j Q hQ hQP ↦ ?_⟩
+  · -- Good position: at `[0 : 0 : 1]` the first two lines are not tangent.
+    rw [isGoodPosition_def]
+    intro i j hij ht
+    by_cases hi : i = 2
+    · subst hi
+      rw [isTangentAt_iff_mult_lt_intersectionNumber hG hG0 (isHomogeneous_X k j) (X_ne_zero j)
+        (isTangentAt_def.1 ht).2.2.1, mult_linearSubst hF hM, hIX] at ht
+      change mult F (T _) < _ at ht
+      rw [hTP, hIP j hij.symm] at ht
+      exact lt_irrefl _ ht
+    · exact hfund hi ((hzero F _).1 ((eval_rep_eq_zero_iff_mem hG).1 ht.eval_rep_eq_zero))
+  · rw [mem_zeroLocus_pair_iff, hzero, hmemX] at hQ
+    have hTQP : T Q ≠ P := fun h ↦ hQP (map_injective _ hM (h.trans hTP.symm))
+    refine ⟨fun i hi ↦ ?_, ?_⟩
+    · subst hi
+      by_cases hi2 : i = 2
+      · exact hQP (hi2 ▸ rfl)
+      · exact hfund hi2 hQ.1
+    · rw [hIX]
+      exact hI j _ (mem_zeroLocus_pair_iff.2 hQ) hTQP
 
 /-- **Existence of excellent position** (Fulton, §7.4, Lemma 1). Let `k` be algebraically closed,
 `F` an irreducible form of degree `n`, and `P` a point of `ℙ²`, on `F` or not, that is not
@@ -407,9 +464,8 @@ theorem exists_isExcellentPosition [IsAlgClosed k] (hF : F.IsHomogeneous n)
     ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
       map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) := by
   classical
-  have hF0 := hirr.ne_zero
   obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F P = r :=
-    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hF0)).imp fun _ h ↦ h.symm
+    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
   have hℓ (a : Fin 3 → k) := isHomogeneous_sum_C_mul_X (σ := Fin 3) (R := k) a
   -- Two distinct lines through `P` meeting `F` as part (d) of the terrible-point theorem says.
   have hgood := Filter.eventually_cofinite.1
@@ -434,102 +490,23 @@ theorem exists_isExcellentPosition [IsAlgClosed k] (hF : F.IsHomogeneous n)
     rw [← eval_sum_C_mul_X]
     exact hc₂ P (by simp [S])
   -- The three lines are independent, so a change of coordinates moves them to `V(Xⱼ)`.
-  set a : Fin 3 → Fin 3 → k := ![c₀.rep, c₁.rep, c₂.rep]
-  have ha : LinearIndependent k a := by
-    rw [Fintype.linearIndependent_iff]
-    intro g hg
-    have hg2 : g 2 = 0 := by
-      have := congrArg (· ⬝ᵥ P.rep) hg
-      simp only [Fin.sum_univ_three, add_dotProduct, smul_dotProduct, zero_dotProduct] at this
-      simpa [a, h0, h1, h2] using this
-    have hpair : LinearIndependent k ![c₀.rep, c₁.rep] := by
-      have := independent_iff.1 ((independent_pair_iff_ne c₀ c₁).2 h01)
-      convert this using 1
-      ext i : 1
-      fin_cases i <;> rfl
-    obtain ⟨hg0, hg1⟩ := LinearIndependent.pair_iff.1 hpair (g 0) (g 1)
-      (by simpa [Fin.sum_univ_three, a, hg2] using hg)
-    intro i
-    fin_cases i
-    exacts [hg0, hg1, hg2]
-  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X ha Function.injective_id
-  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
-  set T := map M.mulVecLin hM
-  set G := linearSubst M F
-  have hG : G.IsHomogeneous n := hF.linearSubst M
-  have hG0 : G ≠ 0 := ((irreducible_linearSubst_iff hdet).2 hirr).ne_zero
-  have hX (j : Fin 3) : X j = linearSubst M (∑ i, C (a j i) * X i) := (hMa j).symm
-  have hzero (H : MvPolynomial (Fin 3) k) (Q : ℙ k (Fin 3 → k)) :
-      Q ∈ zeroLocus {linearSubst M H} ↔ T Q ∈ zeroLocus {H} := by
-    rw [← Set.image_singleton, zeroLocus_linearSubst]
-    rfl
-  have hmemX {Q : ℙ k (Fin 3 → k)} {j : Fin 3} :
-      Q ∈ zeroLocus {X j} ↔ T Q ∈ zeroLocus {∑ i, C (a j i) * X i} := by
-    rw [hX j, hzero]
-  have hI (Q : ℙ k (Fin 3 → k)) (j : Fin 3) :
-      intersectionNumber Q G (X j) = intersectionNumber (T Q) F (∑ i, C (a j i) * X i) := by
-    rw [hX j]
-    exact intersectionNumber_linearSubst hF (hℓ _) (Matrix.nonsingInvUnit M hdet) Q
-  -- `T` sends `[0 : 0 : 1]` to `P`, the common point of the first two lines.
-  have hTP : T (fundamentalPoint 2) = P := by
-    obtain ⟨x, hx⟩ := (LinearMap.injective_iff_surjective.1 hM) P.rep
-    have hcoord (j : Fin 3) : a j ⬝ᵥ P.rep = x j := by
-      rw [← eval_sum_C_mul_X, ← hx, Matrix.mulVecLin_apply, ← eval_linearSubst, hMa, eval_X]
-      rfl
-    have hx0 : x 0 = 0 := (hcoord 0).symm.trans h0
-    have hx1 : x 1 = 0 := (hcoord 1).symm.trans h1
-    have hx2 : x 2 ≠ 0 := (hcoord 2) ▸ h2
-    have hxe : x = x 2 • Pi.single 2 1 := by
-      ext i
-      fin_cases i <;> simp [hx0, hx1]
-    simp only [T, fundamentalPoint_def, map_mk]
-    conv_rhs => rw [← P.mk_rep]
-    rw [mk_eq_mk_iff']
-    refine ⟨(x 2)⁻¹, ?_⟩
-    have hMx : M.mulVecLin x = x 2 • M.mulVecLin (Pi.single 2 1) := by
-      rw [← map_smul, ← hxe]
-    rw [← hx, hMx, smul_smul, inv_mul_cancel₀ hx2, one_smul]
-  -- `T` sends `[1 : 0 : 0]` and `[0 : 1 : 0]` off `F`.
-  have hfund {i : Fin 3} (hi : i ≠ 2) : T (fundamentalPoint i) ∉ zeroLocus {F} := by
-    intro hiF
-    have h2' : T (fundamentalPoint i) ∈ zeroLocus {∑ l, C (a 2 l) * X l} :=
-      hmemX.1 (fundamentalPoint_mem_zeroLocus_X_iff.2 hi)
-    refine hc₂ _ ?_
-      (by rw [eval_sum_C_mul_X]; exact (mem_zeroLocus_singleton_sum_C_mul_X_iff _ _).1 h2')
-    obtain rfl | rfl : i = 0 ∨ i = 1 := by fin_cases i <;> simp at hi ⊢
-    · have h1' : T (fundamentalPoint 0) ∈ zeroLocus {∑ l, C (a 1 l) * X l} :=
-        hmemX.1 (fundamentalPoint_mem_zeroLocus_X_iff.2 (by decide))
-      exact Or.inl (Or.inr (mem_zeroLocus_pair_iff.2 ⟨hiF, h1'⟩))
-    · have h0' : T (fundamentalPoint 1) ∈ zeroLocus {∑ l, C (a 0 l) * X l} :=
-        hmemX.1 (fundamentalPoint_mem_zeroLocus_X_iff.2 (by decide))
-      exact Or.inl (Or.inl (mem_zeroLocus_pair_iff.2 ⟨hiF, h0'⟩))
-  refine ⟨M, hM, hTP, ?_, fun j Q hQ hQP ↦ ?_⟩
-  · -- Good position: at `[0 : 0 : 1]` the first two lines are not tangent.
-    rw [isGoodPosition_def]
-    intro i j hij ht
-    by_cases hi : i = 2
-    · subst hi
-      rw [isTangentAt_iff_mult_lt_intersectionNumber hG hG0 (isHomogeneous_X k j) (X_ne_zero j)
-        (isTangentAt_def.1 ht).2.2.1, mult_linearSubst hF hM, hI] at ht
-      change mult F (T _) < _ at ht
-      rw [hTP, hr] at ht
-      fin_cases j
-      · simp [a, hIP₀] at ht
-      · simp [a, hIP₁] at ht
-      · exact hij rfl
-    · exact hfund hi ((hzero F _).1 ((eval_rep_eq_zero_iff_mem hG).1 ht.eval_rep_eq_zero))
-  · rw [mem_zeroLocus_pair_iff, hzero, hmemX] at hQ
-    have hTQP : T Q ≠ P := fun h ↦ hQP (map_injective _ hM (h.trans hTP.symm))
-    refine ⟨fun i hi ↦ ?_, ?_⟩
-    · subst hi
-      by_cases hi2 : i = 2
-      · exact hQP (hi2 ▸ rfl)
-      · exact hfund hi2 hQ.1
-    · rw [hI]
-      fin_cases j
-      · exact hI₀ _ (mem_zeroLocus_pair_iff.2 hQ) hTQP
-      · exact hI₁ _ (mem_zeroLocus_pair_iff.2 hQ) hTQP
-      · exact hI₂ _ (mem_zeroLocus_pair_iff.2 hQ)
+  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X
+    (linearIndependent_rep_of_dotProduct h01 h0 h1 h2) Function.injective_id
+  have hTP : map M.mulVecLin hM (fundamentalPoint 2) = P := by
+    rw [fundamentalPoint_def]
+    refine map_mk_single_eq_of_linearSubst_sum_C_mul_X_eq_X hM hMa fun j hj ↦ ?_
+    fin_cases j
+    exacts [h0, h1, absurd rfl hj]
+  refine ⟨M, hM, hTP, isExcellentPosition_linearSubst_of_lines hF hirr hM hMa hTP
+    (fun j ↦ ?_) (fun j hj ↦ ?_) (fun j hj Q hQ hQ2 ↦ hc₂ Q ?_ ?_)⟩
+  · fin_cases j
+    exacts [hI₀, hI₁, fun Q hQ _ ↦ hI₂ Q hQ]
+  · fin_cases j
+    exacts [hIP₀.trans hr.symm, hIP₁.trans hr.symm, absurd rfl hj]
+  · fin_cases j
+    exacts [Or.inl (Or.inl hQ), Or.inl (Or.inr hQ), absurd rfl hj]
+  · rw [eval_sum_C_mul_X]
+    exact (mem_zeroLocus_singleton_sum_C_mul_X_iff _ _).1 hQ2
 
 /-- **Existence of excellent position in characteristic zero** (Fulton, §7.4, Lemma 1). Over an
 algebraically closed field of characteristic zero, every point `P` of `ℙ²` can be moved to
