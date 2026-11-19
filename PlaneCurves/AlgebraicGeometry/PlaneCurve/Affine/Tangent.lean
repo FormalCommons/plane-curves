@@ -12,6 +12,7 @@ public import PlaneCurves.Algebra.BigOperators.Multiset
 public import PlaneCurves.Algebra.GroupWithZero.Associated
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Multiplicity
 public import PlaneCurves.RingTheory.MvPolynomial.BinaryForm.Basic
+public import PlaneCurves.RingTheory.MvPolynomial.LinearForm
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 public import PlaneCurves.RingTheory.Multiplicity
 
@@ -47,7 +48,10 @@ squarefree.
 * `PlaneCurves.Affine.tangentMultiplicity_eq_countP`: in a factorization of the leading form
   into tangents, the multiplicity of a tangent counts the factors associated to it.
 * `PlaneCurves.Affine.isOrdinaryMultiplePoint_iff`: a multiple point is ordinary exactly when
-  it has `m_P(F)` distinct tangents.
+  it has `m_P(F)` distinct tangents, and
+  `PlaneCurves.Affine.IsOrdinaryMultiplePoint.tangentMultiplicity_eq_one`: its tangents are simple.
+* `PlaneCurves.Affine.IsTangentAt.exists_associated_X_one_sub_C_mul_X_zero`: if `X` is not a
+  tangent, every tangent is `Y - α X` up to a nonzero scalar.
 * `PlaneCurves.Affine.multiplicity_tangent_mul`: multiplicity and tangent lines of a product of
   plane curves, as in §3.1 of Fulton.
 
@@ -243,6 +247,40 @@ theorem tangentMultiplicity_eq_countP {ε : k} (hε : ε ≠ 0)
   rw [tangentMultiplicity_def, heq, multiplicity_eq_of_associated_right
     (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hε).map C))]
   exact Multiset.multiplicity_prod_eq_countP hp fun L hL ↦ (hu L hL).prime.irreducible
+
+/-- If `X` is not tangent to `F` at `P`, then every tangent at `P` is associated to `Y - α X`
+for some `α`. -/
+theorem IsTangentAt.exists_associated_X_one_sub_C_mul_X_zero (hL : IsTangentAt F P L)
+    (hX : ¬IsTangentAt F P (X 0)) : ∃ α, Associated L (X 1 - C α * X 0) := by
+  have hL' := hL.isHomogeneous.eq_sum_C_mul_X
+  rw [Fin.sum_univ_two] at hL'
+  set a := L.coeff (Finsupp.single 0 1)
+  set b := L.coeff (Finsupp.single 1 1)
+  rcases eq_or_ne b 0 with hb | hb
+  · refine absurd ⟨isHomogeneous_X k 0, X_ne_zero 0, dvd_trans ⟨C a, ?_⟩ hL.dvd⟩ hX
+    rw [hL', hb]
+    simp [mul_comm]
+  · refine ⟨-a / b, ?_⟩
+    have hc : (C b * C (-a / b) : MvPolynomial (Fin 2) k) = -C a := by
+      rw [← C_mul, mul_div_cancel₀ _ hb, C_neg]
+    have hrepr : L = (X 1 - C (-a / b) * X 0) * C b := by
+      rw [hL']
+      linear_combination (X 0 : MvPolynomial (Fin 2) k) * hc
+    exact hrepr ▸ associated_mul_unit_left _ _ ((isUnit_iff_ne_zero.2 hb).map C)
+
+/-- A curve with an ordinary multiple point is nonzero. -/
+theorem IsOrdinaryMultiplePoint.ne_zero (h : IsOrdinaryMultiplePoint F P) : F ≠ 0 := by
+  rintro rfl
+  exact not_squarefree_zero (R := MvPolynomial (Fin 2) k) (by simpa using h.2)
+
+/-- At an ordinary multiple point every tangent has multiplicity one. -/
+theorem IsOrdinaryMultiplePoint.tangentMultiplicity_eq_one (h : IsOrdinaryMultiplePoint F P)
+    (hL : IsTangentAt F P L) : tangentMultiplicity F P L = 1 := by
+  refine le_antisymm ?_ ((tangentMultiplicity_pos_iff h.ne_zero hL.isHomogeneous hL.ne_zero).2 hL)
+  by_contra! h2
+  refine hL.prime.not_isUnit (h.2 L ?_)
+  rw [← sq]
+  exact (pow_dvd_pow L h2).trans (pow_multiplicity_dvd _ _)
 
 section IsAlgClosed
 

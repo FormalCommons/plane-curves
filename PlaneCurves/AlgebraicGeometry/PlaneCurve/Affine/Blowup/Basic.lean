@@ -9,6 +9,10 @@ public import Mathlib.Algebra.MvPolynomial.Division
 public import Mathlib.Algebra.MvPolynomial.Monad
 public import Mathlib.RingTheory.Localization.Away.Basic
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Line
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Multiplicity
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.SimplePoint
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Tangent
 public import PlaneCurves.RingTheory.MvPolynomial.Homogeneous
 public import PlaneCurves.RingTheory.MvPolynomial.LeadingForm
 
@@ -29,6 +33,12 @@ The substitution `X ↦ X, Y ↦ XZ` becomes an isomorphism after inverting `X`.
 irreducible `F` other than `X`, the strict transform is irreducible, the blow-up map
 `(x, z) ↦ (x, xz)` is a bijection away from `x = 0`, and the function fields `k(C)` and `k(C')`
 are isomorphic.
+
+Over a field, the points of the strict transform on the exceptional line, the fibre of the
+blow-up over the origin, are the points `(0, α)` for the tangents `Y - α X` of `F` at the
+origin, and the strict transform meets the exceptional line at `(0, α)` with intersection number
+the multiplicity of that tangent (Step (2) of §7.2 of Fulton). In particular, over an ordinary
+multiple point every point of the fibre is a simple point of the strict transform.
 
 ## Main definitions
 
@@ -59,6 +69,20 @@ are isomorphic.
 * `PlaneCurves.Affine.blowupFunctionFieldEquiv_x`, `PlaneCurves.Affine.blowupFunctionFieldEquiv_y`,
   `PlaneCurves.Affine.blowupFunctionFieldEquiv_symm_z`: `k(C) ≅ k(C')` sends `x ↦ x`, `y ↦ xz`,
   and its inverse sends `z ↦ y / x`.
+* `PlaneCurves.Affine.eval_zero_blowupStrictTransform_eq_zero_iff`: `F'(0, α) = 0` iff `Y - α X`
+  is tangent to `F` at the origin.
+* `PlaneCurves.Affine.exists_finset_eval_zero_blowupStrictTransform`: over an algebraically
+  closed field, if `X` is not tangent, the leading form is `ε ∏ (Y - α X) ^ rₐ` over the finitely
+  many points `(0, α)` of the fibre.
+* `PlaneCurves.Affine.intersectionNumber_blowupStrictTransform_X_zero`:
+  `I((0, α), F' ∩ X) = rₐ`, the multiplicity of the tangent `Y - α X`, and
+  `PlaneCurves.Affine.orderAt_blowupStrictTransform_le_intersectionNumber`:
+  `m_{(0, α)}(F') ≤ I((0, α), F' ∩ X)`.
+* `PlaneCurves.Affine.IsOrdinaryMultiplePoint.isSimplePoint_blowupStrictTransform`: over an
+  ordinary multiple point, the points of the fibre are simple points of `F'`, where it meets the
+  exceptional line with intersection number one.
+* `PlaneCurves.Affine.blowupStrictTransform_cusp`: the cusp `Y² - X³` has strict transform
+  `Z² - X`, with one point over the origin, a simple one.
 
 ## References
 
@@ -213,6 +237,25 @@ theorem aeval_zero_X_blowupStrictTransform (F : MvPolynomial (Fin 2) R) :
   · intro h
     rw [homogeneousComponent_eq_zero _ _
       (by simpa [Nat.lt_succ_iff] using h), map_zero, mul_zero]
+
+/-- The value of the strict transform on the exceptional line, as a polynomial in one variable:
+`F'(0, T) = F_r(1, T)`. -/
+theorem aeval_zero_polynomial_X_blowupStrictTransform (F : MvPolynomial (Fin 2) R) :
+    (MvPolynomial.aeval ![0, Polynomial.X] (blowupStrictTransform F) : Polynomial R) =
+      MvPolynomial.aeval ![1, Polynomial.X] (F.leadingFormAt 0) := by
+  have h := congr(MvPolynomial.aeval ![(0 : Polynomial R), Polynomial.X]
+    $(aeval_zero_X_blowupStrictTransform F))
+  rw [← AlgHom.comp_apply, ← AlgHom.comp_apply, comp_aeval, comp_aeval] at h
+  convert h using 2 <;> (ext i : 1; fin_cases i <;> simp)
+
+/-- The value of the strict transform at a point `(0, z)` of the exceptional line:
+`F'(0, z) = F_r(1, z)`. -/
+theorem eval_zero_blowupStrictTransform (F : MvPolynomial (Fin 2) R) (z : R) :
+    eval ![0, z] (blowupStrictTransform F) = eval ![1, z] (F.leadingFormAt 0) := by
+  have h := congr(MvPolynomial.aeval ![(0 : R), z] $(aeval_zero_X_blowupStrictTransform F))
+  rw [← AlgHom.comp_apply, ← AlgHom.comp_apply, comp_aeval, comp_aeval] at h
+  change MvPolynomial.aeval ![0, z] _ = MvPolynomial.aeval ![1, z] _
+  convert h using 2 <;> (ext i : 1; fin_cases i <;> simp)
 
 /-- The strict transform of a nonzero curve is not divisible by `X`: it does not contain the
 exceptional line. -/
@@ -407,6 +450,7 @@ theorem not_irreducible_blowupStrictTransform_X_zero :
   simp [not_irreducible_one]
 
 end Domain
+
 section Field
 
 variable {k : Type*} [Field k]
@@ -598,6 +642,178 @@ theorem blowupFunctionFieldEquiv_symm_z [(Ideal.span {F}).IsPrime] :
       (not_blowupStrictTransform_dvd_X_zero hF hX))]
 
 end Field
+
+section Fibre
+
+/-! ### The fibre over the origin
+
+The points of the strict transform on the exceptional line `X = 0` are the points `(0, α)` for
+the tangents `Y - α X` of `F` at the origin, and the intersection number there with the
+exceptional line is the multiplicity of the tangent. -/
+
+variable {k : Type*} [Field k] {F : MvPolynomial (Fin 2) k}
+
+/-- **The fibre of the blow-up over the origin.** The strict transform of a nonzero curve `F`
+passes through the point `(0, α)` of the exceptional line exactly when `Y - α X` is tangent to
+`F` at the origin. -/
+theorem eval_zero_blowupStrictTransform_eq_zero_iff (hF : F ≠ 0) (α : k) :
+    eval ![0, α] (blowupStrictTransform F) = 0 ↔ IsTangentAt F 0 (X 1 - C α * X 0) := by
+  have hG := (isHomogeneous_leadingFormAt F 0)
+  rw [← tangentMultiplicity_pos_iff hF (isHomogeneous_X_one_sub_C_mul_X_zero α)
+    (X_one_sub_C_mul_X_zero_ne_zero α), tangentMultiplicity_def,
+    hG.multiplicity_X_one_sub_C_mul_X_zero (leadingFormAt_ne_zero hF),
+    Polynomial.rootMultiplicity_pos
+      ((hG.aeval_one_polynomial_X_eq_zero_iff).not.2 (leadingFormAt_ne_zero hF)),
+    Polynomial.IsRoot.def, eval_zero_blowupStrictTransform, ← Polynomial.coe_aeval_eq_eval,
+    ← AlgHom.comp_apply, comp_aeval]
+  change MvPolynomial.aeval ![1, α] _ = 0 ↔ _
+  congr! 2
+  ext i : 1
+  fin_cases i <;> simp
+
+/-- **Intersection with the exceptional line.** For a nonzero curve `F`, the intersection number
+at `(0, α)` of the strict transform with the exceptional line `X = 0` is the multiplicity of
+`Y - α X` as a tangent of `F` at the origin. -/
+theorem intersectionNumber_blowupStrictTransform_X_zero (hF : F ≠ 0) (α : k) :
+    intersectionNumber ![0, α] (blowupStrictTransform F) (X 0) =
+      tangentMultiplicity F 0 (X 1 - C α * X 0) := by
+  have hG := isHomogeneous_leadingFormAt F 0
+  have hv : (![0, 1] : Fin 2 → k) ≠ 0 := fun h ↦ by simpa using congrFun h 1
+  have hr : (fun i ↦ Polynomial.C ((0 : Fin 2 → k) i) + Polynomial.C (![0, 1] i) * Polynomial.X) =
+      ![0, Polynomial.X] := by
+    ext i : 1
+    fin_cases i <;> simp
+  have h := intersectionNumber_line_eq_rootMultiplicity (a := 0) (F := blowupStrictTransform F) hv
+    (by
+      rw [hr, aeval_zero_polynomial_X_blowupStrictTransform]
+      exact hG.aeval_one_polynomial_X_eq_zero_iff.not.2 (leadingFormAt_ne_zero hF)) α
+  rw [hr, aeval_zero_polynomial_X_blowupStrictTransform] at h
+  have hP : (0 : Fin 2 → k) + α • ![0, 1] = ![0, α] := by
+    ext i : 1
+    fin_cases i <;> simp
+  rw [hP] at h
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one, Pi.zero_apply,
+    map_one, map_zero, sub_zero, one_mul, zero_mul] at h
+  rw [intersectionNumber_comm, h, tangentMultiplicity_def,
+    hG.multiplicity_X_one_sub_C_mul_X_zero (leadingFormAt_ne_zero hF)]
+
+/-- The multiplicity of the strict transform at a point `(0, α)` of the exceptional line is at
+most its intersection number there with the exceptional line. -/
+theorem orderAt_blowupStrictTransform_le_intersectionNumber (F : MvPolynomial (Fin 2) k) (α : k) :
+    (blowupStrictTransform F).orderAt ![0, α] ≤
+      intersectionNumber ![0, α] (blowupStrictTransform F) (X 0) := by
+  have h1 : (X 0 : MvPolynomial (Fin 2) k).orderAt ![0, α] = 1 :=
+    isSimplePoint_iff_orderAt_eq_one.1 (isSimplePoint_def.2 ⟨by simp, 0, by simp⟩)
+  simpa [h1] using
+    mul_orderAt_le_intersectionNumber ![0, α] (blowupStrictTransform F) (X 0)
+
+/-- The multiplicity of the strict transform of a nonzero curve `F` at `(0, α)` is at most the
+multiplicity of `Y - α X` as a tangent of `F` at the origin. -/
+theorem orderAt_blowupStrictTransform_le_tangentMultiplicity (hF : F ≠ 0) (α : k) :
+    (blowupStrictTransform F).orderAt ![0, α] ≤ tangentMultiplicity F 0 (X 1 - C α * X 0) :=
+  intersectionNumber_blowupStrictTransform_X_zero hF α ▸
+    orderAt_blowupStrictTransform_le_intersectionNumber F α
+
+/-- **Blowing up an ordinary multiple point.** If the origin is an ordinary multiple point of `F`
+and `Y - α X` is a tangent there, then `(0, α)` is a simple point of the strict transform, where
+it meets the exceptional line with intersection number one. -/
+theorem IsOrdinaryMultiplePoint.isSimplePoint_blowupStrictTransform
+    (h : IsOrdinaryMultiplePoint F 0) {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0)) :
+    IsSimplePoint (blowupStrictTransform F) ![0, α] ∧
+      intersectionNumber ![0, α] (blowupStrictTransform F) (X 0) = 1 := by
+  have hI : intersectionNumber ![0, α] (blowupStrictTransform F) (X 0) = 1 := by
+    rw [intersectionNumber_blowupStrictTransform_X_zero h.ne_zero, h.tangentMultiplicity_eq_one hα,
+      Nat.cast_one]
+  refine ⟨isSimplePoint_iff_orderAt_eq_one.2 (le_antisymm ?_ ?_), hI⟩
+  · exact hI ▸ orderAt_blowupStrictTransform_le_intersectionNumber F α
+  · exact Order.one_le_iff_pos.2 (orderAt_pos_iff.2
+      ((eval_zero_blowupStrictTransform_eq_zero_iff h.ne_zero α).2 hα))
+
+/-- If the origin is an ordinary multiple point of `F` and `Y - α X` is a tangent there, then the
+exceptional line `X = 0` has order one at the simple point `(0, α)` of the strict transform: the
+order `ord_{(0, α)}(x)` in the local ring of the strict transform is one. -/
+theorem IsOrdinaryMultiplePoint.ord_X_zero_blowupStrictTransform
+    (h : IsOrdinaryMultiplePoint F 0) {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0)) :
+    Ring.ord (AffineSpace.localRing k ![0, α] ⧸
+        Ideal.span {algebraMap _ (AffineSpace.localRing k ![0, α]) (blowupStrictTransform F)})
+      (Ideal.Quotient.mk _ (algebraMap (MvPolynomial (Fin 2) k) (AffineSpace.localRing k ![0, α])
+        (X 0))) = 1 :=
+  (intersectionNumber_eq_ord _ _ _).symm.trans (h.isSimplePoint_blowupStrictTransform hα).2
+
+/-- Over an algebraically closed field, if `X` is not tangent to the nonzero curve `F` at the
+origin, the points of the strict transform on the exceptional line are the points `(0, α)` for
+`α` in a finite set `A`, and the leading form of `F` at the origin is
+`ε ∏_{α ∈ A} (Y - α X) ^ rₐ` with `ε ≠ 0` and `rₐ` the multiplicity of the tangent `Y - α X`. -/
+theorem exists_finset_eval_zero_blowupStrictTransform [IsAlgClosed k] (hF : F ≠ 0)
+    (hX : ¬IsTangentAt F 0 (X 0)) :
+    ∃ A : Finset k, (∀ α, α ∈ A ↔ eval ![0, α] (blowupStrictTransform F) = 0) ∧
+      ∃ ε : k, ε ≠ 0 ∧ F.leadingFormAt 0 =
+        C ε * ∏ α ∈ A, (X 1 - C α * X 0) ^ tangentMultiplicity F 0 (X 1 - C α * X 0) := by
+  classical
+  set g : Polynomial k := MvPolynomial.aeval ![0, Polynomial.X] (blowupStrictTransform F)
+  have hg : g ≠ 0 := by
+    rw [show g = _ from aeval_zero_polynomial_X_blowupStrictTransform F]
+    exact (isHomogeneous_leadingFormAt F 0).aeval_one_polynomial_X_eq_zero_iff.not.2
+      (leadingFormAt_ne_zero hF)
+  have hA : ∀ α, α ∈ g.roots.toFinset ↔ eval ![0, α] (blowupStrictTransform F) = 0 := by
+    intro α
+    rw [Multiset.mem_toFinset, Polynomial.mem_roots hg, Polynomial.IsRoot.def,
+      ← Polynomial.coe_aeval_eq_eval, ← AlgHom.comp_apply, comp_aeval]
+    change _ ↔ MvPolynomial.aeval ![0, α] _ = 0
+    congr! 2
+    ext i : 1
+    fin_cases i <;> simp
+  have hfib := eval_zero_blowupStrictTransform_eq_zero_iff hF
+  refine ⟨g.roots.toFinset, hA, ?_⟩
+  have hs : ∀ L ∈ g.roots.toFinset.image (fun α ↦ (X 1 - C α * X 0 : MvPolynomial (Fin 2) k)),
+      IsTangentAt F 0 L := by
+    simp only [Finset.mem_image]
+    rintro _ ⟨α, hα, rfl⟩
+    exact (hfib α).1 ((hA α).1 hα)
+  have hpair : (↑(g.roots.toFinset.image (fun α ↦ (X 1 - C α * X 0 : MvPolynomial (Fin 2) k))) :
+      Set (MvPolynomial (Fin 2) k)).Pairwise (fun L L' ↦ ¬Associated L L') := by
+    simp only [Finset.coe_image, Set.Pairwise, Set.mem_image, Finset.mem_coe]
+    rintro _ ⟨α, -, rfl⟩ _ ⟨β, -, rfl⟩ hne h
+    exact hne (by rw [associated_X_one_sub_C_mul_X_zero_iff.1 h])
+  have hcov : ∀ L, IsTangentAt F 0 L → ∃ L' ∈ g.roots.toFinset.image
+      (fun α ↦ (X 1 - C α * X 0 : MvPolynomial (Fin 2) k)), Associated L L' := by
+    intro L hL
+    obtain ⟨α, hα⟩ := hL.exists_associated_X_one_sub_C_mul_X_zero hX
+    refine ⟨_, Finset.mem_image_of_mem _ ((hA α).2 ((hfib α).2 ?_)), hα⟩
+    exact isTangentAt_def.2 ⟨isHomogeneous_X_one_sub_C_mul_X_zero α,
+      X_one_sub_C_mul_X_zero_ne_zero α, hα.symm.dvd.trans hL.dvd⟩
+  obtain ⟨ε, hε, heq⟩ := leadingFormAt_eq_C_mul_prod_pow hs hpair hcov hF
+  exact ⟨ε, hε, by rwa [Finset.prod_image fun α _ β _ h ↦
+    X_one_sub_C_mul_X_zero_injective h] at heq⟩
+
+/-- The strict transform of the cusp `Y² - X³` is `Z² - X`: the cusp has multiplicity two at the
+origin, and its only tangent is `Y`. -/
+theorem blowupStrictTransform_cusp :
+    (((X 1 ^ 2 - X 0 ^ 3 : MvPolynomial (Fin 2) k)).orderAt 0).toNat = 2 ∧
+      blowupStrictTransform (X 1 ^ 2 - X 0 ^ 3 : MvPolynomial (Fin 2) k) = X 1 ^ 2 - X 0 := by
+  refine blowupStrictTransform_eq_of_aeval_eq_of_not_dvd ?_ ?_ ?_
+  · intro h
+    simpa using congr(eval ![0, 1] $h)
+  · simp
+    ring
+  · rintro ⟨q, hq⟩
+    simpa using congr(eval ![0, 1] $hq)
+
+/-- The strict transform `Z² - X` of the cusp `Y² - X³` meets the exceptional line `X = 0` only
+at the origin, the point corresponding to its tangent `Y` (Problem 7.6 of Fulton). -/
+theorem eval_zero_blowupStrictTransform_cusp_eq_zero_iff (α : k) :
+    eval ![0, α] (blowupStrictTransform (X 1 ^ 2 - X 0 ^ 3 : MvPolynomial (Fin 2) k)) = 0 ↔
+      α = 0 := by
+  simp [(blowupStrictTransform_cusp (k := k)).2]
+
+/-- The only point `(0, 0)` of the strict transform of the cusp `Y² - X³` over the origin is a
+simple point of it. -/
+theorem isSimplePoint_blowupStrictTransform_cusp :
+    IsSimplePoint (blowupStrictTransform (X 1 ^ 2 - X 0 ^ 3 : MvPolynomial (Fin 2) k)) 0 := by
+  rw [(blowupStrictTransform_cusp (k := k)).2]
+  exact isSimplePoint_def.2 ⟨by simp, 0, by simp⟩
+
+end Fibre
 
 end PlaneCurves.Affine
 

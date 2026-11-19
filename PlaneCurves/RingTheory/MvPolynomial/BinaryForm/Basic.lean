@@ -33,6 +33,12 @@ Its dehomogenization is `F(X, 1) = aeval ![Polynomial.X, 1] F`.
 * `MvPolynomial.irreducible_C_mul_X_add_C_mul_X`, `MvPolynomial.rel_associated_of_C_mul_prod_eq`:
   over a field, a nonzero linear binary form `a X + b Y` is irreducible, so the linear factors of
   a binary form are unique up to order and nonzero scalars.
+* `MvPolynomial.IsHomogeneous.multiplicity_X_zero_sub_C_mul_X_one`,
+  `MvPolynomial.IsHomogeneous.multiplicity_X_one_sub_C_mul_X_zero`: over a domain, the
+  multiplicity of `X - a Y` in a nonzero binary form `F` is that of the root `a` of `F(X, 1)`, and
+  the multiplicity of `Y - a X` is that of the root `a` of `F(1, Y)`.
+* `MvPolynomial.associated_X_one_sub_C_mul_X_zero_iff`: the linear forms `Y - α X` are pairwise
+  non-associated.
 
 ## References
 
@@ -89,6 +95,63 @@ theorem IsHomogeneous.exists_eq_C_mul_prod_of_splits (hF : F.IsHomogeneous d) (h
       map_neg, neg_mul, ← sub_eq_add_neg]
     ring
 
+/-- Over a domain, the multiplicity of the linear factor `X - a Y` in a nonzero binary form `F`
+is the multiplicity of `a` as a root of its dehomogenization `F(X, 1)`. -/
+theorem IsHomogeneous.multiplicity_X_zero_sub_C_mul_X_one (hF : F.IsHomogeneous d)
+    (hF₀ : F ≠ 0) (a : R) :
+    multiplicity (X 0 - C a * X 1) F =
+      (MvPolynomial.aeval ![Polynomial.X, 1] F : Polynomial R).rootMultiplicity a := by
+  set g : Polynomial R := MvPolynomial.aeval ![Polynomial.X, 1] F
+  have hgd : g.natDegree ≤ d := hF.natDegree_aeval_le fun i ↦ by fin_cases i <;> simp
+  have hFg : g.homogenize d = F := Polynomial.homogenize_eq_of_isHomogeneous hF rfl
+  have hg : g ≠ 0 := by
+    rintro h
+    exact hF₀ (by rw [← hFg, h, Polynomial.homogenize_zero])
+  -- `g = (X - a) ^ m q` with `q(a) ≠ 0`, so `F = (X - a Y) ^ m Q` with `Q(a, 1) = q(a) ≠ 0`.
+  obtain ⟨q, hq, hqa⟩ := g.exists_eq_pow_rootMultiplicity_mul_and_not_dvd hg a
+  set m := g.rootMultiplicity a
+  have hq₀ : q ≠ 0 := by rintro rfl; exact hg (by rw [hq, mul_zero])
+  have hdeg : g.natDegree = m + q.natDegree := by
+    rw [hq, Polynomial.natDegree_mul (pow_ne_zero _ (Polynomial.X_sub_C_ne_zero a)) hq₀,
+      Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C, mul_one]
+  have hqd : q.natDegree ≤ d - m := by omega
+  have hL : ((Polynomial.X - Polynomial.C a) ^ m).homogenize m = (X 0 - C a * X 1) ^ m := by
+    simpa using Polynomial.homogenize_multiset_prod_X_sub_C (Multiset.replicate m a)
+  have h1 : ((Polynomial.X - Polynomial.C a) ^ m).natDegree ≤ m := by
+    rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C, mul_one]
+  have hF' : F = (X 0 - C a * X 1) ^ m * q.homogenize (d - m) := by
+    rw [← hL, ← Polynomial.homogenize_mul _ _ h1 hqd, ← hq, Nat.add_sub_cancel' (by omega), hFg]
+  have hev : MvPolynomial.aeval ![Polynomial.X, 1] (X 0 - C a * X 1 : MvPolynomial (Fin 2) R) =
+      Polynomial.X - Polynomial.C a := by
+    simp only [map_sub, map_mul, aeval_X, aeval_C, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_fin_one, mul_one, Polynomial.algebraMap_eq]
+  have hL₀ : (X 0 - C a * X 1 : MvPolynomial (Fin 2) R) ≠ 0 := fun h ↦
+    Polynomial.X_sub_C_ne_zero a (by rw [← hev, h, map_zero])
+  refine multiplicity_eq_of_dvd_of_not_dvd ⟨_, hF'⟩ fun h ↦ hqa ?_
+  rw [hF', pow_succ, mul_dvd_mul_iff_left (pow_ne_zero _ hL₀)] at h
+  have := map_dvd (MvPolynomial.aeval ![Polynomial.X, (1 : Polynomial R)]) h
+  rwa [hev, Polynomial.aeval_homogenize_X_one _ hqd] at this
+
+/-- Over a domain, the multiplicity of the linear factor `Y - a X` in a nonzero binary form `F`
+is the multiplicity of `a` as a root of its dehomogenization `F(1, Y)`. -/
+theorem IsHomogeneous.multiplicity_X_one_sub_C_mul_X_zero (hF : F.IsHomogeneous d)
+    (hF₀ : F ≠ 0) (a : R) :
+    multiplicity (X 1 - C a * X 0) F =
+      (MvPolynomial.aeval ![1, Polynomial.X] F : Polynomial R).rootMultiplicity a := by
+  have h := IsHomogeneous.multiplicity_X_zero_sub_C_mul_X_one
+    (hF.rename_isHomogeneous (f := Equiv.swap (0 : Fin 2) 1))
+    ((map_ne_zero_iff _ (rename_injective _ (Equiv.injective _))).2 hF₀) a
+  have he : rename (Equiv.swap (0 : Fin 2) 1) (X 1 - C a * X 0 : MvPolynomial (Fin 2) R) =
+      X 0 - C a * X 1 := by simp
+  have hg : MvPolynomial.aeval ![Polynomial.X, 1] (rename (Equiv.swap (0 : Fin 2) 1) F) =
+      (MvPolynomial.aeval ![1, Polynomial.X] F : Polynomial R) := by
+    rw [aeval_rename]
+    congr 1
+    ext i : 1
+    fin_cases i <;> simp
+  rw [← he, hg] at h
+  rw [← h]
+  exact (multiplicity_map_eq (renameEquiv R (Equiv.swap (0 : Fin 2) 1))).symm
 end Domain
 
 section Field
@@ -126,6 +189,30 @@ theorem rel_associated_of_C_mul_prod_eq {ε ε' : K} (hε : ε ≠ 0) (hε' : ε
   refine (associated_unit_mul_left _ _ ((Ne.isUnit hε).map C)).symm.trans ?_
   rw [h]
   exact associated_unit_mul_left _ _ ((Ne.isUnit hε').map C)
+
+/-- The linear form `Y - α X` is a form of degree one. -/
+theorem isHomogeneous_X_one_sub_C_mul_X_zero (α : K) :
+    (X 1 - C α * X 0 : MvPolynomial (Fin 2) K).IsHomogeneous 1 :=
+  (isHomogeneous_X K 1).sub (isHomogeneous_C_mul_X α 0)
+
+/-- The linear form `Y - α X` is nonzero. -/
+theorem X_one_sub_C_mul_X_zero_ne_zero (α : K) : (X 1 - C α * X 0 : MvPolynomial (Fin 2) K) ≠ 0 :=
+  fun h ↦ by simpa using congr(eval ![0, 1] $h)
+
+/-- Distinct `α` give distinct linear forms `Y - α X`. -/
+theorem X_one_sub_C_mul_X_zero_injective :
+    Function.Injective fun α : K ↦ (X 1 - C α * X 0 : MvPolynomial (Fin 2) K) :=
+  fun α β h ↦ by simpa using congr(eval ![1, 0] $h)
+
+/-- The linear forms `Y - α X` and `Y - β X` are associated only when they are equal. -/
+theorem associated_X_one_sub_C_mul_X_zero_iff {α β : K} :
+    Associated (X 1 - C α * X 0 : MvPolynomial (Fin 2) K) (X 1 - C β * X 0) ↔ α = β := by
+  refine ⟨fun ⟨u, hu⟩ ↦ ?_, fun h ↦ h ▸ Associated.refl _⟩
+  obtain ⟨c, -, hc⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
+  rw [hc] at hu
+  have h1 : c = 1 := by simpa using congr(eval ![0, 1] $hu)
+  subst h1
+  exact X_one_sub_C_mul_X_zero_injective (by simpa using hu)
 
 /-- Over a field, the dehomogenization `F(X, 1)` of a product `F = ε ∏ᵢ (aᵢ X + bᵢ Y)` of linear
 forms splits. -/
