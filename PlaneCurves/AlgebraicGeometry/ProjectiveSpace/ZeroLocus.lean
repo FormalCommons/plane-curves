@@ -167,6 +167,19 @@ theorem mem_zeroLocus_iff_eval_rep (hS : ∀ f ∈ S, ∃ d, f.IsHomogeneous d) 
   conv_lhs => rw [← P.mk_rep]
   exact mk_mem_zeroLocus_iff hS _ _
 
+/-- A polynomial and a nonzero multiple of it have the same zero locus. -/
+theorem zeroLocus_singleton_smul {f : MvPolynomial (Fin (n + 1)) k} {c : k} (hc : c ≠ 0) :
+    zeroLocus {c • f} = zeroLocus {f} := by
+  ext P
+  simp only [mem_zeroLocus_iff, Set.mem_singleton_iff, forall_eq, smul_eval, mul_eq_zero, hc,
+    false_or]
+
+/-- A point lies on the coordinate hyperplane `Xⱼ = 0` exactly when its `j`-th homogeneous
+coordinate vanishes. -/
+theorem mem_zeroLocus_X_iff {j : Fin (n + 1)} : P ∈ zeroLocus {X j} ↔ P.rep j = 0 := by
+  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_X k j⟩)]
+  simp
+
 theorem zeroLocus_anti_mono (h : S ⊆ T) : zeroLocus T ⊆ zeroLocus S :=
   fun _ hP v hv hvP f hf ↦ (mem_zeroLocus_iff.1 hP) v hv hvP f (h hf)
 
