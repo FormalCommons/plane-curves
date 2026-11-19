@@ -8,6 +8,7 @@ module
 public import Mathlib.RingTheory.MvPolynomial.EulerIdentity
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Multiplicity
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Multiplicity
+public import PlaneCurves.LinearAlgebra.Projectivization.AffineChart
 public import TauCeti.RingTheory.MvPolynomial.CommonZero
 public import PlaneCurves.RingTheory.MvPolynomial.PolarDerivative
 
@@ -364,11 +365,8 @@ theorem IsSimplePoint.taylor_dehomogenize_tangentLine (hF : F.IsHomogeneous d) (
   have hP : mk k (i.insertNth 1 a) (Fin.insertNth_one_ne_zero i a) ∈ affineOpen i := by
     rw [mk_mem_affineOpen_iff]
     simp
-  have ha : affineChart i (mk k (i.insertNth 1 a) (Fin.insertNth_one_ne_zero i a)) = a := by
-    rw [← affineChart_symm_apply]
-    exact (affineChart i).right_inv (by simp)
   have hs := (isSimplePoint_iff_affine hF hP).1 h
-  rw [ha] at hs
+  rw [affineChart_mk_insertNth_one] at hs
   rw [dehomogenize_tangentLine hF i a ((isSimplePoint_mk_iff hF _ _).1 h).1,
     hs.leadingFormAt_eq]
   simp [taylor_X, smul_eq_C_mul]
