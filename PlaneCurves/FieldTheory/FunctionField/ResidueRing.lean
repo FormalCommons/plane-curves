@@ -8,6 +8,7 @@ module
 public import TauCeti.FieldTheory.FunctionField.Basic
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.RingTheory.Ideal.GoingUp
+public import Mathlib.RingTheory.Valuation.ValuationSubring
 
 /-!
 # Residue rings of subrings of a function field of one variable
@@ -26,6 +27,11 @@ which gives Fulton's statement
 The proof is Fulton's: for `x ∈ R` transcendental over `k` and `0 ≠ y ∈ I`, the element `y` is
 algebraic over `k[x]`, so `I` meets `k[x]` in a nonzero element `f(x)`, and `f` kills the
 residue of `x`.
+
+As an application, let `k` be algebraically closed, `c : σ → K` and `R` a valuation subring of a
+field `L ⊇ K` containing `k` and the `c l`. If the centre of `R` on `k[c]` is not zero, it is a
+`k`-point: there is `a : σ → k` such that `f(c)` lies in the maximal ideal of `R` iff `f(a) = 0`
+(`ValuationSubring.exists_forall_valuation_lt_one_iff_eval_eq_zero`).
 
 ## References
 
@@ -116,5 +122,62 @@ theorem isAlgebraic_quotient_and_isMaximal_and_bijective (hK : IsFunctionField k
       (hK.trdeg_subalgebra_le_one R) hp⟩
 
 end TauCeti.IsFunctionField
+
+/-! ### Centres of valuation rings on finitely generated subalgebras -/
+
+section ValuationSubring
+
+open MvPolynomial
+
+variable {k K L : Type*} [Field k] [Field K] [Algebra k K] [Field L] [Algebra k L]
+
+/-- **The centre of a valuation ring on a finitely generated subalgebra.** Let `k` be
+algebraically closed, `K` a function field of one variable over `k`, `c : σ → K`, and `R` a
+valuation subring of `L ⊇ K` containing `k` and the `ψ (c l)`, whose maximal ideal contains some
+nonzero `ψ (f(c))`. Then the elements `f(c)` with `ψ (f(c))` in the maximal ideal of `R` are
+those with `f(a) = 0`, for a point `a ∈ kˢ`. -/
+theorem ValuationSubring.exists_forall_valuation_lt_one_iff_eval_eq_zero [IsAlgClosed k]
+    (hK : TauCeti.IsFunctionField k K) {σ : Type*} (c : σ → K) (ψ : K →ₐ[k] L)
+    (R : ValuationSubring L) (hkR : ∀ a : k, algebraMap k L a ∈ R) (hc : ∀ l, ψ (c l) ∈ R)
+    (h0 : ∃ f : MvPolynomial σ k, aeval c f ≠ 0 ∧ R.valuation (ψ (aeval c f)) < 1) :
+    ∃ a : σ → k, ∀ f : MvPolynomial σ k, R.valuation (ψ (aeval c f)) < 1 ↔ eval a f = 0 := by
+  have hψ : ∀ f : MvPolynomial σ k, ψ (aeval c f) ∈ R := by
+    intro f
+    rw [← AlgHom.comp_apply, MvPolynomial.comp_aeval]
+    induction f using MvPolynomial.induction_on with
+    | C a => simpa using hkR a
+    | add p q hp hq => simpa using AddMemClass.add_mem hp hq
+    | mul_X p l hp => simpa using MulMemClass.mul_mem hp (hc l)
+  let θ : (aeval c).range →+* R :=
+    ((ψ : K →+* L).comp (aeval c).range.val.toRingHom).codRestrict R
+      (by rintro ⟨_, f, rfl⟩; exact hψ f)
+  let p := (IsLocalRing.maximalIdeal R).comap θ
+  have hmem_p : ∀ f, (⟨aeval c f, f, rfl⟩ : (aeval c).range) ∈ p ↔
+      R.valuation (ψ (aeval c f)) < 1 := fun f ↦ R.valuation_lt_one_iff ⟨_, hψ f⟩
+  have hp0 : p ≠ ⊥ := by
+    obtain ⟨f, hf0, hf⟩ := h0
+    intro hp
+    have := (hmem_p f).2 hf
+    rw [hp, Ideal.mem_bot] at this
+    exact hf0 (congrArg Subtype.val this)
+  have hbij := Ideal.bijective_algebraMap_quotient_of_trdeg_le_one
+    (hK.trdeg_subalgebra_le_one (aeval c).range) hp0
+  choose a ha using fun l ↦ hbij.2 (Ideal.Quotient.mk p ⟨c l, X l, aeval_X c l⟩)
+  let π : MvPolynomial σ k →ₐ[k] (aeval c).range ⧸ p :=
+    (Ideal.Quotient.mkₐ k p).comp (aeval c).rangeRestrict
+  have hπ : ∀ g, π g = Ideal.Quotient.mk p ⟨aeval c g, g, rfl⟩ := fun g ↦ by
+    rw [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk]
+    rfl
+  have h : π = (Algebra.ofId k ((aeval c).range ⧸ p)).comp (aeval a) := by
+    refine MvPolynomial.algHom_ext fun l ↦ ?_
+    rw [hπ (X l), AlgHom.comp_apply, aeval_X a l, Algebra.ofId_apply, ha l]
+    congr 2
+    exact aeval_X c l
+  refine ⟨a, fun f ↦ ?_⟩
+  rw [← hmem_p, ← Ideal.Quotient.eq_zero_iff_mem, ← hπ f, h, AlgHom.comp_apply,
+    Algebra.ofId_apply, map_eq_zero_iff _ hbij.1, aeval_eq_eval]
+
+
+end ValuationSubring
 
 end
