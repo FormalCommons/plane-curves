@@ -33,6 +33,10 @@ prime ideals of `𝒪_P(V)`.
 * `PlaneCurves.AffineSpace.map`, `PlaneCurves.AffineSpace.mapEquiv`: the local homomorphism
   `𝒪_Q(W) → 𝒪_P(V)` induced by a polynomial map `V → W` sending `P` to `Q`, and the isomorphism
   induced by a polynomial isomorphism.
+* `PlaneCurves.AffineSpace.functionField.equivOfEq h`,
+  `PlaneCurves.AffineSpace.localSubring.equivOfEq hI h hPQ hJ`: the isomorphisms
+  `k(V(I)) ≅ k(V(J))` and `𝒪_P(V(I)) ≅ 𝒪_Q(V(J))` for `I = J` and `P = Q`, the second the
+  restriction of the first.
 * `PlaneCurves.AffineSpace.denominatorIdeal I f`, `PlaneCurves.AffineSpace.poleSet I f`: the
   ideal of denominators `{G : G f ∈ Γ(V)}` and the pole set of `f ∈ k(V)`.
 * `PlaneCurves.AffineSpace.primesOrderIso P hI`: the prime ideals of `𝒪_P(V)` correspond to the
@@ -451,6 +455,91 @@ theorem mapEquiv_algebraMap (g : MvPolynomial τ k) :
     localRing.quotientMapEquiv_mk, localRing.mapEquiv_algebraMap, quotientAlgEquiv_symm_mk]
 
 end mapEquiv
+
+/-! ### Equal ideals and equal points -/
+
+section equivOfEq
+
+variable {J : Ideal (MvPolynomial σ k)} [J.IsPrime] (h : I = J)
+
+/-- The isomorphism `k(V(I)) ≅ k(V(J))` of function fields of equal prime ideals `I = J`,
+induced by `Γ(V(I)) = Γ(V(J))`. -/
+noncomputable def functionField.equivOfEq : functionField I ≃ₐ[k] functionField J :=
+  IsFractionRing.algEquivOfAlgEquiv (Ideal.quotientEquivAlgOfEq k h)
+
+omit [I.IsPrime] [J.IsPrime] in
+theorem functionField.equivOfEq_def : functionField.equivOfEq h =
+    IsFractionRing.algEquivOfAlgEquiv (Ideal.quotientEquivAlgOfEq k h) :=
+  (rfl)
+
+omit [I.IsPrime] [J.IsPrime] in
+/-- The isomorphism `k(V(I)) ≅ k(V(J))` is the identity on the class of a polynomial. -/
+@[simp]
+theorem functionField.equivOfEq_algebraMap (a : MvPolynomial σ k) :
+    functionField.equivOfEq h (algebraMap _ _ (Ideal.Quotient.mk I a)) =
+      algebraMap _ _ (Ideal.Quotient.mk J a) := by
+  rw [functionField.equivOfEq_def, IsFractionRing.algEquivOfAlgEquiv_algebraMap,
+    Ideal.quotientEquivAlgOfEq_mk]
+
+omit [I.IsPrime] [J.IsPrime] in
+@[simp]
+theorem functionField.equivOfEq_symm :
+    (functionField.equivOfEq h).symm = functionField.equivOfEq h.symm :=
+  (rfl)
+
+/-- The isomorphism `k(V(I)) ≅ k(V(J))` sends `a / b` to `a / b`. -/
+theorem functionField.equivOfEq_div (a b : MvPolynomial σ k) :
+    functionField.equivOfEq h
+        (algebraMap _ _ (Ideal.Quotient.mk I a) / algebraMap _ _ (Ideal.Quotient.mk I b)) =
+      algebraMap _ _ (Ideal.Quotient.mk J a) / algebraMap _ _ (Ideal.Quotient.mk J b) := by
+  rw [map_div₀, functionField.equivOfEq_algebraMap, functionField.equivOfEq_algebraMap]
+
+variable {P} {Q : σ → k} (hPQ : P = Q) (hJ : J ≤ vanishingIdeal k {Q})
+
+include hPQ in
+/-- For `I = J` and `P = Q`, the isomorphism `k(V(I)) ≅ k(V(J))` maps `𝒪_P(V(I))` onto
+`𝒪_Q(V(J))`. -/
+theorem map_localSubring_equivOfEq :
+    (localSubring P hI).toSubring.map (functionField.equivOfEq h).toRingEquiv.toRingHom =
+      (localSubring Q hJ).toSubring := by
+  subst hPQ
+  ext z
+  rw [Subring.mem_map, mem_localSubring_iff]
+  constructor
+  · rintro ⟨y, hy, rfl⟩
+    obtain ⟨a, b, hb, rfl⟩ := (mem_localSubring_iff P hI).1 hy
+    exact ⟨a, b, hb, functionField.equivOfEq_div h a b⟩
+  · rintro ⟨a, b, hb, rfl⟩
+    exact ⟨_, (mem_localSubring_iff P hI).2 ⟨a, b, hb, rfl⟩, functionField.equivOfEq_div h a b⟩
+
+/-- The isomorphism `𝒪_P(V(I)) ≅ 𝒪_Q(V(J))` for equal prime ideals `I = J` and equal points
+`P = Q`: the restriction of `functionField.equivOfEq` (`coe_equivOfEq`). -/
+noncomputable def localSubring.equivOfEq :
+    (localSubring P hI).toSubring ≃ₐ[k] (localSubring Q hJ).toSubring :=
+  AlgEquiv.ofRingEquiv (f := ((functionField.equivOfEq h).toRingEquiv.subringMap
+      (s := (localSubring P hI).toSubring)).trans
+      (RingEquiv.subringCongr (map_localSubring_equivOfEq hI h hPQ hJ)))
+    fun c ↦ Subtype.ext (by
+      change functionField.equivOfEq h (algebraMap k (functionField I) c) = _
+      rw [AlgEquiv.commutes]
+      rfl)
+
+/-- The isomorphism `𝒪_P(V(I)) ≅ 𝒪_Q(V(J))` is the restriction of `k(V(I)) ≅ k(V(J))`. -/
+@[simp]
+theorem localSubring.coe_equivOfEq (z : (localSubring P hI).toSubring) :
+    (localSubring.equivOfEq hI h hPQ hJ z : functionField J) = functionField.equivOfEq h z :=
+  (rfl)
+
+/-- The isomorphism `𝒪_P(V(I)) ≅ 𝒪_Q(V(J))` preserves values. -/
+@[simp]
+theorem localSubring.evalAt_equivOfEq (z : (localSubring P hI).toSubring) :
+    evalAt Q hJ (localSubring.equivOfEq hI h hPQ hJ z) = evalAt P hI z := by
+  subst hPQ
+  obtain ⟨a, b, hb, hz⟩ := (mem_localSubring_iff P hI).1 z.2
+  rw [evalAt_eq_div P hI hb hz, evalAt_eq_div P hJ hb (by
+    rw [localSubring.coe_equivOfEq, hz, functionField.equivOfEq_div])]
+
+end equivOfEq
 
 /-! ### Poles -/
 
