@@ -47,8 +47,10 @@ coordinates, general position and the lines of the plane in equations.
   forms can be made coordinates, and every linear subvariety of dimension `m` is carried to
   `V(X (m + 1), …, X n)`.
 * `exists_sum_C_mul_X_forall_notMem_zeroLocus`,
-  `exists_sum_C_mul_X_mem_zeroLocus_forall_notMem_zeroLocus`, `setOf_mem_zeroLocus_sum_C_mul_X`:
-  hyperplanes missing finitely many points, and the hyperplanes through a point.
+  `exists_sum_C_mul_X_mem_zeroLocus_forall_notMem_zeroLocus`,
+  `exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus`, `setOf_mem_zeroLocus_sum_C_mul_X`:
+  hyperplanes missing finitely many points, one through a point missing another, and the
+  hyperplanes through a point.
 * `zeroLocus_singleton_sum_C_mul_X_crossProduct`, `zeroLocus_pair_sum_C_mul_X`,
   `single_one_mem_zeroLocus_sum_C_mul_X_iff`: in `ℙ²`, the line through two points, the point
   of two lines, and the lines through `[0 : 1 : 0]`.
@@ -341,6 +343,31 @@ theorem exists_sum_C_mul_X_mem_zeroLocus_forall_notMem_zeroLocus [Infinite k] (h
     exact hfP
   · rw [mem_zeroLocus_singleton_sum_C_mul_X_iff]
     exact hf R (Set.mem_insert_of_mem _ hR)
+
+/-- **A hyperplane through one point missing another, in equations.** Over any field, for
+distinct points `P` and `Q` of `ℙⁿ` there is a linear form `∑ i, a i X i` vanishing at `P` and
+not at `Q`. -/
+theorem exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus {P Q : ℙ k (Fin (n + 1) → k)}
+    (h : P ≠ Q) : ∃ a : Fin (n + 1) → k, P ∈ zeroLocus {∑ i, C (a i) * X i} ∧
+      Q ∉ zeroLocus {∑ i, C (a i) * X i} := by
+  set D := dotProductEquiv k (Fin (n + 1))
+  have hQ : Q.rep ∉ k ∙ P.rep := by
+    rw [Submodule.mem_span_singleton]
+    rintro ⟨c, hc⟩
+    have hc0 : c ≠ 0 := by rintro rfl; exact Q.rep_ne_zero (by simp [← hc])
+    refine h (Eq.symm ?_)
+    rw [← P.mk_rep, ← Q.mk_rep, mk_eq_mk_iff]
+    exact ⟨Units.mk0 c hc0, hc⟩
+  obtain ⟨f, hfQ, hfP⟩ := Submodule.exists_dual_map_eq_bot_of_notMem hQ inferInstance
+  have hfP' : f P.rep = 0 := by
+    exact (Submodule.eq_bot_iff _).1 hfP _
+      (Submodule.mem_map_of_mem (Submodule.mem_span_singleton_self _))
+  rw [← D.apply_symm_apply f] at hfP' hfQ
+  refine ⟨D.symm f, ?_, ?_⟩
+  · rw [mem_zeroLocus_singleton_sum_C_mul_X_iff]
+    exact hfP'
+  · rw [mem_zeroLocus_singleton_sum_C_mul_X_iff]
+    exact hfQ
 
 /-- **The linear forms through a point.** The coefficient vectors `a` of the linear forms
 `∑ i, a i X i` vanishing at `P` form the kernel of `a ↦ P.rep ⬝ᵥ a`, a subspace of dimension `n`
