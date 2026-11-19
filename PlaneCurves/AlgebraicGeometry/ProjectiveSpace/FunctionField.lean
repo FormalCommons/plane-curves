@@ -65,6 +65,7 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
 * `mem_localSubring_iff`: an element of `k(V)` lies in `𝒪_P(V)` iff it is `f / g` with `f`, `g`
   forms of the same degree and `g(P) ≠ 0`; `mem_maximalIdeal_localSubring_iff`: it lies in the
   maximal ideal iff moreover `f(P) = 0` for some such `f / g`.
+* `surjective_algebraMap_residueField_localSubring`: the residue field of `𝒪_P(V)` is `k`.
 * `isFractionRing_localSubring`: `k(V)` is the field of fractions of `𝒪_P(V)`.
 * `exists_algebraMap_notMem_range_toFractionRing`: `Γ_h(V) ⊄ k(V)` inside the fraction field of
   `Γ_h(V)`, when `V` is nonempty.
@@ -544,6 +545,9 @@ theorem coe_algebraMap_localSubring (a : k) :
       functionField I) = algebraMap k (functionField I) a :=
   (rfl)
 
+instance : IsScalarTower k (localSubring I P).toSubring (functionField I) :=
+  IsScalarTower.of_algebraMap_eq fun _ ↦ rfl
+
 /-- The equivalence between the homogeneous localization `varietyLocalRing I P` and the local
 subring `𝒪_P(V)` of the function field. -/
 noncomputable def localSubringEquiv : varietyLocalRing I P ≃ₐ[k] (localSubring I P).toSubring :=
@@ -614,6 +618,24 @@ theorem mem_maximalIdeal_localSubring_iff {z : (localSubring I P).toSubring} :
     rw [← varietyLocalRing.toFunctionField_mk hf hg hgP] at h
     rw [varietyLocalRing.toFunctionField_injective I P h, varietyLocalRing.evalAt_mk_rep, hfP,
       zero_div]
+
+variable {I} in
+/-- **The residue field of `𝒪_P(V)` is `k`**: every element of `𝒪_P(V)` is congruent to its value
+at `P` modulo the maximal ideal. -/
+theorem surjective_algebraMap_residueField_localSubring :
+    Function.Surjective
+      (algebraMap k (IsLocalRing.ResidueField (localSubring I P).toSubring)) := by
+  intro w
+  obtain ⟨z, rfl⟩ := IsLocalRing.residue_surjective w
+  obtain ⟨y, rfl⟩ := (localSubringEquiv I P).surjective z
+  refine ⟨varietyLocalRing.evalAt I P y, ?_⟩
+  rw [IsScalarTower.algebraMap_apply k (localSubring I P).toSubring,
+    IsLocalRing.ResidueField.algebraMap_eq, eq_comm, ← sub_eq_zero, ← map_sub,
+    IsLocalRing.residue_eq_zero_iff, ← (localSubringEquiv I P).commutes, ← map_sub,
+    IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+    MulEquiv.isUnit_map (f := localSubringEquiv I P), ← mem_nonunits_iff,
+    ← IsLocalRing.mem_maximalIdeal, ← varietyLocalRing.ker_evalAt, RingHom.mem_ker, map_sub,
+    AlgHom.commutes, Algebra.algebraMap_self, RingHom.id_apply, sub_self]
 
 /-- **`k(V)` is the field of fractions of `𝒪_P(V)`**: `f / g = (f / Xᵢᵐ) / (g / Xᵢᵐ)` for a
 coordinate `Xᵢ` not vanishing at `P`. -/

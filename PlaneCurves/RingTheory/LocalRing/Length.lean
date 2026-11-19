@@ -5,6 +5,8 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.FieldTheory.IsAlgClosed.Basic
+public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.RingTheory.LocalRing.Length
 
 /-!
@@ -19,7 +21,10 @@ Let `B` be a local algebra over a field `k`. This file proves:
 * `IsLocalRing.length_eq_length_of_surjective_algebraMap_residueField`: if the residue field of
   `B` is `k`, lengths of `B`-modules over `k` and over `B` agree;
 * `IsLocalRing.existsUnique_sub_algebraMap_mem_maximalIdeal`: if the residue field of `B` is `k`,
-  every `z ∈ B` has a unique `c ∈ k` with `z - c` in the maximal ideal.
+  every `z ∈ B` has a unique `c ∈ k` with `z - c` in the maximal ideal;
+* `IsLocalRing.length_quotient_isMaximal_of_finite`: if `k` is algebraically closed and the
+  residue field of a local `k`-algebra `A` is `k`, then `B ⧸ 𝔪` has length one over `A` for every
+  finite `A`-algebra `B` and maximal ideal `𝔪` of `B`.
 -/
 
 public section
@@ -72,5 +77,45 @@ theorem IsLocalRing.existsUnique_sub_algebraMap_mem_maximalIdeal
   exact (sub_eq_zero.mp this).symm
 
 end LocalAlgebra
+
+/-- Let `A` be a local algebra over an algebraically closed field `k` whose residue field is `k`,
+and `B` a finite `A`-algebra. For every maximal ideal `𝔪` of `B`, the field `B ⧸ 𝔪` is `k`, so it
+has length one over `A`. -/
+theorem IsLocalRing.length_quotient_isMaximal_of_finite {k A B : Type*} [Field k] [IsAlgClosed k]
+    [CommRing A] [IsLocalRing A] [Algebra k A] [CommRing B] [Algebra A B] [Algebra k B]
+    [IsScalarTower k A B] [Module.Finite A B]
+    (hres : Function.Surjective (algebraMap k (ResidueField A))) (m : Ideal B) [m.IsMaximal] :
+    Module.length A (B ⧸ m) = 1 := by
+  have hcomap : m.comap (algebraMap A B) = maximalIdeal A :=
+    eq_maximalIdeal (Ideal.isMaximal_under_of_isIntegral_of_isMaximal m)
+  -- every element of `A` acts on `B ⧸ m` as a constant
+  have hconst : ∀ a : A, ∃ c : k, ∀ y : B ⧸ m, a • y = c • y := by
+    intro a
+    obtain ⟨c, hc, -⟩ := existsUnique_sub_algebraMap_mem_maximalIdeal hres a
+    refine ⟨c, fun y ↦ ?_⟩
+    rw [← hcomap, Ideal.mem_comap] at hc
+    rw [← algebraMap_smul A c, ← sub_eq_zero, ← sub_smul, Algebra.smul_def,
+      ← Ideal.Quotient.mk_algebraMap, Ideal.Quotient.eq_zero_iff_mem.mpr hc, zero_mul]
+  have hfin : Module.Finite k (B ⧸ m) := by
+    obtain ⟨s, hs⟩ := Module.Finite.fg_top (R := A) (M := B ⧸ m)
+    refine ⟨⟨s, eq_top_iff.mpr ?_⟩⟩
+    let N : Submodule A (B ⧸ m) :=
+      { carrier := Submodule.span k (s : Set (B ⧸ m))
+        add_mem' := add_mem
+        zero_mem' := zero_mem _
+        smul_mem' := fun a y hy ↦ by
+          obtain ⟨c, hc⟩ := hconst a
+          rw [hc]
+          exact Submodule.smul_mem _ c hy }
+    have : Submodule.span A (s : Set (B ⧸ m)) ≤ N := Submodule.span_le.mpr Submodule.subset_span
+    rw [hs] at this
+    exact fun y _ ↦ this trivial
+  have hsurj : Function.Surjective (algebraMap k (B ⧸ m)) :=
+    IsAlgClosed.algebraMap_bijective_of_isIntegral.2
+  have hrank : Module.finrank k (B ⧸ m) = 1 :=
+    Algebra.finrank_eq_one_iff_bijective_algebraMap.mpr
+      ⟨(algebraMap k (B ⧸ m)).injective, hsurj⟩
+  rw [← IsLocalRing.length_eq_length_of_surjective_algebraMap_residueField _ hres,
+    Module.length_eq_finrank, hrank, Nat.cast_one]
 
 end
