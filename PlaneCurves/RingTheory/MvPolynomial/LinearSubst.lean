@@ -31,7 +31,8 @@ the change of variables along `M⁻¹`.
 * `MvPolynomial.linearSubst_nonsing_inv_linearSubst`,
   `MvPolynomial.linearSubst_linearSubst_nonsing_inv`: for `M` with invertible determinant, the
   changes of variables along `M` and `M⁻¹` are inverse to each other.
-* `MvPolynomial.linearSubst_injective`: such a change of variables is injective.
+* `MvPolynomial.linearSubst_injective`, `MvPolynomial.irreducible_linearSubst_iff`: such a change
+  of variables is injective and preserves irreducibility.
 * `MvPolynomial.linearSubst_toPEquiv_toMatrix`: renaming the variables along a permutation is the
   change of variables along its permutation matrix.
 -/
@@ -137,6 +138,13 @@ theorem linearSubst_linearSubst_nonsing_inv {M : Matrix σ σ R} (hM : IsUnit M.
 theorem linearSubst_injective {M : Matrix σ σ R} (hM : IsUnit M.det) :
     Function.Injective (linearSubst M) :=
   Function.LeftInverse.injective (linearSubst_nonsing_inv_linearSubst hM)
+
+/-- A linear change of variables along a matrix with invertible determinant preserves
+irreducibility. -/
+theorem irreducible_linearSubst_iff {M : Matrix σ σ R} (hM : IsUnit M.det)
+    {p : MvPolynomial σ R} : Irreducible (linearSubst M p) ↔ Irreducible p := by
+  simpa using MulEquiv.irreducible_iff
+    (linearSubstAlgEquiv ((Matrix.isUnit_iff_isUnit_det M).2 hM).unit) (x := p)
 
 end CommRing
 
