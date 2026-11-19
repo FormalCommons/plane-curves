@@ -253,16 +253,21 @@ theorem functionField_def :
 noncomputable example : Field (functionField hF) := inferInstance
 
 omit [Fact (Irreducible F)] in
-/-- A point of `ℙ²` lies on `C : F = 0` iff `F` vanishes at it. -/
-theorem mem_zeroLocus_ideal_iff {P : ℙ k (Fin 3 → k)} :
-    P ∈ zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) ↔
-      eval P.rep F = 0 := by
+/-- The points of `C : F = 0`, the zero locus of its ideal, are the zeros of `F`. -/
+theorem zeroLocus_ideal :
+    zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) = zeroLocus {F} := by
   have h : (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) = Ideal.span {F} := by
     ext
     rw [SetLike.mem_coe, SetLike.mem_coe, ← HomogeneousIdeal.mem_iff,
       projectivePlaneCurve.toIdeal_ideal]
-  rw [h, ProjectiveSpace.zeroLocus_span,
-    ProjectiveSpace.mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩)]
+  rw [h, ProjectiveSpace.zeroLocus_span]
+
+omit [Fact (Irreducible F)] in
+/-- A point of `ℙ²` lies on `C : F = 0` iff `F` vanishes at it. -/
+theorem mem_zeroLocus_ideal_iff {P : ℙ k (Fin 3 → k)} :
+    P ∈ zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) ↔
+      eval P.rep F = 0 := by
+  rw [zeroLocus_ideal, ProjectiveSpace.mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩)]
   simp
 
 variable (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))

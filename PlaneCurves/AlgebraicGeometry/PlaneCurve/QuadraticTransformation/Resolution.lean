@@ -309,12 +309,6 @@ theorem finite_zeroLocus_inter_fundamentalTriangle (hF : F.IsHomogeneous n)
     (((isHomogeneous_X k 0).mul (isHomogeneous_X k 1)).mul (isHomogeneous_X k 2))
     (hirr.isRelPrime_iff_not_dvd.2 (by simp [hirr.prime.dvd_mul, hXF]))
 
-private theorem mem_zeroLocus_singleton_iff_mem_zeroLocus_ideal (hF : F.IsHomogeneous n)
-    {P : ℙ k (Fin 3 → k)} :
-    P ∈ zeroLocus {F} ↔
-      P ∈ zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) := by
-  rw [← mult_pos_iff hF, mult_pos_iff_eval_rep, mem_zeroLocus_ideal_iff hF]
-
 /-- **Points and local rings along a change of coordinates and a quadratic transformation**
 (Fulton, Problem 7.13). Let `F` be an irreducible form over a perfect field, `T` the change of
 coordinates of an invertible matrix `M` such that no coordinate line is a component of `F^T`,
@@ -394,7 +388,7 @@ theorem exists_finite_injOn_properTransform_linearSubst [PerfectField k] (hF : F
     exact hsimple R₀ hR
   · intro R R' hRB hRR'
     obtain ⟨R₀, hR₀⟩ := hTb.2 R.1
-    have hRC := (mem_zeroLocus_singleton_iff_mem_zeroLocus_ideal hF).2 R.2
+    have hRC := (zeroLocus_ideal hF).le R.2
     obtain ⟨-, hR₀t, -⟩ := hB R₀ (hR₀ ▸ ⟨hRC, hRB⟩)
     exact map_localSubring_linearSubstQuadraticFunctionFieldEquiv hF M hX hG hGF hR₀t hR₀
       (by rw [← hφ, hR₀, hRR'])
@@ -465,9 +459,9 @@ private theorem Avoids.trans {G₁ : MvPolynomial (Fin 3) k} {d : ℕ} {hF : F.I
       · exact hQ₁B h.2
     · exact Or.inl ⟨hQC, hQ⟩
   · intro R R' hRB hRR'
-    have hR := hmem R.1 ⟨(mem_zeroLocus_singleton_iff_mem_zeroLocus_ideal hF).2 R.2, hRB⟩
+    have hR := hmem R.1 ⟨(zeroLocus_ideal hF).le R.2, hRB⟩
     let R₁ : zeroLocus (projectivePlaneCurve.ideal hG₁ : Set (MvPolynomial (Fin 3) k)) :=
-      ⟨φ₁ R.1, (mem_zeroLocus_singleton_iff_mem_zeroLocus_ideal hG₁).1 hR.2.1⟩
+      ⟨φ₁ R.1, (zeroLocus_ideal hG₁).ge hR.2.1⟩
     have h1 := congrArg LocalSubring.toSubring (hl₁ R R₁ hR.1.2 rfl)
     have h2 := congrArg LocalSubring.toSubring (hl₂ R₁ R' hR.2.2 hRR')
     refine LocalSubring.toSubring_injective ?_
