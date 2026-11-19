@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Line
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.GroupLaw
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.NormalForm
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionCycle
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
@@ -44,6 +45,11 @@ them out of `F`, so that Fulton's third point `φ(P, Q)` of the chord through `P
 `CubicGroup F O` of the simple points of `F` with zero `O`, through the bijection above. No group
 axiom is proved again: the isomorphism only has to preserve addition.
 
+Last, for any irreducible cubic `F` with a flex `O`, a projective change of coordinates carries
+`F` to a multiple of a Weierstrass cubic `W.polynomial` and `[0 : 1 : 0]` to `O` (Fulton's
+Problem 5.24 (a)); it also carries third points to third points, so that the chord–tangent group
+`CubicGroup F O` is isomorphic to Mathlib's group `W.Point`.
+
 ## Main results
 
 * `WeierstrassCurve.Projective.isSimplePoint_polynomial_mk_iff`: `[v]` is a simple point of `F`
@@ -65,10 +71,13 @@ axiom is proved again: the isomorphism only has to preserve addition.
   in `P + Q + R`.
 * `WeierstrassCurve.Projective.Point.thirdPoint_toProjectivization`: `φ(P, Q) = -(P + Q)`.
 * `WeierstrassCurve.Projective.Point.toCubicGroup`: the isomorphism `W.Point ≃+ CubicGroup F O`.
+* `PlaneCurves.Projective.exists_addEquiv_weierstrass_of_isFlex`: the group of an irreducible
+  cubic with zero at a flex is the group of a Weierstrass curve, with `Δ ≠ 0` when the cubic is
+  nonsingular.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Problem 3.21, and §5.6
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Problem 3.21, Problem 5.24, and §5.6
 -/
 
 public section
@@ -626,5 +635,81 @@ end Point
 end IsAlgClosed
 
 end WeierstrassCurve.Projective
+
+/-! ### Cubics with a flex -/
+
+namespace PlaneCurves.Projective
+
+variable {k : Type*} [Field k] [IsAlgClosed k] {F : MvPolynomial (Fin 3) k}
+  {O : ℙ k (Fin 3 → k)}
+
+open WeierstrassCurve.Projective
+
+/-- Addition of points of `W` under a change of coordinates that carries an irreducible cubic `F`
+to `c • W.polynomial`: if `T` is the projective change of coordinates of `M`, then
+`T(P + Q) = φ(T(O'), φ(T(P), T(Q)))` on `F`, for `O' = [0 : 1 : 0]`. -/
+private theorem map_toProjectivization_add {W : WeierstrassCurve k} (hF : F.IsHomogeneous 3)
+    (hirr : Irreducible F) (M : GL (Fin 3) k) {c : k} (hc : c ≠ 0)
+    (hMF : linearSubst M.1 F = c • W.toProjective.polynomial) (P Q : W.toProjective.Point) :
+    map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) (P + Q).toProjectivization =
+      thirdPoint F
+        (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+          (0 : W.toProjective.Point).toProjectivization)
+        (thirdPoint F (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+          P.toProjectivization)
+          (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+            Q.toProjectivization)) := by
+  have hs (R : W.toProjective.Point) :
+      IsSimplePoint (linearSubst M.1 F) R.toProjectivization := by
+    rw [hMF, isSimplePoint_smul_iff hc]
+    exact R.isSimplePoint_toProjectivization
+  rw [← thirdPoint_linearSubst hF hirr M (hs P) (hs Q), hMF, thirdPoint_smul hc,
+    Point.thirdPoint_toProjectivization, ← thirdPoint_linearSubst hF hirr M (hs 0) (hs _), hMF,
+    thirdPoint_smul hc, Point.thirdPoint_toProjectivization, zero_add, neg_neg]
+
+/-- **The group of a cubic with a flex is the group of a Weierstrass curve.** For an irreducible
+cubic `F` over an algebraically closed field and a flex `O` of `F`, the chord–tangent group
+`CubicGroup F O` of the simple points of `F` with zero `O` is isomorphic to Mathlib's group of
+points of a Weierstrass curve `W`, and `W.Δ ≠ 0` when `F` is nonsingular. The isomorphism is
+the projective change of coordinates that carries `F` to a multiple of `W.polynomial` and
+`[0 : 1 : 0]` to `O` ([Fulton2008], Problem 5.24 (a)), composed with
+`WeierstrassCurve.Projective.Point.toCubicGroup`. -/
+theorem exists_addEquiv_weierstrass_of_isFlex [hF : Fact (F.IsHomogeneous 3)]
+    [hirr : Fact (Irreducible F)] [Fact (IsSimplePoint F O)] (hO : IsFlex F O) :
+    ∃ W : WeierstrassCurve k, (IsNonsingular F → W.Δ ≠ 0) ∧
+      Nonempty (CubicGroup F O ≃+ W.toProjective.Point) := by
+  obtain ⟨T, c, W, hT, hc, hTO, hTF, -⟩ :=
+    hO.exists_linearSubst_eq_smul_polynomial hF.out hirr.out
+  obtain ⟨M, rfl⟩ : ∃ M : GL (Fin 3) k, M.1 = T :=
+    ⟨_, ((Matrix.isUnit_iff_isUnit_det T).2
+      (Matrix.isUnit_det_of_mulVecLin_injective hT)).unit_spec⟩
+  have hb := ProjectiveSpace.bijective_map_mulVecLin M
+  have hMO : map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+      (0 : W.toProjective.Point).toProjectivization = O := by
+    rw [Point.toProjectivization_zero]
+    erw [map_mk]
+    simp only [Matrix.mulVecLin_apply, hTO, mk_rep]
+  have hs (P : W.toProjective.Point) : IsSimplePoint F
+      (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) P.toProjectivization) := by
+    rw [← isSimplePoint_linearSubst_iff hF.out hT, hTF, isSimplePoint_smul_iff hc]
+    exact P.isSimplePoint_toProjectivization
+  let e : W.toProjective.Point ≃ CubicGroup F O := Equiv.ofBijective (fun P ↦ ⟨_, hs P⟩)
+    ⟨fun P Q h ↦ Point.toProjectivization_injective (hb.1 (congrArg CubicGroup.point h)),
+      fun A ↦ by
+        obtain ⟨R, hR⟩ := hb.2 A.point
+        have hRs : IsSimplePoint W.toProjective.polynomial R := by
+          rw [← isSimplePoint_smul_iff hc, ← hTF, isSimplePoint_linearSubst_iff hF.out hT, hR]
+          exact A.isSimplePoint
+        obtain ⟨P, rfl⟩ := (Point.mem_range_toProjectivization_iff_isSimplePoint R).2 hRs
+        exact ⟨P, CubicGroup.ext hR⟩⟩
+  refine ⟨W, fun hns ↦ ?_, ⟨(AddEquiv.mk' e fun P Q ↦ CubicGroup.ext ?_).symm⟩⟩
+  · rw [← isNonsingular_linearSubst_iff hT, hTF, isNonsingular_smul_iff hc] at hns
+    exact isNonsingular_polynomial_iff.1 hns
+  · rw [CubicGroup.point_add]
+    refine (map_toProjectivization_add hF.out hirr.out M hc hTF P Q).trans ?_
+    rw [hMO]
+    rfl
+
+end PlaneCurves.Projective
 
 end
