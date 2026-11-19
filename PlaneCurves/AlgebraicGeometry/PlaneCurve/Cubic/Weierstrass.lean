@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Line
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.GroupLaw
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.NormalForm
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionCycle
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
@@ -44,6 +45,11 @@ them out of `F`, so that Fulton's third point `φ(P, Q)` of the chord through `P
 `CubicGroup F O` of the simple points of `F` with zero `O`, through the bijection above. No group
 axiom is proved again: the isomorphism only has to preserve addition.
 
+Through this isomorphism, Mathlib's addition formulas give Fulton's formulas for `P₁ ⊕ P₂`
+on a cubic `Y²Z = X³ + aX²Z + bXZ² + cZ³` (Problem 5.38), and Mathlib's points over a subfield
+`k₀` give the subgroup of `k₀`-rational points (Problem 5.40). Together these are the milestone
+`WeierstrassCurve.Projective.chordTangentAddition_eq_add`.
+
 ## Main results
 
 * `WeierstrassCurve.Projective.isSimplePoint_polynomial_mk_iff`: `[v]` is a simple point of `F`
@@ -65,10 +71,16 @@ axiom is proved again: the isomorphism only has to preserve addition.
   in `P + Q + R`.
 * `WeierstrassCurve.Projective.Point.thirdPoint_toProjectivization`: `φ(P, Q) = -(P + Q)`.
 * `WeierstrassCurve.Projective.Point.toCubicGroup`: the isomorphism `W.Point ≃+ CubicGroup F O`.
+* `WeierstrassCurve.Projective.add_coords_of_a₁_eq_zero_of_a₃_eq_zero`: the addition formulas
+  when `a₁ = a₃ = 0` (Problem 5.38).
+* `WeierstrassCurve.Projective.rationalPoints`, `mem_rationalPoints_iff`,
+  `chord_mem_rationalPoints`: the subgroup of `k₀`-rational points (Problem 5.40).
+* `WeierstrassCurve.Projective.chordTangentAddition_eq_add`: chord–tangent addition on a
+  Weierstrass cubic agrees with Mathlib's group law.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Problem 3.21, and §5.6
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Problem 3.21, and §5.6, Problems 5.38 and 5.40
 -/
 
 public section
@@ -149,6 +161,13 @@ theorem toSimplePoint_zero :
     (toSimplePoint (0 : W.Point) : ℙ k (Fin 3 → k)) =
       Projectivization.mk k ![0, 1, 0] (by simp) := by
   simp
+
+/-- A point of `W` whose line in `ℙ²` is `[x : y : 1]` is the affine point `(x, y)` of `W`. -/
+theorem exists_eq_fromAffine_some_of_toProjectivization_eq {P : W.Point} {x y : k}
+    {hv : ![x, y, 1] ≠ 0} (h : P.toProjectivization = Projectivization.mk k ![x, y, 1] hv) :
+    ∃ hxy : W.toAffine.Nonsingular x y, P = fromAffine (.some x y hxy) := by
+  have hxy := (nonsingular_some x y).1 ((exists_toProjectivization_eq_mk_iff _ hv).1 ⟨P, h⟩)
+  exact ⟨hxy, toProjectivization_injective (by rw [h, toProjectivization_fromAffine_some])⟩
 
 end Point
 
@@ -629,6 +648,201 @@ theorem point_toCubicGroup_apply (P : W.Point) :
   CubicGroup.point_equivSubtype_symm_apply (toSimplePoint P)
 
 end Point
+
+/-! ### Problems 5.38 and 5.40 -/
+
+/-- A point of the chord–tangent group of `W.polynomial` whose line is `[x : y : 1]` is the affine
+point `(x, y)` of `W`, through `toCubicGroup` and Mathlib's `toAffineAddEquiv`. -/
+private theorem exists_toAffineAddEquiv_eq_some [DecidableEq k]
+    {A : CubicGroup W.polynomial (0 : W.Point).toProjectivization} {x y : k} {hv : ![x, y, 1] ≠ 0}
+    (h : A.point = Projectivization.mk k ![x, y, 1] hv) :
+    ∃ hxy : W.toAffine.Nonsingular x y,
+      Point.toAffineAddEquiv W (Point.toCubicGroup.symm A) = .some x y hxy := by
+  obtain ⟨hxy, hP⟩ := Point.exists_eq_fromAffine_some_of_toProjectivization_eq
+    (P := Point.toCubicGroup.symm A) (by rw [← Point.point_toCubicGroup_apply,
+      AddEquiv.apply_symm_apply, h])
+  exact ⟨hxy, by rw [hP, ← Point.toAffineAddEquiv_symm_apply, AddEquiv.apply_symm_apply]⟩
+
+/-- **Addition formulas on the cubic `Y²Z = X³ + aX²Z + bXZ² + cZ³`** (Problem 5.38 of Fulton).
+Let `W` have `a₁ = a₃ = 0`, so that `W.polynomial` is this cubic with `a = a₂`, `b = a₄`,
+`c = a₆`, and let `P₁ ⊕ P₂ = P₃` in the chord–tangent group with zero `O = [0 : 1 : 0]`, where
+`Pᵢ = [xᵢ : yᵢ : 1]`. If either `x₁ ≠ x₂` and `λ = (y₁ - y₂) / (x₁ - x₂)`, or `P₁ = P₂` and
+`λ = (3x₁² + 2ax₁ + b) / (2y₁)`, then, with `μ = y₁ - λx₁`, `x₃ = λ² - a - x₁ - x₂` and
+`y₃ = -λx₃ - μ`. No hypothesis on the characteristic is needed. -/
+theorem add_coords_of_a₁_eq_zero_of_a₃_eq_zero (ha₁ : W.a₁ = 0) (ha₃ : W.a₃ = 0)
+    {A₁ A₂ A₃ : CubicGroup W.polynomial (0 : W.Point).toProjectivization}
+    {x₁ y₁ x₂ y₂ x₃ y₃ ℓ : k} {hv₁ : ![x₁, y₁, 1] ≠ 0} {hv₂ : ![x₂, y₂, 1] ≠ 0}
+    {hv₃ : ![x₃, y₃, 1] ≠ 0} (h₁ : A₁.point = Projectivization.mk k ![x₁, y₁, 1] hv₁)
+    (h₂ : A₂.point = Projectivization.mk k ![x₂, y₂, 1] hv₂)
+    (h₃ : A₃.point = Projectivization.mk k ![x₃, y₃, 1] hv₃) (hA : A₁ + A₂ = A₃)
+    (hℓ : x₁ ≠ x₂ ∧ ℓ = (y₁ - y₂) / (x₁ - x₂) ∨
+      x₁ = x₂ ∧ y₁ = y₂ ∧ ℓ = (3 * x₁ ^ 2 + 2 * W.a₂ * x₁ + W.a₄) / (2 * y₁)) :
+    x₃ = ℓ ^ 2 - W.a₂ - x₁ - x₂ ∧ y₃ = -ℓ * x₃ - (y₁ - ℓ * x₁) := by
+  classical
+  obtain ⟨hp₁, e₁⟩ := exists_toAffineAddEquiv_eq_some h₁
+  obtain ⟨hp₂, e₂⟩ := exists_toAffineAddEquiv_eq_some h₂
+  obtain ⟨hp₃, e₃⟩ := exists_toAffineAddEquiv_eq_some h₃
+  have hsum : Affine.Point.some x₁ y₁ hp₁ + .some x₂ y₂ hp₂ = .some x₃ y₃ hp₃ := by
+    rw [← e₁, ← e₂, ← e₃, ← map_add, ← map_add, hA]
+  have hxy : ¬(x₁ = x₂ ∧ y₁ = W.toAffine.negY x₂ y₂) := fun hxy ↦
+    Affine.Point.some_ne_zero hp₃ (by rw [← hsum, Affine.Point.add_of_Y_eq hxy.1 hxy.2])
+  rw [Affine.Point.add_some hxy, Affine.Point.some.injEq] at hsum
+  obtain ⟨rfl, rfl⟩ := hsum
+  have hslope : W.toAffine.slope x₁ x₂ y₁ y₂ = ℓ := by
+    rcases hℓ with ⟨hx, rfl⟩ | ⟨rfl, rfl, rfl⟩
+    · exact Affine.slope_of_X_ne hx
+    · rw [Affine.slope_of_Y_ne rfl fun h ↦ hxy ⟨rfl, h⟩]
+      simp only [Affine.negY, ha₁, ha₃]
+      congr 1 <;> ring
+  subst hslope
+  simp only [Affine.addX, Affine.addY, Affine.negAddY, Affine.negY, ha₁, ha₃]
+  constructor <;> ring
+
+section RationalPoints
+
+variable (k₀ : Type*) [Field k₀] [Algebra k₀ k] (W₀ : WeierstrassCurve k₀)
+
+open Classical in
+/-- **The `k₀`-rational points of a Weierstrass cubic** (Problem 5.40 of Fulton). For a
+Weierstrass curve `W₀` over a subfield `k₀` of `k`, the points of the cubic of `W₀` over `k` with
+coordinates in `k₀` form a subgroup of its chord–tangent group with zero `O = [0 : 1 : 0]`
+(`mem_rationalPoints_iff`). It is the image of Mathlib's points of `W₀` over `k₀`. -/
+noncomputable def rationalPoints :
+    AddSubgroup (CubicGroup (W₀.baseChange k).toProjective.polynomial
+      (0 : (W₀.baseChange k).toProjective.Point).toProjectivization) :=
+  ((Point.toCubicGroup.toAddMonoidHom.comp
+    (Point.toAffineAddEquiv (W₀.baseChange k).toProjective).symm.toAddMonoidHom).comp
+      (Affine.Point.map (W' := W₀) (Algebra.ofId k₀ k))).range
+
+open Classical in
+/-- `rationalPoints k₀ W₀` is the image of Mathlib's points of `W₀` over `k₀`. -/
+theorem rationalPoints_def : rationalPoints k₀ W₀ =
+    ((Point.toCubicGroup.toAddMonoidHom.comp
+      (Point.toAffineAddEquiv (W₀.baseChange k).toProjective).symm.toAddMonoidHom).comp
+        (Affine.Point.map (W' := W₀) (Algebra.ofId k₀ k))).range :=
+  (rfl)
+
+variable {k₀ W₀}
+
+/-- **The `k₀`-rational points of a Weierstrass cubic**: a point of the chord–tangent group of the
+cubic of `W₀` over `k` is in `rationalPoints k₀ W₀` exactly when it has homogeneous coordinates
+in `k₀`. -/
+theorem mem_rationalPoints_iff {A : CubicGroup (W₀.baseChange k).toProjective.polynomial
+      (0 : (W₀.baseChange k).toProjective.Point).toProjectivization} :
+    A ∈ rationalPoints k₀ W₀ ↔ ∃ (v : Fin 3 → k₀) (hv : algebraMap k₀ k ∘ v ≠ 0),
+      A.point = Projectivization.mk k (algebraMap k₀ k ∘ v) hv := by
+  classical
+  have hmk : ∀ {u w : Fin 3 → k} (hu : u ≠ 0) (hw : w ≠ 0), u = w →
+      Projectivization.mk k u hu = Projectivization.mk k w hw := by
+    rintro _ _ _ _ rfl
+    rfl
+  rw [rationalPoints_def, AddMonoidHom.mem_range]
+  constructor
+  · rintro ⟨B, rfl⟩
+    rcases B with _ | ⟨x, y, h⟩
+    · refine ⟨![0, 1, 0], fun h ↦ by simpa using congrFun h 1, ?_⟩
+      rw [← Affine.Point.zero_def, map_zero, CubicGroup.point_zero, Point.toProjectivization_zero]
+      exact hmk _ _ (by ext i; fin_cases i <;> simp)
+    · refine ⟨![x, y, 1], fun h ↦ by simpa using congrFun h 2, ?_⟩
+      simp only [AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom, Affine.Point.map_some,
+        Point.toAffineAddEquiv_symm_apply, Point.point_toCubicGroup_apply,
+        Point.toProjectivization_fromAffine_some]
+      exact hmk _ _ (by ext i; fin_cases i <;> simp)
+  · rintro ⟨v, hv, h⟩
+    by_cases hz : v 2 = 0
+    · have hns : (W₀.baseChange k).toProjective.Nonsingular (algebraMap k₀ k ∘ v) :=
+        (Point.exists_toProjectivization_eq_mk_iff _ hv).1 ⟨Point.toCubicGroup.symm A, by
+          rw [← Point.point_toCubicGroup_apply, AddEquiv.apply_symm_apply, h]⟩
+      have h0 : algebraMap k₀ k (v 0) = 0 := X_eq_zero_of_Z_eq_zero hns.1 (by simp [hz])
+      refine ⟨0, CubicGroup.ext ?_⟩
+      symm
+      rw [h, map_zero, CubicGroup.point_zero, Point.toProjectivization_zero, mk_eq_mk_iff']
+      exact ⟨algebraMap k₀ k (v 1), by ext i; fin_cases i <;> simp [h0, hz]⟩
+    · set x := v 0 / v 2
+      set y := v 1 / v 2
+      have hA : A.point = Projectivization.mk k ![algebraMap k₀ k x, algebraMap k₀ k y, 1]
+          (fun h ↦ by simpa using congrFun h 2) := by
+        rw [h, mk_eq_mk_iff']
+        refine ⟨algebraMap k₀ k (v 2), ?_⟩
+        ext i
+        fin_cases i <;>
+          simp [x, y, mul_div_cancel₀ _ ((map_ne_zero (algebraMap k₀ k)).2 hz)]
+      obtain ⟨hxy, -⟩ := Point.exists_eq_fromAffine_some_of_toProjectivization_eq
+        (P := Point.toCubicGroup.symm A) (by
+          rw [← Point.point_toCubicGroup_apply, AddEquiv.apply_symm_apply, hA])
+      have h₀ := (Affine.baseChange_nonsingular (W := W₀) (Algebra.ofId k₀ k).injective x y).1 hxy
+      refine ⟨.some x y h₀, CubicGroup.ext ?_⟩
+      simp only [AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom, Affine.Point.map_some,
+        Point.toAffineAddEquiv_symm_apply, Point.point_toCubicGroup_apply,
+        Point.toProjectivization_fromAffine_some, hA]
+      rfl
+
+/-- **Fulton's third point of two `k₀`-rational points is `k₀`-rational** (Problem 5.40 of
+Fulton): the third point `φ(A, B)` of the chord through two points of `rationalPoints k₀ W₀` is in
+`rationalPoints k₀ W₀`. -/
+theorem chord_mem_rationalPoints {A B : CubicGroup (W₀.baseChange k).toProjective.polynomial
+      (0 : (W₀.baseChange k).toProjective.Point).toProjectivization}
+    (hA : A ∈ rationalPoints k₀ W₀) (hB : B ∈ rationalPoints k₀ W₀) :
+    CubicGroup.chord A B ∈ rationalPoints k₀ W₀ := by
+  have h0 : CubicGroup.chord (0 : CubicGroup (W₀.baseChange k).toProjective.polynomial
+      (0 : (W₀.baseChange k).toProjective.Point).toProjectivization) 0 = 0 := by
+    refine CubicGroup.ext ?_
+    rw [CubicGroup.point_chord, CubicGroup.point_zero, Point.thirdPoint_toProjectivization,
+      add_zero, neg_zero]
+  rw [CubicGroup.chord_eq_sub, h0, zero_sub]
+  exact sub_mem (neg_mem hA) hB
+
+end RationalPoints
+
+/-- **Chord–tangent addition on a Weierstrass cubic agrees with Mathlib's group law.** Let `W` be a
+Weierstrass curve over an algebraically closed field `k`, `F = W.polynomial` its cubic and
+`O = [0 : 1 : 0]`. Then
+1. `F` is irreducible;
+2. `O` is a simple point and a flex of `F`, with tangent line `Z = 0`;
+3. `F` is nonsingular exactly when `W.Δ ≠ 0`;
+4. the simple points of `F` are exactly the points of `W`;
+5. Fulton's third point of the chord through `P` and `Q` is `-(P + Q)`;
+6. Fulton's sum `P ⊕ Q` with zero `O` is Mathlib's `P + Q`, through `toCubicGroup`;
+7. the addition formulas of Problem 5.38 hold when `a₁ = a₃ = 0`;
+8. if `W` comes from a Weierstrass curve `W₀` over a subfield `k₀`, the points of `F` with
+   coordinates in `k₀` form a subgroup of the chord–tangent group, closed under the third point
+   (Problem 5.40).
+
+Milestone: *Chord–tangent addition on a Weierstrass cubic agrees with Mathlib's group law*. -/
+theorem chordTangentAddition_eq_add :
+    Irreducible W.polynomial ∧
+    (IsSimplePoint W.polynomial (Projectivization.mk k ![0, 1, 0] (by simp)) ∧
+      IsFlex W.polynomial (Projectivization.mk k ![0, 1, 0] (by simp)) ∧
+      tangentLine W.polynomial ![0, 1, 0] = X 2) ∧
+    (IsNonsingular W.polynomial ↔ W.Δ ≠ 0) ∧
+    (∀ P, IsSimplePoint W.polynomial P ↔ P ∈ Set.range (Point.toProjectivization (W := W))) ∧
+    (∀ P Q : W.Point, thirdPoint W.polynomial P.toProjectivization Q.toProjectivization =
+      (-(P + Q)).toProjectivization) ∧
+    (∀ P Q : W.Point, Point.toCubicGroup (P + Q) = Point.toCubicGroup P + Point.toCubicGroup Q) ∧
+    (W.a₁ = 0 → W.a₃ = 0 →
+      ∀ {A₁ A₂ A₃ : CubicGroup W.polynomial (0 : W.Point).toProjectivization}
+        {x₁ y₁ x₂ y₂ x₃ y₃ ℓ : k} {hv₁ : ![x₁, y₁, 1] ≠ 0} {hv₂ : ![x₂, y₂, 1] ≠ 0}
+        {hv₃ : ![x₃, y₃, 1] ≠ 0}, A₁.point = Projectivization.mk k ![x₁, y₁, 1] hv₁ →
+        A₂.point = Projectivization.mk k ![x₂, y₂, 1] hv₂ →
+        A₃.point = Projectivization.mk k ![x₃, y₃, 1] hv₃ → A₁ + A₂ = A₃ →
+        (x₁ ≠ x₂ ∧ ℓ = (y₁ - y₂) / (x₁ - x₂) ∨
+          x₁ = x₂ ∧ y₁ = y₂ ∧ ℓ = (3 * x₁ ^ 2 + 2 * W.a₂ * x₁ + W.a₄) / (2 * y₁)) →
+        x₃ = ℓ ^ 2 - W.a₂ - x₁ - x₂ ∧ y₃ = -ℓ * x₃ - (y₁ - ℓ * x₁)) ∧
+    (∀ (k₀ : Type*) [Field k₀] [Algebra k₀ k] (W₀ : WeierstrassCurve k₀),
+      W₀.baseChange k = W →
+      ∃ H : AddSubgroup (CubicGroup W.polynomial (0 : W.Point).toProjectivization),
+        (∀ A, A ∈ H ↔ ∃ (v : Fin 3 → k₀) (hv : algebraMap k₀ k ∘ v ≠ 0),
+          A.point = Projectivization.mk k (algebraMap k₀ k ∘ v) hv) ∧
+        ∀ A ∈ H, ∀ B ∈ H, CubicGroup.chord A B ∈ H) := by
+  refine ⟨W.prime_polynomial.irreducible, ⟨isSimplePoint_polynomial_zero, isFlex_zero,
+    tangentLine_polynomial_zero W⟩, isNonsingular_polynomial_iff,
+    fun P ↦ (Point.mem_range_toProjectivization_iff_isSimplePoint P).symm,
+    Point.thirdPoint_toProjectivization, fun P Q ↦ map_add _ P Q,
+    fun ha₁ ha₃ _ _ _ _ _ _ _ _ _ _ _ _ _ h₁ h₂ h₃ hA hℓ ↦
+      add_coords_of_a₁_eq_zero_of_a₃_eq_zero ha₁ ha₃ h₁ h₂ h₃ hA hℓ, ?_⟩
+  rintro k₀ _ _ W₀ rfl
+  exact ⟨rationalPoints k₀ W₀, fun _ ↦ mem_rationalPoints_iff,
+    fun _ hA _ hB ↦ chord_mem_rationalPoints hA hB⟩
 
 end IsAlgClosed
 
