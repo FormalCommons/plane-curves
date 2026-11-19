@@ -42,6 +42,8 @@ Fulton's `𝒪_P(F)` (`AffineSpace.localRing.quotient_iso`). The pieces `𝔪ⁿ
   `dim_k 𝒪 ⧸ 𝔪ⁿ = n m - m (m - 1) / 2` for `n ≥ m`.
 * `PlaneCurves.Affine.orderAt_eq_of_ringEquiv`: isomorphic local rings of plane curves give
   equal multiplicities.
+* `PlaneCurves.Affine.orderAt_eq_of_algEquiv_away`: the case of an isomorphism of localizations
+  `k[X, Y][1/h] ≅ k[X, Y][1/h']` compatible with the values and sending `F` to a unit times `G`.
 * `PlaneCurves.Affine.exists_linearEquiv_gradedPiece_one`: Problem 3.24(a).
 * `PlaneCurves.Affine.finrank_gradedPiece_and_finrank_quotient_pow_and_orderAt_eq_of_ringEquiv`:
   the multiplicity of a plane curve is determined by its local ring.
@@ -304,6 +306,19 @@ theorem orderAt_eq_of_ringEquiv {G : MvPolynomial (Fin 2) k} {Q : Fin 2 → k}
   have := hd n
   have := hd (n + 1)
   omega
+
+/-- The multiplicity is preserved by an isomorphism `e : k[X, Y][1/h] ≅ k[X, Y][1/h']` with
+`(e x)(Q) = x(P)` that sends `F` to a unit times `G`: then `m_P(F) = m_Q(G)`. -/
+theorem orderAt_eq_of_algEquiv_away {G h h' : MvPolynomial (Fin 2) k} {Q : Fin 2 → k}
+    (hF : eval P F = 0) (hG : eval Q G = 0)
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP))
+    (u : (Localization.Away h')ˣ) (hFG : e (algebraMap _ _ F) = u * algebraMap _ _ G) :
+    F.orderAt P = G.orderAt Q :=
+  orderAt_eq_of_ringEquiv hF hG (quotientEquivOfAway e hP hQ he u hFG).toRingEquiv
 
 /-- `dim_k 𝔪ⁿ / 𝔪ⁿ⁺¹ = n + 1` for `n < m_P(F)`, where `𝔪` is the image of the maximal ideal of
 `𝒪_P(𝔸²)` in `𝒪_P(𝔸²) ⧸ (F)`. -/

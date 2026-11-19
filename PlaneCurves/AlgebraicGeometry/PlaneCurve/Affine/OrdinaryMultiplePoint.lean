@@ -39,6 +39,9 @@ Part (a) of Problem 3.24, that the linear forms map isomorphically onto `𝔪 / 
   `𝒪_P(𝔸²) ⧸ (F)`.
 * `PlaneCurves.Affine.isOrdinaryMultiplePoint_iff_of_ringEquiv`: isomorphic local rings of plane
   curves have ordinary multiple points together.
+* `PlaneCurves.Affine.isOrdinaryMultiplePoint_iff_of_algEquiv_away`: the case of an isomorphism
+  of localizations `k[X, Y][1/h] ≅ k[X, Y][1/h']` compatible with the values and sending `F` to a
+  unit times `G`.
 * `PlaneCurves.Affine.isOrdinaryMultiplePoint_iff_exists_ord_and_iff_of_ringEquiv`: the
   local-ring characterization of ordinary multiple points.
 
@@ -372,6 +375,19 @@ theorem isOrdinaryMultiplePoint_iff_of_ringEquiv {Q : Fin 2 → k} (hF : eval P 
         (S := localRing k Q ⧸ span {algebraMap _ (localRing k Q) G}) e,
         exists_ord_of_ringEquiv (R := localRing k Q ⧸ span {algebraMap _ (localRing k Q) G})
         (S := localRing k P ⧸ span {algebraMap _ (localRing k P) F}) e.symm⟩
+
+/-- Ordinary multiple points are preserved by an isomorphism
+`e : k[X, Y][1/h] ≅ k[X, Y][1/h']` with `(e x)(Q) = x(P)` that sends `F` to a unit times `G`. -/
+theorem isOrdinaryMultiplePoint_iff_of_algEquiv_away {h h' : MvPolynomial (Fin 2) k}
+    {Q : Fin 2 → k} (hF : eval P F = 0) (hG : eval Q G = 0)
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP))
+    (u : (Localization.Away h')ˣ) (hFG : e (algebraMap _ _ F) = u * algebraMap _ _ G) :
+    IsOrdinaryMultiplePoint F P ↔ IsOrdinaryMultiplePoint G Q :=
+  isOrdinaryMultiplePoint_iff_of_ringEquiv hF hG (quotientEquivOfAway e hP hQ he u hFG).toRingEquiv
 
 /-- **Local-ring characterization of ordinary multiple points** (Fulton, Problem 3.24). Let `k`
 be algebraically closed, `F ∈ k[X, Y]`, `P` a point with `m = m_P(F)`, and `𝒪 = 𝒪_P(𝔸²) ⧸ (F)`
