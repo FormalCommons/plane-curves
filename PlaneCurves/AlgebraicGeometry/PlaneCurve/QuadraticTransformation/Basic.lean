@@ -360,11 +360,6 @@ private theorem aeval_X_two_zero_rename (p : MvPolynomial (Fin 2) k) :
     algHom_ext fun i ↦ by fin_cases i <;> simp
   simpa using AlgHom.congr_fun h p
 
-private theorem dehomogenize_two_ne_zero (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) :
-    dehomogenize 2 F ≠ 0 := by
-  rw [Ne, ← orderAt_eq_top_iff (a := 0), ← mult_fundamentalPoint_eq_orderAt hF]
-  exact mult_eq_top_iff.not.2 hF0
-
 /-- `F^Q = Z ^ r H`, with `r` the multiplicity of `F` at `[0 : 0 : 1]` and
 `H(X, Y, 0) = (XY)^(n - r) G_r(Y, X)` for the leading form `G_r` of `F(X, Y, 1)` at `0`. -/
 private theorem exists_quadraticTransform_eq_X_two_pow_mul (hF : F.IsHomogeneous n)
@@ -402,7 +397,7 @@ private theorem emultiplicity_X_two_quadraticTransform (hF : F.IsHomogeneous n) 
       rename ![1, 0] (leadingFormAt (dehomogenize 2 F) 0) ≠ 0 :=
     mul_ne_zero (pow_ne_zero _ (mul_ne_zero (X_ne_zero _) (X_ne_zero _)))
       ((map_ne_zero_iff _ (rename_injective _ (by decide))).2
-        (leadingFormAt_ne_zero (dehomogenize_two_ne_zero hF hF0)))
+        (leadingFormAt_ne_zero (dehomogenize_ne_zero_of_isHomogeneous 2 hF hF0)))
   rintro ⟨K, rfl⟩
   apply hne
   rw [← hH]
