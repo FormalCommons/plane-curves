@@ -267,15 +267,6 @@ variable {k : Type*} [Field k] [IsAlgClosed k] {F : MvPolynomial (Fin 3) k} {d :
   {hF : F.IsHomogeneous d} [Fact (Irreducible F)]
   {P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))}
 
-omit [IsAlgClosed k] [Fact (Irreducible F)] in
-/-- The local rings of an affine curve at equal points are equal. -/
-private theorem affineLocalSubring_congr {f : MvPolynomial (Fin 2) k} [(Ideal.span {f}).IsPrime]
-    {a b : Fin 2 → k} (hab : a = b) {ha : Ideal.span {f} ≤ MvPolynomial.vanishingIdeal k {a}}
-    {hb : Ideal.span {f} ≤ MvPolynomial.vanishingIdeal k {b}} :
-    AffineSpace.localSubring a ha = AffineSpace.localSubring b hb := by
-  subst hab
-  rfl
-
 /-- **Lemma 3 in the chart.** At the point `(0, 0)` of the chart `X₂ ≠ 0`, with `X₀` not tangent,
 the statement follows from its affine counterpart through `k(C) ≅ k(F_(2))`. -/
 private theorem mem_localSubring_of_chart (h : IsOrdinaryMultiplePoint F P.1)
@@ -296,12 +287,12 @@ private theorem mem_localSubring_of_chart (h : IsOrdinaryMultiplePoint F P.1)
   set e := functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)
   have hI : Ideal.span {dehomogenize 2 F} ≤ MvPolynomial.vanishingIdeal k {(0 : Fin 2 → k)} :=
     Affine.span_le_vanishingIdeal (Affine.isOrdinaryMultiplePoint_def.1 h').1.eval_eq_zero
-  have hloc := affineLocalSubring_congr h0 (ha := span_dehomogenize_le_vanishingIdeal hF P hP)
-    (hb := hI)
+  have hloc :=
+    AffineSpace.localSubring_congr _ (span_dehomogenize_le_vanishingIdeal hF P hP) h0 hI
   have hmem : e z ∈ (AffineSpace.localSubring 0 hI).toSubring := by
     refine Affine.mem_localSubring_of_forall_le_addValuation hf hX h' hT' fun R hR ↦ ?_
     have hQ : R.map e.symm ∈ placesOver hF P := by
-      rw [mem_placesOver_iff_localSubring_le_map_chartEquiv hP, Place.map_map_symm, hloc]
+      rw [mem_placesOver_iff_localSubring_le_map_chartEquiv_of_eq hP h0, Place.map_map_symm]
       exact hR
     have := hz _ hQ
     rwa [Place.addValuation_map, AlgEquiv.symm_symm, mult_eq_orderAt_dehomogenize hF hP,
@@ -342,20 +333,9 @@ theorem mem_localSubring_of_forall_le_addValuation (h : IsOrdinaryMultiplePoint 
     {z : functionField hF}
     (hz : ∀ Q ∈ placesOver hF P, (((mult F P.1).toNat - 1 : ℕ) : WithTop ℤ) ≤ Q.addValuation z) :
     z ∈ (localSubring hF P).toSubring := by
-  obtain ⟨c, hcP, hcT⟩ := ((infinite_setOf_eval_sum_C_mul_X_eq_zero P.1).sdiff
-    (finite_setOf_isTangentAt (Fact.out : Irreducible F).ne_zero P.1)).nonempty
-  obtain ⟨M, hMP, hMX⟩ := exists_map_eq_and_linearSubst_eq_X_zero P.1 hcP
-  have hM := Matrix.mulVec_injective_of_isUnit M.isUnit
-  have hO : mk k (Pi.single 2 1) (by simp) ∈ zeroLocus
-      (projectivePlaneCurve.ideal (hF.linearSubst M.1) : Set (MvPolynomial (Fin 3) k)) := by
-    rw [mem_zeroLocus_ideal_iff, eval_rep_linearSubst_eq_zero_iff M hF, hMP]
-    exact (mem_zeroLocus_ideal_iff hF).1 P.2
-  refine mem_localSubring_of_linearSubst M (P' := ⟨_, hO⟩) hMP
-    (fun _ ↦ mem_localSubring_of_chart ?_ ((mk_mem_affineOpen_iff _ _ _).2 (by simp))
-      (affineChart_mk_single 2) ?_) hz
-  · rwa [isOrdinaryMultiplePoint_linearSubst_iff hF hM, hMP]
-  · rw [← hMX, isTangentAt_linearSubst_iff hF hM, hMP]
-    exact hcT
+  obtain ⟨M, P', hMP, hP, h0, h', hT⟩ :=
+    exists_linearSubst_isOrdinaryMultiplePoint_affineChart_eq_zero hF P h
+  exact mem_localSubring_of_linearSubst M hMP (fun _ ↦ mem_localSubring_of_chart h' hP h0 hT) hz
 
 /-- **Proposition 3 of §7.5 of Fulton.** Let `P` be an ordinary multiple point of multiplicity
 `r` of the irreducible projective plane curve `C : F = 0`, and `G`, `H` forms with `F ∤ G`. If

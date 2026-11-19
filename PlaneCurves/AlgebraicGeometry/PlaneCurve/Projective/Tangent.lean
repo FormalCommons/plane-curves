@@ -30,6 +30,8 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
 * `PlaneCurves.Projective.leadingForm F P`: the leading form of `F` at `P.rep`.
 * `PlaneCurves.Projective.IsTangentAt F P L`: `L` is a nonzero linear form vanishing at `P` and
   dividing the leading form of `F` at `P`.
+* `PlaneCurves.Projective.tangents F P`: the tangent lines of `F` at `P`, the tangent linear forms
+  up to associates.
 * `PlaneCurves.Projective.tangentMultiplicity F P L`: the multiplicity of `L` in the leading
   form.
 * `PlaneCurves.Projective.IsOrdinaryMultiplePoint F P`: `P` is a multiple point of `F` with a
@@ -254,6 +256,20 @@ theorem isTangentAt_def :
     IsTangentAt F P L ↔
       L.IsHomogeneous 1 ∧ L ≠ 0 ∧ eval P.rep L = 0 ∧ L ∣ leadingForm F P :=
   Iff.rfl
+
+/-- The *tangents* of `F` at `P`, as lines: the tangent linear forms `L` of `F` at `P`, taken up
+to associates (a line `L = 0` determines `L` up to a nonzero constant). -/
+def tangents (F : MvPolynomial (Fin 3) k) (P : ℙ k (Fin 3 → k)) :
+    Set (Associates (MvPolynomial (Fin 3) k)) :=
+  {a | ∃ L, IsTangentAt F P L ∧ Associates.mk L = a}
+
+theorem mem_tangents_iff {a : Associates (MvPolynomial (Fin 3) k)} :
+    a ∈ tangents F P ↔ ∃ L, IsTangentAt F P L ∧ Associates.mk L = a :=
+  Iff.rfl
+
+/-- A tangent linear form gives a tangent line. -/
+theorem IsTangentAt.mk_mem_tangents (h : IsTangentAt F P L) : Associates.mk L ∈ tangents F P :=
+  ⟨L, h, rfl⟩
 
 /-- The multiplicity of the linear form `L` as a tangent of `F` at `P`: its multiplicity as a
 factor of the leading form of `F` at `P`. -/

@@ -146,6 +146,13 @@ theorem localSubring_def : localSubring P hI =
     LocalSubring.ofPrime _ (RingHom.ker (rangeEval P hI)) :=
   (rfl)
 
+/-- The local rings `𝒪_P(V)` and `𝒪_Q(V)` at equal points `P = Q` are equal, whatever the proofs
+that `V` passes through them. -/
+theorem localSubring_congr {Q : σ → k} (hPQ : P = Q) (hJ : I ≤ vanishingIdeal k {Q}) :
+    localSubring P hI = localSubring Q hJ := by
+  subst hPQ
+  rfl
+
 variable {P} in
 omit [I.IsPrime] in
 include hI in

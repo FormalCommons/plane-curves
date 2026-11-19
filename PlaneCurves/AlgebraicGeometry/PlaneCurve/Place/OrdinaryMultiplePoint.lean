@@ -31,11 +31,11 @@ exceptional line, a simple point; the discrete valuation ring `𝒪_{(0, α)}(F'
 valuation ring of `Q`. At each of these places `x` has order one.
 
 For an irreducible projective plane curve `C : F = 0` with an ordinary multiple point `P`, a
-change of coordinates (`exists_map_eq_and_linearSubst_eq_X_zero`) moves `P` to `[0 : 0 : 1]` with
-`X = 0` not tangent; there the chart `Z ≠ 0` identifies the places over `P` with the places
-`blowupPlace` of the affine curve `F_(2)`, and the orders of forms with the orders of their
-dehomogenizations. So exactly `m_P(F)` places lie over `P`, one for each tangent, and the orders
-of forms at them are as for affine curves.
+change of coordinates (`exists_linearSubst_isOrdinaryMultiplePoint_affineChart_eq_zero`) moves
+`P` to `[0 : 0 : 1]` with `X = 0` not tangent; there the chart `Z ≠ 0` identifies the places over
+`P` with the places `blowupPlace` of the affine curve `F_(2)`, and the orders of forms with the
+orders of their dehomogenizations. So exactly `m_P(F)` places lie over `P`, one for each tangent,
+and the orders of forms at them are as for affine curves.
 
 ## Main definitions
 
@@ -436,33 +436,11 @@ private def OrdinaryPlacesSpec : Prop :=
       ∀ s : ℕ, (s : ℕ∞) ≤ mult F P.1 →
         ((s : ℕ∞) ≤ mult G P.1 ↔ ∀ Q ∈ placesOver hF P, (s : WithTop ℤ) ≤ ordForm hF Q hG)
 
-omit [IsAlgClosed k] [Fact (Irreducible F)] in
-/-- The local rings at equal points have the same membership. -/
-private theorem localSubring_le_iff_of_eq {f : MvPolynomial (Fin 2) k} [(Ideal.span {f}).IsPrime]
-    {a b : Fin 2 → k} (hab : a = b) {ha : Ideal.span {f} ≤ vanishingIdeal k {a}}
-    {hb : Ideal.span {f} ≤ vanishingIdeal k {b}}
-    {S : Subring (AffineSpace.functionField (Ideal.span {f}))} :
-    (AffineSpace.localSubring a ha).toSubring ≤ S ↔
-      (AffineSpace.localSubring b hb).toSubring ≤ S := by
-  subst hab
-  rfl
-
 /-! ### At the point `(0, 0)` of the chart `X₂ ≠ 0`
 
 Here `P` has chart coordinates `0` in the chart `X₂ ≠ 0`, the origin is an ordinary multiple
 point of `F_(2)`, and `e = functionField.chartEquiv` identifies `k(C)` with `k(F_(2))`. The places
 over `P` are the places `blowupPlace` of `F_(2)`, carried to `k(C)` by `e⁻¹`. -/
-
-/-- A place `Q` lies over `P` iff `e Q` lies over the origin of `F_(2)`. -/
-private theorem mem_placesOver_iff_of_chart (hP : P.1 ∈ affineOpen 2)
-    (h0 : affineChart 2 P.1 = 0) [(Ideal.span {dehomogenize 2 F}).IsPrime]
-    (h' : Affine.IsOrdinaryMultiplePoint (dehomogenize 2 F) 0) {Q : Place k (functionField hF)} :
-    Q ∈ placesOver hF P ↔ (AffineSpace.localSubring 0 (Affine.span_le_vanishingIdeal
-        (Affine.isOrdinaryMultiplePoint_def.1 h').1.eval_eq_zero)).toSubring ≤
-      (Q.map (functionField.chartEquiv hF 2
-        (not_dvd_X_of_mem_affineOpen hF P hP))).integers.toSubring := by
-  rw [mem_placesOver_iff_localSubring_le_map_chartEquiv hP]
-  exact localSubring_le_iff_of_eq h0
 
 /-- The place over the tangent `Y - α X` of `F_(2)`, carried to `k(C)`, lies over `P`. -/
 private theorem map_symm_blowupPlace_mem_placesOver (hP : P.1 ∈ affineOpen 2)
@@ -473,7 +451,7 @@ private theorem map_symm_blowupPlace_mem_placesOver (hP : P.1 ∈ affineOpen 2)
     (Affine.blowupPlace hf hX h' hα).map
       (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm ∈
         placesOver hF P := by
-  rw [mem_placesOver_iff_of_chart hP h0 h', Place.map_map_symm]
+  rw [mem_placesOver_iff_localSubring_le_map_chartEquiv_of_eq hP h0, Place.map_map_symm]
   exact Affine.localSubring_le_integers_blowupPlace hf hX h' hα
 
 /-- Every place over `P` is the place over a tangent `Y - α X` of `F_(2)`, carried to `k(C)`; this
@@ -490,7 +468,8 @@ private theorem exists_eq_map_symm_blowupPlace (hP : P.1 ∈ affineOpen 2)
   set e := functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)
   obtain ⟨a, ha⟩ := Affine.exists_forall_eq_blowupPlace hf hX h' hT
   refine ⟨fun Q ↦ a (Q.map e), fun Q hQ ↦ ?_⟩
-  obtain ⟨hα, hQα⟩ := ha _ ((mem_placesOver_iff_of_chart hP h0 h').1 hQ)
+  obtain ⟨hα, hQα⟩ :=
+    ha _ ((mem_placesOver_iff_localSubring_le_map_chartEquiv_of_eq hP h0).1 hQ)
   exact ⟨hα, by rw [← hQα, Place.map_symm_map]⟩
 
 /-- **The count in the chart.** Exactly `m_P(F)` places lie over `P`. -/
@@ -503,9 +482,10 @@ private theorem ncard_placesOver_of_chart (hP : P.1 ∈ affineOpen 2)
   set e := functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)
   rw [mult_eq_orderAt_dehomogenize_zero hP h0 hF,
     ← Affine.ncard_setOf_localSubring_le_integers hf hX h' hT]
-  exact Set.ncard_congr (fun Q _ ↦ Q.map e) (fun Q hQ ↦ (mem_placesOver_iff_of_chart hP h0 h').1 hQ)
+  exact Set.ncard_congr (fun Q _ ↦ Q.map e)
+    (fun Q hQ ↦ (mem_placesOver_iff_localSubring_le_map_chartEquiv_of_eq hP h0).1 hQ)
     (fun Q Q' _ _ hQQ' ↦ by rw [← Place.map_symm_map e Q, hQQ', Place.map_symm_map])
-    fun R hR ↦ ⟨R.map e.symm, (mem_placesOver_iff_of_chart hP h0 h').2
+    fun R hR ↦ ⟨R.map e.symm, (mem_placesOver_iff_localSubring_le_map_chartEquiv_of_eq hP h0).2
       (by rwa [Place.map_map_symm]), Place.map_map_symm _ _⟩
 
 /-- At the place over the tangent `Y - α X` of `F_(2)`, the order of a form `G` is the order of
@@ -729,20 +709,9 @@ private theorem ordinaryPlacesSpec_of_linearSubst (M : GL (Fin 3) k)
 /-- The milestone's statement holds at every ordinary multiple point. -/
 private theorem ordinaryPlacesSpec (h : IsOrdinaryMultiplePoint F P.1) :
     OrdinaryPlacesSpec hF P := by
-  obtain ⟨c, hcP, hcT⟩ := ((infinite_setOf_eval_sum_C_mul_X_eq_zero P.1).sdiff
-    (finite_setOf_isTangentAt (Fact.out : Irreducible F).ne_zero P.1)).nonempty
-  obtain ⟨M, hMP, hMX⟩ := exists_map_eq_and_linearSubst_eq_X_zero P.1 hcP
-  have hM := Matrix.mulVec_injective_of_isUnit M.isUnit
-  have hO : mk k (Pi.single 2 1) (by simp) ∈ zeroLocus
-      (projectivePlaneCurve.ideal (hF.linearSubst M.1) : Set (MvPolynomial (Fin 3) k)) := by
-    rw [mem_zeroLocus_ideal_iff, eval_rep_linearSubst_eq_zero_iff M hF, hMP]
-    exact (mem_zeroLocus_ideal_iff hF).1 P.2
-  refine ordinaryPlacesSpec_of_linearSubst M (P' := ⟨_, hO⟩) hMP
-    (ordinaryPlacesSpec_of_chart ?_ ((mk_mem_affineOpen_iff _ _ _).2 (by simp))
-      (affineChart_mk_single 2) ?_).1
-  · rwa [isOrdinaryMultiplePoint_linearSubst_iff hF hM, hMP]
-  · rw [← hMX, isTangentAt_linearSubst_iff hF hM, hMP]
-    exact hcT
+  obtain ⟨M, P', hMP, hP, h0, h', hT⟩ :=
+    exists_linearSubst_isOrdinaryMultiplePoint_affineChart_eq_zero hF P h
+  exact ordinaryPlacesSpec_of_linearSubst M hMP (ordinaryPlacesSpec_of_chart h' hP h0 hT).1
 
 variable {m : ℕ} {G : MvPolynomial (Fin 3) k} {Q : Place k (functionField hF)}
 

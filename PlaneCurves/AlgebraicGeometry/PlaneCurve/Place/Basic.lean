@@ -36,7 +36,8 @@ dehomogenization `G_(i)`.
 * `ordForm_mul`, `ordForm_eq_top_iff`, `ordForm_nonneg`, `ordForm_pos_iff`, `ordForm_eq_zero_iff`.
 * `ordForm_eq_addValuation_chartEquiv_symm`: the order in a chart.
 * `mem_placesOver_iff_localSubring_le_map_chartEquiv`, `ordForm_eq_addValuation_map_chartEquiv`:
-  the places over a point of a chart, and their orders, read in the affine curve of the chart.
+  the places over a point of a chart, and their orders, read in the affine curve of the chart;
+  `mem_placesOver_iff_localSubring_le_map_chartEquiv_of_eq` at given chart coordinates.
 
 ## References
 
@@ -296,6 +297,19 @@ theorem mem_placesOver_iff_localSubring_le_map_chartEquiv {i : Fin 3} (hP : P.1 
     rw [localSubring.coe_chartEquiv] at this
     change _ ∈ (Q.map _).integers at this
     rwa [Place.mem_integers_map_iff, AlgEquiv.symm_apply_apply] at this
+
+/-- **Places over a point, in a chart, at given chart coordinates.** If the point `P` of the
+chart `Xᵢ ≠ 0` has chart coordinates `a`, a place `Q` of `k(C)` lies over `P` iff the valuation
+ring of `Q`, carried to `k(F_(i))`, contains the local ring of `F_(i) = 0` at `a`. -/
+theorem mem_placesOver_iff_localSubring_le_map_chartEquiv_of_eq {i : Fin 3}
+    (hP : P.1 ∈ affineOpen i) {a : Fin 2 → k} (ha : affineChart i P.1 = a)
+    [(Ideal.span {dehomogenize i F}).IsPrime]
+    {hI : Ideal.span {dehomogenize i F} ≤ vanishingIdeal k {a}} {Q : Place k (functionField hF)} :
+    Q ∈ placesOver hF P ↔ (AffineSpace.localSubring a hI).toSubring ≤
+      (Q.map (functionField.chartEquiv hF i
+        (not_dvd_X_of_mem_affineOpen hF P hP))).integers.toSubring := by
+  rw [mem_placesOver_iff_localSubring_le_map_chartEquiv hP,
+    AffineSpace.localSubring_congr _ _ ha hI]
 
 /-- **The order of a form in a chart**, as the order at the place carried to `k(F_(i))`. -/
 theorem ordForm_eq_addValuation_map_chartEquiv {i : Fin 3} (hP : P.1 ∈ affineOpen i)
