@@ -106,8 +106,7 @@ private theorem natCast_sum_toNat_mult (hF0 : F ≠ 0) (s : Finset (ℙ k (Fin 3
       ∑ P ∈ s, mult F P * (mult F P - 1) := by
   rw [Nat.cast_sum]
   refine Finset.sum_congr rfl fun P _ ↦ ?_
-  rw [Nat.cast_mul, ENat.natCast_sub, natCast_toNat_mult hF0,
-    Nat.cast_one]
+  rw [Nat.cast_mul, ENat.natCast_sub, natCast_toNat_mult hF0, Nat.cast_one]
 
 omit [IsAlgClosed k] in
 /-- For `F ≠ 0`, `P` is a multiple point of `F` exactly when the natural number `m_P(F)` is at
@@ -528,8 +527,7 @@ private theorem sum_toNat_mult_mul_toNat_mult_le {G H : MvPolynomial (Fin 3) k} 
       ∑ P ∈ s, mult G P * mult H P := by
     rw [Nat.cast_sum]
     refine Finset.sum_congr rfl fun P _ ↦ ?_
-    rw [Nat.cast_mul, natCast_toNat_mult hG0,
-      natCast_toNat_mult hH0]
+    rw [Nat.cast_mul, natCast_toNat_mult hG0, natCast_toNat_mult hH0]
   rw [← hc] at h
   exact_mod_cast h
 
