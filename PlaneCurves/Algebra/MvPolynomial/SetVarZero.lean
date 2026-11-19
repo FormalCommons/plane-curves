@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.MvPolynomial.Monad
 public import Mathlib.RingTheory.Ideal.Quotient.Operations
+public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 
 /-!
 # Setting a variable of a polynomial to zero
@@ -24,6 +25,8 @@ For a polynomial `p` in the variables `X j`, `j ∈ σ`, the substitution
 * `MvPolynomial.X_dvd_iff_bind₁_update_X_zero_eq_zero`: `X i` divides `p` exactly when `p`
   vanishes at `X i = 0`.
 * `MvPolynomial.eval_bind₁_update_X_zero`: evaluating `p` with `X i` set to zero.
+* `MvPolynomial.IsHomogeneous.bind₁_update_X_zero`: setting `X i` to zero in a form of degree
+  `n` gives a form of degree `n`.
 -/
 
 public section
@@ -77,6 +80,15 @@ theorem eval_bind₁_update_X_zero (i : σ) (v : σ → R) (p : MvPolynomial σ 
     rcases eq_or_ne j i with rfl | hj
     · simp
     · simp [hp, hj]
+
+/-- Setting the variable `X i` to zero in a form of degree `n` gives a form of degree `n`. -/
+theorem IsHomogeneous.bind₁_update_X_zero {p : MvPolynomial σ R} {n : ℕ}
+    (hp : p.IsHomogeneous n) (i : σ) : (bind₁ (Function.update X i 0) p).IsHomogeneous n := by
+  have := hp.aeval (n := 1) (Function.update (X : σ → MvPolynomial σ R) i 0) fun j ↦ by
+    rcases eq_or_ne j i with rfl | hj
+    · simpa using isHomogeneous_zero σ R 1
+    · simpa [Function.update_of_ne hj] using isHomogeneous_X R j
+  rwa [aeval_eq_bind₁, one_mul] at this
 
 end MvPolynomial
 

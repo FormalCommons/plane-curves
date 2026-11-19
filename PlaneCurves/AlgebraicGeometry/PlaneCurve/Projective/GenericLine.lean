@@ -42,7 +42,7 @@ Problem 5.26).
   intersection numbers with the line `Xⱼ = 0`.
 * `squarefree_of_forall_intersectionNumber_le_one`: a form that meets a curve with all
   intersection numbers at most one is squarefree.
-* `finite_setOf_sum_C_mul_X_dvd`,`finite_setOf_isTangentAt`: finitely many lines divide a
+* `finite_setOf_sum_C_mul_X_dvd`, `finite_setOf_isTangentAt`: finitely many lines divide a
   nonzero form, so finitely many lines are tangent to `F ≠ 0` at `P`.
 * `subsingleton_setOf_eval_sum_C_mul_X_eq_zero`: at most one line passes through two distinct
   points.

@@ -65,29 +65,10 @@ private theorem mem_zeroLocus_pair_iff {G : MvPolynomial (Fin 3) k} :
     Q ∈ zeroLocus {F, G} ↔ Q ∈ zeroLocus {F} ∧ Q ∈ zeroLocus {G} := by
   rw [Set.insert_eq, zeroLocus_union, Set.mem_inter_iff]
 
-private theorem zeroLocus_singleton_smul {c : k} (hc : c ≠ 0) :
-    zeroLocus {c • F} = zeroLocus {F} := by
-  ext Q
-  simp only [ProjectiveSpace.mem_zeroLocus_iff, Set.mem_singleton_iff, forall_eq, smul_eval,
-    mul_eq_zero, hc, false_or]
-
-private theorem mem_zeroLocus_X_iff {j : Fin 3} : Q ∈ zeroLocus {X j} ↔ Q.rep j = 0 := by
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_X k j⟩)]
-  simp
-
 private theorem eval_rep_eq_zero_iff_mem (hF : F.IsHomogeneous n) :
     eval Q.rep F = 0 ↔ Q ∈ zeroLocus {F} := by
   rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)]
   simp
-
-private theorem isHomogeneous_bind₁_update_X_zero (hF : F.IsHomogeneous n) (j : Fin 3) :
-    (bind₁ (Function.update X j 0) F).IsHomogeneous n := by
-  have := hF.aeval (n := 1) (Function.update (X : Fin 3 → MvPolynomial (Fin 3) k) j 0)
-    fun i ↦ by
-    rcases eq_or_ne i j with rfl | hi
-    · simpa using isHomogeneous_zero (Fin 3) k 1
-    · simpa [Function.update_of_ne hi] using isHomogeneous_X k i
-  rwa [aeval_eq_bind₁, one_mul] at this
 
 /-! ### Excellent position -/
 
@@ -252,7 +233,7 @@ theorem squarefree_restrict_X_two [IsAlgClosed k] (h : IsExcellentPosition F)
     funext i
     fin_cases i <;> rfl
   rw [aeval_eq_bind₁_update hv]
-  have hG := isHomogeneous_bind₁_update_X_zero hF 2
+  have hG := hF.bind₁_update_X_zero 2
   have hG0 : bind₁ (Function.update X 2 0) F ≠ 0 :=
     fun h0 ↦ h.not_X_dvd 2 (X_dvd_of_bind₁_update_X_zero_eq_zero h0)
   refine ⟨squarefree_of_forall_intersectionNumber_le_one hG hG0 (isHomogeneous_X k 2)
@@ -282,7 +263,7 @@ theorem exists_restrict_X_eq [IsAlgClosed k] (h : IsExcellentPosition F) (hF : F
     (Ne.symm hj) (Ne.symm hl) hjl (h.not_X_dvd j))
   have hH0 : H ≠ 0 := right_ne_zero_of_mul (hGH ▸ hG0)
   have hHh : H.IsHomogeneous H.totalDegree := by
-    have hG := isHomogeneous_bind₁_update_X_zero hF j
+    have hG := hF.bind₁_update_X_zero j
     rw [hGH, mul_comm] at hG
     exact hG.of_mul_left (pow_ne_zero _ (X_ne_zero _))
   have hXr : (X l ^ r : MvPolynomial (Fin 3) k).IsHomogeneous r := by
