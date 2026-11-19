@@ -231,8 +231,7 @@ theorem IsNonsingular.irreducible [IsAlgClosed k] (hF : F.IsHomogeneous d) (hd :
 theorem isNonsingular_linearSubst_iff {M : Matrix (Fin 3) (Fin 3) k}
     (hM : Function.Injective M.mulVecLin) :
     IsNonsingular (linearSubst M F) ↔ IsNonsingular F := by
-  have hdet : IsUnit M.det := by
-    rw [← Matrix.isUnit_iff_isUnit_det, ← Matrix.mulVec_injective_iff_isUnit]; exact hM
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
   have key : ∀ {N : Matrix (Fin 3) (Fin 3) k} {G : MvPolynomial (Fin 3) k}, N.det ≠ 0 →
       IsNonsingular G → IsNonsingular (linearSubst N G) := fun hN hG ↦ by
     rw [isNonsingular_def] at hG ⊢

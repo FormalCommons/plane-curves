@@ -396,8 +396,7 @@ theorem leadingForm_linearSubst (hF : F.IsHomogeneous d) {M : Matrix (Fin 3) (Fi
     (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
     Associated (leadingForm (linearSubst M F) Q)
       (linearSubst M (leadingForm F (Projectivization.map M.mulVecLin hM Q))) := by
-  have hdet : IsUnit M.det :=
-    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
   conv_rhs => rw [← Q.mk_rep, map_mk]
   rw [leadingForm_def, leadingFormAt_linearSubst hdet]
   exact ((associated_leadingForm_mk hF _ _).map (linearSubst M)).symm
@@ -408,8 +407,7 @@ theorem isTangentAt_linearSubst_iff (hF : F.IsHomogeneous d) {M : Matrix (Fin 3)
     (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
     IsTangentAt (linearSubst M F) Q (linearSubst M L) ↔
       IsTangentAt F (Projectivization.map M.mulVecLin hM Q) L := by
-  have hdet : IsUnit M.det :=
-    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
   have hinv := linearSubst_nonsing_inv_linearSubst hdet
   have hhom : (linearSubst M L).IsHomogeneous 1 ↔ L.IsHomogeneous 1 :=
     ⟨fun h ↦ hinv L ▸ h.linearSubst M⁻¹, fun h ↦ h.linearSubst M⟩
