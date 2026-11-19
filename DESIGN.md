@@ -156,7 +156,7 @@ PlaneCurves/
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
 │   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d, dim (k[x]/(A, B))_t (P3)
 │   │   ├── QuotientSpanPair.lean        Steps 1–2 (Q11) and 3 (Q12) of Bézout's proof
-│   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
+│   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (Q15)
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
 │   ├── Ideal/
 │   │   └── AssociatedGraded.lean        (Iⁿ : f) = Iⁿ⁻ᵐ, dim A/Iⁿ⁺¹ = dim A/Iⁿ + dim Iⁿ/Iⁿ⁺¹ (L5)
@@ -687,7 +687,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q12 | `Projective/Bezout/Basic.lean` | Step 3 of Bézout's proof in `QuotientSpanPair.lean`; **5-bezout** | Q7, Q8, Q11, L11, P8 |
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |
-| Q15 | `Projective/GenericLine.lean` | **5-generic** | Q13 |
+| Q15 | `RingTheory/MvPolynomial/PolarDerivative.lean`, `Projective/GenericLine.lean` | **5-generic** | Q13 |
 | Q16 | `RingTheory/MvPolynomial/Hessian.lean`, `Projective/Hessian/Basic.lean` | the determinant of `TauCeti.hessian MvPolynomial.pderiv F`: homogeneity, covariance, the chart identity (*large*) | — |
 | Q17 | `Projective/Hessian/Flex.lean` | **5-hessian** | Q16, Q13 |
 | Q18 | `Projective/Conic.lean` | part (a) of **5-normal** | Q13 |
@@ -718,7 +718,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | B3 | `PlaneCurve/Place/OrdinaryMultiplePoint.lean` | **7-ordinary** | V3, B2, L12 |
 | B4 | `PlaneCurve/Affine/Blowup/IntersectionNumber.lean` | **7-noether-formula** (local form) | B2, V8 |
 | B5 | `PlaneCurve/NonsingularModel/OrdinaryMultiplePoints.lean` | **7-resolve** | V5, B3 |
-| T1 | `RingTheory/MvPolynomial/PolarDerivative.lean`, `Projective/TerriblePoint.lean` | **7-terrible** | Q13, L10 |
+| T1 | `Projective/TerriblePoint.lean` | **7-terrible** | Q13, Q15, L10 |
 | T2 | `QuadraticTransformation/Basic.lean`, `GoodPosition.lean`, `Birational.lean` | **7-quadratic** | Q3, Q5, P7 |
 | T3 | `QuadraticTransformation/Position.lean`, `Singularities.lean` | **7-quadratic-centre** (*large*) | T1, T2, B1, L5, L12, Q14, P9 |
 | T4 | `QuadraticTransformation/Resolution.lean` | **7-reduce** | T3 |
