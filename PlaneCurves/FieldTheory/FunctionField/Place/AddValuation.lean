@@ -33,6 +33,8 @@ the normalized valuation of `Q`.
 * `TauCeti.Place.addValuation_nonneg_iff`: the valuation ring `𝒪_Q` is `{z | 0 ≤ ord_Q z}`.
 * `TauCeti.Place.addValuation_pos_iff`: the maximal ideal of `𝒪_Q` is `{z | 0 < ord_Q z}`.
 * `TauCeti.Place.addValuation_algebraMap`: nonzero constants have order `0`.
+* `TauCeti.Place.addValuation_map`: the order of the place `Q.map e`, transported along
+  `e : K ≃ₐ[k] K'`, is the order of `Q` composed with `e⁻¹`.
 * `TauCeti.Place.map_natCast_addVal_eq_addValuation` and
   `TauCeti.Place.map_natCast_ord_eq_addValuation`: on `𝒪_Q`, the order is the additive valuation
   `IsDiscreteValuationRing.addVal` of the discrete valuation ring `𝒪_Q`, and the order of
@@ -114,6 +116,18 @@ theorem addValuation_pos_iff {z : Q.integers} :
 @[simp]
 theorem addValuation_algebraMap {c : k} (hc : c ≠ 0) : Q.addValuation (algebraMap k K c) = 0 := by
   rw [Q.addValuation_of_ne_zero (by simpa using hc), ord_algebraMap, WithTop.coe_zero]
+
+/-- The order of the place `Q.map e`, transported along `e : K ≃ₐ[k] K'`, is the order of `Q`
+composed with `e⁻¹`. -/
+@[simp]
+theorem addValuation_map {K' : Type*} [Field K'] [Algebra k K'] (e : K ≃ₐ[k] K') (z : K') :
+    (Q.map e).addValuation z = Q.addValuation (e.symm z) := by
+  rw [addValuation_apply, addValuation_apply, valuation_map]
+
+/-- Transport along `e : K ≃ₐ[k] K'` carries the order of a place along `e`. -/
+theorem addValuation_map_apply {K' : Type*} [Field K'] [Algebra k K'] (e : K ≃ₐ[k] K')
+    (z : K) : (Q.map e).addValuation (e z) = Q.addValuation z := by
+  simp
 
 /-- On the valuation ring `𝒪_Q`, the order of `Q` is the additive valuation of the discrete
 valuation ring `𝒪_Q`, read in `WithTop ℤ` through the cast `ℕ∞ → WithTop ℤ`. -/
