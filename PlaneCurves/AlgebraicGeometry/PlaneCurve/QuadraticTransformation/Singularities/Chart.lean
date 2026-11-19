@@ -635,19 +635,11 @@ theorem mult_properTransform_mk_eq_orderAt_blowupStrictTransform (h : IsExcellen
     rw [he]
     exact mul_ne_zero (pow_ne_zero _ hα) hg
 
-/-- In excellent position, neither `x` nor `y` is tangent at the origin to `F(x, y, 1)`: this is
-good position at `[0 : 0 : 1]`. -/
-theorem not_isTangentAt_dehomogenize_X (h : IsExcellentPosition F) (hF : F.IsHomogeneous n)
-    (i : Fin 2) : ¬ Affine.IsTangentAt (dehomogenize 2 F) 0 (X i) := fun hT ↦
-  isGoodPosition_def.1 h.isGoodPosition 2 (Fin.succAbove 2 i) (Fin.succAbove_ne 2 i).symm
-    ((isTangentAt_fundamentalPoint_two_iff_dvd_leadingFormAt hF i).2
-      (Affine.isTangentAt_def.1 hT).2.2)
-
 private theorem ne_zero_of_eval_blowupStrictTransform_eq_zero (h : IsExcellentPosition F)
     (hF : F.IsHomogeneous n) {α : k}
     (h0 : eval ![0, α] (Affine.blowupStrictTransform (dehomogenize 2 F)) = 0) : α ≠ 0 := by
   rintro rfl
-  refine h.not_isTangentAt_dehomogenize_X hF 1 ?_
+  refine h.isGoodPosition.not_isTangentAt_dehomogenize_X hF 1 ?_
   simpa using (Affine.eval_zero_blowupStrictTransform_eq_zero_iff
     (dehomogenize_ne_zero_of_isHomogeneous 2 hF h.ne_zero) 0).1 h0
 
@@ -694,7 +686,8 @@ theorem finsum_intersectionNumber_pointsOverCentre [IsAlgClosed k] (h : IsExcell
   have hf : f ≠ 0 := dehomogenize_ne_zero_of_isHomogeneous 2 hF h.ne_zero
   have hfib := Affine.eval_zero_blowupStrictTransform_eq_zero_iff hf
   obtain ⟨A, hA, -⟩ :=
-    Affine.exists_finset_eval_zero_blowupStrictTransform hf (h.not_isTangentAt_dehomogenize_X hF 0)
+    Affine.exists_finset_eval_zero_blowupStrictTransform hf
+      (h.isGoodPosition.not_isTangentAt_dehomogenize_X hF 0)
   have hA0 (α : k) (hα : α ∈ A) : α ≠ 0 :=
     h.ne_zero_of_eval_blowupStrictTransform_eq_zero hF ((hA α).1 hα)
   have himage : pointsOverCentre F = (fun α : k ↦ mk k ![α, 1, 0] (by simp)) '' ↑A := by
@@ -725,7 +718,7 @@ theorem finsum_intersectionNumber_pointsOverCentre [IsAlgClosed k] (h : IsExcell
     exact hne (by rw [associated_X_one_sub_C_mul_X_zero_iff.1 hαβ])
   · intro L hL
     obtain ⟨α, hα⟩ := hL.exists_associated_X_one_sub_C_mul_X_zero
-      (h.not_isTangentAt_dehomogenize_X hF 0)
+      (h.isGoodPosition.not_isTangentAt_dehomogenize_X hF 0)
     refine ⟨_, Finset.mem_image_of_mem _ ((hA α).2 ((hfib α).2 ?_)), hα⟩
     exact Affine.isTangentAt_def.2 ⟨isHomogeneous_X_one_sub_C_mul_X_zero α,
       X_one_sub_C_mul_X_zero_ne_zero α, hα.symm.dvd.trans hL.dvd⟩

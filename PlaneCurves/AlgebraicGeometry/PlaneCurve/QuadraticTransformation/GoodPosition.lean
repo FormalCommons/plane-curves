@@ -46,6 +46,8 @@ variables.
   permutations of the variables.
 * `PlaneCurves.Projective.IsGoodPosition.not_X_dvd`: a curve in good position has no exceptional
   component.
+* `PlaneCurves.Projective.IsGoodPosition.not_isTangentAt_dehomogenize_X`: in good position,
+  neither coordinate axis is tangent to `F(x, y, 1)` at the origin.
 * `PlaneCurves.Projective.IsGoodPosition.properTransform`: Fulton's (4), the proper transform of
   a curve in good position is in good position.
 
@@ -370,6 +372,14 @@ theorem IsGoodPosition.not_X_dvd (h : IsGoodPosition F) (j : Fin 3) : ¬ X j ∣
 theorem IsGoodPosition.ne_zero (h : IsGoodPosition F) : F ≠ 0 := by
   rintro rfl
   exact h.not_X_dvd 0 (dvd_zero _)
+
+/-- In good position, neither `x` nor `y` is tangent at the origin to `F(x, y, 1)`: this is good
+position at `[0 : 0 : 1]`. -/
+theorem IsGoodPosition.not_isTangentAt_dehomogenize_X (h : IsGoodPosition F)
+    (hF : F.IsHomogeneous n) (i : Fin 2) : ¬ Affine.IsTangentAt (dehomogenize 2 F) 0 (X i) :=
+  fun hT ↦ isGoodPosition_def.1 h 2 (Fin.succAbove 2 i) (Fin.succAbove_ne 2 i).symm
+    ((isTangentAt_fundamentalPoint_two_iff_dvd_leadingFormAt hF i).2
+      (Affine.isTangentAt_def.1 hT).2.2)
 
 /-- `X ∣ G(Y, X)` exactly when `Y ∣ G(X, Y)`. -/
 private theorem X_zero_dvd_rename_iff {G : MvPolynomial (Fin 2) k} :
