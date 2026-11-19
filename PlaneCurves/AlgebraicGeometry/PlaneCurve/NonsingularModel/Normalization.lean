@@ -531,30 +531,6 @@ theorem finite_quotient_regularFunctions_basicOpen
 
 /-! ### The milestone -/
 
-omit [IsAlgClosed k] [Fact (Irreducible F)] in
-/-- For a point `P` of `C` outside a finite set `T` of points of `C`, some form vanishes on `T`
-and not at `P`: a product of linear forms, one through each point of `T` and not through `P`. -/
-private theorem exists_isHomogeneous_eval_ne_zero_forall_eval_eq_zero
-    (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))
-    (T : Finset (zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))))
-    (hPT : P ∉ T) :
-    ∃ (m : ℕ) (G : MvPolynomial (Fin 3) k), G.IsHomogeneous m ∧ eval P.1.rep G ≠ 0 ∧
-      ∀ s ∈ T, eval s.1.rep G = 0 := by
-  classical
-  induction T using Finset.induction_on with
-  | empty => exact ⟨0, 1, isHomogeneous_one _ _, by simp, by simp⟩
-  | insert s T _ ih =>
-    obtain ⟨m, G, hG, hGP, hGT⟩ := ih fun h ↦ hPT (Finset.mem_insert_of_mem h)
-    have hsP : s.1 ≠ P.1 := fun h ↦ hPT (Subtype.ext h ▸ Finset.mem_insert_self s T)
-    obtain ⟨a, has, haP⟩ := exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus hsP
-    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩),
-      Set.forall_mem_singleton] at has haP
-    refine ⟨1 + m, (∑ i, C (a i) * X i) * G, (isHomogeneous_sum_C_mul_X a).mul hG,
-      by rw [eval_mul]; exact mul_ne_zero haP hGP, fun s' hs' ↦ ?_⟩
-    rcases Finset.mem_insert.1 hs' with rfl | hs'
-    · rw [eval_mul, has, zero_mul]
-    · rw [eval_mul, hGT s' hs', mul_zero]
-
 /-- **A basic open neighbourhood avoiding a finite set.** For a point `P` of `C` and a finite set
 `S` of points of `C` not containing `P`, there is a form `G` not divisible by `F` with
 `G(P) ≠ 0`, vanishing on `S` and at some point of `C`. So `D(G)` is a neighbourhood of `P`
@@ -576,11 +552,13 @@ theorem exists_basicOpen_normalization
     rw [mem_zeroLocus_ideal_iff hF, mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩),
       Set.forall_mem_singleton]
   obtain ⟨P₀, hP₀, hP₀P⟩ := (hinf.sdiff (Set.finite_singleton P.1)).nonempty
-  have hP₀P' : (⟨P₀, hP₀⟩ : zeroLocus _) ≠ P := fun h ↦ hP₀P (congrArg Subtype.val h)
-  obtain ⟨m, G, hG, hGP, hGS⟩ := exists_isHomogeneous_eval_ne_zero_forall_eval_eq_zero hF P
-    (hS.insert ⟨P₀, hP₀⟩).toFinset (by simpa [hPS] using hP₀P'.symm)
-  refine ⟨m, G, hG, fun ⟨H, hH⟩ ↦ hGP ?_, hGP, fun s hs ↦ hGS s (by simp [hs]),
-    ⟨P₀, hP₀⟩, hGS _ (by simp)⟩
+  obtain ⟨m, G, hG, hGP, hGS⟩ := exists_isHomogeneous_eval_rep_ne_zero_forall_eval_rep_eq_zero
+    P.1 ((hS.image Subtype.val).insert P₀) (by
+      rintro (h | ⟨s, hs, h⟩)
+      · exact hP₀P h.symm
+      · exact hPS (Subtype.ext h ▸ hs))
+  refine ⟨m, G, hG, fun ⟨H, hH⟩ ↦ hGP ?_, hGP, fun s hs ↦ hGS s.1 (Or.inr ⟨s, hs, rfl⟩),
+    ⟨P₀, hP₀⟩, hGS P₀ (Or.inl rfl)⟩
   rw [hH, eval_mul, (mem_zeroLocus_ideal_iff hF).1 P.2, zero_mul]
 
 /-- **Finiteness of the normalization of a plane curve near a point.** Let `C : F = 0` be an

@@ -53,6 +53,8 @@ coordinates, general position and the lines of the plane in equations.
   hyperplanes through a point.
 * `exists_eval_rep_ne_zero_notMem`: over an infinite field, a point off a hypersurface and off
   a finite set.
+* `exists_isHomogeneous_eval_rep_ne_zero_forall_eval_rep_eq_zero`: a form vanishing on a finite
+  set and not at a point outside it.
 * `zeroLocus_singleton_sum_C_mul_X_crossProduct`, `zeroLocus_pair_sum_C_mul_X`,
   `single_one_mem_zeroLocus_sum_C_mul_X_iff`: in `ℙ²`, the line through two points, the point
   of two lines, and the lines through `[0 : 1 : 0]`.
@@ -409,6 +411,33 @@ theorem exists_eval_rep_ne_zero_notMem [Infinite k] (hn : n ≠ 0)
   rw [mem_zeroLocus_singleton_sum_C_mul_X_iff] at this
   rwa [eval_sum_C_mul_X]
 
+/-- **A form vanishing on a finite set and not at a point.** Over any field, for a point `P` of
+`ℙⁿ` and finitely many points other than `P`, some form `G` vanishes at all of them and not at
+`P`: a product of linear forms, one through each of the points and not through `P`. -/
+theorem exists_isHomogeneous_eval_rep_ne_zero_forall_eval_rep_eq_zero
+    (P : ℙ k (Fin (n + 1) → k)) {T : Set (ℙ k (Fin (n + 1) → k))} (hT : T.Finite)
+    (hPT : P ∉ T) :
+    ∃ (m : ℕ) (G : MvPolynomial (Fin (n + 1)) k), G.IsHomogeneous m ∧ eval P.rep G ≠ 0 ∧
+      ∀ Q ∈ T, eval Q.rep G = 0 := by
+  classical
+  suffices h : ∀ T : Finset (ℙ k (Fin (n + 1) → k)), P ∉ T →
+      ∃ (m : ℕ) (G : MvPolynomial (Fin (n + 1)) k), G.IsHomogeneous m ∧ eval P.rep G ≠ 0 ∧
+        ∀ Q ∈ T, eval Q.rep G = 0 by
+    simpa using h hT.toFinset (by simpa using hPT)
+  intro T hPT
+  induction T using Finset.induction_on with
+  | empty => exact ⟨0, 1, isHomogeneous_one _ _, by simp, by simp⟩
+  | insert Q T _ ih =>
+    obtain ⟨m, G, hG, hGP, hGT⟩ := ih fun h ↦ hPT (Finset.mem_insert_of_mem h)
+    have hQP : Q ≠ P := fun h ↦ hPT (h ▸ Finset.mem_insert_self Q T)
+    obtain ⟨a, haQ, haP⟩ := exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus hQP
+    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩),
+      Set.forall_mem_singleton] at haQ haP
+    refine ⟨1 + m, (∑ i, C (a i) * X i) * G, (isHomogeneous_sum_C_mul_X a).mul hG,
+      by rw [eval_mul]; exact mul_ne_zero haP hGP, fun Q' hQ' ↦ ?_⟩
+    rcases Finset.mem_insert.1 hQ' with rfl | hQ'
+    · rw [eval_mul, haQ, zero_mul]
+    · rw [eval_mul, hGT Q' hQ', mul_zero]
 
 /-! ### The plane -/
 
