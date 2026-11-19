@@ -5,7 +5,8 @@ Authors: The FormalCommons contributors
 -/
 module
 
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Basic
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Corollaries
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Finiteness
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionNumber.Properties
 
 /-!
@@ -26,6 +27,11 @@ generic line through a point `P` meets `F` in distinct points outside `P`:
   other than `P`, then by Bézout's theorem for a line `L` meets `F` in exactly
   `deg F - I(P, F ∩ L)` points other than `P`.
 
+Together with the polar derivative `D_P F`, which is nonzero when `deg F - m_P(F)` is nonzero in
+`k`, these show that for an irreducible `F` all but finitely many lines through `P` meet `F` in
+exactly `deg F - m_P(F)` points other than `P`, each with intersection number one (Fulton,
+Problem 5.26).
+
 ## Main results
 
 * `intersectionNumber_eq_mult_iff_not_isTangentAt`: `I(P, F ∩ L) = m_P(F)` iff `L` is not
@@ -40,10 +46,14 @@ generic line through a point `P` meets `F` in distinct points outside `P`:
   finite set of other points.
 * `ncard_zeroLocus_pair_diff_add`, `ncard_zeroLocus_pair_diff`: counting the points of
   `V(F) ∩ V(L)` other than `P`.
+* `eq_of_mem_zeroLocus_pair_of_intersectionNumber_eq`: if `I(P, F ∩ L) = deg F`, then `P` is
+  the only common point of `F` and `L`.
+* `eventually_cofinite_ncard_zeroLocus_pair_diff_eq`: generic lines through `P` meet an
+  irreducible `F` in `deg F - m_P(F)` distinct further points, transversally.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.1, §5.3, Problem 5.12
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §5.1, §5.3, Problems 5.12, 5.26 and 5.28
 -/
 
 public section
@@ -192,6 +202,103 @@ theorem ncard_zeroLocus_pair_diff [IsAlgClosed k] (hF : F.IsHomogeneous d)
     (zeroLocus {F, L} \ {P}).ncard = d - r := by
   have := ncard_zeroLocus_pair_diff_add hF hL hL0 hLF hP h1
   omega
+
+/-! ### Generic lines through a point -/
+
+/-- If the form `F` of degree `d` has `I(P, F ∩ L) = d` with a line `L` that is not a component
+of `F`, then `P` is the only common point of `F` and `L`. -/
+theorem eq_of_mem_zeroLocus_pair_of_intersectionNumber_eq [IsAlgClosed k]
+    (hF : F.IsHomogeneous d) (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0) (hLF : ¬L ∣ F)
+    (hP : intersectionNumber P F L = d) (hQ : Q ∈ zeroLocus {F, L}) : Q = P := by
+  classical
+  by_contra hQP
+  rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨d, hF⟩, ⟨1, hL⟩])] at hQ
+  have h1 := one_le_intersectionNumber hF hL (hQ F (by simp)) (hQ L (by simp))
+  have hle := sum_intersectionNumber_le_mul hF hL
+    ((irreducible_of_isHomogeneous_one hL hL0).isRelPrime_iff_not_dvd.2 hLF).symm {P, Q}
+  rw [Finset.sum_pair (Ne.symm hQP), hP, mul_one] at hle
+  have h2 : (d : ℕ∞) + 1 ≤ d := (add_le_add_right h1 _).trans hle
+  exact absurd h2 (by norm_cast; omega)
+
+/-- **Generic lines through a point.** Let `k` be algebraically closed, `F` an irreducible form of
+degree `d`, `P` a point of `ℙ²` and `r = m_P(F)`, and suppose that `d - r` is nonzero in `k` (for
+instance, `k` has characteristic zero) or that `d = r`. Then for all but finitely many lines
+`L = ∑ i, c i X i` through `P`, the line `L` meets `F` in exactly `d - r` points other than `P`,
+with `I(Q, F ∩ L) = 1` at each of them, and `I(P, F ∩ L) = r`.
+
+The excluded lines are the component of `F` if `F` is a line, the tangents to `F` at `P`, the
+lines through `P` and a multiple point of `F`, and the lines through `P` and a point `Q ≠ P` of
+`V(F) ∩ V(D_P F)`, where `D_P F` is the polar derivative; the last set is finite because
+`D_P F ≠ 0` when `d - r ≠ 0` in `k`. Without that hypothesis the statement can fail in
+characteristic `p ∣ d - r`: for `F = X^{p+1} - Y^p Z` and `P = [0 : 1 : 0]`, every tangent to `F`
+at a simple point passes through `P`, so every line through `P` meets `F` in at most one point
+other than `P` (Fulton, Problem 5.28).
+
+Milestone: *Generic lines through a point meet an irreducible curve in distinct points*. -/
+theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq [IsAlgClosed k]
+    (hF : F.IsHomogeneous d) (hirr : Irreducible F) {r : ℕ} (hr : mult F P = r)
+    (hdr : ((d - r : ℕ) : k) ≠ 0 ∨ d = r) :
+    ∀ᶠ c : ℙ k (Fin 3 → k) in Filter.cofinite, eval P.rep (∑ i, C (c.rep i) * X i) = 0 →
+      (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard = d - r ∧
+      (∀ Q ∈ zeroLocus {F, ∑ i, C (c.rep i) * X i}, Q ≠ P →
+        intersectionNumber Q F (∑ i, C (c.rep i) * X i) = 1) ∧
+      intersectionNumber P F (∑ i, C (c.rep i) * X i) = r := by
+  have hF0 := hirr.ne_zero
+  have hmem : ∀ {L : MvPolynomial (Fin 3) k}, L.IsHomogeneous 1 → ∀ Q,
+      Q ∈ zeroLocus {F, L} ↔ eval Q.rep F = 0 ∧ eval Q.rep L = 0 := fun hL Q ↦ by
+    rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨d, hF⟩, ⟨_, hL⟩])]
+    simp
+  -- A finite set `S` of points such that a line through `P` that is not a component of `F`,
+  -- not tangent at `P` and through no point of `S` other than `P` meets `F` transversally
+  -- outside `P`.
+  obtain ⟨S, hS, hgood⟩ : ∃ S : Set (ℙ k (Fin 3 → k)), S.Finite ∧
+      ∀ {L : MvPolynomial (Fin 3) k}, L.IsHomogeneous 1 → L ≠ 0 → ¬L ∣ F →
+        eval P.rep L = 0 → ¬IsTangentAt F P L → (∀ Q ∈ S, Q ≠ P → eval Q.rep L ≠ 0) →
+        ∀ Q ∈ zeroLocus {F, L}, Q ≠ P → intersectionNumber Q F L = 1 := by
+    rcases hdr with hdr | rfl
+    · have hD0 := hF.polarDerivative_ne_zero (v := P.rep) (by rw [← mult_def, hr]) hdr
+      have hrel : IsRelPrime F (polarDerivative P.rep F) := by
+        refine hirr.isRelPrime_iff_not_dvd.2 fun hdvd ↦ hdr ?_
+        have := totalDegree_le_of_dvd_of_isDomain hdvd hD0
+        rw [hF.totalDegree hF0, (hF.polarDerivative _).totalDegree hD0] at this
+        simp [show d = 0 by omega]
+      refine ⟨{Q | IsMultiplePoint F Q} ∪ zeroLocus {F, polarDerivative P.rep F},
+        (finite_setOf_isMultiplePoint_of_irreducible hF hirr).union
+          (finite_zeroLocus_pair_of_isRelPrime hF (hF.polarDerivative _) hrel), ?_⟩
+      intro L hL hL0 _ hLP _ hS Q hQ hQP
+      obtain ⟨hQF, hQL⟩ := (hmem hL Q).1 hQ
+      have hQs : IsSimplePoint F Q :=
+        (isSimplePoint_or_isMultiplePoint hF
+          ((mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩)).2 (by simpa))).resolve_right
+          fun hm ↦ hS Q (Or.inl hm) hQP hQL
+      refine (intersectionNumber_eq_one_iff hF hL hL0 hQL).2
+        ⟨hQs, fun hT ↦ hS Q (Or.inr ?_) hQP hQL⟩
+      obtain ⟨u, hu⟩ := hQs.associated_tangentLine_of_isTangentAt hF hT
+      have hTP : eval P.rep (tangentLine F Q.rep) = 0 := by
+        rw [← hu, map_mul, hLP, zero_mul]
+      rw [mem_zeroLocus_iff_eval_rep
+        (by rintro f (rfl | rfl); exacts [⟨d, hF⟩, ⟨_, hF.polarDerivative _⟩])]
+      rintro f (rfl | rfl)
+      exacts [hQF, (eval_tangentLine_eq_eval_polarDerivative F P.rep Q.rep).symm.trans hTP]
+    · refine ⟨∅, Set.finite_empty, ?_⟩
+      intro L hL hL0 hLF hLP hT _ Q hQ hQP
+      have hP : intersectionNumber P F L = d := by
+        rw [(intersectionNumber_eq_mult_iff_not_isTangentAt hF hF0 hL hL0 hLP).2 hT, hr]
+      exact absurd (eq_of_mem_zeroLocus_pair_of_intersectionNumber_eq hF hL hL0 hLF hP hQ) hQP
+  rw [Filter.eventually_cofinite]
+  refine (((finite_setOf_sum_C_mul_X_dvd hF0).union (finite_setOf_isTangentAt hF0 P)).union
+    (finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite hS P)).subset fun c hc ↦ ?_
+  simp only [Set.mem_ofPred_eq, not_imp] at hc
+  obtain ⟨hcP, hbad⟩ := hc
+  by_contra hc
+  simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_and, not_exists] at hc
+  obtain ⟨⟨hdvd, htan⟩, hS'⟩ := hc
+  have hL := isHomogeneous_sum_C_mul_X c.rep
+  have hL0 := sum_C_mul_X_ne_zero c.rep_ne_zero
+  have hP : intersectionNumber P F (∑ i, C (c.rep i) * X i) = r := by
+    rw [(intersectionNumber_eq_mult_iff_not_isTangentAt hF hF0 hL hL0 hcP).2 htan, hr]
+  have h1 := hgood hL hL0 hdvd hcP htan fun Q hQ hQP ↦ hS' hcP Q hQ hQP
+  exact hbad ⟨ncard_zeroLocus_pair_diff hF hL hL0 hdvd hP h1, h1, hP⟩
 
 end PlaneCurves.Projective
 
