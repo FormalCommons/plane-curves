@@ -53,13 +53,6 @@ variable {k : Type*} [Field k] [IsAlgClosed k] {F : MvPolynomial (Fin 3) k} {d :
   {hF : F.IsHomogeneous d} [Fact (Irreducible F)]
   {P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))}
 
-omit [IsAlgClosed k] [Fact (Irreducible F)] in
-/-- A point of `C` that is not a multiple point is a simple point. -/
-theorem isSimplePoint_of_not_isMultiplePoint (hP : ¬IsMultiplePoint F P.1) :
-    IsSimplePoint F P.1 := by
-  rw [isMultiplePoint_iff_not_isSimplePoint, not_and, not_not] at hP
-  exact hP ((mem_zeroLocus_ideal_iff hF).1 P.2)
-
 variable (hF) in
 /-- **The nonsingular model over the simple points.** The centre map is a bijection from the
 places of `k(C)` centred at simple points onto the simple points of `C`, with inverse the place
@@ -168,7 +161,9 @@ theorem center_spec_of_isOrdinaryMultiplePoint
   obtain ⟨-, -, hsurj, -, hsimple, -⟩ := center_spec hF
   refine ⟨(finite_setOf_isMultiplePoint_of_irreducible hF Fact.out).preimage
       Subtype.val_injective.injOn, fun Q ↦ inferInstance, hsurj,
-    fun P hP ↦ hsimple P (isSimplePoint_of_not_isMultiplePoint hP), fun P hP ↦ ?_⟩
+    fun P hP ↦ hsimple P (by_contra fun h ↦ hP (isMultiplePoint_iff_not_isSimplePoint.2
+      ⟨(mem_zeroLocus_ideal_iff hF).1 P.2, h⟩)),
+    fun P hP ↦ ?_⟩
   exact ⟨ncard_placesOver_of_isOrdinaryMultiplePoint (hord P hP),
     placesOverEquivTangents hF P (hord P hP), exists_placesOverEquivTangents_eq (hord P hP)⟩
 
