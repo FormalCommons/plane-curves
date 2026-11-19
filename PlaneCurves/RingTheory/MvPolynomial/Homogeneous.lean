@@ -8,12 +8,13 @@ module
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Basic
 
 /-!
-# Scaling the arguments of a form
+# Scaling the arguments of a form, and dividing by a form
 
 A form `F` of degree `d` satisfies `F(c x₁, …, c xₙ) = c ^ d F(x₁, …, xₙ)` for every `c` in any
 commutative algebra, not only for `c` in the base ring as in Mathlib's
 `MvPolynomial.IsHomogeneous.aeval_smul`. In two variables, a binary form `F` is determined by
-`F(1, Y)`, kept as a polynomial in the variable `Y = X 1`.
+`F(1, Y)`, kept as a polynomial in the variable `Y = X 1`. A form that divides a polynomial divides
+each of its homogeneous components.
 
 ## Main results
 
@@ -22,6 +23,8 @@ commutative algebra, not only for `c` in the base ring as in Mathlib's
 * `MvPolynomial.IsHomogeneous.aeval_one_X_eq_zero_iff`: a binary form `F` vanishes exactly when
   `F(1, Y)` does, and `MvPolynomial.IsHomogeneous.aeval_one_polynomial_X_eq_zero_iff` the same
   for `F(1, T)` as a polynomial in one variable.
+* `MvPolynomial.IsHomogeneous.dvd_homogeneousComponent`: a form dividing a polynomial divides
+  each of its homogeneous components.
 -/
 
 public section
@@ -73,6 +76,14 @@ theorem IsHomogeneous.aeval_one_polynomial_X_eq_zero_iff {F : MvPolynomial (Fin 
   congr 1
   ext i : 1
   fin_cases i <;> simp
+
+/-- A form that divides a polynomial divides each of its homogeneous components. -/
+theorem IsHomogeneous.dvd_homogeneousComponent {P : MvPolynomial σ R} (hF : F.IsHomogeneous d)
+    (h : F ∣ P) (j : ℕ) : F ∣ homogeneousComponent j P := by
+  obtain ⟨K, rfl⟩ := h
+  rw [mul_comm, hF.homogeneousComponent_mul_right]
+  split_ifs
+  exacts [dvd_mul_left _ _, dvd_zero _]
 
 end MvPolynomial
 
