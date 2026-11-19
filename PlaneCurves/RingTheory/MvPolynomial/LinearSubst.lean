@@ -10,6 +10,7 @@ public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 public import Mathlib.RingTheory.GradedAlgebra.RingHom
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
+public import TauCeti.Algebra.Squarefree
 public import TauCeti.RingTheory.MvPolynomial.LinearSubst
 
 /-!
@@ -163,12 +164,8 @@ theorem irreducible_linearSubst_iff {M : Matrix σ σ R} (hM : IsUnit M.det)
 squarefree. -/
 theorem squarefree_linearSubst_iff {M : Matrix σ σ R} (hM : IsUnit M.det)
     {p : MvPolynomial σ R} : Squarefree (linearSubst M p) ↔ Squarefree p := by
-  set e := linearSubstAlgEquiv ((Matrix.isUnit_iff_isUnit_det M).2 hM).unit
-  have he (q : MvPolynomial σ R) : e q = linearSubst M q := rfl
-  rw [← he]
-  refine ⟨fun h x hx ↦ (isUnit_map_iff e x).1 (h _ (by simpa using map_dvd e hx)),
-    fun h x hx ↦ ?_⟩
-  simpa using (h (e.symm x) (by simpa using map_dvd e.symm hx)).map e
+  simpa using TauCeti.squarefree_map_iff
+    (linearSubstAlgEquiv ((Matrix.isUnit_iff_isUnit_det M).2 hM).unit) (a := p)
 
 /-- A linear change of variables along a matrix with invertible determinant preserves the total
 degree. -/

@@ -6,7 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.Place
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Blowup.Chart
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.Blowup
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.ChangeOfCoordinates
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.SimplePoint
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.GenericLine
@@ -25,7 +25,7 @@ For every tangent `Y - α X` of `F` at the origin, the point `(0, α)` of the ex
 simple point of `F'`, so it has a place of `k(F')`; transported to `K`, it is a place
 `blowupPlace` of `K` over the origin. These are all the places of `K` over the origin, one for each
 tangent: if the valuation ring of a place `Q` contains `𝒪_0(F)`, then `z = y / x` is integral over
-`𝒪_Q` (it is a root of the monic polynomial obtained from `F(x, xz) = x ^ r F'(x, z)`), so `𝒪_Q`
+`𝒪_Q` (`div_mem_integers_of_localSubring_le`, in `Place/Blowup.lean`), so `𝒪_Q`
 contains the coordinate ring of `F'`, and `Q` lies over a point `(0, α)` of `F'` on the
 exceptional line, a simple point; the discrete valuation ring `𝒪_{(0, α)}(F')` is then the
 valuation ring of `Q`. At each of these places `x` has order one.
@@ -49,9 +49,6 @@ of forms at them are as for affine curves.
 * `PlaneCurves.Affine.localSubring_le_integers_blowupPlace`: `blowupPlace` lies over the origin.
 * `PlaneCurves.Affine.valuation_blowupPlace_div_sub_lt_one`, `eq_of_blowupPlace_eq`: `y / x - α`
   has positive order at the place over `Y - α X`, so distinct tangents give distinct places.
-* `PlaneCurves.Affine.isIntegral_div`: `z = y / x` is integral over `𝒪_0(F)`.
-* `PlaneCurves.Affine.div_mem_integers_of_localSubring_le`: `z = y / x` lies in the valuation
-  ring of every place over the origin.
 * `PlaneCurves.Affine.isTangentAt_of_valuation_div_sub_lt_one`,
   `PlaneCurves.Affine.eq_blowupPlace_of_valuation_div_sub_lt_one`: a place over the origin at
   which `z` takes the value `α` is `blowupPlace` for the tangent `Y - α X`.
@@ -134,29 +131,16 @@ theorem addValuation_blowupPlace [(Ideal.span {blowupStrictTransform F}).IsPrime
         (blowupFunctionFieldEquiv hF hX w) := by
   rw [blowupPlace_def, Place.addValuation_map, AlgEquiv.symm_symm]
 
-omit [(Ideal.span {F}).IsPrime] in
-/-- `G(X, XZ)` takes at `(0, α)` the value of `G` at the origin. -/
-private theorem eval_aeval_X_X_mul_X (α : k) (g : MvPolynomial (Fin 2) k) :
-    eval ![0, α] (aeval ![X 0, X 0 * X 1] g) = eval 0 g := by
-  refine (aeval_bind₁ ![0, α] ![X 0, X 0 * X 1] g).trans ?_
-  change aeval _ g = aeval _ g
-  congr 1
-  ext i : 1
-  fin_cases i <;> simp
-
 /-- **`blowupPlace` lies over the origin**: its valuation ring contains `𝒪_0(F)`. -/
 theorem localSubring_le_integers_blowupPlace {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0)) :
     (AffineSpace.localSubring 0
       (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
       (blowupPlace hF hX h hα).integers.toSubring := by
   have := isPrime_span_blowupStrictTransform hF hX
-  intro f hf
-  obtain ⟨a, b, hb, rfl⟩ := (mem_localSubring_iff _ _).1 hf
-  change _ ∈ (blowupPlace hF hX h hα).integers
-  rw [blowupPlace_def, Place.mem_integers_map_iff, AlgEquiv.symm_symm,
-    ← ValuationSubring.mem_toSubring, integers_toSubring_placeAt, mem_localSubring_iff]
-  refine ⟨aeval ![X 0, X 0 * X 1] a, aeval ![X 0, X 0 * X 1] b, ?_, by simp [map_div₀]⟩
-  rwa [eval_aeval_X_X_mul_X]
+  have hP := (h.isSimplePoint_blowupStrictTransform hα).1
+  rw [blowupPlace_def]
+  exact localSubring_le_integers_map_symm hF hX (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero
+    hP.eval_eq_zero (integers_toSubring_placeAt hP).ge
 
 /-- **`x` has order one** at every place over an ordinary multiple point at the origin. -/
 theorem addValuation_x_blowupPlace {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0)) :
@@ -178,13 +162,8 @@ theorem addValuation_blowupPlace_algebraMap_mk [(Ideal.span {blowupStrictTransfo
         (placeAt (h.isSimplePoint_blowupStrictTransform hα).1).addValuation
           (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F})
             (blowupStrictTransform G))) := by
-  have hx : (placeAt (h.isSimplePoint_blowupStrictTransform hα).1).addValuation
-      (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) (X 0))) = 1 := by
-    rw [← map_natCast_ord_eq_addValuation_placeAt, h.ord_X_zero_blowupStrictTransform hα]
-    rfl
-  rw [addValuation_blowupPlace, blowupFunctionFieldEquiv_algebraMap_mk,
-    ← X_pow_mul_blowupStrictTransform, map_mul, map_mul, AddValuation.map_mul, map_pow, map_pow,
-    AddValuation.map_pow, hx, nsmul_one]
+  rw [addValuation_algebraMap_mk_eq_nsmul_add hF hX, addValuation_x_blowupPlace, nsmul_one,
+    blowupPlace_def, Place.map_map_symm]
 
 /-- At the place over a tangent of an ordinary multiple point at the origin, a polynomial `G` has
 order at least its multiplicity `m_0(G)`. -/
@@ -197,100 +176,6 @@ theorem natCast_orderAt_le_addValuation_blowupPlace {α : k}
   refine le_add_of_nonneg_right ((Place.addValuation_nonneg_iff _).2 ?_)
   rw [← ValuationSubring.mem_toSubring, integers_toSubring_placeAt]
   exact algebraMap_mem_localSubring _ _ _
-
-/-- A polynomial expression in elements of a valuation ring, read in the field. -/
-private theorem coe_aeval_integers {K : Type*} [Field K] [Algebra k K] (Q : Place k K)
-    (u : Fin 2 → Q.integers) (g : MvPolynomial (Fin 2) k) :
-    ((aeval u g : Q.integers) : K) = aeval ![(u 0 : K), (u 1 : K)] g := by
-  have h := DFunLike.congr_fun (comp_aeval (R := k) (f := u)
-    (IsScalarTower.toAlgHom k Q.integers K)) g
-  have hu : (fun i ↦ IsScalarTower.toAlgHom k Q.integers K (u i)) = ![(u 0 : K), (u 1 : K)] := by
-    ext i : 1
-    fin_cases i <;> rfl
-  rw [hu] at h
-  exact h
-
-section Integral
-
-variable {hI : Ideal.span {F} ≤ vanishingIdeal k {(0 : Fin 2 → k)}}
-
-omit [(Ideal.span {F}).IsPrime] in
-private theorem aeval_mk_X {R : Type*} [CommSemiring R] [Algebra k R]
-    (f : MvPolynomial (Fin 2) k ⧸ Ideal.span {F} →ₐ[k] R) (g : MvPolynomial (Fin 2) k) :
-    aeval ![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] g =
-      f (Ideal.Quotient.mk _ g) := by
-  have h : (![f (Ideal.Quotient.mk _ (X 0)), f (Ideal.Quotient.mk _ (X 1))] : Fin 2 → R) =
-      (f.comp (Ideal.Quotient.mkₐ k _)) ∘ X := by
-    ext i : 1
-    fin_cases i <;> rfl
-  rw [h, ← aeval_unique]
-  rfl
-
-/-- If `X` is not tangent to `F` at the origin, `H(x, y)` is a unit of `𝒪_0(F)`: its value at the
-origin is the coefficient `a_{0r}` of `Y ^ r`. -/
-theorem isUnit_aeval_blowupChartLeadingCoeff_localSubring (hT : ¬IsTangentAt F 0 (X 0)) :
-    IsUnit (aeval ![algebraMap _ (localSubring 0 hI).toSubring
-        (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
-      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))]
-      (blowupChartLeadingCoeff F)) := by
-  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
-      (localSubring 0 hI).toSubring)
-    (blowupChartLeadingCoeff F)
-  simp only [IsScalarTower.coe_toAlgHom'] at e
-  rw [e, isUnit_iff_evalAt_ne_zero, evalAt_algebraMap, coordinateEval_mk,
-    eval_zero_blowupChartLeadingCoeff]
-  exact (isTangentAt_zero_X_zero_iff).not.1 hT
-
-/-- `F(x, y) = 0` in `𝒪_0(F)`. -/
-theorem aeval_localSubring_eq_zero :
-    aeval ![algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 0)),
-      algebraMap _ (localSubring 0 hI).toSubring (Ideal.Quotient.mk (Ideal.span {F}) (X 1))] F =
-      0 := by
-  have e := aeval_mk_X (IsScalarTower.toAlgHom k (MvPolynomial (Fin 2) k ⧸ Ideal.span {F})
-    (localSubring 0 hI).toSubring) F
-  simp only [IsScalarTower.coe_toAlgHom'] at e
-  rw [e, Ideal.Quotient.mk_singleton_self, map_zero]
-
-include hF hX in
-/-- At an ordinary multiple point at the origin at which `X = 0` is not tangent, `y / x` is
-integral over `𝒪_0(F)`. -/
-theorem isIntegral_div (hT : ¬IsTangentAt F 0 (X 0)) :
-    IsIntegral (localSubring 0 hI).toSubring
-      (algebraMap _ (functionField (Ideal.span {F})) (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-        algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))) :=
-  isIntegral_of_isUnit_aeval_blowupChartLeadingCoeff aeval_localSubring_eq_zero
-    (mul_div_cancel₀ _ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX))
-    (fun _ _ h ↦ mul_left_cancel₀ (algebraMap_mk_X_zero_ne_zero_of_irreducible hF hX) h)
-    (isUnit_aeval_blowupChartLeadingCoeff_localSubring hT)
-
-end Integral
-
-include hF hX in
-/-- **`z = y / x` is integral at a place over the origin.** If the origin is an ordinary multiple
-point of `F` at which `X = 0` is not tangent, then `y / x` lies in the valuation ring of every place
-of `k(F)` over the origin: it is a root of a monic polynomial over `𝒪_0(F)`. -/
-theorem div_mem_integers_of_localSubring_le (hT : ¬IsTangentAt F 0 (X 0))
-    {Q : Place k (functionField (Ideal.span {F}))}
-    (hQ : (AffineSpace.localSubring 0
-      (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
-        Q.integers.toSubring) :
-    algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers :=
-  Q.mem_integers_of_isIntegral (fun r ↦ hQ r.2) (isIntegral_div hF hX hT)
-
-/-- At a place `Q` of `k(F)` at which `x` and `z = y / x` lie in the valuation ring, the polynomial
-expressions in `x` and `z` are the functions on the strict transform `F'`, read in `k(F)`. -/
-private theorem coe_aeval_eq_blowupFunctionFieldEquiv_symm
-    [(Ideal.span {blowupStrictTransform F}).IsPrime] {Q : Place k (functionField (Ideal.span {F}))}
-    (hxQ : algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers)
-    (hzQ : algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers)
-    (g : MvPolynomial (Fin 2) k) :
-    ((aeval ![(⟨_, hxQ⟩ : Q.integers), ⟨_, hzQ⟩] g : Q.integers) :
-      functionField (Ideal.span {F})) = (blowupFunctionFieldEquiv hF hX).symm
-        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) g)) := by
-  rw [coe_aeval_integers, blowupFunctionFieldEquiv_symm_algebraMap_mk]
-  rfl
 
 variable [IsAlgClosed k]
 
@@ -315,29 +200,6 @@ theorem eq_of_blowupPlace_eq {α β : k} (hα : IsTangentAt F 0 (X 1 - C α * X 
   Place.eq_of_valuation_sub_lt_one _ (valuation_blowupPlace_div_sub_lt_one hF hX h hα)
     (he ▸ valuation_blowupPlace_div_sub_lt_one hF hX h hβ)
 
-/-- At a place `Q` over the origin at which `z = y / x` takes the value `α`, every function
-`G(x, z)` on the strict transform takes its value `G(0, α)`. -/
-private theorem valuation_blowupFunctionFieldEquiv_symm_sub_lt_one
-    [(Ideal.span {blowupStrictTransform F}).IsPrime] {Q : Place k (functionField (Ideal.span {F}))}
-    (hQ : (AffineSpace.localSubring 0
-      (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
-        Q.integers.toSubring) {α : k}
-    (hα : Q.valuation (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) - algebraMap k _ α) < 1)
-    (hzQ : algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers)
-    (g : MvPolynomial (Fin 2) k) :
-    Q.valuation ((blowupFunctionFieldEquiv hF hX).symm
-        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) g)) -
-      algebraMap k _ (eval ![0, α] g)) < 1 := by
-  have hxQ := hQ (algebraMap_mem_localSubring _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)))
-  rw [← coe_aeval_eq_blowupFunctionFieldEquiv_symm hF hX hxQ hzQ]
-  refine Q.valuation_aeval_sub_lt_one (fun i ↦ ?_) g
-  fin_cases i
-  · simpa using AffineSpace.valuation_algebraMap_mk_sub_lt_one
-      (isFunctionField_functionField_span_singleton hF) hQ (X 0)
-  · exact hα
-
 include hF hX in
 /-- At a place over the origin, `z = y / x` can only take the value `α` of a tangent `Y - α X`. -/
 theorem isTangentAt_of_valuation_div_sub_lt_one {Q : Place k (functionField (Ideal.span {F}))}
@@ -345,18 +207,11 @@ theorem isTangentAt_of_valuation_div_sub_lt_one {Q : Place k (functionField (Ide
       (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
         Q.integers.toSubring) {α : k}
     (hα : Q.valuation (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) - algebraMap k _ α) < 1)
-    (hzQ : algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers) :
-    IsTangentAt F 0 (X 1 - C α * X 0) := by
-  have := isPrime_span_blowupStrictTransform hF hX
-  rw [← eval_zero_blowupStrictTransform_eq_zero_iff h.ne_zero]
-  by_contra hne
-  have h1 := valuation_blowupFunctionFieldEquiv_symm_sub_lt_one hF hX h hQ hα hzQ
-    (blowupStrictTransform F)
-  rw [Ideal.Quotient.mk_singleton_self, map_zero, map_zero, zero_sub, Valuation.map_neg,
-    Q.isTrivialOn.eq_one _ hne] at h1
-  exact lt_irrefl _ h1
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) - algebraMap k _ α) < 1) :
+    IsTangentAt F 0 (X 1 - C α * X 0) :=
+  (eval_zero_blowupStrictTransform_eq_zero_iff h.ne_zero α).1
+    (eval_blowupStrictTransform_eq_zero_of_valuation_div_sub_lt_one hF hX
+      (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero hQ hα)
 
 /-- A place `Q` over the origin at which `z = y / x` takes the value `α` is the place over the
 tangent `Y - α X`: its valuation ring contains, and so is, the local ring of `F'` at `(0, α)`. -/
@@ -366,25 +221,15 @@ theorem eq_blowupPlace_of_valuation_div_sub_lt_one
       (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
         Q.integers.toSubring) {α : k}
     (hα : Q.valuation (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) - algebraMap k _ α) < 1)
-    (hzQ : algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 1)) /
-      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) ∈ Q.integers) :
-    Q = blowupPlace hF hX h (isTangentAt_of_valuation_div_sub_lt_one hF hX h hQ hα hzQ) := by
+      algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)) - algebraMap k _ α) < 1) :
+    Q = blowupPlace hF hX h (isTangentAt_of_valuation_div_sub_lt_one hF hX h hQ hα) := by
   have := isPrime_span_blowupStrictTransform hF hX
-  have hψ := valuation_blowupFunctionFieldEquiv_symm_sub_lt_one hF hX h hQ hα hzQ
-  have hxQ := hQ (algebraMap_mem_localSubring _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0)))
   have hP := (h.isSimplePoint_blowupStrictTransform
-    (isTangentAt_of_valuation_div_sub_lt_one hF hX h hQ hα hzQ)).1
-  have hle : (placeAt hP).integers ≤ (Q.map (blowupFunctionFieldEquiv hF hX)).integers := by
-    intro f hf
-    rw [← ValuationSubring.mem_toSubring, integers_toSubring_placeAt, mem_localSubring_iff] at hf
-    obtain ⟨a, b, hb, rfl⟩ := hf
-    rw [Place.mem_integers_map_iff, map_div₀, Place.mem_integers_iff, map_div₀]
-    have hb1 := Valuation.map_eq_of_sub_lt Q.valuation
-      (by rw [Q.isTrivialOn.eq_one _ hb]; exact hψ b)
-    rw [Q.isTrivialOn.eq_one _ hb] at hb1
-    rw [hb1, div_one, ← coe_aeval_eq_blowupFunctionFieldEquiv_symm hF hX hxQ hzQ]
-    exact Q.mem_integers_iff.1 (aeval ![(⟨_, hxQ⟩ : Q.integers), ⟨_, hzQ⟩] a).2
+    (isTangentAt_of_valuation_div_sub_lt_one hF hX h hQ hα)).1
+  have hle : (placeAt hP).integers ≤ (Q.map (blowupFunctionFieldEquiv hF hX)).integers :=
+    fun f hf ↦ localSubring_le_integers_map_of_valuation_div_sub_lt_one hF hX
+      (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero hQ hα
+      ((integers_toSubring_placeAt hP).le hf)
   rw [blowupPlace_def, Place.eq_of_integers_le hle, Place.map_symm_map]
 
 /-- **The places over an ordinary multiple point.** Let the origin be an ordinary multiple point
@@ -397,11 +242,12 @@ theorem existsUnique_eq_blowupPlace (hT : ¬IsTangentAt F 0 (X 0))
       (span_le_vanishingIdeal (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero)).toSubring ≤
         Q.integers.toSubring) :
     ∃! α : k, ∃ hα : IsTangentAt F 0 (X 1 - C α * X 0), Q = blowupPlace hF hX h hα := by
-  have hzQ := div_mem_integers_of_localSubring_le hF hX h hT hQ
+  have hzQ := div_mem_integers_of_localSubring_le hF hX
+    (isOrdinaryMultiplePoint_def.1 h).1.eval_eq_zero hT hQ
   obtain ⟨α, hα⟩ := (Q.degree_eq_one_iff_forall_exists_valuation_sub_lt_one.1
     (Q.degree_eq_one_of_isAlgClosed_of_isFunctionField
       (isFunctionField_functionField_span_singleton hF))) _ hzQ
-  exact ⟨α, ⟨_, eq_blowupPlace_of_valuation_div_sub_lt_one hF hX h hQ hα hzQ⟩,
+  exact ⟨α, ⟨_, eq_blowupPlace_of_valuation_div_sub_lt_one hF hX h hQ hα⟩,
     fun β ⟨hβ, hQβ⟩ ↦ Place.eq_of_valuation_sub_lt_one Q
       (hQβ ▸ valuation_blowupPlace_div_sub_lt_one hF hX h hβ) hα⟩
 

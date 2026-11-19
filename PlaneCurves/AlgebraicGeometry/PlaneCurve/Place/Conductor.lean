@@ -33,7 +33,8 @@ point: a function with order at least `r - 1` at every place over the origin lie
 ## Main results
 
 * `PlaneCurves.Affine.pow_mem_conductor_adjoin_div`: `x ^ (r - 1)` lies in the conductor of
-  `𝒪_0(F)[z]`, where `z = y / x` is integral over `𝒪_0(F)` (`PlaneCurves.Affine.isIntegral_div`).
+  `𝒪_0(F)[z]`, where `z = y / x` is integral over `𝒪_0(F)`
+  (`PlaneCurves.Affine.isIntegral_div`, in `Place/Blowup.lean`).
 * `PlaneCurves.Affine.mem_adjoin_div_of_forall_mem_integers`: a function in the valuation ring of
   every place over the origin lies in `𝒪_0(F)[y / x]`.
 * `PlaneCurves.Affine.integralClosure_localSubring_eq_adjoin`: the integral closure of `𝒪_0(F)`

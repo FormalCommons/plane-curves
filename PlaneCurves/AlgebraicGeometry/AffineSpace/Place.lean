@@ -24,6 +24,7 @@ over `P`. This file shows that polynomial functions take their values at `P` at 
   `v_Q(g - g(P)) < 1`.
 * `PlaneCurves.AffineSpace.valuation_algebraMap_mk_eq_one_iff`: then `g` has valuation one at
   `Q` exactly when `g(P) ≠ 0`.
+* `PlaneCurves.AffineSpace.eq_of_localSubring_le_integers`: then `Q` lies over at most one point.
 -/
 
 public section
@@ -77,6 +78,15 @@ theorem valuation_algebraMap_mk_eq_one_iff (hK : IsFunctionField k (functionFiel
   have h := valuation_algebraMap_mk_sub_lt_one hK hQ g
   rw [h0, map_zero, sub_zero, h1] at h
   exact lt_irrefl 1 h
+
+/-- **A place lies over at most one point**: if the valuation ring of a place `Q` of the function
+field `k(V)` contains both `𝒪_P(V)` and `𝒪_{P'}(V)`, then `P = P'`. -/
+theorem eq_of_localSubring_le_integers (hK : IsFunctionField k (functionField I)) {P' : σ → k}
+    {hI' : I ≤ vanishingIdeal k {P'}} (hQ : (localSubring P hI).toSubring ≤ Q.integers.toSubring)
+    (hQ' : (localSubring P' hI').toSubring ≤ Q.integers.toSubring) : P = P' :=
+  funext fun i ↦ by
+    simpa using Q.eq_of_valuation_sub_lt_one (valuation_algebraMap_mk_sub_lt_one hK hQ (X i))
+      (valuation_algebraMap_mk_sub_lt_one hK hQ' (X i))
 
 end PlaneCurves.AffineSpace
 
