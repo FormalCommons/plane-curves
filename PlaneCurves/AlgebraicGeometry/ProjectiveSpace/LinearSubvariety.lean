@@ -369,7 +369,7 @@ theorem exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus {P Q : ℙ k (Fin (n +
   · rw [mem_zeroLocus_singleton_sum_C_mul_X_iff]
     exact hfQ
 
-/-- **The linear forms through a point.**The coefficient vectors `a` of the linear forms
+/-- **The linear forms through a point.** The coefficient vectors `a` of the linear forms
 `∑ i, a i X i` vanishing at `P` form the kernel of `a ↦ P.rep ⬝ᵥ a`, a subspace of dimension `n`
 of `kⁿ⁺¹`. -/
 theorem setOf_mem_zeroLocus_sum_C_mul_X (P : ℙ k (Fin (n + 1) → k)) :

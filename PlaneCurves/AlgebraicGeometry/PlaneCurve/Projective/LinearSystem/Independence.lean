@@ -34,6 +34,8 @@ conditions at `P`, and none at the other points.
 * `PlaneCurves.Projective.finrank_linearSystem_add`,
   `PlaneCurves.Projective.finrank_linearSystem_eq`: for `∑ r_P ≤ d + 1`, `V(d; r)` has
   dimension exactly `(d + 1)(d + 2)/2 - ∑ r_P(r_P + 1)/2`.
+* `PlaneCurves.Projective.exists_ne_zero_mem_linearSystem`: if `∑ r_P(r_P + 1)/2 ≤ d(d + 3)/2`,
+  `V(d; r)` contains a nonzero form.
 * `PlaneCurves.Projective.finrank_linearSystem_and_properties`: the dimension of linear systems
   of plane curves with assigned multiple points, Fulton's Lemma and Theorem 1 of §5.2.
 
@@ -151,29 +153,35 @@ theorem finrank_linearSystem_eq {r : ℙ k (Fin 3 → k) →₀ ℕ} (hd : r.sum
   have := finrank_linearSystem_add hd
   omega
 
-/-- **Through any `d(d + 3)/2` points passes a curve of degree `d`.** For finitely many points
-of `ℙ²` (the support of `r`, with `r P ≤ 1`), at most `d(d + 3)/2` of them, there is a nonzero
-form of degree `d` vanishing at all of them. -/
-theorem exists_ne_zero_mem_linearSystem {r : ℙ k (Fin 3 → k) →₀ ℕ} (hr : ∀ P, r P ≤ 1)
-    (hcard : r.support.card ≤ d * (d + 3) / 2) : ∃ F ∈ linearSystem d r, F ≠ 0 := by
-  have hsum : r.sum (fun _ n ↦ n * (n + 1) / 2) = r.support.card := by
-    rw [Finsupp.sum, Finset.card_eq_sum_ones]
-    refine Finset.sum_congr rfl fun P hP ↦ ?_
-    have := Finsupp.mem_support_iff.1 hP
-    obtain h | h : r P = 0 ∨ r P = 1 := by have := hr P; omega
-    · exact absurd h this
-    · simp [h]
+/-- **Few conditions leave a curve.** If the assigned multiplicities `r` impose at most
+`d(d + 3)/2` conditions, `∑_P r_P(r_P + 1)/2 ≤ d(d + 3)/2`, then the linear system `V(d; r)`
+contains a nonzero form. -/
+theorem exists_ne_zero_mem_linearSystem {r : ℙ k (Fin 3 → k) →₀ ℕ}
+    (hr : r.sum (fun _ n ↦ n * (n + 1) / 2) ≤ d * (d + 3) / 2) :
+    ∃ F ∈ linearSystem d r, F ≠ 0 := by
   have hd : d * (d + 3) / 2 + 1 = (d + 1) * (d + 2) / 2 := by
     have h1 : (d + 1) * (d + 2) = d * (d + 3) + 2 := by ring
     rw [h1]
     omega
   have := finrank_linearSystem_ge d r
-  rw [hsum] at this
   have hne : linearSystem d r ≠ ⊥ := by
     intro h
     rw [h, finrank_bot] at this
     omega
   exact Submodule.exists_mem_ne_zero_of_ne_bot hne
+
+/-- **Through any `d(d + 3)/2` points passes a curve of degree `d`.** For finitely many points
+of `ℙ²` (the support of `r`, with `r P ≤ 1`), at most `d(d + 3)/2` of them, there is a nonzero
+form of degree `d` vanishing at all of them. -/
+theorem exists_ne_zero_mem_linearSystem_of_le_one {r : ℙ k (Fin 3 → k) →₀ ℕ}
+    (hr : ∀ P, r P ≤ 1) (hcard : r.support.card ≤ d * (d + 3) / 2) :
+    ∃ F ∈ linearSystem d r, F ≠ 0 := by
+  refine exists_ne_zero_mem_linearSystem (le_of_eq_of_le ?_ hcard)
+  rw [Finsupp.sum, Finset.card_eq_sum_ones]
+  refine Finset.sum_congr rfl fun P hP ↦ ?_
+  obtain h | h : r P = 0 ∨ r P = 1 := by have := hr P; omega
+  · exact absurd h (Finsupp.mem_support_iff.1 hP)
+  · simp [h]
 
 /-- **Dimension of linear systems of plane curves with assigned multiple points.** Over a field
 `k`, for `d : ℕ`:
@@ -216,7 +224,7 @@ theorem finrank_linearSystem_and_properties (d : ℕ) :
   ⟨finrank_homogeneousSubmodule_fin_three d,
     fun P ↦ by simpa using finrank_linearSystem_single_add (d := d) (r := 1) (by omega) P,
     fun _ hM _ _ ↦ linearSubst_mem_linearSystem_iff hM,
-    fun _ hr hcard ↦ exists_ne_zero_mem_linearSystem hr hcard,
+    fun _ hr hcard ↦ exists_ne_zero_mem_linearSystem_of_le_one hr hcard,
     fun P _ hr ↦ finrank_linearSystem_single_add hr P,
     finrank_linearSystem_ge d, fun _ hd ↦ finrank_linearSystem_eq hd⟩
 
