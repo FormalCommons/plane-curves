@@ -47,6 +47,8 @@ tangent lines at the point.
 * `MvPolynomial.IsHomogeneous.orderAt_zero`: a nonzero form of degree `d` has order `d` at the
   origin.
 * `MvPolynomial.IsHomogeneous.leadingFormAt_zero`: a form is its own leading form at the origin.
+* `MvPolynomial.taylor_eq_leadingFormAt`: if the order at `a` is at least the total degree,
+  `p(X + a)` is the leading form at `a`.
 * `MvPolynomial.orderAt_taylor_sub_leadingFormAt`: `p(X + a)` minus the leading form has order
   greater than that of `p` at `a`.
 * `MvPolynomial.orderAt_eq_and_leadingFormAt_eq_neg_of_orderAt_lt_orderAt_add`: if `p + q` has
@@ -129,6 +131,19 @@ theorem homogeneousComponent_taylor_eq_zero_of_lt {i : ℕ} (hi : i < p.orderAt 
 theorem toNat_orderAt_zero_le_degree {d : σ →₀ ℕ} (hd : d ∈ p.support) :
     (p.orderAt 0).toNat ≤ d.degree :=
   ENat.toNat_le_of_le_natCast (orderAt_le (by rwa [taylor_zero, ← mem_support_iff]))
+
+/-- If `p` vanishes at `a` to order at least its total degree, its Taylor shift `p(X + a)` is a
+form: the leading form of `p` at `a`. -/
+theorem taylor_eq_leadingFormAt (h : (p.totalDegree : ℕ∞) ≤ p.orderAt a) :
+    taylor a p = p.leadingFormAt a := by
+  rcases eq_or_ne p 0 with rfl | hp
+  · simp
+  have hord : p.orderAt a = p.totalDegree := le_antisymm (orderAt_le_totalDegree hp a) h
+  rw [leadingFormAt_def, hord, ENat.toNat_natCast]
+  conv_lhs => rw [← sum_homogeneousComponent_of_totalDegree_le (totalDegree_taylor_le a p)]
+  rw [Finset.sum_range_succ, Finset.sum_eq_zero fun i hi ↦
+    homogeneousComponent_taylor_eq_zero_of_lt (by
+      rw [hord]; exact_mod_cast Finset.mem_range.1 hi), zero_add]
 
 /-- The leading form of `p` at `a` is zero only for `p = 0`. -/
 @[simp]
