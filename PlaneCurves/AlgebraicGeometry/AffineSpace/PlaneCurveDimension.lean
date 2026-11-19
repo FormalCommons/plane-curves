@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.RationalFunction
+public import PlaneCurves.AlgebraicGeometry.AffineSpace.FiniteZeroLocus
 public import PlaneCurves.RingTheory.KrullDimension.TrdegOne
 public import Mathlib.RingTheory.Ideal.UFD
 public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
@@ -34,6 +35,8 @@ of `I` and proves the affine forms of parts (3)–(5) of Fulton's Proposition 10
 * `AffineSpace.isMaximal_of_trdeg_functionField_le_one`: if `tr.deg k(V) ≤ 1`, every prime
   strictly containing `I` is maximal, so it is the ideal of a point when `k` is algebraically
   closed (`AffineSpace.exists_eq_vanishingIdeal_singleton_of_trdeg_functionField_le_one`).
+* `AffineSpace.finite_zeroLocus_of_trdeg_functionField_le_one`: if `tr.deg k(V) ≤ 1`, every
+  zero locus properly contained in `V` is finite.
 
 ## References
 
@@ -162,6 +165,32 @@ theorem exists_eq_vanishingIdeal_singleton_of_trdeg_functionField_le_one [IsAlgC
     (h : Algebra.trdeg k (functionField I) ≤ 1) {J : Ideal (MvPolynomial σ k)} [J.IsPrime]
     (hIJ : I < J) : ∃ P : σ → k, J = vanishingIdeal k {P} :=
   isMaximal_iff_eq_vanishingIdeal_singleton.mp (isMaximal_of_trdeg_functionField_le_one h hIJ)
+
+/-- Over an algebraically closed field, if the function field of `V(I)` has transcendence degree
+at most one and `J ⊈ I`, then `V(I) ∩ V(J) = V(I ⊔ J)` is finite: every prime containing
+`I ⊔ J` strictly contains `I`, so it is maximal, and `k[X] ⧸ (I ⊔ J)` is finite-dimensional. -/
+theorem finite_zeroLocus_sup_of_trdeg_functionField_le_one [IsAlgClosed k]
+    (h : Algebra.trdeg k (functionField I) ≤ 1) {J : Ideal (MvPolynomial σ k)} (hJ : ¬ J ≤ I) :
+    (zeroLocus k (I ⊔ J)).Finite := by
+  rw [finite_zeroLocus_iff, Module.finite_iff_krullDimLE_zero, Ring.krullDimLE_zero_iff]
+  intro p hp
+  have hle : I ⊔ J ≤ p.comap (Ideal.Quotient.mk (I ⊔ J)) := by
+    simpa using Ideal.ker_le_comap (Ideal.Quotient.mk (I ⊔ J))
+  have hlt : I < p.comap (Ideal.Quotient.mk (I ⊔ J)) :=
+    lt_of_le_of_ne (le_sup_left.trans hle) fun heq ↦ hJ ((le_sup_right.trans hle).trans heq.ge)
+  exact Ideal.isMaximal_of_isIntegral_of_isMaximal_under _
+    (isMaximal_of_trdeg_functionField_le_one h hlt)
+
+/-- **Proper closed subsets of a curve are finite.** Over an algebraically closed field, if the
+function field of `V(I)` has transcendence degree at most one, every zero locus `V(J)` properly
+contained in `V(I)` is finite. Equivalently, the nonempty subsets of `V(I)` that are open in
+`V(I)` are its cofinite subsets. -/
+theorem finite_zeroLocus_of_trdeg_functionField_le_one [IsAlgClosed k]
+    (h : Algebra.trdeg k (functionField I) ≤ 1) {J : Ideal (MvPolynomial σ k)}
+    (hJ : zeroLocus k J ⊂ zeroLocus k I) : (zeroLocus k J).Finite :=
+  (finite_zeroLocus_sup_of_trdeg_functionField_le_one h
+    fun hJI ↦ hJ.not_subset (zeroLocus_anti_mono hJI)).subset
+    fun _ hx ↦ (zeroLocus_sup I J).ge ⟨hJ.subset hx, hx⟩
 
 end points
 

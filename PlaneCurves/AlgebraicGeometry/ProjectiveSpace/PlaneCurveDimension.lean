@@ -30,6 +30,8 @@ projective forms of parts (3)–(5) of Fulton's Proposition 10 of §6.5 to the a
 * `ProjectiveSpace.exists_eq_vanishingIdeal_singleton_of_trdeg_functionField_le_one`: if
   `tr.deg k(V) ≤ 1`, every homogeneous prime strictly containing `I` and not containing `Xᵢ` is
   the ideal of a point.
+* `ProjectiveSpace.finite_zeroLocus_of_trdeg_functionField_le_one`: if `tr.deg k(V) ≤ 1`, every
+  zero locus of a homogeneous ideal properly contained in `V` is finite.
 * `ProjectiveSpace.trdeg_functionField_spec`: Fulton's Proposition 10 of §6.5, for the
   varieties of this library.
 
@@ -142,6 +144,39 @@ theorem exists_eq_vanishingIdeal_singleton_of_trdeg_functionField_le_one
     AffineSpace.exists_eq_vanishingIdeal_singleton_of_trdeg_functionField_le_one h hlt
   exact ⟨_, eq_vanishingIdeal_singleton_of_map_dehomogenize hi hQ⟩
 
+/-- **Proper closed subsets of a projective curve are finite.** Over an algebraically closed
+field, if the function field of `V(I)` has transcendence degree at most one, every zero locus
+`V(J)` of a homogeneous ideal properly contained in `V(I)` is finite. Equivalently, the nonempty
+subsets of `V(I)` that are open in `V(I)` are its cofinite subsets. In each chart `Uᵢ` with
+`Xᵢ ∉ I`, `V(J) ∩ Uᵢ` lies in the finite set `V(I_* ⊔ J_*)`; if `Xᵢ ∈ I`, `V(I)` misses `Uᵢ`. -/
+theorem finite_zeroLocus_of_trdeg_functionField_le_one
+    (h : Algebra.trdeg k (functionField I) ≤ 1)
+    {J : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k)}
+    (hJ : zeroLocus (J : Set (MvPolynomial (Fin (n + 1)) k)) ⊂ zeroLocus (I : Set _)) :
+    (zeroLocus (J : Set (MvPolynomial (Fin (n + 1)) k))).Finite := by
+  have hJI : ¬ J ≤ I := fun hle ↦ hJ.not_subset (zeroLocus_anti_mono hle)
+  rw [← Set.inter_univ (zeroLocus _), ← iUnion_affineOpen, Set.inter_iUnion]
+  refine Set.finite_iUnion fun i ↦ ?_
+  by_cases hi : X i ∈ I
+  · refine Set.finite_empty.subset ?_
+    rintro P ⟨hP, hPi⟩
+    exact X_notMem_of_mem_affineOpen ⟨P, hJ.subset hP⟩ hPi hi
+  have := isPrime_map_dehomogenize I hi
+  rw [trdeg_functionField_eq_trdeg_map_dehomogenize hi] at h
+  have hle : ¬ J.toIdeal.map (dehomogenize i) ≤ I.toIdeal.map (dehomogenize i) := fun hle ↦
+    hJI (by rw [← homogenization_map_dehomogenize I hi]; exact Ideal.le_homogenization_iff.mpr hle)
+  refine ((AffineSpace.finite_zeroLocus_sup_of_trdeg_functionField_le_one h hle).image
+    (affineChart i).symm).subset ?_
+  rintro P ⟨hP, hPi⟩
+  have hP' : (affineChart i).symm (affineChart i P) = P :=
+    (affineChart i).left_inv (by rwa [affineChart_source])
+  have hPI : (affineChart i).symm (affineChart i P) ∈ zeroLocus (I : Set _) := by
+    rw [hP']; exact hJ.subset hP
+  have hPJ : (affineChart i).symm (affineChart i P) ∈ zeroLocus (J : Set _) := by
+    rwa [hP']
+  rw [affineChart_symm_mem_zeroLocus_iff] at hPI hPJ
+  exact ⟨affineChart i P, (MvPolynomial.zeroLocus_sup _ _).ge ⟨hPI, hPJ⟩, hP'⟩
+
 end points
 
 section spec
@@ -160,14 +195,16 @@ function field. Varieties are given by their prime ideals, as everywhere in this
    dimension zero if and only if its ideal is the ideal of a point.
 4. If `R` is a domain whose fraction field has transcendence degree at most one over `k`, every
    nonzero prime of `R` is maximal. Hence the closed subvarieties of a curve, affine or
-   projective, other than the curve are points.
+   projective, other than the curve are points, and the proper closed subsets of a curve,
+   `V(J) ⊊ V(I)`, are finite; so its nonempty open subsets are its cofinite subsets.
 5. The function field of an irreducible `F ∈ k[X, Y]` has transcendence degree one; the primes
    of `k[X, Y]` of dimension one are the ideals `(F)` with `F` irreducible, and the homogeneous
    primes of `k[X, Y, Z]` of dimension one (not containing `Xᵢ`) are the ideals `(F)` with `F`
    an irreducible form.
 
 The library has no Zariski topology: the open subvarieties of part 1 are the affine parts of
-projective varieties, and parts 3 and 4 are stated through ideals.
+projective varieties, part 3 and the first half of part 4 are stated through ideals, and the
+closed subsets of part 4 are zero loci.
 
 Milestone: *Dimension of curves and of closed subvarieties of the plane*. -/
 theorem trdeg_functionField_spec [IsAlgClosed k] :
@@ -204,6 +241,15 @@ theorem trdeg_functionField_spec [IsAlgClosed k] :
         [I.toIdeal.IsPrime] [J.toIdeal.IsPrime],
       Algebra.trdeg k (functionField I) ≤ 1 → I < J → X i ∉ J →
         ∃ P : ℙ k (Fin (n + 1) → k), J = vanishingIdeal {P}) ∧
+    (∀ (n : ℕ) (I J : Ideal (MvPolynomial (Fin n) k)) [I.IsPrime],
+      Algebra.trdeg k (AffineSpace.functionField I) ≤ 1 →
+        MvPolynomial.zeroLocus k J ⊂ MvPolynomial.zeroLocus k I →
+          (MvPolynomial.zeroLocus k J).Finite) ∧
+    (∀ (n : ℕ) (I J : HomogeneousIdeal (homogeneousSubmodule (Fin (n + 1)) k))
+        [I.toIdeal.IsPrime],
+      Algebra.trdeg k (functionField I) ≤ 1 →
+        zeroLocus (J : Set (MvPolynomial (Fin (n + 1)) k)) ⊂ zeroLocus (I : Set _) →
+          (zeroLocus (J : Set (MvPolynomial (Fin (n + 1)) k))).Finite) ∧
     -- (5)
     (∀ F : MvPolynomial (Fin 2) k, (hF : Irreducible F) →
       haveI := (Ideal.span_singleton_prime hF.ne_zero).mpr hF.prime
@@ -224,6 +270,8 @@ theorem trdeg_functionField_spec [IsAlgClosed k] :
       AffineSpace.exists_eq_vanishingIdeal_singleton_of_trdeg_functionField_le_one h hIJ,
     fun _ _ _ _ _ _ h hIJ hi ↦
       exists_eq_vanishingIdeal_singleton_of_trdeg_functionField_le_one h hIJ hi,
+    fun _ _ _ _ h hJ ↦ AffineSpace.finite_zeroLocus_of_trdeg_functionField_le_one h hJ,
+    fun _ _ _ _ h hJ ↦ finite_zeroLocus_of_trdeg_functionField_le_one h hJ,
     fun _ hF ↦ by simpa using AffineSpace.trdeg_functionField_span_singleton (n := 1) hF,
     fun I _ ↦ by simpa using AffineSpace.trdeg_functionField_eq_iff (n := 1) I,
     fun _ _ _ hi ↦ by simpa using trdeg_functionField_eq_iff (m := 1) hi⟩
