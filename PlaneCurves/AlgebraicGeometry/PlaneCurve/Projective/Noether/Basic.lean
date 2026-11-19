@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.QuotientPiLocalRing
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Basic
+public import PlaneCurves.RingTheory.Ideal.Span
 public import PlaneCurves.RingTheory.MvPolynomial.HomogeneousIdeal
 
 /-!
@@ -64,18 +65,6 @@ open scoped LinearAlgebra.Projectivization
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-/-- A ring isomorphism carrying `a`, `b`, `c` to associates of `a'`, `b'`, `c'` identifies
-`c ∈ (a, b)` with `c' ∈ (a', b')`. -/
-private theorem mem_span_pair_iff_of_ringEquiv {R S : Type*} [CommRing R] [CommRing S]
-    (φ : R ≃+* S) {a b c : R} {a' b' c' : S} (ha : Associated (φ a) a')
-    (hb : Associated (φ b) b') (hc : Associated (φ c) c') :
-    c' ∈ Ideal.span {a', b'} ↔ c ∈ Ideal.span {a, b} := by
-  obtain ⟨u, rfl⟩ := ha
-  obtain ⟨v, rfl⟩ := hb
-  rw [← Ideal.mem_iff_of_associated hc, Ideal.span_insert,
-    Ideal.span_singleton_mul_right_unit u.isUnit, Ideal.span_singleton_mul_right_unit v.isUnit,
-    ← Ideal.span_insert, ← Set.image_pair, ← Ideal.map_span, Ideal.apply_mem_of_equiv_iff]
-
 variable {k : Type*} [Field k] {n : ℕ} {P : ℙ k (Fin (n + 1) → k)}
   {F G H : MvPolynomial (Fin (n + 1)) k} {d e r : ℕ}
 
@@ -126,7 +115,7 @@ theorem noetherConditionsAt_linearSubst_iff (hF : F.IsHomogeneous d) (hG : G.IsH
       NoetherConditionsAt (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q)
         F G H := by
   rw [noetherConditionsAt_iff (hF.linearSubst _) (hG.linearSubst _), noetherConditionsAt_iff hF hG]
-  exact mem_span_pair_iff_of_ringEquiv (localRing.linearSubstEquiv rfl).toRingEquiv
+  exact Ideal.mem_span_pair_iff_of_ringEquiv (localRing.linearSubstEquiv rfl).toRingEquiv
     (associated_linearSubstEquiv_localEquation hF M rfl)
     (associated_linearSubstEquiv_localEquation hG M rfl)
     (associated_linearSubstEquiv_localEquation hH M rfl)
@@ -168,7 +157,7 @@ theorem dehomogenize_mem_span_pair_of_forall_noetherConditionsAt [IsAlgClosed k]
     ⟨_, by simp, (affineChart i).right_inv (by simp)⟩
   rw [AffineSpace.quotientPiLocalRingAlgEquiv_mk, Pi.zero_apply, Ideal.Quotient.eq_zero_iff_mem,
     Ideal.map_span, Set.image_pair]
-  exact (mem_span_pair_iff_of_ringEquiv (localRing.chartEquiv i hP).toRingEquiv
+  exact (Ideal.mem_span_pair_iff_of_ringEquiv (localRing.chartEquiv i hP).toRingEquiv
     (associated_chartEquiv_localEquation hF hP) (associated_chartEquiv_localEquation hG hP)
     (associated_chartEquiv_localEquation hH hP)).2 ((noetherConditionsAt_iff hF hG).1 (hN P hP))
 
@@ -211,7 +200,7 @@ theorem mem_span_pair_iff_forall_noetherConditionsAt (hF : F.IsHomogeneous m)
   set φ := (linearSubstAlgEquiv M).toRingEquiv
   have hφ (p : MvPolynomial (Fin 3) k) : Associated (φ p) (linearSubst M.1 p) := by
     rw [show φ p = linearSubst M.1 p from linearSubstAlgEquiv_apply M p]
-  refine (mem_span_pair_iff_of_ringEquiv φ (hφ F) (hφ G) (hφ H)).1 ?_
+  refine (Ideal.mem_span_pair_iff_of_ringEquiv φ (hφ F) (hφ G) (hφ H)).1 ?_
   refine mem_span_pair_of_forall_noetherConditionsAt_of_forall_mem_affineOpen
     (hF.linearSubst _) (hG.linearSubst _) (hH.linearSubst _) ?_ (i := Fin.last 2)
     (fun Q hQF hQG ↦ hM Q (hZ _ ((eval_rep_linearSubst_eq_zero_iff M hF Q).1 hQF)
