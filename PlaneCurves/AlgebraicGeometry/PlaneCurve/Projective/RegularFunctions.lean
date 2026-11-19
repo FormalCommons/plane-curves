@@ -126,14 +126,6 @@ theorem regularFunctions_le_holomorphyRing [IsAlgClosed k] :
 
 /-! ### The ring of a basic open set -/
 
-/-- Two fractions `f / g` and `f' / g'` with `f g' = f' g` are equal. -/
-private theorem mk_eq_mk_of_mul_eq {e e' : ℕ} {f g f' g' : MvPolynomial (Fin 3) k}
-    (hf : f.IsHomogeneous e) (hg : g.IsHomogeneous e) (hgI : g ∉ projectivePlaneCurve.ideal hF)
-    (hf' : f'.IsHomogeneous e') (hg' : g'.IsHomogeneous e')
-    (hgI' : g' ∉ projectivePlaneCurve.ideal hF) (h : f * g' = f' * g) :
-    (functionField.mk hf hg hgI : functionField hF) = functionField.mk hf' hg' hgI' :=
-  (functionField.mk_eq_mk_iff hf hg hgI hf' hg' hgI').2 (by rw [h, sub_self]; exact zero_mem _)
-
 variable (hF)
 variable {m : ℕ} {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
 
@@ -147,7 +139,7 @@ noncomputable def awaySubalgebra : Subalgebra k (functionField hF) where
     rintro _ _ ⟨r, H, hH, rfl⟩ ⟨s, H', hH', rfl⟩
     refine ⟨r + s, H * H', by rw [mul_add]; exact hH.mul hH', ?_⟩
     rw [functionField.mk_mul_mk]
-    exact mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
+    exact functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
   add_mem' := by
     rintro _ _ ⟨r, H, hH, rfl⟩ ⟨s, H', hH', rfl⟩
     have hGI := projectivePlaneCurve.pow_notMem_ideal hF hFG
@@ -158,16 +150,16 @@ noncomputable def awaySubalgebra : Subalgebra k (functionField hF) where
     have hrsI : G ^ r * G ^ s ∉ projectivePlaneCurve.ideal hF := by
       rw [← pow_add]; exact hGI _
     refine ⟨r + s, H * G ^ s + H' * G ^ r, by rw [mul_add]; exact h₁.add h₂, ?_⟩
-    rw [mk_eq_mk_of_mul_eq hH (hG.pow r) (hGI r) h₁ hrs hrsI (by ring),
-      mk_eq_mk_of_mul_eq hH' (hG.pow s) (hGI s) h₂ hrs hrsI (by ring),
+    rw [functionField.mk_eq_mk_of_mul_eq hH (hG.pow r) (hGI r) h₁ hrs hrsI (by ring),
+      functionField.mk_eq_mk_of_mul_eq hH' (hG.pow s) (hGI s) h₂ hrs hrsI (by ring),
       functionField.mk_add_mk_self]
-    exact mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
+    exact functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
   algebraMap_mem' a := by
     have h1 : (1 : MvPolynomial (Fin 3) k) ∉ projectivePlaneCurve.ideal hF := by
       simpa using projectivePlaneCurve.pow_notMem_ideal hF hFG 0
     refine ⟨0, C a, by rw [mul_zero]; exact isHomogeneous_C _ a, ?_⟩
     rw [functionField.algebraMap_eq_mk a h1]
-    exact mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by simp)
+    exact functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by simp)
 
 variable {hF hG hFG}
 
@@ -216,7 +208,8 @@ private theorem mk_monomial_mem_adjoin (r : ℕ) (s : Fin 3 →₀ ℕ) (c : k)
     obtain rfl : s = 0 := (Finsupp.degree_eq_zero_iff s).1 (by simpa using hs)
     have h1 : (1 : MvPolynomial (Fin 3) k) ∉ projectivePlaneCurve.ideal hF := by
       simpa using projectivePlaneCurve.pow_notMem_ideal hF hFG 0
-    rw [mk_eq_mk_of_mul_eq _ _ _ (isHomogeneous_C _ c) (isHomogeneous_one _ _) h1 (by simp),
+    rw [functionField.mk_eq_mk_of_mul_eq _ _ _ (isHomogeneous_C _ c) (isHomogeneous_one _ _) h1
+        (by simp),
       ← functionField.algebraMap_eq_mk]
     exact Subalgebra.algebraMap_mem _ c
   | succ r ih =>
@@ -227,7 +220,7 @@ private theorem mk_monomial_mem_adjoin (r : ℕ) (s : Fin 3 →₀ ℕ) (c : k)
       omega
     have := mul_mem (ih t c ht) (Algebra.subset_adjoin ⟨u, hu, rfl⟩)
     rw [functionField.mk_mul_mk] at this
-    rw [mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by
+    rw [functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by
       rw [show monomial (u + t) c = monomial t c * monomial u 1 by
         rw [monomial_mul_monomial, add_comm, mul_one]])]
     exact this
@@ -251,25 +244,27 @@ theorem awaySubalgebra_eq_adjoin :
       induction p using MvPolynomial.induction_on' with
       | monomial u a =>
         by_cases hu : u.degree = m * r
-        · rw [mk_eq_mk_of_mul_eq _ _ _ (isHomogeneous_monomial a hu) (hG.pow r) hGI (by
-            rw [homogeneousComponent_of_mem (isHomogeneous_monomial a rfl)]; simp [hu])]
+        · rw [functionField.mk_eq_mk_of_mul_eq _ _ _ (isHomogeneous_monomial a hu) (hG.pow r) hGI
+            (by rw [homogeneousComponent_of_mem (isHomogeneous_monomial a rfl)]; simp [hu])]
           exact mk_monomial_mem_adjoin (hFG := hFG) r u a hu
-        · rw [mk_eq_mk_of_mul_eq _ _ _ (isHomogeneous_zero _ _ (m * r)) (hG.pow r) hGI (by
+        · rw [functionField.mk_eq_mk_of_mul_eq _ _ _ (isHomogeneous_zero _ _ (m * r)) (hG.pow r)
+            hGI (by
             rw [homogeneousComponent_of_mem (isHomogeneous_monomial a rfl)]; simp [Ne.symm hu]),
             (functionField.mk_eq_zero_iff _ _ _).2 (zero_mem _)]
           exact zero_mem _
       | add p q hp hq =>
-        rw [mk_eq_mk_of_mul_eq _ _ _ ((homogeneousComponent_isHomogeneous (m * r) p).add
+        rw [functionField.mk_eq_mk_of_mul_eq _ _ _
+            ((homogeneousComponent_isHomogeneous (m * r) p).add
             (homogeneousComponent_isHomogeneous (m * r) q)) (hG.pow r) hGI (by rw [map_add]),
           ← functionField.mk_add_mk_self (homogeneousComponent_isHomogeneous (m * r) p)
             (homogeneousComponent_isHomogeneous (m * r) q)]
         exact add_mem hp hq
-    rw [mk_eq_mk_of_mul_eq _ _ _ (homogeneousComponent_isHomogeneous (m * r) H) (hG.pow r) hGI
-      (by rw [homogeneousComponent_eq_self hH])]
+    rw [functionField.mk_eq_mk_of_mul_eq _ _ _ (homogeneousComponent_isHomogeneous (m * r) H)
+      (hG.pow r) hGI (by rw [homogeneousComponent_eq_self hH])]
     exact key H
   · rintro _ ⟨s, hs, rfl⟩
     exact ⟨1, monomial s 1, by rw [mul_one]; exact isHomogeneous_monomial 1 hs,
-      mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)⟩
+      functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)⟩
 
 /-- **`A_G` is a finitely generated `k`-algebra**, generated by the finitely many fractions
 `M / G` with `M` a monomial of degree `m`. -/
@@ -296,7 +291,7 @@ private theorem exists_mk_eq_div {n e : ℕ} (hG : G.IsHomogeneous (n + 1)) (hFG
   refine ⟨by rw [show (n + 1) * e = e + e * n by ring]; exact hf.mul (hg.pow n),
     by rw [mul_comm]; exact hg.pow (n + 1), ?_⟩
   rw [functionField.mk_mul_mk]
-  exact mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
+  exact functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
 
 variable (hF hG hFG) in
 /-- **`k(C)` is the fraction field of `A_G`**, for `m ≠ 0`: a fraction `f / g` of forms of degree

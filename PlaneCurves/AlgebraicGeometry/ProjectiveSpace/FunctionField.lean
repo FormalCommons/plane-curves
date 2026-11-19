@@ -68,7 +68,8 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
 * `isFractionRing_localSubring`: `k(V)` is the field of fractions of `𝒪_P(V)`.
 * `exists_algebraMap_notMem_range_toFractionRing`: `Γ_h(V) ⊄ k(V)` inside the fraction field of
   `Γ_h(V)`, when `V` is nonempty.
-* `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`.
+* `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`, and
+  `functionField.mk_eq_mk_of_mul_eq`: `f / g = f' / g'` if `f g' = f' g`.
 * `functionField.mk_eq_zero_iff`, `functionField.mk_self`, `functionField.mk_mul_mk_swap`:
   `f / g = 0` iff `f ∈ I`, `f / f = 1` and `(f / g) (g / f) = 1`; `functionField.algebraMap_eq_mk`:
   a constant `a` is `a / 1`.
@@ -701,6 +702,15 @@ theorem functionField.mk_eq_mk_iff {d' : ℕ} {f g f' g' : MvPolynomial (Fin (n 
     mul_comm _ (Ideal.Quotient.mk _ g'),
     mul_comm _ (Ideal.Quotient.mk _ g)]
   refine ⟨fun ⟨c, hc⟩ ↦ mul_left_cancel₀ c.2 hc, fun h ↦ ⟨1, by rw [h]⟩⟩
+
+variable {I} in
+/-- Two fractions `f / g` and `f' / g'` of forms with `f g' = f' g` are equal in `k(V)`. -/
+theorem functionField.mk_eq_mk_of_mul_eq {d' : ℕ} {f g f' g' : MvPolynomial (Fin (n + 1)) k}
+    (hf : f.IsHomogeneous d) (hg : g.IsHomogeneous d) (hgI : g ∉ I)
+    (hf' : f'.IsHomogeneous d') (hg' : g'.IsHomogeneous d') (hgI' : g' ∉ I)
+    (h : f * g' = f' * g) :
+    functionField.mk hf hg hgI = functionField.mk hf' hg' hgI' :=
+  (functionField.mk_eq_mk_iff hf hg hgI hf' hg' hgI').2 (by rw [h, sub_self]; exact zero_mem _)
 
 section Fractions
 
