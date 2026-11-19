@@ -22,6 +22,8 @@ Over a domain, `X₀ⁿ + X₁` is irreducible, as the image of `X₁` under an 
 * `MvPolynomial.irreducible_of_isHomogeneous_one`: over a field, a nonzero linear form, in any
   number of variables, is irreducible.
 * `MvPolynomial.irreducible_X_pow_add_X`: over a domain, `X₀ⁿ + X₁` is irreducible.
+* `MvPolynomial.not_irreducible_mul_of_eval_eq_zero`: a product of two polynomials that vanish
+  at a common point is not irreducible.
 -/
 
 public section
@@ -53,6 +55,15 @@ theorem irreducible_X_pow_add_X {R : Type*} [CommRing R] [IsDomain R] (n : ℕ) 
   have : e (X 1) = X 0 ^ n + X 1 := by simp [e]
   rw [← this]
   exact (MulEquiv.irreducible_iff e.toMulEquiv).2 prime_X.irreducible
+
+/-- Over a nontrivial commutative semiring, a product of two polynomials that vanish at a common
+point is not irreducible: evaluation at the point sends units to units, which are nonzero. -/
+theorem not_irreducible_mul_of_eval_eq_zero {R : Type*} [CommSemiring R] [Nontrivial R]
+    {x : σ → R} {p q : MvPolynomial σ R} (hp : eval x p = 0) (hq : eval x q = 0) :
+    ¬Irreducible (p * q) := fun h ↦ by
+  rcases h.isUnit_or_isUnit rfl with h | h
+  · exact (h.map (eval x)).ne_zero hp
+  · exact (h.map (eval x)).ne_zero hq
 
 end MvPolynomial
 

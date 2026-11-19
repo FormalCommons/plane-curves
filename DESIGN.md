@@ -162,6 +162,7 @@ PlaneCurves/
 │   │   └── AssociatedGraded.lean        (Iⁿ : f) = Iⁿ⁻ᵐ, dim A/Iⁿ⁺¹ = dim A/Iⁿ + dim Iⁿ/Iⁿ⁺¹ (L5)
 │   ├── Length.lean                      Hilbert–Samuel lengths under ring isomorphisms (L5)
 │   ├── Conductor.lean                   a conductor element inside a localization (V6)
+│   ├── Japanese.lean                    integral closure of a Japanese domain in a field (V6)
 │   ├── Regular/
 │   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (P3)
 │   ├── GradedAlgebra/
@@ -303,7 +304,10 @@ PlaneCurves/
         │   ├── GoodPosition.lean        good position, step (4) (T2)
         │   ├── Birational.lean          point map, C' as closure, k(C) ≅ k(C') (T2)
         │   ├── Position.lean            excellent position (T3)
-        │   ├── Singularities.lean       new singularities, g* (T3)
+        │   ├── Singularities/
+        │   │   ├── Basic.lean           proper transform in excellent position (T3)
+        │   │   ├── Chart.lean           local isomorphisms of Q and the blow-up (T3)
+        │   │   └── Genus.lean           virtual genus, g*, the milestone (T3)
         │   ├── Resolution.lean          reduction to ordinary points (T4)
         │   └── NeighbouringSingularities.lean Noether's formula, global form (T5)
         ├── Divisor.lean                 div G of a form (D4)
@@ -723,7 +727,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | B5 | `PlaneCurve/NonsingularModel/OrdinaryMultiplePoints.lean` | **7-resolve** | V5, B3 |
 | T1 | `Projective/TerriblePoint.lean` | **7-terrible** | Q13, Q15, L10 |
 | T2 | `QuadraticTransformation/Basic.lean`, `GoodPosition.lean`, `Birational.lean` | **7-quadratic** | Q3, Q5, P7 |
-| T3 | `QuadraticTransformation/Position.lean`, `Singularities.lean` | **7-quadratic-centre** (*large*) | T1, T2, B1, L5, L12, Q14, P9 |
+| T3 | `QuadraticTransformation/Position.lean`, `Singularities/` | **7-quadratic-centre** (*large*) | T1, T2, B1, L5, L12, Q14, P9 |
 | T4 | `QuadraticTransformation/Resolution.lean` | **7-reduce** | T3 |
 | T5 | `QuadraticTransformation/NeighbouringSingularities.lean` | the global form of **7-noether-formula** | T4, B4, Q12 |
 
@@ -876,7 +880,7 @@ completes it, in `TwoGenerators.lean`, for every `x ∉ k`.
 | 7-resolve | Resolution of a plane curve with only ordinary multiple points by blowing up | `PlaneCurve/NonsingularModel/OrdinaryMultiplePoints.lean` (B5) |
 | 7-quadratic | Proper transform of a plane curve under the standard quadratic transformation | `PlaneCurve/QuadraticTransformation/Birational.lean` (T2), with `Basic.lean` and `GoodPosition.lean` |
 | 7-terrible | Terrible points and lines meeting a plane curve in n distinct points | `PlaneCurve/Projective/TerriblePoint.lean` (T1) |
-| 7-quadratic-centre | Quadratic transformation centred at a point and its new singularities | `PlaneCurve/QuadraticTransformation/Singularities.lean` (T3) |
+| 7-quadratic-centre | Quadratic transformation centred at a point and its new singularities | `PlaneCurve/QuadraticTransformation/Singularities/Genus.lean` (T3) |
 | 7-reduce | Reduction of a plane curve to ordinary multiple points by quadratic transformations | `PlaneCurve/QuadraticTransformation/Resolution.lean` (T4) |
 | 7-noether-formula | Noether's formula for intersection numbers at infinitely near points | `PlaneCurve/QuadraticTransformation/NeighbouringSingularities.lean` (T5), with the local form in `Affine/Blowup/IntersectionNumber.lean` (B4) |
 | 7-model | Existence and uniqueness of the nonsingular model of a projective curve | `PlaneCurve/NonsingularModel/Basic.lean` (V5) |

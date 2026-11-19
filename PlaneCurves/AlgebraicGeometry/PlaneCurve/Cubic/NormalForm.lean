@@ -11,7 +11,9 @@ public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.MultiplePoints
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Factorization
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
+public import TauCeti.AlgebraicGeometry.EllipticCurve.Legendre
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Projective.VariableChange
 
 /-!
@@ -42,6 +44,15 @@ There the cubic has no `Z³` and no `XZ²` term, and its `YZ²` term can be take
 tangent `Y = 0` it is `X²(aX + bZ)`, which meets `Y = 0` at `[0 : 0 : 1]` only twice unless
 `b = 0`; and `a ≠ 0`, since otherwise `Y` divides the cubic. Exchanging `Y` and `Z` and scaling
 `Y` makes the `Y²Z` and `X³` coefficients opposite, with no square or cube roots needed.
+
+## Legendre form of a nonsingular cubic
+
+Over an algebraically closed field with `2 ≠ 0`, a nonsingular cubic has a flex, by the Hessian,
+and at a flex its Weierstrass form is `Y²Z = (X - e₁Z)(X - e₂Z)(X - e₃Z)`. The roots `eᵢ` are
+distinct, since a double root `e` makes `[e : 0 : 1]` a singular point. Tau Ceti's change of
+variables to the Legendre form (`WeierstrassCurve.exists_variableChange_smul_eq_freyCurve_one`)
+and a scaling then carry the cubic to `Y²Z = X(X - Z)(X - λZ)` with `λ ≠ 0, 1` (Problem 5.24 (b),
+there in characteristic zero).
 
 Changes of coordinates are Tau Ceti's `MvPolynomial.linearSubst M`, `F ↦ F(M X)`, along a matrix
 `M` with `M.mulVecLin` injective, as in the rest of the library.
@@ -79,6 +90,11 @@ All in the namespace `PlaneCurves.Projective`, unless named in full.
   cubic with a cusp is carried to `Y²Z = X³` by a change of coordinates (Problem 5.10).
 * `exists_linearSubst_eq_X_sq_mul_X_sub_X_sq_mul_X_add_X`: in characteristic zero, an
   irreducible cubic with a node is carried to `Y²Z = X²(X + Z)` (Problem 5.11).
+* `IsNonsingular.exists_linearSubst_eq_legendre`: over an algebraically closed field with
+  `2 ≠ 0`, a nonsingular cubic is carried to `Y²Z = X(X - Z)(X - λZ)`, `λ ≠ 0, 1`, by a change
+  of coordinates (Problem 5.24 (b)).
+* `WeierstrassCurve.toProjective_polynomial_eq_prod`: the Weierstrass cubic
+  `Y²Z = (X - e₁Z)(X - e₂Z)(X - e₃Z)` from the roots of its `2`-division polynomial.
 * `MvPolynomial.irreducible_X_sq_mul_X_sub_X_pow_three`,
   `isMultiplePoint_X_sq_mul_X_sub_X_pow_three`, `isTangentAt_X_sq_mul_X_sub_X_pow_three`,
   `tangentMultiplicity_X_sq_mul_X_sub_X_pow_three`: `Y²Z = X³` is irreducible, with a cusp at
@@ -199,6 +215,35 @@ theorem tangentLine_polynomial_zero (W : WeierstrassCurve.Projective k) :
 
 end WeierstrassCurve.Projective
 
+namespace WeierstrassCurve
+
+open MvPolynomial
+
+variable {k : Type*} [Field k] {W : WeierstrassCurve k}
+
+/-- Let `W` be a Weierstrass curve `y² = x³ + a₂x² + a₄x + a₆`, with `a₁ = a₃ = 0`, over a field
+with `2 ≠ 0`. If its `2`-division polynomial is `4 (x - e₁) (x - e₂) (x - e₃)`, then its
+homogeneous Weierstrass polynomial is `Y²Z - (X - e₁Z) (X - e₂Z) (X - e₃Z)`. -/
+theorem toProjective_polynomial_eq_prod (h2 : (2 : k) ≠ 0) (h1 : W.a₁ = 0) (h3 : W.a₃ = 0)
+    {e₁ e₂ e₃ : k} (h : W.twoTorsionPolynomial.toPoly = Polynomial.C 4 *
+      (Polynomial.X - Polynomial.C e₁) * (Polynomial.X - Polynomial.C e₂) *
+        (Polynomial.X - Polynomial.C e₃)) :
+    W.toProjective.polynomial =
+      X 1 ^ 2 * X 2 - (X 0 - C e₁ * X 2) * (X 0 - C e₂ * X 2) * (X 0 - C e₃ * X 2) := by
+  have h4 : (4 : k) ≠ 0 := by
+    rw [show (4 : k) = 2 * 2 by norm_num]
+    exact mul_ne_zero h2 h2
+  rw [Cubic.C_mul_prod_X_sub_C_eq, Cubic.toPoly_injective, twoTorsionPolynomial] at h
+  simp only [Cubic.mk.injEq, true_and, b₂, b₄, b₆, h1, h3] at h
+  obtain ⟨hb₂, hb₄, hb₆⟩ := h
+  have ha₂ : W.a₂ = -(e₁ + e₂ + e₃) := mul_left_cancel₀ h4 (by linear_combination hb₂)
+  have ha₄ : W.a₄ = e₁ * e₂ + e₁ * e₃ + e₂ * e₃ := mul_left_cancel₀ h4 (by linear_combination hb₄)
+  have ha₆ : W.a₆ = -(e₁ * e₂ * e₃) := mul_left_cancel₀ h4 (by linear_combination hb₆)
+  simp only [Projective.polynomial, h1, h3, ha₂, ha₄, ha₆, map_neg, map_add, map_mul, map_zero]
+  ring
+
+end WeierstrassCurve
+
 namespace PlaneCurves.Projective
 
 open MvPolynomial Projectivization PlaneCurves.ProjectiveSpace
@@ -261,13 +306,6 @@ private theorem exists_flex_standard (hF : F.IsHomogeneous 3) (hO : IsFlex F O) 
       intersectionNumber_linearSubst hF (isHomogeneous_tangentLine _ _), hQO]
     exact (isFlex_def.1 hO).2
 
-/-- A product of two polynomials that vanish at the origin is not irreducible. -/
-private theorem not_irreducible_mul {p q : MvPolynomial (Fin 3) k} (hp : eval 0 p = 0)
-    (hq : eval 0 q = 0) : ¬Irreducible (p * q) := fun h ↦ by
-  rcases h.isUnit_or_isUnit rfl with h | h
-  · exact (h.map (eval 0)).ne_zero hp
-  · exact (h.map (eval 0)).ne_zero hq
-
 /-- An irreducible cubic `H` with a flex at `[0 : 0 : 1]` with tangent `Y = 0`, normalized as by
 `exists_flex_standard`, is `a X³ + b Y³ + c X²Y + d XY² + e Y²Z + YZ² + g XYZ` with `a ≠ 0`. -/
 private theorem exists_coeff_of_flex {H : MvPolynomial (Fin 3) k} (hH : H.IsHomogeneous 3)
@@ -313,8 +351,9 @@ private theorem exists_coeff_of_flex {H : MvPolynomial (Fin 3) k} (hH : H.IsHomo
   subst h201
   refine ⟨a300, a030, a210, a120, a021, a111, fun h300 ↦ ?_, by simp⟩
   subst h300
-  refine not_irreducible_mul (p := X 1) (q := C a030 * X 1 ^ 2 + C a210 * X 0 ^ 2 +
-    C a120 * (X 0 * X 1) + C a021 * (X 1 * X 2) + X 2 ^ 2 + C a111 * (X 0 * X 2))
+  refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 1)
+    (q := C a030 * X 1 ^ 2 + C a210 * X 0 ^ 2 + C a120 * (X 0 * X 1) +
+      C a021 * (X 1 * X 2) + X 2 ^ 2 + C a111 * (X 0 * X 2))
     (by simp) (by simp) ?_
   convert hi using 1
   simp
@@ -387,6 +426,14 @@ theorem IsFlex.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero (h2 : (2 : k
     field_simp
     ring
 
+/-- The cubic `Y²Z - (X - eZ)² L` is singular at `[e : 0 : 1]`, for every form `L`. -/
+theorem not_isNonsingular_X_sq_mul_X_sub_X_sub_C_mul_X_sq_mul (e : k)
+    (L : MvPolynomial (Fin 3) k) :
+    ¬IsNonsingular (X 1 ^ 2 * X 2 - (X 0 - C e * X 2) ^ 2 * L) := by
+  intro h
+  obtain ⟨i, hi⟩ := isNonsingular_def.1 h ![e, 0, 1] (by simp) (by simp)
+  fin_cases i <;> simp [pderiv_X, Derivation.leibniz, Derivation.leibniz_pow] at hi
+
 section IsAlgClosed
 
 variable [IsAlgClosed k]
@@ -424,7 +471,6 @@ point at `[0 : 1 : 0]` (when it vanishes there to order at least two). -/
 private noncomputable def shape (a b c d e f g : k) : MvPolynomial (Fin 3) k :=
   X 1 * (C a * X 0 ^ 2 + C b * (X 0 * X 2) + C c * X 2 ^ 2) +
     (C d * X 0 ^ 3 + C e * (X 0 ^ 2 * X 2) + C f * (X 0 * X 2 ^ 2) + C g * X 2 ^ 3)
-
 
 /-- A change of coordinates fixing `[0 : 1 : 0]` removes the `YZ²` term of a cubic
 `Y (a X² + b XZ + c Z²) + d X³ + e X²Z + f XZ² + g Z³`. -/
@@ -598,7 +644,7 @@ private theorem exists_linearSubst_shape_eq_X_sq_mul_X_sub_X_pow_three {a d e f 
       linearSubst M (shape a 0 0 d e f g) = X 1 ^ 2 * X 2 - X 0 ^ 3 := by
   have hg : g ≠ 0 := by
     rintro rfl
-    refine not_irreducible_mul (p := X 0)
+    refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 0)
       (q := C a * X 0 * X 1 + C d * X 0 ^ 2 + C e * (X 0 * X 2) + C f * X 2 ^ 2)
       (by simp) (by simp) ?_
     convert h using 1
@@ -626,14 +672,14 @@ private theorem exists_linearSubst_X_mul_X_mul_X_add_eq {d e f g : k}
         C f * (X 0 * X 2 ^ 2) + C g * X 2 ^ 3)) = X 1 ^ 2 * X 2 - X 0 ^ 2 * (X 0 + X 2) := by
   have hd : d ≠ 0 := by
     rintro rfl
-    refine not_irreducible_mul (p := X 2)
+    refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 2)
       (q := X 0 * X 1 + C e * X 0 ^ 2 + C f * (X 0 * X 2) + C g * X 2 ^ 2)
       (by simp) (by simp) ?_
     convert h using 1
     simp; ring
   have hg : g ≠ 0 := by
     rintro rfl
-    refine not_irreducible_mul (p := X 0)
+    refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 0)
       (q := X 1 * X 2 + C d * X 0 ^ 2 + C e * (X 0 * X 2) + C f * X 2 ^ 2)
       (by simp) (by simp) ?_
     convert h using 1
@@ -849,6 +895,85 @@ theorem isOrdinaryMultiplePoint_X_sq_mul_X_sub_X_sq_mul_X_add_X (h2 : (2 : k) �
   obtain ⟨h1, h2'⟩ := mult_and_leadingForm_shape (a := (1 : k)) (b := 2) (d := 0) (e := 0) (f := 0)
     (g := -1) (Or.inl one_ne_zero)
   exact ⟨h1.ge, h2'.squarefree_iff.2 ((squarefree_C_mul_X_sq_add_iff (Or.inl one_ne_zero)).2 h2)⟩
+
+/-! ### The Legendre form of a nonsingular cubic -/
+
+/-- **Legendre form of a nonsingular cubic.** Over an algebraically closed field `k` with
+`2 ≠ 0`, a nonsingular cubic `F` is projectively equivalent to `Y²Z = X(X - Z)(X - λZ)` for some
+`λ ≠ 0, 1`: some invertible change of coordinates carries `F` to
+`Y²Z - X(X - Z)(X - λZ)` exactly ([Fulton2008], Problem 5.24 (b), there in characteristic
+zero). -/
+theorem IsNonsingular.exists_linearSubst_eq_legendre (h2 : (2 : k) ≠ 0)
+    (hF : F.IsHomogeneous 3) (h : IsNonsingular F) :
+    ∃ (M : Matrix (Fin 3) (Fin 3) k) (l : k), Function.Injective M.mulVecLin ∧ l ≠ 0 ∧ l ≠ 1 ∧
+      linearSubst M F = X 1 ^ 2 * X 2 - X 0 * (X 0 - X 2) * (X 0 - C l * X 2) := by
+  -- a flex, and the Weierstrass form `Y²Z = X³ + a₂X²Z + a₄XZ² + a₆Z³` there
+  obtain ⟨O, hO⟩ := h.exists_isFlex hF le_rfl
+    (by have := mul_ne_zero h2 h2; norm_num at this ⊢; exact this)
+  obtain ⟨T, c, W, hT, hc, -, hTF, h1, h3, -⟩ :=
+    hO.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero h2 hF (h.irreducible hF three_ne_zero)
+  -- the roots `e₁, e₂, e₃` of the `2`-division polynomial, distinct as `F` is nonsingular
+  have hPa : W.twoTorsionPolynomial.a = 4 := by simp only [WeierstrassCurve.twoTorsionPolynomial]
+  have ha : W.twoTorsionPolynomial.a ≠ 0 := by
+    rw [hPa, show (4 : k) = 2 * 2 by norm_num]
+    exact mul_ne_zero h2 h2
+  obtain ⟨e₁, e₂, e₃, he⟩ := (Cubic.splits_iff_roots_eq_three (φ := RingHom.id k) ha).1
+    (IsAlgClosed.splits _)
+  have hP := Cubic.eq_prod_three_roots ha he
+  rw [Cubic.map_toPoly, Polynomial.map_id, RingHom.id_apply, hPa] at hP
+  have hns : IsNonsingular (X 1 ^ 2 * X 2 -
+      (X 0 - C e₁ * X 2) * (X 0 - C e₂ * X 2) * (X 0 - C e₃ * X 2)) := by
+    rw [← WeierstrassCurve.toProjective_polynomial_eq_prod h2 h1 h3 hP,
+      ← isNonsingular_smul_iff hc, ← hTF, isNonsingular_linearSubst_iff hT]
+    exact h
+  have h12 : e₂ ≠ e₁ := by
+    rintro rfl
+    exact not_isNonsingular_X_sq_mul_X_sub_X_sub_C_mul_X_sq_mul e₂ (X 0 - C e₃ * X 2)
+      (by convert hns using 2; ring)
+  have h13 : e₃ ≠ e₁ := by
+    rintro rfl
+    exact not_isNonsingular_X_sq_mul_X_sub_X_sub_C_mul_X_sq_mul e₃ (X 0 - C e₂ * X 2)
+      (by convert hns using 2; ring)
+  have h23 : e₃ ≠ e₂ := by
+    rintro rfl
+    exact not_isNonsingular_X_sq_mul_X_sub_X_sub_C_mul_X_sq_mul e₃ (X 0 - C e₁ * X 2)
+      (by convert hns using 2; ring)
+  -- Tau Ceti's change of variables to the Legendre form, with `λ = (e₃ - e₁) / (e₂ - e₁)`
+  obtain ⟨u, hu⟩ := IsAlgClosed.exists_pow_nat_eq (e₂ - e₁) two_pos
+  obtain ⟨V, hV⟩ := WeierstrassCurve.exists_variableChange_smul_eq_freyCurve_one h2 hP h12 hu
+  set l := (e₃ - e₁) / (e₂ - e₁)
+  set G : MvPolynomial (Fin 3) k := X 1 ^ 2 * X 2 - X 0 * (X 0 - X 2) * (X 0 - C l * X 2)
+  have hfrey :
+      (TauCeti.freyCurve 1 ((e₁ - e₃) / (e₂ - e₁))).toProjective.polynomial = G := by
+    rw [show (e₁ - e₃) / (e₂ - e₁) = -l by rw [← neg_div, neg_sub]]
+    simp [WeierstrassCurve.Projective.polynomial, G]
+    ring
+  have hTV : linearSubst (T * V.toMatrix) F = C (c * V.u ^ 6) * G := by
+    rw [linearSubst_mul_apply, hTF, map_smul, WeierstrassCurve.Projective.linearSubst_polynomial,
+      hV, hfrey, smul_eq_C_mul, map_mul]
+    ring
+  -- a scaling `X ↦ sX` with `s³ = (c u⁶)⁻¹` removes the scalar
+  have hcu : c * V.u ^ 6 ≠ 0 := mul_ne_zero hc (pow_ne_zero _ V.u.ne_zero)
+  obtain ⟨s, hs⟩ := IsAlgClosed.exists_pow_nat_eq (c * V.u ^ 6)⁻¹ three_pos
+  have hs0 : s ≠ 0 := by
+    rintro rfl
+    exact inv_ne_zero hcu (hs.symm.trans (zero_pow three_ne_zero))
+  have hD : Function.Injective (Matrix.diagonal fun _ : Fin 3 ↦ s).mulVecLin :=
+    Matrix.mulVecLin_injective_iff_isUnit_det.2 <| Ne.isUnit (by simp [hs0])
+  refine ⟨T * V.toMatrix * Matrix.diagonal fun _ ↦ s, l,
+    Matrix.mulVecLin_mul_injective (Matrix.mulVecLin_mul_injective hT
+      (Matrix.mulVecLin_injective_iff_isUnit_det.2
+        (Matrix.isUnit_det_of_right_inverse V.toMatrix_mul_toMatrix_inv))) hD,
+    div_ne_zero (sub_ne_zero.2 h13) (sub_ne_zero.2 h12), ?_, ?_⟩
+  · rw [Ne, div_eq_one_iff_eq (sub_ne_zero.2 h12)]
+    exact fun h ↦ h23 (sub_left_injective h)
+  · have hDG : linearSubst (Matrix.diagonal fun _ ↦ s) G = C s ^ 3 * G := by
+      simp [G, linearSubst_X, Fin.sum_univ_three, Matrix.diagonal_apply]
+      ring
+    have hs1 : C (c * V.u ^ 6) * C s ^ 3 = (1 : MvPolynomial (Fin 3) k) := by
+      rw [← map_pow, ← map_mul, hs, mul_inv_cancel₀ hcu, map_one]
+    rw [linearSubst_mul_apply, hTV, map_mul, hDG, algHom_C, algebraMap_eq]
+    linear_combination G * hs1
 
 end IsAlgClosed
 
