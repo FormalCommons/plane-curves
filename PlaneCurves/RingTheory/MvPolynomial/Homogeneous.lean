@@ -20,7 +20,8 @@ commutative algebra, not only for `c` in the base ring as in Mathlib's
 * `MvPolynomial.IsHomogeneous.eval₂_mul_left`, `MvPolynomial.IsHomogeneous.aeval_mul_left`:
   `F(c x) = c ^ d F(x)` for a form `F` of degree `d`.
 * `MvPolynomial.IsHomogeneous.aeval_one_X_eq_zero_iff`: a binary form `F` vanishes exactly when
-  `F(1, Y)` does.
+  `F(1, Y)` does, and `MvPolynomial.IsHomogeneous.aeval_one_polynomial_X_eq_zero_iff` the same
+  for `F(1, T)` as a polynomial in one variable.
 -/
 
 public section
@@ -60,6 +61,18 @@ theorem IsHomogeneous.aeval_one_X_eq_zero_iff {F : MvPolynomial (Fin 2) R}
   rw [aeval_one_X_eq_rename_dehomogenize, ← map_zero (rename fun _ : Fin 1 ↦ (1 : Fin 2)),
     (rename_injective _ fun _ _ _ ↦ Subsingleton.elim _ _).eq_iff] at h
   rw [← homogenize_dehomogenize (i := 0) hF, h, map_zero]
+
+/-- A binary form `F` is zero exactly when the polynomial `F(1, T)` in one variable is. -/
+theorem IsHomogeneous.aeval_one_polynomial_X_eq_zero_iff {F : MvPolynomial (Fin 2) R}
+    (hF : F.IsHomogeneous d) :
+    (MvPolynomial.aeval ![1, Polynomial.X] F : Polynomial R) = 0 ↔ F = 0 := by
+  refine ⟨fun h ↦ hF.aeval_one_X_eq_zero_iff.1 ?_, fun h ↦ by simp [h]⟩
+  have h' := congr(Polynomial.aeval (X 1 : MvPolynomial (Fin 2) R) $h)
+  rw [← AlgHom.comp_apply, comp_aeval, map_zero] at h'
+  rw [← h']
+  congr 1
+  ext i : 1
+  fin_cases i <;> simp
 
 end MvPolynomial
 
