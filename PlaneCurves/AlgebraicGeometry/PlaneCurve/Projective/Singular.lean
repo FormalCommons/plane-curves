@@ -37,6 +37,8 @@ simple; over an algebraically closed field such a curve is irreducible (§5.3, v
   simple points of the dehomogenization.
 * `PlaneCurves.Projective.isNonsingular_iff_forall_isSimplePoint`: a form is nonsingular exactly
   when every point of its zero locus is simple.
+* `PlaneCurves.Projective.isNonsingular_linearSubst_iff`: nonsingularity is invariant under an
+  invertible change of coordinates.
 * `PlaneCurves.Projective.IsNonsingular.irreducible`: a nonsingular form of positive degree over
   an algebraically closed field is irreducible.
 * `PlaneCurves.Projective.IsSimplePoint.tangentLine_ne_zero`,
@@ -223,6 +225,22 @@ Milestone: *Nonsingular projective plane curves are irreducible*. -/
 theorem IsNonsingular.irreducible [IsAlgClosed k] (hF : F.IsHomogeneous d) (hd : d ≠ 0)
     (h : IsNonsingular F) : Irreducible F :=
   irreducible_of_isHomogeneous (K := k) (n := 2) le_rfl hF hd (by simpa [coe_aeval_eq_eval])
+
+/-- An invertible change of coordinates preserves nonsingularity. -/
+theorem isNonsingular_linearSubst_iff {M : Matrix (Fin 3) (Fin 3) k}
+    (hM : Function.Injective M.mulVecLin) :
+    IsNonsingular (linearSubst M F) ↔ IsNonsingular F := by
+  have hdet : IsUnit M.det := by
+    rw [← Matrix.isUnit_iff_isUnit_det, ← Matrix.mulVec_injective_iff_isUnit]; exact hM
+  have key : ∀ {N : Matrix (Fin 3) (Fin 3) k} {G : MvPolynomial (Fin 3) k}, N.det ≠ 0 →
+      IsNonsingular G → IsNonsingular (linearSubst N G) := fun hN hG ↦ by
+    rw [isNonsingular_def] at hG ⊢
+    intro v hv hv0
+    simpa [coe_aeval_eq_eval] using exists_aeval_pderiv_linearSubst_ne_zero (K := k) hN
+      (by simpa [coe_aeval_eq_eval] using hG) hv (by simpa [coe_aeval_eq_eval] using hv0)
+  refine ⟨fun h ↦ ?_, key hdet.ne_zero⟩
+  have := key (N := M⁻¹) (by simpa [Matrix.det_nonsing_inv] using hdet.ne_zero) h
+  rwa [linearSubst_nonsing_inv_linearSubst hdet] at this
 
 /- A line is nonsingular. -/
 example : IsNonsingular (X 0 : MvPolynomial (Fin 3) k) :=
