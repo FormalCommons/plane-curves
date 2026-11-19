@@ -50,12 +50,6 @@ open scoped LinearAlgebra.Projectivization
 variable {k : Type*} [Field k] {F G H F' G' : MvPolynomial (Fin 3) k} {m n e : ℕ}
   {P : ℙ k (Fin 3 → k)}
 
-/-- The points where `I(P, F ∩ G)` is a nonzero natural number lie where it is nonzero. -/
-theorem support_toNat_intersectionNumber_subset (F G : MvPolynomial (Fin 3) k) :
-    (Function.support fun P ↦ (intersectionNumber P F G).toNat) ⊆
-      Function.support fun P ↦ intersectionNumber P F G :=
-  fun P hP h0 ↦ hP (by simp [h0])
-
 open Classical in
 /-- The **intersection cycle** `F • G = ∑_P I(P, F ∩ G) P` of two plane curves, a zero-cycle on
 `ℙ²`. It is `0` unless `I(P, F ∩ G)` is finite at every point and nonzero at only finitely many,
@@ -64,7 +58,7 @@ noncomputable def intersectionCycle (F G : MvPolynomial (Fin 3) k) : ℙ k (Fin 
   if h : (Function.support fun P ↦ intersectionNumber P F G).Finite ∧
       ∀ P, intersectionNumber P F G ≠ ⊤ then
     Finsupp.ofSupportFinite (fun P ↦ (intersectionNumber P F G).toNat)
-      (h.1.subset (support_toNat_intersectionNumber_subset F G))
+      (h.1.subset (Function.support_comp_subset ENat.toNat_zero _))
   else 0
 
 open Classical in
@@ -73,7 +67,7 @@ theorem intersectionCycle_def (F G : MvPolynomial (Fin 3) k) :
       if h : (Function.support fun P ↦ intersectionNumber P F G).Finite ∧
           ∀ P, intersectionNumber P F G ≠ ⊤ then
         Finsupp.ofSupportFinite (fun P ↦ (intersectionNumber P F G).toNat)
-          (h.1.subset (support_toNat_intersectionNumber_subset F G))
+          (h.1.subset (Function.support_comp_subset ENat.toNat_zero _))
       else 0 :=
   (rfl)
 
