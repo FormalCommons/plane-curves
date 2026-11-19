@@ -308,12 +308,11 @@ theorem intersectionCycle_chordLine (hF : F.IsHomogeneous 3) (hirr : Irreducible
 
 omit [IsAlgClosed k] in
 /-- **Uniqueness of the chord line.** A line `L` that meets an irreducible cubic `F` in
-`L • F = P + Q + R`, for simple points `P`, `Q` of `F`, is a nonzero multiple of the chord line
+`L • F = P + Q + R`, for a simple point `P` of `F`, is a nonzero multiple of the chord line
 through `P` and `Q`: of the line through them if `P ≠ Q`, and of the tangent at `P` if
 `P = Q`. -/
 theorem eq_smul_chordLine_of_intersectionCycle_eq (hF : F.IsHomogeneous 3)
-    (hirr : Irreducible F) (hP : IsSimplePoint F P) (hQ : IsSimplePoint F Q)
-    (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0)
+    (hirr : Irreducible F) (hP : IsSimplePoint F P) (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0)
     (h : intersectionCycle L F = single P 1 + single Q 1 + single R 1) :
     ∃ c : k, c ≠ 0 ∧ L = c • chordLine F P Q := by
   have hrel : IsRelPrime L F := (hF.isRelPrime_of_irreducible hirr hL hL0 (by norm_num)).symm
@@ -344,7 +343,7 @@ theorem eq_thirdPoint_of_intersectionCycle_eq (hF : F.IsHomogeneous 3) (hirr : I
     (hP : IsSimplePoint F P) (hQ : IsSimplePoint F Q) (hL : L.IsHomogeneous 1) (hL0 : L ≠ 0)
     (h : intersectionCycle L F = single P 1 + single Q 1 + single R 1) :
     R = thirdPoint F P Q := by
-  obtain ⟨c, hc, rfl⟩ := eq_smul_chordLine_of_intersectionCycle_eq hF hirr hP hQ hL hL0 h
+  obtain ⟨c, hc, rfl⟩ := eq_smul_chordLine_of_intersectionCycle_eq hF hirr hP hL hL0 h
   rw [intersectionCycle_smul_left hc, intersectionCycle_chordLine hF hirr hP hQ] at h
   exact (Finsupp.single_left_injective one_ne_zero (add_left_cancel h)).symm
 
