@@ -8,11 +8,12 @@ module
 public import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 
 /-!
-# Irreducibility of polynomials of total degree one over a field
+# Irreducibility of some multivariate polynomials
 
 Mathlib's `MvPolynomial.irreducible_of_totalDegree_eq_one` asks that the coefficients of a
 polynomial of total degree `1` have no common non-unit divisor. Over a field this always holds,
 so every polynomial of total degree `1`, in particular every nonzero linear form, is irreducible.
+Over a domain, `X₀ⁿ + X₁` is irreducible, as the image of `X₁` under an automorphism.
 
 ## Main results
 
@@ -20,6 +21,7 @@ so every polynomial of total degree `1`, in particular every nonzero linear form
   degree `1` is irreducible.
 * `MvPolynomial.irreducible_of_isHomogeneous_one`: over a field, a nonzero linear form, in any
   number of variables, is irreducible.
+* `MvPolynomial.irreducible_X_pow_add_X`: over a domain, `X₀ⁿ + X₁` is irreducible.
 -/
 
 public section
@@ -40,6 +42,17 @@ theorem irreducible_of_totalDegree_eq_one' {p : MvPolynomial σ k}
 theorem irreducible_of_isHomogeneous_one {L : MvPolynomial σ k}
     (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) : Irreducible L :=
   irreducible_of_totalDegree_eq_one' (hL.totalDegree hL₀)
+
+/-- Over a domain, `X₀ⁿ + X₁` is irreducible in two variables: the automorphism
+`X₁ ↦ X₀ⁿ + X₁` sends the prime `X₁` to it. -/
+theorem irreducible_X_pow_add_X {R : Type*} [CommRing R] [IsDomain R] (n : ℕ) :
+    Irreducible (X 0 ^ n + X 1 : MvPolynomial (Fin 2) R) := by
+  let e : MvPolynomial (Fin 2) R ≃ₐ[R] MvPolynomial (Fin 2) R :=
+    AlgEquiv.ofAlgHom (aeval ![X 0, X 0 ^ n + X 1]) (aeval ![X 0, X 1 - X 0 ^ n])
+      (by ext i; fin_cases i <;> simp) (by ext i; fin_cases i <;> simp)
+  have : e (X 1) = X 0 ^ n + X 1 := by simp [e]
+  rw [← this]
+  exact (MulEquiv.irreducible_iff e.toMulEquiv).2 prime_X.irreducible
 
 end MvPolynomial
 
