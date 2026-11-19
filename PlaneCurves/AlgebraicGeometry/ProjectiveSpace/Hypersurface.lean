@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.Algebra.MvPolynomial.Nilpotent
+public import Mathlib.Algebra.Polynomial.Roots
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Nullstellensatz
 public import PlaneCurves.RingTheory.Ideal.Radical
 public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
@@ -24,7 +25,8 @@ Nullstellensatz of Fulton, §4.2, that concerns hypersurfaces, and assembles the
 
 * `zeroLocus_nonempty_of_card_le`: at most `n` forms of positive degree have a common zero in
   `ℙⁿ`; in particular every form of positive degree has a zero
-  (`zeroLocus_singleton_nonempty`).
+  (`zeroLocus_singleton_nonempty`), and infinitely many for `n ≥ 2`
+  (`zeroLocus_singleton_infinite`).
 * `vanishingIdeal_zeroLocus_singleton`: for a form `F`, `I(V(F)) = Rad (F)`;
   `vanishingIdeal_zeroLocus_singleton_eq_span_prod`: if `F = λ F₁^e₁ ⋯ F_r^e_r` with pairwise
   non-associated irreducible `Fᵢ`, then `I(V(F)) = (F₁ ⋯ F_r)`.
@@ -104,6 +106,39 @@ theorem zeroLocus_singleton_nonempty (hn : n ≠ 0) (hf : f.IsHomogeneous d) (hd
     (zeroLocus ({f} : Set (MvPolynomial (Fin (n + 1)) k))).Nonempty := by
   simpa using zeroLocus_nonempty_of_card_le (s := {f}) (by simpa [Nat.one_le_iff_ne_zero])
     (by rintro _ hg; rw [Finset.mem_singleton.1 hg]; exact ⟨d, hd, hf⟩)
+
+/-- Over an algebraically closed field and for `n ≥ 2`, a form of positive degree has infinitely
+many zeros in `ℙⁿ`: it meets each hyperplane `∑ cⁱ Xᵢ = 0`, and a point lies on only finitely
+many of these. -/
+theorem zeroLocus_singleton_infinite (hn : 2 ≤ n) (hf : f.IsHomogeneous d) (hd : d ≠ 0) :
+    (zeroLocus ({f} : Set (MvPolynomial (Fin (n + 1)) k))).Infinite := by
+  classical
+  intro hfin
+  refine (Infinite.not_finite (α := k)) (Set.finite_univ_iff.1 <| (hfin.biUnion fun P _ ↦
+    Polynomial.finite_setOfPred_isRoot (p := ∑ i : Fin (n + 1),
+      Polynomial.C (P.rep i) * Polynomial.X ^ (i : ℕ)) ?_).subset fun c _ ↦ ?_)
+  · intro h0
+    refine P.rep_ne_zero (funext fun i ↦ ?_)
+    simpa [Polynomial.finsetSum_coeff, Polynomial.coeff_C_mul, Polynomial.coeff_X_pow,
+      Fin.val_eq_val] using congrArg (fun p : Polynomial k ↦ p.coeff (i : ℕ)) h0
+  · have hL : (∑ i : Fin (n + 1), C (c ^ (i : ℕ)) * X i).IsHomogeneous 1 :=
+      IsHomogeneous.sum _ _ _ fun i _ ↦ (isHomogeneous_C _ _).mul (isHomogeneous_X _ i)
+    obtain ⟨P, hP⟩ := zeroLocus_nonempty_of_card_le
+      (s := {f, ∑ i : Fin (n + 1), C (c ^ (i : ℕ)) * X i}) (Finset.card_le_two.trans hn) (by
+        simp only [Finset.mem_insert, Finset.mem_singleton, forall_eq_or_imp, forall_eq]
+        exact ⟨⟨d, hd, hf⟩, 1, one_ne_zero, hL⟩)
+    rw [mem_zeroLocus_iff_eval_rep (by
+      simp only [Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
+        Set.mem_singleton_iff, forall_eq_or_imp, forall_eq]
+      exact ⟨⟨d, hf⟩, 1, hL⟩)] at hP
+    simp only [Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
+      Set.mem_singleton_iff, forall_eq_or_imp, forall_eq] at hP
+    refine Set.mem_biUnion (x := P) ?_ ?_
+    · rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hf⟩)]
+      simpa using hP.1
+    · simp only [Set.mem_ofPred_eq, Polynomial.IsRoot.def, Polynomial.eval_finsetSum,
+        Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X]
+      simpa [mul_comm] using hP.2
 
 /-- Over an algebraically closed field and for `n ≥ 1`, the ideal of the zero locus of a form `F`
 is the radical of `(F)`. -/
