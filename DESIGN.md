@@ -291,6 +291,7 @@ PlaneCurves/
         │   └── GenusOne.lean            curves of genus one (D11)
         ├── Place/
         │   ├── Basic.lean               places over a point, order of a form (V3)
+        │   ├── Blowup.lean              places over the origin through the chart (B4)
         │   ├── ChangeOfCoordinates.lean places and orders of forms under M (B3)
         │   ├── SimplePoint.lean         the place at a simple point (V3)
         │   ├── RationalMap.lean         rational maps defined at simple points (V4)
@@ -886,7 +887,7 @@ completes it, in `TwoGenerators.lean`, for every `x ∉ k`.
 | 7-reduce | Reduction of a plane curve to ordinary multiple points by quadratic transformations | `PlaneCurve/QuadraticTransformation/Resolution.lean` (T4) |
 | 7-noether-formula | Noether's formula for intersection numbers at infinitely near points | `PlaneCurve/QuadraticTransformation/NeighbouringSingularities.lean` (T5), with the local form in `Affine/Blowup/IntersectionNumber.lean` (B4) |
 | 7-model | Existence and uniqueness of the nonsingular model of a projective curve | `PlaneCurve/NonsingularModel/Basic.lean` (V5) |
-| 7-classify | Nonsingular projective curves correspond to function fields of one variable | existing: Tau Ceti's `AlgebraicGeometry.Scheme.homOfFunctionFieldAlgHom`, `AlgebraicGeometry.Scheme.functionFieldAlgHom_homOfFunctionFieldAlgHom`, `AlgebraicGeometry.Scheme.homOfFunctionFieldAlgHom_functionFieldAlgHom`, `AlgebraicGeometry.Scheme.isoOfFunctionFieldAlgEquiv` (`TauCeti/AlgebraicGeometry/Birational/AlgHom.lean`) and `TauCeti.AlgebraicGeometry.RegularProjectiveCurveCat.equivFunctionFieldCat` (`TauCeti/AlgebraicGeometry/Curves/TwoChartModel/AntiEquivalence.lean`); "dominant morphisms are surjective" (Problem 8.18) was not found and is proved in `PlaneCurve/NonsingularModel/Basic.lean` (V5) |
+| 7-classify | Nonsingular projective curves correspond to function fields of one variable | existing: Tau Ceti's `AlgebraicGeometry.Scheme.homOfFunctionFieldAlgHom`, `AlgebraicGeometry.Scheme.functionFieldAlgHom_homOfFunctionFieldAlgHom`, `AlgebraicGeometry.Scheme.homOfFunctionFieldAlgHom_functionFieldAlgHom`, `AlgebraicGeometry.Scheme.isoOfFunctionFieldAlgEquiv` (`TauCeti/AlgebraicGeometry/Birational/AlgHom.lean`) and `TauCeti.AlgebraicGeometry.RegularProjectiveCurveCat.equivFunctionFieldCat` (`TauCeti/AlgebraicGeometry/Curves/TwoChartModel/AntiEquivalence.lean`); "dominant morphisms are surjective" (Problem 8.18) is Mathlib's instance `AlgebraicGeometry.Surjective.of_universallyClosed_of_isDominant` (`Mathlib/AlgebraicGeometry/Morphisms/UniversallyClosed.lean`), and for places Tau Ceti's `TauCeti.Place.restrict_surjective` |
 | 7-normalization | Finiteness of the normalization of a plane curve near a point | `PlaneCurve/NonsingularModel/Normalization.lean` (V6) |
 | 7-intsum | Intersection numbers as sums of orders at places | `PlaneCurve/Place/IntersectionNumber.lean` (V8) |
 | 7-conductor | Noether's conditions at an ordinary multiple point via orders at places | `PlaneCurve/Place/Conductor.lean` (O1) |
