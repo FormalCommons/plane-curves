@@ -424,24 +424,15 @@ theorem isTangentAt_linearSubst_iff (hF : F.IsHomogeneous d) {M : Matrix (Fin 3)
   conv_rhs => rw [← Q.mk_rep, map_mk]
   rw [eval_linearSubst, hL.eval_rep_mk_eq_zero_iff, Matrix.mulVecLin_apply]
 
-/-- **Ordinary multiple points under a change of coordinates.** For an invertible matrix `M`, `Q`
-is an ordinary multiple point of `F(MX)` exactly when `MQ` is one of `F`. -/
+/-- **Ordinary multiple points under a change of coordinates.** For an invertible matrix `M`,
+`Q` is an ordinary multiple point of `F(MX)` exactly when `MQ` is one of `F`. -/
 theorem isOrdinaryMultiplePoint_linearSubst_iff (hF : F.IsHomogeneous d)
     {M : Matrix (Fin 3) (Fin 3) k} (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
     IsOrdinaryMultiplePoint (linearSubst M F) Q ↔
       IsOrdinaryMultiplePoint F (Projectivization.map M.mulVecLin hM Q) := by
-  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
-  have hsq {p : MvPolynomial (Fin 3) k} : Squarefree (linearSubst M p) ↔ Squarefree p := by
-    refine ⟨fun h y hy ↦ ?_, fun h y hy ↦ ?_⟩
-    · have := (h _ (by simpa using map_dvd (linearSubst M) hy)).map (linearSubst M⁻¹)
-      rwa [linearSubst_nonsing_inv_linearSubst hdet] at this
-    · have := h _ (by
-        simpa only [map_mul, linearSubst_nonsing_inv_linearSubst hdet] using
-          map_dvd (linearSubst M⁻¹) hy)
-      have := this.map (linearSubst M)
-      rwa [linearSubst_linearSubst_nonsing_inv hdet] at this
   rw [isOrdinaryMultiplePoint_def, isOrdinaryMultiplePoint_def,
-    isMultiplePoint_linearSubst_iff hF hM, (leadingForm_linearSubst hF hM Q).squarefree_iff, hsq]
+    isMultiplePoint_linearSubst_iff hF hM, (leadingForm_linearSubst hF hM Q).squarefree_iff,
+    squarefree_linearSubst_iff (Matrix.isUnit_det_of_mulVecLin_injective hM)]
 
 /-! ### Problems 5.5 and 5.6 -/
 
