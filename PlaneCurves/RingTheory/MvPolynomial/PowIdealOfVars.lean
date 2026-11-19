@@ -27,7 +27,9 @@ for `k[X₁, …, Xₙ] ⧸ I_P ^ m`.
   `< m` map isomorphically onto `R[X] ⧸ I ^ m`.
 * `MvPolynomial.quotientPowIdealOfVarsBasis`: the basis of `R[X] ⧸ I ^ m` given by the residues
   of the monomials of degree `< m`.
-* `MvPolynomial.finrank_quotient_pow_idealOfVars`: `dim R[X] ⧸ I ^ m = (m + n - 1).choose n`.
+* `MvPolynomial.finrank_quotient_pow_idealOfVars`: `dim R[X] ⧸ I ^ m = (m + n - 1).choose n`;
+  in two variables, `MvPolynomial.finrank_quotient_pow_idealOfVars_fin_two`:
+  `dim R[X, Y] ⧸ (X, Y) ^ m = m(m + 1)/2`.
 * `MvPolynomial.map_taylor_vanishingIdeal_singleton`: the Taylor shift at `P` carries `I_P` to
   `I`.
 * `MvPolynomial.finrank_quotient_pow_vanishingIdeal_singleton`:
@@ -137,6 +139,12 @@ theorem finrank_quotient_pow_idealOfVars [Fintype σ] [StrongRankCondition R] {m
   · rw [finrank_quotient_pow_idealOfVars_succ]
     congr 1
     omega
+
+/-- `R[X, Y] ⧸ (X, Y) ^ n` has dimension `n(n + 1)/2`. -/
+theorem finrank_quotient_pow_idealOfVars_fin_two [StrongRankCondition R] (n : ℕ) :
+    Module.finrank R (MvPolynomial (Fin 2) R ⧸ idealOfVars (Fin 2) R ^ n) = n * (n + 1) / 2 := by
+  rw [finrank_quotient_pow_idealOfVars (Or.inr inferInstance), Fintype.card_fin,
+    Nat.choose_two_right, show n + 2 - 1 = n + 1 by omega, Nat.add_sub_cancel, mul_comm]
 
 end CommRing
 
