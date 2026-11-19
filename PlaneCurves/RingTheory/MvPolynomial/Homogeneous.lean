@@ -5,6 +5,7 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Basic
 
 /-!
@@ -27,6 +28,9 @@ each of its homogeneous components.
   each of its homogeneous components.
 * `MvPolynomial.IsHomogeneous.exists_isHomogeneous_of_dvd`: over a field, a divisor of a nonzero
   form that is not a unit is a form of positive degree.
+* `MvPolynomial.IsHomogeneous.degree_ne_zero_of_irreducible`: over a field, an irreducible form
+  has positive degree, and `MvPolynomial.IsHomogeneous.isRelPrime_of_irreducible`: it is prime
+  to every nonzero form of smaller degree.
 * `MvPolynomial.IsHomogeneous.exists_isHomogeneous_dvd_of_not_isRelPrime`: over a field, two
   forms that are not relatively prime have a common divisor that is a form of positive degree.
 -/
@@ -100,6 +104,22 @@ theorem IsHomogeneous.exists_isHomogeneous_of_dvd {k : Type*} [Field k]
   rintro hc
   rw [totalDegree_eq_zero_iff_eq_C.1 h0, hc, map_zero, zero_mul] at hF0
   exact hF0 rfl
+
+/-- An irreducible form over a field has positive degree. -/
+theorem IsHomogeneous.degree_ne_zero_of_irreducible {k : Type*} [Field k] {F : MvPolynomial σ k}
+    (hF : F.IsHomogeneous d) (hirr : Irreducible F) : d ≠ 0 := by
+  obtain ⟨e, he, hFe⟩ := hF.exists_isHomogeneous_of_dvd hirr.ne_zero dvd_rfl hirr.not_isUnit
+  exact (hFe.inj_right hF hirr.ne_zero).symm ▸ he
+
+/-- An irreducible form does not divide a nonzero form of smaller degree: the two are
+relatively prime. -/
+theorem IsHomogeneous.isRelPrime_of_irreducible {R : Type*} [CommRing R] [IsDomain R]
+    {F G : MvPolynomial σ R} {e : ℕ} (hF : F.IsHomogeneous d) (hirr : Irreducible F)
+    (hG : G.IsHomogeneous e) (hG0 : G ≠ 0) (he : e < d) : IsRelPrime F G :=
+  hirr.isRelPrime_iff_not_dvd.2 fun h ↦ by
+    have := totalDegree_le_of_dvd_of_isDomain h hG0
+    rw [hF.totalDegree hirr.ne_zero, hG.totalDegree hG0] at this
+    omega
 
 /-- Over a field, two forms that are not relatively prime have a common divisor that is a form
 of positive degree. There must be a variable: for `σ` empty, `0` and `0` are not relatively

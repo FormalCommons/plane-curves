@@ -37,6 +37,8 @@ Let `F` and `G` be forms in `k[X, Y, Z]`.
   field, `F` and `G` are relatively prime iff `V(F, G)` is finite.
 * `PlaneCurves.Projective.finite_setOf_isMultiplePoint_of_irreducible`: an irreducible form over
   a perfect field has finitely many multiple points.
+* `PlaneCurves.Projective.exists_finset_isSimplePoint_of_irreducible`: over an algebraically
+  closed field, an irreducible form has any number of simple points outside a finite set.
 * `PlaneCurves.Projective.finite_zeroLocus_pair_spec`: the three statements together.
 
 ## References
@@ -114,6 +116,21 @@ theorem finite_setOf_isMultiplePoint_of_irreducible [PerfectField k] (hF : F.IsH
   simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
   rintro f (rfl | rfl)
   exacts [h0, h1 i]
+
+/-- Over an algebraically closed field, an irreducible form `F` has infinitely many simple
+points: so for every finite set `s` of points and every `r`, there are `r` simple points of `F`
+outside `s`. -/
+theorem exists_finset_isSimplePoint_of_irreducible [IsAlgClosed k] (hF : F.IsHomogeneous m)
+    (hirr : Irreducible F) (s : Finset (ℙ k (Fin 3 → k))) (r : ℕ) :
+    ∃ T : Finset (ℙ k (Fin 3 → k)), Disjoint s T ∧ T.card = r ∧ ∀ Q ∈ T, IsSimplePoint F Q := by
+  have hinf : ((zeroLocus ({F} : Set (MvPolynomial (Fin 3) k)) \ {P | IsMultiplePoint F P}) \
+      (s : Set (ℙ k (Fin 3 → k)))).Infinite :=
+    ((zeroLocus_singleton_infinite (n := 2) le_rfl hF (hF.degree_ne_zero_of_irreducible hirr)).sdiff
+      (finite_setOf_isMultiplePoint_of_irreducible hF hirr)).sdiff s.finite_toSet
+  obtain ⟨T, hTsub, hTcard⟩ := hinf.exists_subset_card_eq r
+  refine ⟨T, Finset.disjoint_left.2 fun P hPs hPT ↦ (hTsub hPT).2 hPs, hTcard, fun Q hQ ↦ ?_⟩
+  obtain ⟨⟨hQ0, hQ1⟩, -⟩ := hTsub hQ
+  exact (isSimplePoint_or_isMultiplePoint hF hQ0).resolve_right hQ1
 
 /- Positive degree is needed: the constant form `1` has no zeros. -/
 example : zeroLocus ({1, X 0} : Set (MvPolynomial (Fin 3) k)) = ∅ :=
