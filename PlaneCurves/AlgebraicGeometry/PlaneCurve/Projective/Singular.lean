@@ -9,6 +9,7 @@ public import Mathlib.RingTheory.MvPolynomial.EulerIdentity
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Multiplicity
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Multiplicity
 public import TauCeti.RingTheory.MvPolynomial.CommonZero
+public import PlaneCurves.RingTheory.MvPolynomial.PolarDerivative
 
 /-!
 # Simple and singular points of projective plane curves
@@ -277,6 +278,12 @@ theorem isHomogeneous_tangentLine (F : MvPolynomial (Fin 3) k) (v : Fin 3 → k)
 theorem eval_tangentLine (F : MvPolynomial (Fin 3) k) (v w : Fin 3 → k) :
     eval w (tangentLine F v) = ∑ i, eval v (pderiv i F) * w i := by
   simp [tangentLine_def]
+
+/-- The tangent line of `F` at `w`, evaluated at `v`, is the polar derivative `D_v F` evaluated
+at `w`. -/
+theorem eval_tangentLine_eq_eval_polarDerivative (F : MvPolynomial (Fin 3) k) (v w : Fin 3 → k) :
+    eval v (tangentLine F w) = eval w (polarDerivative v F) := by
+  simp [mul_comm]
 
 @[simp]
 theorem pderiv_tangentLine (F : MvPolynomial (Fin 3) k) (v : Fin 3 → k) (j : Fin 3) :
