@@ -30,7 +30,8 @@ the same degree not divisible by `F` is a unit of `K`, with divisor `div G - div
 ## Main results
 
 * `coeff_formDivisor`: the coefficient of `div G` at `Q` is `ord_Q(G)`.
-* `formDivisor_nonneg`, `coeff_formDivisor_pos_iff`, `formDivisor_mul`.
+* `formDivisor_nonneg`, `coeff_formDivisor_pos_iff`, `formDivisor_mul`,
+  `not_dvd_pow_of_not_dvd`, `formDivisor_pow`.
 * `principal_formQuotient`: `div (G / H) = div G - div H`; `exists_formQuotient_eq`.
 * `sum_coeff_formDivisor_center`: `∑_{Q over P} ord_Q(G) = I(P, C ∩ G)`;
   `coeff_formDivisor_of_isSimplePoint`: `ord_Q(G) = I(P, C ∩ G)` at the place over a simple point.
@@ -190,6 +191,37 @@ theorem formDivisor_mul (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') (hF
   refine WeilDivisor.ext fun Q ↦ ?_
   rw [WeilDivisor.coeff_add, ← WithTop.coe_inj, WithTop.coe_add, coeff_formDivisor _ hFGG',
     coeff_formDivisor _ hFG, coeff_formDivisor _ hFG', ordForm_mul]
+
+/-- `div G` depends only on the form `G`, not on the proof of its homogeneity. -/
+theorem formDivisor_congr {G' : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m)
+    (hG' : G'.IsHomogeneous m') (h : G = G') : formDivisor hF hG = formDivisor hF hG' := by
+  subst h
+  rcases eq_or_ne G 0 with rfl | h0
+  · rw [formDivisor_eq_zero_of_dvd _ (dvd_zero F), formDivisor_eq_zero_of_dvd _ (dvd_zero F)]
+  · obtain rfl := hG.inj_right hG' h0
+    rfl
+
+/-- A nonzero constant cuts out the zero divisor. -/
+@[simp]
+theorem formDivisor_one : formDivisor hF (isHomogeneous_one (Fin 3) k) = 0 :=
+  WeilDivisor.ext fun Q ↦ by
+    rw [coeff_formDivisor_eq_untopD, ordForm_eq_zero_of_eval_ne_zero _ (by simp)]
+    rfl
+
+omit [IsAlgClosed k] in
+/-- A power of a form not divisible by the irreducible form `F` is not divisible by `F`. -/
+theorem not_dvd_pow_of_not_dvd (hFG : ¬ F ∣ G) (n : ℕ) : ¬ F ∣ G ^ n :=
+  fun h ↦ hFG ((Fact.out : Irreducible F).prime.dvd_of_dvd_pow h)
+
+/-- `div (Gⁿ) = n • div G` for a form not divisible by `F`. -/
+theorem formDivisor_pow (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G) (n : ℕ) :
+    formDivisor hF (hG.pow n) = n • formDivisor hF hG := by
+  induction n with
+  | zero => rw [formDivisor_congr _ (isHomogeneous_one (Fin 3) k) (pow_zero G), formDivisor_one,
+      zero_smul]
+  | succ n ih =>
+    rw [formDivisor_congr _ ((hG.pow n).mul hG) (pow_succ G n),
+      formDivisor_mul (hG.pow n) hG (not_dvd_pow_of_not_dvd hFG n) hFG, ih, succ_nsmul]
 
 /-- **`div (G / H) = div G - div H`**: the principal divisor of a quotient of forms. -/
 theorem principal_formQuotient (hG : G.IsHomogeneous m) (hH : H.IsHomogeneous m)
