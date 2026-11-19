@@ -32,7 +32,8 @@ the same degree not divisible by `F` is a unit of `K`, with divisor `div G - div
 * `coeff_formDivisor`: the coefficient of `div G` at `Q` is `ord_Q(G)`.
 * `formDivisor_nonneg`, `coeff_formDivisor_pos_iff`, `formDivisor_mul`.
 * `principal_formQuotient`: `div (G / H) = div G - div H`; `exists_formQuotient_eq`.
-* `sum_coeff_formDivisor_center`: `∑_{Q over P} ord_Q(G) = I(P, C ∩ G)`.
+* `sum_coeff_formDivisor_center`: `∑_{Q over P} ord_Q(G) = I(P, C ∩ G)`;
+  `coeff_formDivisor_of_isSimplePoint`: `ord_Q(G) = I(P, C ∩ G)` at the place over a simple point.
 * `degree_formDivisor`: `deg (div G) = n * m`.
 * `formDivisor_X_two`: `div Z = (x)_∞ ⊔ (y)_∞` for `x = X / Z`, `y = Y / Z`.
 * `linearlyEquivalent_iff_exists_add_formDivisor_eq`: linear equivalence by forms.
@@ -224,6 +225,19 @@ theorem sum_coeff_formDivisor_center (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
   rw [← ENat.natCast_toNat (intersectionNumber_ne_top_of_isRelPrime hF hG
     ((Fact.out : Irreducible F).isRelPrime_iff_not_dvd.2 hFG)), ENat.map_natCast] at h
   exact_mod_cast h
+
+/-- At a place `Q` centred at a simple point `P` of `C`, the coefficient of `div G` is
+`I(P, C ∩ G)`, for a form `G` with `F ∤ G`: `Q` is the only place over `P`. -/
+theorem coeff_formDivisor_of_isSimplePoint (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
+    {Q : Place k (functionField hF)} (hQ : IsSimplePoint F (center hF Q).1) :
+    (formDivisor hF hG).coeff Q = (intersectionNumber (center hF Q).1 F G).toNat := by
+  rw [← sum_coeff_formDivisor_center hG hFG (center hF Q)]
+  refine (Finset.sum_eq_single_of_mem Q
+    ((placesOver_finite hF _).mem_toFinset.2 (mem_placesOver_center Q)) fun Q' hQ' hne ↦
+      absurd ?_ hne).symm
+  have h := (placesOver_finite hF _).mem_toFinset.1 hQ'
+  rw [placesOver_eq_singleton hQ, Set.mem_singleton_iff] at h
+  rw [h, placeAt_center]
 
 /-- **The degree of `div G` is `deg F * deg G`**, by Bézout's theorem, for a form `G` with
 `F ∤ G`. -/
