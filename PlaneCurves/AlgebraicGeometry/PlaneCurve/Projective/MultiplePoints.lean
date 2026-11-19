@@ -106,7 +106,7 @@ private theorem natCast_sum_toNat_mult (hF0 : F ≠ 0) (s : Finset (ℙ k (Fin 3
       ∑ P ∈ s, mult F P * (mult F P - 1) := by
   rw [Nat.cast_sum]
   refine Finset.sum_congr rfl fun P _ ↦ ?_
-  rw [Nat.cast_mul, ENat.natCast_sub, ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0),
+  rw [Nat.cast_mul, ENat.natCast_sub, natCast_toNat_mult hF0,
     Nat.cast_one]
 
 omit [IsAlgClosed k] in
@@ -114,7 +114,7 @@ omit [IsAlgClosed k] in
 least `2`. -/
 private theorem isMultiplePoint_iff_two_le_toNat (hF0 : F ≠ 0) {P : ℙ k (Fin 3 → k)} :
     IsMultiplePoint F P ↔ 2 ≤ (mult F P).toNat := by
-  rw [isMultiplePoint_def, ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0)]
+  rw [isMultiplePoint_def, ← natCast_toNat_mult hF0]
   exact_mod_cast Iff.rfl
 
 omit [IsAlgClosed k] in
@@ -211,7 +211,7 @@ private theorem sum_toNat_mult_mul_sub_one_le (hF : F.IsHomogeneous n) (hirr : I
   classical
   set m : ℙ k (Fin 3 → k) → ℕ := fun P ↦ (mult F P).toNat with hm
   have hmF (P) : mult F P = m P := by
-    rw [hm, ENat.natCast_toNat (mult_eq_top_iff.not.2 hirr.ne_zero)]
+    rw [hm, natCast_toNat_mult hirr.ne_zero]
   obtain ⟨d, rfl⟩ : ∃ d, n = d + 1 := Nat.exists_eq_add_one.2 (Nat.pos_of_ne_zero
     (hF.degree_ne_zero_of_irreducible hirr))
   -- the polar bound, and the halves `δ` of the terms
@@ -333,7 +333,7 @@ theorem mult_eq_two_of_degree_three (hF : F.IsHomogeneous 3) (hirr : Irreducible
   rw [Finset.sum_singleton] at h
   have : (mult F P).toNat = 2 := by
     nlinarith [Nat.sub_add_cancel (one_le_two.trans h2)]
-  rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hirr.ne_zero), this, Nat.cast_ofNat]
+  rw [← natCast_toNat_mult hirr.ne_zero, this, Nat.cast_ofNat]
 
 /-- The multiple points of an irreducible quartic are either all double points, at most three
 of them, or a single triple point. -/
@@ -343,7 +343,7 @@ theorem multiple_points_of_degree_four (hF : F.IsHomogeneous 4) (hirr : Irreduci
   classical
   have hF0 := hirr.ne_zero
   have hm (P) : mult F P = (mult F P).toNat :=
-    (ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0)).symm
+    (natCast_toNat_mult hF0).symm
   by_cases h : ∃ P, IsMultiplePoint F P ∧ (mult F P).toNat ≠ 2
   · obtain ⟨P, hP, hP2⟩ := h
     have h2 := (isMultiplePoint_iff_two_le_toNat hF0).1 hP
@@ -528,8 +528,8 @@ private theorem sum_toNat_mult_mul_toNat_mult_le {G H : MvPolynomial (Fin 3) k} 
       ∑ P ∈ s, mult G P * mult H P := by
     rw [Nat.cast_sum]
     refine Finset.sum_congr rfl fun P _ ↦ ?_
-    rw [Nat.cast_mul, ENat.natCast_toNat (mult_eq_top_iff.not.2 hG0),
-      ENat.natCast_toNat (mult_eq_top_iff.not.2 hH0)]
+    rw [Nat.cast_mul, natCast_toNat_mult hG0,
+      natCast_toNat_mult hH0]
   rw [← hc] at h
   exact_mod_cast h
 
@@ -565,7 +565,7 @@ private theorem sum_toNat_mult_mul_sub_one_add_le (hF : F.IsHomogeneous n) (hsq 
     have h4 := sub_one_mul_sub_two_add (hpH.degree_ne_zero_of_irreducible hp)
     have hm (P : ℙ k (Fin 3 → k)) :
         (mult (p * a) P).toNat = (mult p P).toNat + (mult a P).toNat := by
-      rw [mult_mul, ENat.toNat_add (mult_eq_top_iff.not.2 hp0) (mult_eq_top_iff.not.2 ha)]
+      rw [mult_mul, ENat.toNat_add (mult_ne_top hp0) (mult_ne_top ha)]
     rw [Finset.sum_congr rfl fun P _ ↦ by rw [hm, add_mul_add_sub_one],
       Finset.sum_add_distrib, Finset.sum_add_distrib, ← Finset.mul_sum,
       Multiset.card_eq_card_of_rel (UniqueFactorizationMonoid.factors_mul hp0 ha),

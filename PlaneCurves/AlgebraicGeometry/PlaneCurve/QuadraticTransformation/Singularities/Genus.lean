@@ -86,7 +86,7 @@ points of `F ≠ 0`. -/
 theorem choose_two_toNat_mult_ne_zero_iff (hF0 : F ≠ 0) (P : ℙ k (Fin 3 → k)) :
     ((mult F P).toNat.choose 2 : ℤ) ≠ 0 ↔ IsMultiplePoint F P := by
   rw [Nat.cast_ne_zero, Ne, Nat.choose_eq_zero_iff, not_lt, isMultiplePoint_def,
-    ← ENat.natCast_toNat (mult_eq_top_iff.not.2 hF0)]
+    ← natCast_toNat_mult hF0]
   exact_mod_cast Iff.rfl
 
 /-- The support of the terms of the virtual genus is the set of multiple points. -/
@@ -172,7 +172,7 @@ theorem virtualGenus_eq_zero_of_isMultiplePoint [IsAlgClosed k] (hF : F.IsHomoge
     virtualGenus F = 0 := by
   have h2 : 2 ≤ (mult F P).toNat := by
     have := isMultiplePoint_def.1 hP
-    rw [← ENat.natCast_toNat (mult_eq_top_iff.not.2 hirr.ne_zero)] at this
+    rw [← natCast_toNat_mult hirr.ne_zero] at this
     exact_mod_cast this
   have hle := virtualGenus_le_sub_choose_two hF hirr P
   have h1 : 1 ≤ (mult F P).toNat.choose 2 :=

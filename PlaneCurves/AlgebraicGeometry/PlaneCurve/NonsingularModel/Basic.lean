@@ -74,7 +74,7 @@ theorem ncard_placesOver_le_mult
     (intersectionNumber_eq_mult_iff_not_isTangentAt hF hF0 hL
       (sum_C_mul_X_ne_zero c.rep_ne_zero) hcP).2 hcT
   have hsum := map_natCast_intersectionNumber_eq_sum_ordForm hF P hL
-  obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hF0)
+  obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (mult_ne_top hF0)
   rw [hI, ← hn] at hsum
   have hle : ∑ _Q ∈ (placesOver_finite hF P).toFinset, (1 : WithTop ℤ) ≤
       ∑ Q ∈ (placesOver_finite hF P).toFinset, ordForm hF Q hL := by
