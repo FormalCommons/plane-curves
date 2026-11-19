@@ -161,6 +161,7 @@ PlaneCurves/
 │   ├── Ideal/
 │   │   └── AssociatedGraded.lean        (Iⁿ : f) = Iⁿ⁻ᵐ, dim A/Iⁿ⁺¹ = dim A/Iⁿ + dim Iⁿ/Iⁿ⁺¹ (L5)
 │   ├── Length.lean                      Hilbert–Samuel lengths under ring isomorphisms (L5)
+│   ├── Conductor.lean                   a conductor element inside a localization (V6)
 │   ├── Regular/
 │   │   └── IsRelPrime.lean              coprime pairs: relations, weakly regular sequences (P3)
 │   ├── GradedAlgebra/

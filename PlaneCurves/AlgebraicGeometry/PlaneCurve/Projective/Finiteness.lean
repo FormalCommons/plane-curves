@@ -35,6 +35,8 @@ Let `F` and `G` be forms in `k[X, Y, Z]`.
   relatively prime forms `F`, `G`.
 * `PlaneCurves.Projective.isRelPrime_iff_finite_zeroLocus_pair`: over an algebraically closed
   field, `F` and `G` are relatively prime iff `V(F, G)` is finite.
+* `PlaneCurves.Projective.isRelPrime_of_forall_eval_eq_zero_mem`: over an algebraically closed
+  field, forms whose common zeros all lie in a `Finset` are relatively prime.
 * `PlaneCurves.Projective.finite_setOf_isMultiplePoint_of_irreducible`: an irreducible form over
   a perfect field has finitely many multiple points.
 * `PlaneCurves.Projective.exists_finset_isSimplePoint_of_irreducible`: over an algebraically
@@ -93,6 +95,16 @@ theorem isRelPrime_of_finite_zeroLocus_pair [IsAlgClosed k] (hF : F.IsHomogeneou
   rintro f (rfl | rfl)
   exacts [zero_dvd_iff.1 (hP0 ▸ map_dvd (eval P.rep) hH'F),
     zero_dvd_iff.1 (hP0 ▸ map_dvd (eval P.rep) hH'G)]
+
+/-- Over an algebraically closed field, forms `F`, `G` whose common zeros in `ℙ²` all lie in a
+finite set `s` are relatively prime. -/
+theorem isRelPrime_of_forall_eval_eq_zero_mem [IsAlgClosed k] (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous n) {s : Finset (ℙ k (Fin 3 → k))}
+    (hs : ∀ P : ℙ k (Fin 3 → k), eval P.rep F = 0 → eval P.rep G = 0 → P ∈ s) :
+    IsRelPrime F G :=
+  isRelPrime_of_finite_zeroLocus_pair hF hG (s.finite_toSet.subset fun Q hQ ↦ by
+    rw [mem_zeroLocus_iff_eval_rep (forall_isHomogeneous_pair hF hG)] at hQ
+    exact hs Q (hQ F (by simp)) (hQ G (by simp)))
 
 /-- **Problem 5.7 and its converse.** Over an algebraically closed field, forms `F`, `G` are
 relatively prime exactly when they have only finitely many common zeros in `ℙ²`. -/

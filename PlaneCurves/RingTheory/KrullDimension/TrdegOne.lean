@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.FieldTheory.FunctionField.ResidueRing
+public import Mathlib.RingTheory.Jacobson.Artinian
 public import Mathlib.RingTheory.Localization.AsSubring
 public import Mathlib.RingTheory.Spectrum.Maximal.Basic
 public import TauCeti.RingTheory.Ideal.Quotient.Semilocal
@@ -23,6 +24,8 @@ finiteness of poles.
   `Algebra.trdeg_le_one_of_algEquiv_fractionRing`).
 * `Ring.krullDimLE_one_of_trdeg_le_one`: a domain of transcendence degree at most one over `k`
   has Krull dimension at most one.
+* `Module.finite_quotient_span_singleton_of_trdeg_le_one`: if `R` is moreover finitely generated,
+  then `R ⧸ (t)` is finite over `k` for every `t ≠ 0`.
 * `Ideal.IsPrime.isMaximal_of_trdeg_fractionRing_le_one`: if `K` has transcendence degree at
   most one over `k`, every nonzero prime of `R` is maximal (part (4): the proper closed
   subvarieties of a curve are points).
@@ -97,6 +100,18 @@ theorem Ideal.IsPrime.isMaximal_of_trdeg_fractionRing_le_one (K : Type v) [Field
   refine Ideal.IsPrime.isMaximal_of_trdeg_le_one (k := k) ?_ hp
   rw [← Cardinal.lift_le_one_iff.{_, v}, Algebra.lift_trdeg_eq_of_isFractionRing k R K]
   simpa using h
+
+/-- **Quotients of a curve's ring.** If `R` is a finitely generated domain of transcendence
+degree at most one over a field `k`, then for `t ≠ 0` the quotient `R ⧸ (t)` is finite
+dimensional over `k`: the zero set of `t` on the curve is a finite set of points. -/
+theorem Module.finite_quotient_span_singleton_of_trdeg_le_one [Algebra.FiniteType k R]
+    (h : Algebra.trdeg k R ≤ 1) {t : R} (ht : t ≠ 0) :
+    Module.Finite k (R ⧸ Ideal.span {t}) := by
+  refine (Module.finite_iff_krullDimLE_zero k _).mpr
+    (Ideal.krullDimLE_zero_quotient_iff_forall_minimalPrimes_isMaximal.mpr fun J hJ ↦ ?_)
+  have := hJ.1.1
+  refine Ideal.IsPrime.isMaximal_of_trdeg_le_one h fun hJ0 ↦ ht ?_
+  simpa [hJ0] using hJ.1.2 (Ideal.mem_span_singleton_self t)
 
 namespace Algebra
 
