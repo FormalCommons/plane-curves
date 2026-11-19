@@ -33,6 +33,8 @@ The other statements of Fulton's part (a) are in Tau Ceti: a form `G` lies in `J
 * `Ideal.homogenization_radical_le`: `(rad J)* ⊆ rad (J*)`.
 * `Ideal.isPrime_homogenization_iff`: `J*` is prime if and only if `J` is.
 * `Ideal.homogenization_span_singleton`: `(F)* = (F*)` (Fulton's Problem 4.19).
+* `MvPolynomial.exists_X_pow_mul_mem_span_pair_of_dehomogenize_mem`: if `H_* ∈ (F_*, G_*)` for
+  forms `F`, `G` and `H`, then `Xᵢ ^ r H ∈ (F, G)` for some `r`.
 * `Ideal.X_mul_X_sub_X_mul_X_mem_homogenization_and_notMem_span_homogenize`: for the twisted
   cubic, generators of `J` need not homogenize to generators of `J*` (Fulton's Problem 4.20).
 
@@ -202,5 +204,33 @@ theorem X_mul_X_sub_X_mul_X_mem_homogenization_and_notMem_span_homogenize [Nontr
   simpa using congrArg (eval ![0, 0, 1, 1]) this
 
 end Ideal
+
+namespace MvPolynomial
+
+variable {R : Type*} [CommRing R] {n : ℕ} {i : Fin (n + 1)}
+
+/-- If the dehomogenization `H_*` of a form `H` lies in the ideal `(F_*, G_*)` of the
+dehomogenizations of two forms `F` and `G`, then `X i ^ r * H` lies in `(F, G)` for some `r`:
+homogenize an expression `H_* = a F_* + b G_*` to a large degree. -/
+theorem exists_X_pow_mul_mem_span_pair_of_dehomogenize_mem
+    {F G H : MvPolynomial (Fin (n + 1)) R} {m e d : ℕ} (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous e) (hH : H.IsHomogeneous d)
+    (h : dehomogenize i H ∈ Ideal.span {dehomogenize i F, dehomogenize i G}) :
+    ∃ r, X i ^ r * H ∈ Ideal.span {F, G} := by
+  obtain ⟨a, b, hab⟩ := Ideal.mem_span_pair.1 h
+  set N := d + a.totalDegree + m + b.totalDegree + e
+  have hmul {p : MvPolynomial (Fin n) R} {P : MvPolynomial (Fin (n + 1)) R} {j : ℕ}
+      (hP : P.IsHomogeneous j) (hpj : p.totalDegree + j ≤ N) :
+      homogenize i N (p * dehomogenize i P) = homogenize i (N - j) p * P := by
+    have := homogenize_mul (i := i) (M := N - j) (N := j) (f := p) (by omega)
+      ((totalDegree_dehomogenize_le i P).trans hP.totalDegree_le)
+    rwa [Nat.sub_add_cancel (by omega), homogenize_dehomogenize hP] at this
+  refine ⟨N - d, ?_⟩
+  rw [← homogenize_dehomogenize (i := i) hH, ← homogenize_of_le
+    ((totalDegree_dehomogenize_le i H).trans hH.totalDegree_le) (by omega), ← hab, map_add,
+    hmul hF (by omega), hmul hG (by omega)]
+  exact Ideal.mem_span_pair.2 ⟨_, _, rfl⟩
+
+end MvPolynomial
 
 end

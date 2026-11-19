@@ -155,7 +155,7 @@ PlaneCurves/
 │   │   ├── OrderAtDehomogenize.lean     order of a form on a line and in affine charts (Q1)
 │   │   ├── HomogeneousIdeal.lean        homogeneous ideals: finite generation by forms (P2)
 │   │   ├── HilbertFunction.lean         dim (k[X,Y,Z]/(F))_d, dim (k[x]/(A, B))_t (P3)
-│   │   ├── QuotientSpanPair.lean        Steps 1–2 of Bézout's proof (Q11)
+│   │   ├── QuotientSpanPair.lean        Steps 1–2 (Q11) and 3 (Q12) of Bézout's proof
 │   │   ├── PolarDerivative.lean         D_v F = Σ v_i ∂F/∂X_i (T1)
 │   │   └── Hessian.lean                 the Hessian matrix in n variables, Euler, covariance (Q16)
 │   ├── Ideal/
@@ -681,7 +681,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | Q9 | `Projective/LinearSystem/Basic.lean` | `linearSystem`; parts (a), (b) of **5-linsys** | Q1, Q3, P8 |
 | Q10 | `Projective/LinearSystem/Independence.lean` | **5-linsys** (complete) | Q9 |
 | Q11 | `RingTheory/MvPolynomial/QuotientSpanPair.lean`, `Algebra/MvPolynomial/SetVarZero.lean` | Steps 1–2 of Bézout's proof | P3 |
-| Q12 | `Projective/Bezout/Basic.lean` | **5-bezout** | Q7, Q8, Q11, L11, P8 |
+| Q12 | `Projective/Bezout/Basic.lean` | Step 3 of Bézout's proof in `QuotientSpanPair.lean`; **5-bezout** | Q7, Q8, Q11, L11, P8 |
 | Q13 | `Projective/Bezout/Corollaries.lean` | **5-bezout-cor** | Q12 |
 | Q14 | `Projective/MultiplePoints.lean` | **5-polar**, **5-bound** | Q10, Q13 |
 | Q15 | `Projective/GenericLine.lean` | **5-generic** | Q13 |

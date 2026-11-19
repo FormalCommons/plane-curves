@@ -9,6 +9,7 @@ public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 public import Mathlib.Algebra.MvPolynomial.Monad
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import PlaneCurves.Algebra.MvPolynomial.SetVarZero
+public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Ideal
 public import PlaneCurves.RingTheory.MvPolynomial.HilbertFunction
 public import PlaneCurves.RingTheory.Regular.IsRelPrime
 public import TauCeti.RingTheory.GradedAlgebra.HilbertSeries.RegularSequence
@@ -18,7 +19,7 @@ import Mathlib.Tactic.LinearCombination
 /-!
 # The quotient of a polynomial ring by two coprime polynomials
 
-Let `k` be a field and `R = k[X_i : i ∈ σ]`. This file proves the two algebraic facts about
+Let `k` be a field and `R = k[X_i : i ∈ σ]`. This file proves the three algebraic facts about
 `Γ = R/(F, G)` on which Fulton's proof of Bézout's theorem rests (Fulton, §5.3).
 
 * **Step 1.** If `F` and `G` are coprime forms of degrees `m` and `n` in `k[X, Y, Z]`, then
@@ -29,11 +30,17 @@ Let `k` be a field and `R = k[X_i : i ∈ σ]`. This file proves the two algebra
 * **Step 2.** If `F` and `G` become coprime when the variable `X i` is set to zero, then
   multiplication by `X i` is injective on `Γ`: `X i * H ∈ (F, G)` implies `H ∈ (F, G)`. Neither
   homogeneity nor finiteness of `σ` is needed.
+* **Step 3.** If moreover `F` and `G` are coprime forms of degrees `m` and `n` in `k[X, Y, Z]`,
+  then dehomogenizing at `X i = 1` identifies `Γ_d` with `k[X, Y]/(F_*, G_*)` for `d ≥ m + n`,
+  so `dim_k k[X, Y]/(F_*, G_*) = mn`.
 
 ## Main results
 
 * `MvPolynomial.finrank_quotientPiece_span_pair_fin_three`: Step 1.
 * `MvPolynomial.X_mul_mem_span_pair_iff`: Step 2.
+* `MvPolynomial.mem_span_pair_of_dehomogenize_mem`: a form whose dehomogenization lies in
+  `(F_*, G_*)` lies in `(F, G)`, under the hypothesis of Step 2.
+* `MvPolynomial.finrank_quotient_span_pair_dehomogenize`: Step 3.
 
 ## References
 
@@ -42,7 +49,7 @@ Let `k` be a field and `R = k[X_i : i ∈ σ]`. This file proves the two algebra
 
 public section
 
-open TauCeti.GradedAlgebra
+open TauCeti TauCeti.GradedAlgebra
 
 namespace MvPolynomial
 
@@ -118,6 +125,77 @@ theorem X_mul_mem_span_pair_iff [DecidableEq σ] {i : σ} {F G H : MvPolynomial 
     linear_combination F * ha' + G * hb'
   rw [mul_left_cancel₀ (X_ne_zero i) hH]
   exact Ideal.mem_span_pair.mpr ⟨a', b', rfl⟩
+
+/-- Under the hypothesis of Step 2 for `X i`, a form `H` whose dehomogenization `H_*` lies in
+`(F_*, G_*)`, for forms `F` and `G`, lies in `(F, G)`. -/
+theorem mem_span_pair_of_dehomogenize_mem {n : ℕ} {i : Fin (n + 1)}
+    {F G H : MvPolynomial (Fin (n + 1)) k} {m e d : ℕ} (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous e) (hH : H.IsHomogeneous d)
+    (hFG : IsRelPrime (bind₁ (Function.update X i 0) F) (bind₁ (Function.update X i 0) G))
+    (h : dehomogenize i H ∈ Ideal.span {dehomogenize i F, dehomogenize i G}) :
+    H ∈ Ideal.span {F, G} := by
+  obtain ⟨r, hr⟩ := exists_X_pow_mul_mem_span_pair_of_dehomogenize_mem hF hG hH h
+  induction r with
+  | zero => simpa using hr
+  | succ r ih => exact ih ((X_mul_mem_span_pair_iff hFG).1 (by rwa [pow_succ', mul_assoc] at hr))
+
+/-- **Step 3 of Fulton's proof of Bézout's theorem.** Let `F` and `G` be coprime forms of degrees
+`m` and `n` in `k[X, Y, Z]` that stay coprime when the variable `X i` is set to zero. Then the
+dehomogenizations `F_*` and `G_*` at `X i = 1` satisfy `dim_k k[X, Y]/(F_*, G_*) = mn`.
+Dehomogenizing maps `Γ_d` injectively into `k[X, Y]/(F_*, G_*)` (Step 2), the images increase
+with `d`, they have dimension `mn` for `d ≥ m + n` (Step 1), and every class is in one of them. -/
+theorem finrank_quotient_span_pair_dehomogenize {F G : MvPolynomial (Fin 3) k} {m n : ℕ}
+    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n) (hFG : IsRelPrime F G) {i : Fin 3}
+    (hi : IsRelPrime (bind₁ (Function.update X i 0) F) (bind₁ (Function.update X i 0) G)) :
+    Module.finrank k (MvPolynomial (Fin 2) k ⧸
+      Ideal.span {dehomogenize i F, dehomogenize i G}) = m * n := by
+  classical
+  set J := Ideal.span {dehomogenize i F, dehomogenize i G}
+  set I := Ideal.span {F, G}
+  have hIJ : I ≤ J.comap (dehomogenize i) := Ideal.span_le.2 <| by
+    rintro _ (rfl | rfl)
+    exacts [Ideal.subset_span (by simp), Ideal.subset_span (by simp)]
+  set ψ := (Ideal.quotientMapₐ J (dehomogenize i) hIJ).toLinearMap
+  set W : ℕ → Submodule k (MvPolynomial (Fin 2) k ⧸ J) := fun d ↦
+    (quotientPiece (homogeneousSubmodule (Fin 3) k) I d).map ψ
+  have hp {d : ℕ} {x : MvPolynomial (Fin 3) k ⧸ I} :
+      x ∈ quotientPiece (homogeneousSubmodule (Fin 3) k) I d ↔
+        ∃ H, H.IsHomogeneous d ∧ Ideal.Quotient.mk I H = x := by
+    rw [quotientPiece_def, Submodule.mem_map]
+    rfl
+  have hW {d : ℕ} {H : MvPolynomial (Fin 3) k} (hH : H.IsHomogeneous d) :
+      Ideal.Quotient.mk J (dehomogenize i H) ∈ W d :=
+    ⟨Ideal.Quotient.mk I H, hp.2 ⟨H, hH, rfl⟩, rfl⟩
+  have hmono : Monotone W := by
+    refine monotone_nat_of_le_succ fun d ↦ ?_
+    rintro _ ⟨_, hx, rfl⟩
+    obtain ⟨H, hH, rfl⟩ := hp.1 hx
+    have h := hW (d := d + 1) (by simpa [add_comm] using (isHomogeneous_X k i).mul hH)
+    simpa [ψ] using h
+  have hrank {d : ℕ} (hd : m + n ≤ d + 2) : Module.finrank k (W d) = m * n := by
+    set p := quotientPiece (homogeneousSubmodule (Fin 3) k) I d
+    have hinj : Function.Injective (ψ ∘ₗ p.subtype) := by
+      rw [← LinearMap.ker_eq_bot, eq_bot_iff]
+      rintro ⟨_, hx'⟩ hx
+      obtain ⟨H, hH, rfl⟩ := hp.1 hx'
+      simp only [LinearMap.mem_ker, LinearMap.coe_comp, Function.comp_apply,
+        Submodule.coe_subtype] at hx
+      have : dehomogenize i H ∈ J := Ideal.Quotient.eq_zero_iff_mem.1 hx
+      simpa [Submodule.mem_bot, Subtype.ext_iff] using
+        Ideal.Quotient.eq_zero_iff_mem.2 (mem_span_pair_of_dehomogenize_mem hF hG hH hi this)
+    rw [← finrank_quotientPiece_span_pair_fin_three hF hG hFG hd,
+      (LinearEquiv.ofInjective _ hinj).finrank_eq, LinearMap.range_comp,
+      Submodule.range_subtype]
+  have hconst (j : ℕ) : W (m + n + j) = W (m + n) :=
+    (Submodule.eq_of_le_of_finrank_eq (hmono (by omega))
+      (by rw [hrank (by omega), hrank (by omega)])).symm
+  have htop : W (m + n) = ⊤ := by
+    refine eq_top_iff.2 fun a _ ↦ ?_
+    obtain ⟨h, rfl⟩ := Ideal.Quotient.mk_surjective a
+    have ha := hW (isHomogeneous_homogenize i h.totalDegree h)
+    rw [dehomogenize_homogenize le_rfl] at ha
+    exact hconst h.totalDegree ▸ hmono (by omega) ha
+  rw [← finrank_top, ← htop, hrank (by omega)]
 
 end MvPolynomial
 
