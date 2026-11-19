@@ -11,12 +11,13 @@ public import TauCeti.LinearAlgebra.Projectivization.AffineChart
 public import TauCeti.LinearAlgebra.Projectivization.Basic
 
 /-!
-# The hyperplane at infinity of a standard affine chart
+# The points of a standard affine chart and its hyperplane at infinity
 
 The complement of the standard affine open `Projectivization.affineOpen i` of
 `ℙ K (Fin (n + 1) → K)`
 is the hyperplane `{xᵢ = 0}`. This file identifies it with `ℙ K (Fin n → K)`, by inserting a
-zero homogeneous coordinate in position `i`.
+zero homogeneous coordinate in position `i`. It also describes the points of `affineOpen i`
+themselves: they are the points `[Fin.insertNth i 1 z]`, one for each `z : Fin n → K`.
 
 ## Main definitions
 
@@ -33,6 +34,12 @@ zero homogeneous coordinate in position `i`.
   is injective, with image the complement of `affineOpen i`.
 * `Projectivization.bijOn_insertZero_last`: the hyperplane at infinity `H∞ = (affineOpen (Fin.last
   n))ᶜ` of `ℙⁿ` is in bijection with `ℙⁿ⁻¹`; for `n = 0` it is empty and `ℙ⁰` is a point.
+* `Projectivization.eq_mk_insertNth_affineChart`: a point `x` of `affineOpen i` is
+  `[Fin.insertNth i 1 z]`, for `z = affineChart i x` its affine coordinates.
+* `Projectivization.affineChart_mk_insertNth_one`: the affine coordinates of
+  `[Fin.insertNth i 1 z]` are `z`.
+* `Projectivization.mk_insertNth_one_inj`: `[Fin.insertNth i 1 z] = [Fin.insertNth i 1 z']`
+  exactly when `z = z'`.
 
 ## References
 
@@ -183,6 +190,41 @@ theorem bijOn_insertZero_last (n : ℕ) :
   · rintro rfl
     exact ⟨by rw [affineOpen_eq_univ (ι := Fin 1), compl_univ],
       (instUniqueFinOne (K := K)).default, (instUniqueFinOne (K := K)).eq_default⟩
+
+section AffineChart
+
+variable {K : Type*} [Field K] {n : ℕ}
+
+/-- A point `x` of the standard affine open of `i` is `[Fin.insertNth i 1 z]`, for
+`z = affineChart i x` its affine coordinates. -/
+theorem eq_mk_insertNth_affineChart {i : Fin (n + 1)} {x : ℙ K (Fin (n + 1) → K)}
+    (hx : x ∈ affineOpen i) :
+    x = mk K (Fin.insertNth (α := fun _ ↦ K) i 1 (affineChart i x))
+      (Fin.insertNth_one_ne_zero i _) := by
+  rw [← affineChart_symm_apply]
+  exact ((affineChart i).left_inv (by rwa [affineChart_source])).symm
+
+/-- The affine coordinates of the point `[Fin.insertNth i 1 z]` in the standard affine chart of
+`i` are `z`. -/
+@[simp]
+theorem affineChart_mk_insertNth_one (i : Fin (n + 1)) (z : Fin n → K) :
+    affineChart i (mk K (Fin.insertNth (α := fun _ ↦ K) i 1 z) (Fin.insertNth_one_ne_zero i z)) =
+      z := by
+  rw [← affineChart_symm_apply]
+  exact (affineChart i).right_inv (by simp)
+
+/-- The points `[Fin.insertNth i 1 z]` of the standard affine open of `i` are distinct for
+distinct `z`. -/
+@[simp]
+theorem mk_insertNth_one_inj (i : Fin (n + 1)) {z z' : Fin n → K} :
+    mk K (Fin.insertNth (α := fun _ ↦ K) i 1 z) (Fin.insertNth_one_ne_zero i z) =
+        mk K (Fin.insertNth (α := fun _ ↦ K) i 1 z') (Fin.insertNth_one_ne_zero i z') ↔
+      z = z' := by
+  refine ⟨fun h ↦ ?_, fun h ↦ h ▸ rfl⟩
+  have := congrArg (affineChart i) h
+  rwa [affineChart_mk_insertNth_one, affineChart_mk_insertNth_one] at this
+
+end AffineChart
 
 end Projectivization
 

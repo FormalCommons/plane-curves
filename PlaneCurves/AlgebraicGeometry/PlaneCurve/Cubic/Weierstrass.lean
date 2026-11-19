@@ -177,34 +177,18 @@ theorem dehomogenize_two_polynomial :
 
 end CommRing
 
-/-- A point of the plane off the line `Z = 0` is `[a : b : 1]`. -/
-private theorem exists_eq_mk {P : ℙ k (Fin 3 → k)} (hP : P ∈ affineOpen 2) :
-    ∃ a b : k, P = Projectivization.mk k ![a, b, 1] (by simp) := by
-  refine ⟨affineChart 2 P 0, affineChart 2 P 1, ?_⟩
-  calc P = (affineChart 2).symm (affineChart 2 P) :=
-        ((affineChart 2).left_inv (by rwa [affineChart_source])).symm
-    _ = _ := by
-      rw [affineChart_symm_apply]
-      congr 1
-      funext j
-      fin_cases j <;> rfl
+/-- `[a : b : 1]` is the point of the chart `Z = 1` with affine coordinates `(a, b)`. -/
+private theorem mk_eq_mk_insertNth_two (a b : k) :
+    Projectivization.mk k ![a, b, 1] (by simp) =
+      Projectivization.mk k (Fin.insertNth (α := fun _ ↦ k) 2 1 ![a, b])
+        (Fin.insertNth_one_ne_zero 2 _) := by
+  congr 1
+  funext j
+  fin_cases j <;> rfl
 
 private theorem mk_mem_affineOpen (a b : k) :
     Projectivization.mk k ![a, b, 1] (by simp) ∈ affineOpen 2 := by
   simp [mk_mem_affineOpen_iff]
-
-private theorem affineChart_mk_two (a b : k) :
-    affineChart 2 (Projectivization.mk k ![a, b, 1] (by simp)) = ![a, b] := by
-  funext j
-  fin_cases j <;> simp [Fin.succAbove, Fin.lt_def]
-
-private theorem mk_eq_mk_iff_two {a b a' b' : k} :
-    Projectivization.mk k ![a, b, 1] (by simp) = Projectivization.mk k ![a', b', 1] (by simp) ↔
-      a = a' ∧ b = b' := by
-  refine ⟨fun h ↦ ?_, fun ⟨h1, h2⟩ ↦ by subst h1 h2; rfl⟩
-  have := congrArg (affineChart 2) h
-  rw [affineChart_mk_two, affineChart_mk_two] at this
-  exact ⟨by simpa using congrFun this 0, by simpa using congrFun this 1⟩
 
 private theorem rep_two_eq_zero {P : ℙ k (Fin 3 → k)} (hP : P ∉ affineOpen 2) :
     P.rep 2 = 0 := by
@@ -240,7 +224,7 @@ private theorem intersectionNumber_mk_two {L : MvPolynomial (Fin 3) k} (hL : L.I
       PlaneCurves.Affine.intersectionNumber ![a, b] (dehomogenize 2 L)
         (dehomogenize 2 W.polynomial) := by
   rw [intersectionNumber_eq_affine hL W.isHomogeneous_polynomial (mk_mem_affineOpen a b),
-    affineChart_mk_two]
+    mk_eq_mk_insertNth_two, affineChart_mk_insertNth_one]
 
 /-- **No line is a component of the Weierstrass cubic**: every nonzero linear form `L` is
 relatively prime to `W.polynomial`. -/
@@ -317,13 +301,18 @@ theorem intersectionCycle_X_one_sub (ℓ ν : k) :
     rw [this, WeierstrassCurve.Affine.addPolynomial_eq, neg_ne_zero]
     exact Cubic.ne_zero_of_a_ne_zero one_ne_zero
   have hg : Function.Injective fun x : k ↦ Projectivization.mk k ![x, ℓ * x + ν, 1] (by simp) :=
-    fun x x' h ↦ (mk_eq_mk_iff_two.1 h).1
+    fun x x' h ↦ by
+      simp only [mk_eq_mk_insertNth_two, mk_insertNth_one_inj, Matrix.vecCons_inj] at h
+      exact h.1
   rw [hneg, intersectionCycle_smul_left (by norm_num), sum_map_single_eq_toFinsupp]
   ext P
   apply Nat.cast_injective (R := ℕ∞)
   rw [intersectionCycle_apply hL hF hrel, Multiset.toFinsupp_apply]
   by_cases hP : P ∈ affineOpen 2
-  · obtain ⟨a, b, rfl⟩ := exists_eq_mk hP
+  · obtain ⟨a, b, rfl⟩ : ∃ a b : k, P = Projectivization.mk k ![a, b, 1] (by simp) := by
+      refine ⟨affineChart 2 P 0, affineChart 2 P 1, (eq_mk_insertNth_affineChart hP).trans ?_⟩
+      rw [mk_eq_mk_insertNth_two, mk_insertNth_one_inj]
+      ext j; fin_cases j <;> rfl
     rw [intersectionNumber_mk_two hL]
     by_cases hb : b = ℓ * a + ν
     · subst hb
@@ -337,7 +326,7 @@ theorem intersectionCycle_X_one_sub (ℓ ν : k) :
       · simp
       · simp only [Multiset.mem_map, not_exists, not_and]
         intro x _ h
-        obtain ⟨rfl, rfl⟩ := mk_eq_mk_iff_two.1 h
+        obtain ⟨rfl, rfl⟩ : x = a ∧ ℓ * x + ν = b := by simpa [mk_eq_mk_insertNth_two] using h
         exact hb rfl
       · simp only [hLdef, map_add, map_sub, map_mul, eval_C, eval_X, algHom_C, algebraMap_eq,
           dehomogenize_X, insertNth_two_X_zero, insertNth_two_X_one]
@@ -417,10 +406,14 @@ theorem intersectionCycle_X_zero_sub {x y : k} (h : W.toAffine.Equation x y) :
   apply Nat.cast_injective (R := ℕ∞)
   rw [intersectionCycle_apply hL hF hrel]
   by_cases hP : P ∈ affineOpen 2
-  · obtain ⟨a, b, rfl⟩ := exists_eq_mk hP
+  · obtain ⟨a, b, rfl⟩ : ∃ a b : k, P = Projectivization.mk k ![a, b, 1] (by simp) := by
+      refine ⟨affineChart 2 P 0, affineChart 2 P 1, (eq_mk_insertNth_affineChart hP).trans ?_⟩
+      rw [mk_eq_mk_insertNth_two, mk_insertNth_one_inj]
+      ext j; fin_cases j <;> rfl
     rw [intersectionNumber_mk_two hL]
-    simp only [Finsupp.coe_add, Pi.add_apply, Finsupp.single_apply, mk_eq_mk_iff_two,
+    simp only [Finsupp.coe_add, Pi.add_apply, Finsupp.single_apply,
       ite_eq_right_iff.2 (fun h ↦ absurd h (mk_zero_ne_mk a b))]
+    simp only [mk_eq_mk_insertNth_two, mk_insertNth_one_inj, Matrix.vecCons_inj, and_true]
     by_cases ha : x = a
     · subst ha
       have hab : ![x, b] = ![x, 0] + b • ![0, 1] := by
