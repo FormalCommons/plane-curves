@@ -57,6 +57,9 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
 * `PlaneCurves.Projective.exists_isTangentAt`: over an algebraically closed field, a curve has a
   tangent at each of its points; `PlaneCurves.Projective.mult_lt_of_irreducible`: so an
   irreducible curve of degree `d ≥ 2` has multiplicity less than `d` everywhere.
+* `PlaneCurves.Projective.isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two`: over an
+  algebraically closed field, a double point is ordinary (a node) or has a single tangent, of
+  multiplicity `2`.
 * `PlaneCurves.Projective.mult_sub_one_le_mult_pderiv`: Problem 5.6 of Fulton,
   `m_P(∂F/∂Xᵢ) ≥ m_P(F) - 1`, in every characteristic.
 
@@ -569,6 +572,38 @@ theorem mult_lt_of_irreducible (hF : F.IsHomogeneous d) (hirr : Irreducible F) (
   have hle := totalDegree_le_of_dvd_of_isDomain hassoc.symm.dvd hL.2.1
   rw [totalDegree_taylor, hdeg, hL.1.totalDegree hL.2.1] at hle
   omega
+
+/-- **Double points are nodes or cusps.** Over an algebraically closed field, at a double point
+`P` of a form `F` the leading form is a product of two linear forms: either they are not
+associated, and `P` is an ordinary double point (a *node*: two distinct tangents), or they are,
+and `F` has a single tangent `L` at `P`, of multiplicity `2` (as at a *cusp*). -/
+theorem isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two (hF : F.IsHomogeneous d)
+    (h : mult F P = 2) :
+    IsOrdinaryMultiplePoint F P ∨ ∃ L, IsTangentAt F P L ∧ tangentMultiplicity F P L = 2 := by
+  have hF0 : F ≠ 0 := by
+    rintro rfl
+    rw [mult_eq_top_iff.2 rfl] at h
+    exact ENat.top_ne_ofNat 2 h
+  obtain ⟨L, hL⟩ := exists_isTangentAt hF hF0 (mult_pos_iff_eval_rep.1 (by rw [h]; norm_num))
+  obtain ⟨hL1, hL0, -, M, hM⟩ := id hL
+  have hQ0 : leadingForm F P ≠ 0 := leadingForm_eq_zero_iff.not.2 hF0
+  have hM0 : M ≠ 0 := by
+    rintro rfl
+    exact hQ0 (by rw [hM, mul_zero])
+  have hdeg := (isHomogeneous_leadingForm F P).totalDegree hQ0
+  rw [h, hM, totalDegree_mul_of_isDomain hL0 hM0, hL1.totalDegree hL0] at hdeg
+  have hLirr := irreducible_of_isHomogeneous_one hL1 hL0
+  have hMirr := irreducible_of_totalDegree_eq_one' (p := M) (by simp at hdeg; omega)
+  rcases hLirr.dvd_or_isRelPrime (n := M) with hdvd | hrel
+  · refine Or.inr ⟨L, hL, ?_⟩
+    have hassoc : Associated (leadingForm F P) (L ^ 2) := by
+      rw [hM, pow_two]
+      exact (hLirr.associated_of_dvd hMirr hdvd).symm.mul_left L
+    rw [tangentMultiplicity_def, multiplicity_eq_of_associated_right hassoc,
+      multiplicity_pow_self_of_prime hLirr.prime]
+  · refine Or.inl ⟨isMultiplePoint_def.2 h.ge, ?_⟩
+    rw [hM]
+    exact squarefree_mul_iff.2 ⟨hrel, hLirr.squarefree, hMirr.squarefree⟩
 
 end IsAlgClosed
 
