@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.OrdinaryMultiplePoint
+public import PlaneCurves.RingTheory.Ideal.GoingUp
 
 /-!
 # The conductor at an ordinary multiple point
@@ -54,44 +55,6 @@ open MvPolynomial TauCeti IsLocalRing
 namespace PlaneCurves.Affine
 
 open AffineSpace
-
-/-- If `A` is a local `k`-algebra with a `k`-algebra map to `k`, `k` algebraically closed, and `B`
-is integral over `A`, then every maximal ideal of `B` is the kernel of a `k`-algebra map to `k`. -/
-private theorem exists_algHom_ker_eq {k A B : Type*} [Field k] [IsAlgClosed k] [CommRing A]
-    [IsLocalRing A] [Algebra k A] [CommRing B] [Algebra A B] [Algebra k B] [IsScalarTower k A B]
-    [Algebra.IsIntegral A B] (e : A →ₐ[k] k) (m : Ideal B) [m.IsMaximal] :
-    ∃ φ : B →ₐ[k] k, RingHom.ker φ = m := by
-  let : Field (B ⧸ m) := Ideal.Quotient.field m
-  have hker : RingHom.ker e = maximalIdeal A :=
-    eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective _ fun c ↦ ⟨algebraMap k A c, by simp⟩)
-  have hmA : m.comap (algebraMap A B) = maximalIdeal A :=
-    eq_maximalIdeal (Ideal.isMaximal_comap_of_isIntegral_of_isMaximal _
-      (algebraMap_isIntegral_iff.2 inferInstance) m)
-  have hc : (algebraMap k (B ⧸ m)).comp e.toRingHom = algebraMap A (B ⧸ m) := by
-    ext c
-    change Ideal.Quotient.mk m (algebraMap k B (e c)) = Ideal.Quotient.mk m (algebraMap A B c)
-    rw [Ideal.Quotient.eq, IsScalarTower.algebraMap_apply k A B, ← map_sub, ← Ideal.mem_comap,
-      hmA, ← hker, RingHom.mem_ker, map_sub, AlgHom.commutes, Algebra.algebraMap_self,
-      RingHom.id_apply, sub_self]
-  have hsurj : Function.Surjective (Algebra.ofId k (B ⧸ m)) := by
-    intro b
-    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective b
-    obtain ⟨p, hp, hpb⟩ := Algebra.IsIntegral.isIntegral (R := A) b
-    have hq := hp.map e.toRingHom
-    have hqb : Polynomial.aeval (Ideal.Quotient.mk m b) (p.map e.toRingHom) = 0 := by
-      rw [Polynomial.aeval_def, Polynomial.eval₂_map, hc, ← Polynomial.aeval_def,
-        ← Ideal.Quotient.mkₐ_eq_mk A, Polynomial.aeval_algHom_apply, Polynomial.aeval_def, hpb,
-        map_zero]
-    rw [← Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq hq
-      IsAlgClosed.card_roots_eq_natDegree, map_multiset_prod, Multiset.prod_eq_zero_iff,
-      Multiset.map_map] at hqb
-    obtain ⟨a, -, ha⟩ := Multiset.mem_map.1 hqb
-    exact ⟨a, (sub_eq_zero.1 (by simpa using ha)).symm⟩
-  let ψ := AlgEquiv.ofBijective (Algebra.ofId k (B ⧸ m))
-    ⟨(algebraMap k (B ⧸ m)).injective, hsurj⟩
-  refine ⟨ψ.symm.toAlgHom.comp (Ideal.Quotient.mkₐ k m), ?_⟩
-  ext b
-  simp [RingHom.mem_ker, Ideal.Quotient.eq_zero_iff_mem]
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 2) k} [(Ideal.span {F}).IsPrime]
   {hI : Ideal.span {F} ≤ vanishingIdeal k {(0 : Fin 2 → k)}}
@@ -206,7 +169,7 @@ theorem mem_adjoin_div_of_forall_mem_integers (hT : ¬IsTangentAt F 0 (X 0))
   · simpa [J] using (Ideal.eq_top_iff_one J).1 hJ
   exfalso
   obtain ⟨m, hm, hJm⟩ := Ideal.exists_le_maximal J hJ
-  obtain ⟨φ, hφ⟩ := exists_algHom_ker_eq (evalAt 0 hI) m
+  obtain ⟨φ, hφ⟩ := hm.exists_algHom_ker_eq_of_isIntegral (evalAt 0 hI)
   have hφm (b : B) : φ b = 0 ↔ b ∈ m := by
     rw [← hφ, RingHom.mem_ker]
   let xB : B := algebraMap A B (algebraMap (MvPolynomial (Fin 2) k ⧸ Ideal.span {F}) A
