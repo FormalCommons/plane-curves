@@ -40,6 +40,8 @@ variables.
   `PlaneCurves.Projective.isTangentAt_fundamentalPoint_X_iff`: an exceptional line `V(Xⱼ)` is
   tangent to `F` at `[eᵢ]` exactly when the restriction of `F` to it vanishes to order more than
   `m_{[eᵢ]}(F)` at `[eᵢ]`.
+* `PlaneCurves.Projective.mult_fundamentalPoint_le_multiplicity_bind₁`: the restriction of `F`
+  to `V(Xⱼ)` vanishes to order at least `m_{[eᵢ]}(F)` at `[eᵢ]`.
 * `PlaneCurves.Projective.isGoodPosition_rename_iff`: good position is invariant under
   permutations of the variables.
 * `PlaneCurves.Projective.IsGoodPosition.not_X_dvd`: a curve in good position has no exceptional
@@ -296,6 +298,26 @@ theorem isTangentAt_fundamentalPoint_X_iff (hF : F.IsHomogeneous n) {i j l : Fin
       at h
     rw [aeval_X_two_zero_eq_bind₁, h]
   rw [← e1, isTangentAt_fundamentalPoint_one_X_two_iff hF.rename_isHomogeneous hZ, e2, e3]
+
+/-- Let `i, j, l` be the three indices, and `F` a form not divisible by `Xⱼ`. The restriction of
+`F` to `Xⱼ = 0` vanishes at `[eᵢ]` to order at least `m_{[eᵢ]}(F)`: `X_l ^ m_{[eᵢ]}(F)` divides
+it. -/
+theorem mult_fundamentalPoint_le_multiplicity_bind₁ (hF : F.IsHomogeneous n) {i j l : Fin 3}
+    (hij : i ≠ j) (hil : i ≠ l) (hjl : j ≠ l) (hXj : ¬ X j ∣ F) :
+    (mult F (fundamentalPoint i)).toNat ≤
+      multiplicity (X l) (bind₁ (Function.update X j 0) F) := by
+  obtain ⟨τ, hi, hj⟩ := exists_perm_eq_one_two hij
+  have hl := perm_eq_zero hi hj hil hjl
+  have hZ : ¬ X 2 ∣ rename τ F := by
+    rw [← hj, ← rename_X]
+    exact fun hd ↦ hXj ((map_dvd_iff (renameEquiv k τ)).1 hd)
+  have e2 := mult_rename_fundamentalPoint hF τ i
+  rw [hi] at e2
+  have h := multiplicity_map_eq (renameEquiv k τ) (a := X l)
+    (b := bind₁ (Function.update X j 0) F)
+  rw [renameEquiv_apply, renameEquiv_apply, rename_X, hl, ← bind₁_update_X_zero_rename, hj] at h
+  rw [← e2, ← h, ← aeval_X_two_zero_eq_bind₁]
+  exact mult_fundamentalPoint_one_le_multiplicity hF.rename_isHomogeneous hZ
 
 /-! ### Good position -/
 
