@@ -69,7 +69,9 @@ so equality holds; if not, `ψ` is not injective and the inequality is strict.
 * `PlaneCurves.Affine.intersectionNumber_eq_one_iff`: `I(P, F ∩ G) = 1` iff `P` is simple on both
   curves with different tangents.
 * `PlaneCurves.Affine.isTangentAt_iff_orderAt_lt_intersectionNumber`: a line `L(X - P) = 0`
-  through `P` is tangent to `F` at `P` iff `I(P, F ∩ L(X - P)) > m_P(F)`, over any field.
+  through `P` is tangent to `F` at `P` iff `I(P, F ∩ L(X - P)) > m_P(F)`, over any field;
+  `PlaneCurves.Affine.intersectionNumber_eq_orderAt_of_not_isTangentAt`: otherwise
+  `I(P, F ∩ L(X - P)) = m_P(F)`.
 * `PlaneCurves.Affine.isRelPrime_leadingFormAt_iff_not_exists_isTangentAt`: over an algebraically
   closed field, relatively prime leading forms mean no common tangent.
 * `PlaneCurves.Affine.mul_orderAt_le_intersectionNumber_and_eq_iff`: property (5), over an
@@ -615,6 +617,17 @@ theorem isTangentAt_iff_orderAt_lt_intersectionNumber {L : MvPolynomial (Fin 2) 
     at heq
   rw [hle.lt_iff_ne, ne_comm, Ne, heq, not_not, isTangentAt_def]
   exact ⟨fun h ↦ h.2.2, fun h ↦ ⟨hL, hL₀, h⟩⟩
+
+/-- If the line `L(X - P) = 0` through `P` is not tangent to `F` at `P`, then
+`I(P, F ∩ L(X - P)) = m_P(F)`. -/
+theorem intersectionNumber_eq_orderAt_of_not_isTangentAt {L : MvPolynomial (Fin 2) k}
+    (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0) (hT : ¬IsTangentAt F P L) :
+    intersectionNumber P F (taylor (-P) L) = F.orderAt P := by
+  have h := (isTangentAt_iff_orderAt_lt_intersectionNumber
+    (ne_zero_of_not_isTangentAt hL hL₀ hT) hL hL₀).not.1 hT
+  have hle := mul_orderAt_le_intersectionNumber P F (taylor (-P) L)
+  rw [orderAt_taylor, add_neg_cancel, hL.orderAt_zero hL₀, Nat.cast_one, mul_one] at hle
+  exact le_antisymm (not_lt.1 h) hle
 
 section IsAlgClosed
 
