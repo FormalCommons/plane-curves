@@ -124,8 +124,7 @@ theorem linearSubst_mem_linearSystem_iff {M : Matrix (Fin 3) (Fin 3) k}
     linearSubst M F ∈
         linearSystem d (r.comapDomain (map M.mulVecLin hM) (map_injective _ hM).injOn) ↔
       F ∈ linearSystem d r := by
-  have hdet : IsUnit M.det :=
-    (Matrix.isUnit_iff_isUnit_det M).1 (Matrix.mulVec_injective_iff_isUnit.1 hM)
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
   have hhom : (linearSubst M F).IsHomogeneous d ↔ F.IsHomogeneous d :=
     ⟨fun h ↦ by simpa [linearSubst_nonsing_inv_linearSubst hdet] using h.linearSubst M⁻¹,
       fun h ↦ h.linearSubst M⟩
