@@ -27,6 +27,8 @@ each of its homogeneous components.
   each of its homogeneous components.
 * `MvPolynomial.IsHomogeneous.exists_isHomogeneous_of_dvd`: over a field, a divisor of a nonzero
   form that is not a unit is a form of positive degree.
+* `MvPolynomial.IsHomogeneous.exists_isHomogeneous_dvd_of_not_isRelPrime`: over a field, two
+  forms that are not relatively prime have a common divisor that is a form of positive degree.
 -/
 
 public section
@@ -98,6 +100,24 @@ theorem IsHomogeneous.exists_isHomogeneous_of_dvd {k : Type*} [Field k]
   rintro hc
   rw [totalDegree_eq_zero_iff_eq_C.1 h0, hc, map_zero, zero_mul] at hF0
   exact hF0 rfl
+
+/-- Over a field, two forms that are not relatively prime have a common divisor that is a form
+of positive degree. There must be a variable: for `σ` empty, `0` and `0` are not relatively
+prime, but every form is constant. -/
+theorem IsHomogeneous.exists_isHomogeneous_dvd_of_not_isRelPrime [Nonempty σ] {k : Type*}
+    [Field k] {F G : MvPolynomial σ k} {m n : ℕ} (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous n) (h : ¬IsRelPrime F G) :
+    ∃ H : MvPolynomial σ k, ∃ e ≠ 0, H.IsHomogeneous e ∧ H ∣ F ∧ H ∣ G := by
+  obtain ⟨H, hHF, hHG, hH⟩ : ∃ H, H ∣ F ∧ H ∣ G ∧ ¬IsUnit H := by
+    simpa [IsRelPrime] using h
+  by_cases hF0 : F = 0
+  · by_cases hG0 : G = 0
+    · exact ⟨X (Classical.arbitrary σ), 1, one_ne_zero, isHomogeneous_X k _, by simp [hF0],
+        by simp [hG0]⟩
+    · obtain ⟨e, he, hHe⟩ := hG.exists_isHomogeneous_of_dvd hG0 hHG hH
+      exact ⟨H, e, he, hHe, hHF, hHG⟩
+  · obtain ⟨e, he, hHe⟩ := hF.exists_isHomogeneous_of_dvd hF0 hHF hH
+    exact ⟨H, e, he, hHe, hHF, hHG⟩
 
 end MvPolynomial
 
