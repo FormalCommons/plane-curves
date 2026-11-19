@@ -52,6 +52,12 @@ squarefree.
 * `PlaneCurves.Affine.isOrdinaryMultiplePoint_iff`: a multiple point is ordinary exactly when
   it has `m_P(F)` distinct tangents, and
   `PlaneCurves.Affine.IsOrdinaryMultiplePoint.tangentMultiplicity_eq_one`: its tangents are simple.
+* `PlaneCurves.Affine.IsOrdinaryMultiplePoint.orderAt_pderiv`,
+  `PlaneCurves.Affine.IsOrdinaryMultiplePoint.not_isTangentAt_pderiv`: at an ordinary multiple
+  point of multiplicity `r`, `∂F/∂Xᵢ` has multiplicity `r - 1`, and a tangent `L` with `∂L/∂Xᵢ`
+  a unit is not tangent to it, in every characteristic.
+* `PlaneCurves.Affine.IsOrdinaryMultiplePoint.orderAt_le_of_forall_isTangentAt`: a curve `G`
+  tangent to every tangent of `F` at an ordinary multiple point `P` has `m_P(F) ≤ m_P(G)`.
 * `PlaneCurves.Affine.IsTangentAt.exists_associated_X_one_sub_C_mul_X_zero`: if `X` is not a
   tangent, every tangent is `Y - α X` up to a nonzero scalar.
 * `PlaneCurves.Affine.multiplicity_tangent_mul`: multiplicity and tangent lines of a product of
@@ -316,6 +322,43 @@ theorem IsOrdinaryMultiplePoint.tangentMultiplicity_eq_one (h : IsOrdinaryMultip
   rw [← sq]
   exact (pow_dvd_pow L h2).trans (pow_multiplicity_dvd _ _)
 
+/-- At an ordinary multiple point, a tangent `L` with `∂L/∂Xᵢ` a unit does not divide the
+partial derivative `∂/∂Xᵢ` of the leading form: writing the leading form as `L H`, its
+derivative is `(∂L/∂Xᵢ) H + L ∂H/∂Xᵢ`, and `L ∤ H` as the leading form is squarefree. This holds
+in every characteristic. -/
+theorem IsOrdinaryMultiplePoint.not_dvd_pderiv_leadingFormAt (h : IsOrdinaryMultiplePoint F P)
+    (hL : IsTangentAt F P L) {i : Fin 2} (hi : IsUnit (pderiv i L)) :
+    ¬L ∣ pderiv i (F.leadingFormAt P) := by
+  obtain ⟨H, hH⟩ := hL.dvd
+  rintro ⟨M, hM⟩
+  have hLH : L ∣ H := by
+    refine (hi.dvd_mul_left).1 ⟨M - pderiv i H, ?_⟩
+    rw [mul_sub, ← hM, hH, pderiv_mul]
+    ring
+  obtain ⟨H', rfl⟩ := hLH
+  exact hL.prime.not_isUnit (h.2 L ⟨H', by rw [hH]; ring⟩)
+
+/-- At an ordinary multiple point, the partial derivative `∂/∂Xᵢ` of the leading form does not
+vanish if some tangent `L` has `∂L/∂Xᵢ` a unit. -/
+theorem IsOrdinaryMultiplePoint.pderiv_leadingFormAt_ne_zero (h : IsOrdinaryMultiplePoint F P)
+    (hL : IsTangentAt F P L) {i : Fin 2} (hi : IsUnit (pderiv i L)) :
+    pderiv i (F.leadingFormAt P) ≠ 0 := fun h0 ↦
+  h.not_dvd_pderiv_leadingFormAt hL hi (h0 ▸ dvd_zero L)
+
+/-- At an ordinary multiple point of multiplicity `r`, the partial derivative `∂F/∂Xᵢ` has
+multiplicity `r - 1` if some tangent `L` has `∂L/∂Xᵢ` a unit, in every characteristic. -/
+theorem IsOrdinaryMultiplePoint.orderAt_pderiv (h : IsOrdinaryMultiplePoint F P)
+    (hL : IsTangentAt F P L) {i : Fin 2} (hi : IsUnit (pderiv i L)) :
+    (pderiv i F).orderAt P = ((F.orderAt P).toNat - 1 : ℕ) :=
+  orderAt_pderiv_of_pderiv_leadingFormAt_ne_zero (h.pderiv_leadingFormAt_ne_zero hL hi)
+
+/-- At an ordinary multiple point, a tangent `L` with `∂L/∂Xᵢ` a unit is not tangent to the
+partial derivative `∂F/∂Xᵢ`, in every characteristic. -/
+theorem IsOrdinaryMultiplePoint.not_isTangentAt_pderiv (h : IsOrdinaryMultiplePoint F P)
+    (hL : IsTangentAt F P L) {i : Fin 2} (hi : IsUnit (pderiv i L)) :
+    ¬IsTangentAt (pderiv i F) P L := fun hT ↦ h.not_dvd_pderiv_leadingFormAt hL hi
+    (leadingFormAt_pderiv_of_ne_zero (h.pderiv_leadingFormAt_ne_zero hL hi) ▸ hT.dvd)
+
 section IsAlgClosed
 
 variable [IsAlgClosed k]
@@ -404,6 +447,32 @@ theorem leadingFormAt_eq_C_mul_prod_pow (hF : F ≠ 0) :
   have hHC := totalDegree_eq_zero_iff_eq_C.1 hH0
   refine ⟨H.coeff 0, fun hc ↦ hH₀ (by rw [hHC, hc, map_zero]), ?_⟩
   rw [hH, mul_comm, ← hHC]
+
+omit hs hpair hcov in
+/-- **Ordinary multiple points and tangents.** If every tangent of `F` at an ordinary multiple
+point `P` is tangent to a nonzero curve `G` there, then `m_P(F) ≤ m_P(G)`: the leading form of
+`F` is the product of its distinct tangents, so it divides that of `G`. -/
+theorem IsOrdinaryMultiplePoint.orderAt_le_of_forall_isTangentAt
+    (h : IsOrdinaryMultiplePoint F P) (hG : G ≠ 0)
+    (hFG : ∀ L, IsTangentAt F P L → IsTangentAt G P L) : F.orderAt P ≤ G.orderAt P := by
+  obtain ⟨s, hs, hpair, hcov⟩ := exists_finset_isTangentAt (P := P) h.ne_zero
+  obtain ⟨ε, hε, heq⟩ := leadingFormAt_eq_C_mul_prod_pow hs hpair hcov h.ne_zero
+  have hD : ∏ L ∈ s, L ^ tangentMultiplicity F P L ∣ G.leadingFormAt P := by
+    refine Finset.prod_dvd_of_isRelPrime (fun L hL L' hL' hne ↦ ?_) fun L hL ↦ ?_
+    · refine IsRelPrime.pow ((hs L hL).prime.irreducible.isRelPrime_iff_not_dvd.2 fun hd ↦ ?_)
+      exact hpair hL hL' hne
+        ((hs L hL).prime.irreducible.associated_of_dvd (hs L' hL').prime.irreducible hd)
+    · rw [h.tangentMultiplicity_eq_one (hs L hL), pow_one]
+      exact (hFG L (hs L hL)).dvd
+  have hdvd : F.leadingFormAt P ∣ G.leadingFormAt P := by
+    rw [heq]
+    exact ((isUnit_iff_ne_zero.2 hε).map C).mul_left_dvd.2 hD
+  have hdeg := totalDegree_le_of_dvd_of_isDomain hdvd (leadingFormAt_ne_zero hG)
+  rw [(isHomogeneous_leadingFormAt F P).totalDegree (leadingFormAt_ne_zero h.ne_zero),
+    (isHomogeneous_leadingFormAt G P).totalDegree (leadingFormAt_ne_zero hG)] at hdeg
+  rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 h.ne_zero),
+    ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG)]
+  exact_mod_cast hdeg
 
 /-- Over an algebraically closed field, a multiple point is ordinary exactly when it has
 `m_P(F)` distinct tangents. -/

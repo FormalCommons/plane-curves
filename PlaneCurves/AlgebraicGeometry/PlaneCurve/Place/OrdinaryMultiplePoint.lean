@@ -48,6 +48,17 @@ valuation ring of `Q`. At each of these places `x` has order one.
 * `PlaneCurves.Affine.existsUnique_eq_blowupPlace`: every place over the origin is `blowupPlace`
   for exactly one tangent.
 * `PlaneCurves.Affine.addValuation_x_blowupPlace`: `x` has order one at each `blowupPlace`.
+* `PlaneCurves.Affine.addValuation_blowupPlace_algebraMap_mk`: a polynomial `G` has order
+  `m_0(G) + ord_{(0, α)}(G')` at the place over `Y - α X`, `G'` being its strict transform;
+  `natCast_orderAt_le_addValuation_blowupPlace`: so its order is at least `m_0(G)`, and
+  `addValuation_blowupPlace_eq_iff`: for `G ≠ 0`, with equality exactly when `Y - α X` is not
+  tangent to `G`.
+* `PlaneCurves.Affine.le_orderAt_iff_forall_le_addValuation_blowupPlace`: for `s ≤ r`,
+  `m_0(G) ≥ s` exactly when `G` has order at least `s` at every place over the origin.
+* `PlaneCurves.Affine.addValuation_blowupPlace_pderiv_one`: `∂F/∂Y` has order `r - 1` at every
+  place over the origin, in every characteristic.
+* `PlaneCurves.Affine.addValuation_blowupPlace_eq_one`: a line through the origin that is not
+  tangent to `F` has order one at every place over the origin.
 
 ## References
 
@@ -130,6 +141,37 @@ theorem addValuation_x_blowupPlace {α : k} (hα : IsTangentAt F 0 (X 1 - C α *
   rw [addValuation_blowupPlace, blowupFunctionFieldEquiv_x,
     ← map_natCast_ord_eq_addValuation_placeAt, h.ord_X_zero_blowupStrictTransform hα]
   rfl
+
+/-- **Orders of polynomials over an ordinary multiple point.** At the place over the tangent
+`Y - α X`, a polynomial `G` has order `m_0(G) + ord_{(0, α)}(G')`, where `G'` is its strict
+transform: `G(x, xz) = x ^ m G'(x, z)` with `m = m_0(G)`, and `x` has order one. -/
+theorem addValuation_blowupPlace_algebraMap_mk [(Ideal.span {blowupStrictTransform F}).IsPrime]
+    {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0)) (G : MvPolynomial (Fin 2) k) :
+    (blowupPlace hF hX h hα).addValuation
+        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) G)) =
+      ((G.orderAt 0).toNat : WithTop ℤ) +
+        (placeAt (h.isSimplePoint_blowupStrictTransform hα).1).addValuation
+          (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F})
+            (blowupStrictTransform G))) := by
+  have hx : (placeAt (h.isSimplePoint_blowupStrictTransform hα).1).addValuation
+      (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {blowupStrictTransform F}) (X 0))) = 1 := by
+    rw [← map_natCast_ord_eq_addValuation_placeAt, h.ord_X_zero_blowupStrictTransform hα]
+    rfl
+  rw [addValuation_blowupPlace, blowupFunctionFieldEquiv_algebraMap_mk,
+    ← X_pow_mul_blowupStrictTransform, map_mul, map_mul, AddValuation.map_mul, map_pow, map_pow,
+    AddValuation.map_pow, hx, nsmul_one]
+
+/-- At the place over a tangent of an ordinary multiple point at the origin, a polynomial `G` has
+order at least its multiplicity `m_0(G)`. -/
+theorem natCast_orderAt_le_addValuation_blowupPlace {α : k}
+    (hα : IsTangentAt F 0 (X 1 - C α * X 0)) (G : MvPolynomial (Fin 2) k) :
+    ((G.orderAt 0).toNat : WithTop ℤ) ≤ (blowupPlace hF hX h hα).addValuation
+      (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) G)) := by
+  have := isPrime_span_blowupStrictTransform hF hX
+  rw [addValuation_blowupPlace_algebraMap_mk]
+  refine le_add_of_nonneg_right ((Place.addValuation_nonneg_iff _).2 ?_)
+  rw [← ValuationSubring.mem_toSubring, integers_toSubring_placeAt]
+  exact algebraMap_mem_localSubring _ _ _
 
 /-- A polynomial expression in elements of a valuation ring, read in the field. -/
 private theorem coe_aeval_integers {K : Type*} [Field K] [Algebra k K] (Q : Place k K)
@@ -311,6 +353,91 @@ theorem existsUnique_eq_blowupPlace (hT : ¬IsTangentAt F 0 (X 0))
   exact ⟨α, ⟨_, eq_blowupPlace_of_valuation_div_sub_lt_one hF hX h hQ hα hzQ⟩,
     fun β ⟨hβ, hQβ⟩ ↦ Place.eq_of_valuation_sub_lt_one Q
       (hQβ ▸ valuation_blowupPlace_div_sub_lt_one hF hX h hβ) hα⟩
+
+/-! ### Orders of polynomials at the places over an ordinary multiple point -/
+
+/-- **Orders at the places over an ordinary multiple point.** At the place over the tangent
+`Y - α X`, a nonzero polynomial `G` has order exactly its multiplicity `m_0(G)` if and only if
+`Y - α X` is not tangent to `G` at the origin. -/
+theorem addValuation_blowupPlace_eq_iff {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0))
+    {G : MvPolynomial (Fin 2) k} (hG : G ≠ 0) :
+    (blowupPlace hF hX h hα).addValuation
+        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) G)) = ((G.orderAt 0).toNat : ℕ) ↔
+      ¬IsTangentAt G 0 (X 1 - C α * X 0) := by
+  have := isPrime_span_blowupStrictTransform hF hX
+  have hP := (h.isSimplePoint_blowupStrictTransform hα).1
+  have he (z : functionField (Ideal.span {blowupStrictTransform F})) :
+      (placeAt hP).valuation z = 1 ↔ (placeAt hP).addValuation z = 0 := by
+    rw [← WithTop.coe_zero, Place.addValuation_eq_coe_iff, neg_zero, WithZero.exp_zero]
+  rw [addValuation_blowupPlace_algebraMap_mk, ← eval_zero_blowupStrictTransform_eq_zero_iff hG,
+    ← ne_eq, ← AffineSpace.valuation_algebraMap_mk_eq_one_iff
+      (isFunctionField_functionField_span_singleton hP.irreducible)
+      (integers_toSubring_placeAt hP).symm.le, he]
+  generalize (placeAt hP).addValuation _ = t
+  induction t using WithTop.recTopCoe <;> simp [← WithTop.coe_natCast, ← WithTop.coe_add]
+
+/-- **Multiplicities from orders over an ordinary multiple point.** Let the origin be an ordinary
+multiple point of multiplicity `r` of `F`, at which `X = 0` is not tangent. For a nonzero
+polynomial `G` and `s ≤ r`, `m_0(G) ≥ s` if and only if `G` has order at least `s` at every
+place over the origin. -/
+theorem le_orderAt_iff_forall_le_addValuation_blowupPlace (hT : ¬IsTangentAt F 0 (X 0))
+    {G : MvPolynomial (Fin 2) k} (hG : G ≠ 0) {s : ℕ} (hs : (s : ℕ∞) ≤ F.orderAt 0) :
+    (s : ℕ∞) ≤ G.orderAt 0 ↔ ∀ (α : k) (hα : IsTangentAt F 0 (X 1 - C α * X 0)),
+      (s : WithTop ℤ) ≤ (blowupPlace hF hX h hα).addValuation
+        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) G)) := by
+  have hGn : G.orderAt 0 = (G.orderAt 0).toNat :=
+    (ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG)).symm
+  refine ⟨fun hsG α hα ↦ le_trans ?_ (natCast_orderAt_le_addValuation_blowupPlace hF hX h hα G),
+    fun hall ↦ ?_⟩
+  · rw [hGn, Nat.cast_le] at hsG
+    exact_mod_cast hsG
+  by_contra hlt
+  have hlt' : G.orderAt 0 < F.orderAt 0 := (not_le.1 hlt).trans_le hs
+  obtain ⟨L, hL, hLG⟩ : ∃ L, IsTangentAt F 0 L ∧ ¬IsTangentAt G 0 L := by
+    by_contra! hall'
+    exact (h.orderAt_le_of_forall_isTangentAt hG hall').not_gt hlt'
+  obtain ⟨α, hLα⟩ := hL.exists_associated_X_one_sub_C_mul_X_zero hT
+  have hα : IsTangentAt F 0 (X 1 - C α * X 0) := isTangentAt_def.2
+    ⟨isHomogeneous_X_one_sub_C_mul_X_zero α, X_one_sub_C_mul_X_zero_ne_zero α,
+      hLα.symm.dvd.trans hL.dvd⟩
+  have hαG : ¬IsTangentAt G 0 (X 1 - C α * X 0) := fun hT' ↦ hLG (isTangentAt_def.2
+    ⟨hL.isHomogeneous, hL.ne_zero, hLα.dvd.trans hT'.dvd⟩)
+  have h1 := hall α hα
+  rw [(addValuation_blowupPlace_eq_iff hF hX h hα hG).2 hαG] at h1
+  rw [hGn] at hlt
+  exact hlt (by exact_mod_cast h1)
+
+/-- **The partial derivative `∂F/∂Y` at the places over an ordinary multiple point.** If the
+origin is an ordinary multiple point of multiplicity `r` of `F`, then `∂F/∂Y` has order `r - 1`
+at every place over the origin, in every characteristic. -/
+theorem addValuation_blowupPlace_pderiv_one {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0)) :
+    (blowupPlace hF hX h hα).addValuation
+        (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (pderiv 1 F))) =
+      ((F.orderAt 0).toNat - 1 : ℕ) := by
+  have hi : IsUnit (pderiv 1 (X 1 - C α * X 0 : MvPolynomial (Fin 2) k)) := by
+    simp [pderiv_X]
+  have h0 : pderiv 1 F ≠ 0 := fun h0 ↦ h.pderiv_leadingFormAt_ne_zero hα hi
+    (by rw [← leadingFormAt_pderiv_of_ne_zero (h.pderiv_leadingFormAt_ne_zero hα hi), h0,
+      leadingFormAt_zero])
+  rw [(addValuation_blowupPlace_eq_iff hF hX h hα h0).2 (h.not_isTangentAt_pderiv hα hi),
+    h.orderAt_pderiv hα hi, ENat.toNat_natCast]
+
+/-- **Lines at the places over an ordinary multiple point.** A line `L` through the origin that is
+not tangent to `F` there has order one at every place over the origin. -/
+theorem addValuation_blowupPlace_eq_one {α : k} (hα : IsTangentAt F 0 (X 1 - C α * X 0))
+    {L : MvPolynomial (Fin 2) k} (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0)
+    (hLF : ¬IsTangentAt F 0 L) :
+    (blowupPlace hF hX h hα).addValuation
+      (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) L)) = 1 := by
+  have hnt : ¬IsTangentAt L 0 (X 1 - C α * X 0) := by
+    intro hT
+    have hd := hT.dvd
+    rw [hL.leadingFormAt_zero] at hd
+    have hass := hα.prime.irreducible.associated_of_dvd (irreducible_of_isHomogeneous_one hL hL₀)
+      hd
+    exact hLF (isTangentAt_def.2 ⟨hL, hL₀, hass.symm.dvd.trans hα.dvd⟩)
+  rw [(addValuation_blowupPlace_eq_iff hF hX h hα hL₀).2 hnt, hL.orderAt_zero hL₀,
+    ENat.toNat_natCast, Nat.cast_one]
 
 end PlaneCurves.Affine
 
