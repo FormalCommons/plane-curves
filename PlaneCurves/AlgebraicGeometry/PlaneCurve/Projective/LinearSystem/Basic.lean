@@ -41,6 +41,9 @@ system is one less.
   of coordinates.
 * `PlaneCurves.Projective.le_mult_iff_coeff_taylor_dehomogenize`,
   `PlaneCurves.Projective.le_mult_iff_taylor_dehomogenize_mem`: `m_P(F) ≥ n` in a chart.
+* `PlaneCurves.Projective.chartConditions`, `PlaneCurves.Projective.multConditions`: the
+  multiplicity conditions at a point in a chart, and those of `V(d; r)`, with kernel `V(d; r)`
+  (`PlaneCurves.Projective.ker_multConditions`).
 * `PlaneCurves.Projective.finrank_linearSystem_single_add`: one point of multiplicity
   `r ≤ d + 1` imposes `r(r + 1)/2` independent conditions on forms of degree `d`.
 * `PlaneCurves.Projective.finrank_linearSystem_ge`: the dimension of `V(d; r)` is at least
@@ -168,19 +171,28 @@ theorem le_mult_iff_taylor_dehomogenize_mem (hF : F.IsHomogeneous d) {i : Fin 3}
       taylor (affineChart i P) (dehomogenize i F) ∈ idealOfVars (Fin 2) k ^ n := by
   rw [le_mult_iff_coeff_taylor_dehomogenize hF hP, mem_pow_idealOfVars_iff']
 
-/-- The residue modulo `(X, Y)ⁿ` of the Taylor expansion at `a` of the dehomogenization
-`F_(i)`. -/
-private noncomputable def chartConditions (i : Fin 3) (a : Fin 2 → k) (n : ℕ) :
+/-- The *multiplicity conditions in a chart*: the residue modulo `(X, Y)ⁿ` of the Taylor
+expansion at `a` of the dehomogenization `F_(i)`. For `P` in the chart `Xᵢ ≠ 0` with chart
+coordinates `a`, a form `F` has `m_P(F) ≥ n` exactly when it lies in the kernel
+(`chartConditions_eq_zero_iff`). -/
+noncomputable def chartConditions (i : Fin 3) (a : Fin 2 → k) (n : ℕ) :
     MvPolynomial (Fin 3) k →ₗ[k] MvPolynomial (Fin 2) k ⧸ idealOfVars (Fin 2) k ^ n :=
   (Ideal.Quotient.mkₐ k _).toLinearMap ∘ₗ (taylor a).toLinearMap ∘ₗ
     (dehomogenize (R := k) i).toLinearMap
 
-private theorem chartConditions_apply (i : Fin 3) (a : Fin 2 → k) (n : ℕ)
+theorem chartConditions_apply (i : Fin 3) (a : Fin 2 → k) (n : ℕ)
     (F : MvPolynomial (Fin 3) k) :
     chartConditions i a n F = Ideal.Quotient.mk _ (taylor a (dehomogenize i F)) :=
-  rfl
+  (rfl)
 
-private theorem chartConditions_eq_zero_iff (hF : F.IsHomogeneous d) {i : Fin 3}
+/-- The multiplicity conditions in a chart are multiplicative. -/
+theorem chartConditions_mul (i : Fin 3) (a : Fin 2 → k) (n : ℕ) (F G : MvPolynomial (Fin 3) k) :
+    chartConditions i a n (F * G) = chartConditions i a n F * chartConditions i a n G := by
+  simp only [chartConditions_apply, map_mul]
+
+/-- For a form `F` and a point `P` of the chart `Xᵢ ≠ 0`, the multiplicity conditions at the
+chart coordinates of `P` vanish on `F` exactly when `m_P(F) ≥ n`. -/
+theorem chartConditions_eq_zero_iff (hF : F.IsHomogeneous d) {i : Fin 3}
     (hP : P ∈ affineOpen i) {n : ℕ} :
     chartConditions i (affineChart i P) n F = 0 ↔ (n : ℕ∞) ≤ mult F P := by
   rw [le_mult_iff_taylor_dehomogenize_mem hF hP, chartConditions_apply,
@@ -188,7 +200,7 @@ private theorem chartConditions_eq_zero_iff (hF : F.IsHomogeneous d) {i : Fin 3}
 
 /-- For `n ≤ d + 1` the conditions are independent on forms of degree `d`: every class modulo
 `(X, Y)ⁿ` is the residue of the Taylor expansion of `F_(i)` for some form `F` of degree `d`. -/
-private theorem chartConditions_surjective (i : Fin 3) (a : Fin 2 → k) {n : ℕ}
+theorem chartConditions_surjective (i : Fin 3) (a : Fin 2 → k) {n : ℕ}
     (hn : n ≤ d + 1) : Function.Surjective
       ((chartConditions i a n).domRestrict (homogeneousSubmodule (Fin 3) k d)) := by
   intro c
@@ -228,6 +240,56 @@ theorem finrank_linearSystem_single_add {r : ℕ} (hr : r ≤ d + 1) (P : ℙ k 
     ← LinearMap.finrank_range_add_finrank_ker φ, hrange, hker, (Submodule.comapSubtypeEquivOfLe
       (linearSystem_le_homogeneousSubmodule d _)).finrank_eq, add_comm]
 
+/-- The *multiplicity conditions* of the linear system `V(d; r)` on forms of degree `d`: for each
+point `P` with `r P ≠ 0`, the multiplicity conditions `chartConditions` at `P` in the chart
+`X_{i P} ≠ 0`, with values in `k[X, Y] ⧸ (X, Y)^{r P}`. When every `P` lies in its chart, the
+kernel is `V(d; r)` (`ker_multConditions`). -/
+noncomputable def multConditions (d : ℕ) (r : ℙ k (Fin 3 → k) →₀ ℕ)
+    (i : ℙ k (Fin 3 → k) → Fin 3) : homogeneousSubmodule (Fin 3) k d →ₗ[k]
+      ((P : r.support) → MvPolynomial (Fin 2) k ⧸ idealOfVars (Fin 2) k ^ r P) :=
+  LinearMap.pi fun P ↦
+    (chartConditions (i P) (affineChart (i P) P.1) (r P)).domRestrict
+      (homogeneousSubmodule (Fin 3) k d)
+
+theorem multConditions_apply (d : ℕ) (r : ℙ k (Fin 3 → k) →₀ ℕ) (i : ℙ k (Fin 3 → k) → Fin 3)
+    (F : homogeneousSubmodule (Fin 3) k d) (P : r.support) :
+    multConditions d r i F P = chartConditions (i P) (affineChart (i P) P.1) (r P) F :=
+  (rfl)
+
+/-- When every point `P` lies in its chart `X_{i P} ≠ 0`, the kernel of the multiplicity
+conditions is the linear system `V(d; r)`, as a subspace of the forms of degree `d`. -/
+theorem ker_multConditions (d : ℕ) (r : ℙ k (Fin 3 → k) →₀ ℕ) {i : ℙ k (Fin 3 → k) → Fin 3}
+    (hi : ∀ P, P ∈ affineOpen (i P)) : LinearMap.ker (multConditions d r i) =
+      (linearSystem d r).comap (homogeneousSubmodule (Fin 3) k d).subtype := by
+  ext ⟨F, hF⟩
+  rw [mem_homogeneousSubmodule] at hF
+  simp only [LinearMap.mem_ker, Submodule.mem_comap, Submodule.subtype_apply,
+    mem_linearSystem, hF, true_and, funext_iff, multConditions_apply, Pi.zero_apply]
+  refine ⟨fun h P ↦ ?_, fun h P ↦ ?_⟩
+  · by_cases hP : P ∈ r.support
+    · exact (chartConditions_eq_zero_iff hF (hi P)).1 (h ⟨P, hP⟩)
+    · simp [Finsupp.notMem_support_iff.1 hP]
+  · exact (chartConditions_eq_zero_iff hF (hi P)).2 (h P)
+
+/-- The space of values of the multiplicity conditions of `V(d; r)` has dimension
+`∑_P r_P(r_P + 1)/2`. -/
+theorem finrank_pi_quotient_pow_idealOfVars (r : ℙ k (Fin 3 → k) →₀ ℕ) :
+    finrank k ((P : r.support) → MvPolynomial (Fin 2) k ⧸ idealOfVars (Fin 2) k ^ r P) =
+      r.sum (fun _ n ↦ n * (n + 1) / 2) := by
+  rw [Module.finrank_pi_fintype]
+  simp only [finrank_quotient_pow_idealOfVars_fin_two]
+  exact Finset.sum_coe_sort r.support fun P ↦ r P * (r P + 1) / 2
+
+/-- The rank of the multiplicity conditions plus the dimension of `V(d; r)` is the dimension
+`(d + 1)(d + 2)/2` of the space of forms of degree `d`. -/
+theorem finrank_range_multConditions_add (d : ℕ) (r : ℙ k (Fin 3 → k) →₀ ℕ)
+    {i : ℙ k (Fin 3 → k) → Fin 3} (hi : ∀ P, P ∈ affineOpen (i P)) :
+    finrank k (LinearMap.range (multConditions d r i)) + finrank k (linearSystem d r) =
+      (d + 1) * (d + 2) / 2 := by
+  rw [← (Submodule.comapSubtypeEquivOfLe (linearSystem_le_homogeneousSubmodule d r)).finrank_eq,
+    ← ker_multConditions d r hi, LinearMap.finrank_range_add_finrank_ker,
+    finrank_homogeneousSubmodule_fin_three]
+
 /-- **Lower bound for the dimension of a linear system.** For points `P` of `ℙ²` with assigned
 multiplicities `r P`, the space `V(d; r)` of forms of degree `d` with `m_P(F) ≥ r P` for every
 `P` has dimension at least `(d + 1)(d + 2)/2 - ∑_P r_P(r_P + 1)/2`. Equivalently, as a linear
@@ -236,30 +298,9 @@ theorem finrank_linearSystem_ge (d : ℕ) (r : ℙ k (Fin 3 → k) →₀ ℕ) :
     (d + 1) * (d + 2) / 2 - r.sum (fun _ n ↦ n * (n + 1) / 2) ≤
       finrank k (linearSystem d r) := by
   choose i hi using fun P : ℙ k (Fin 3 → k) ↦ exists_mem_affineOpen P
-  set H := homogeneousSubmodule (Fin 3) k d
-  set Φ : H →ₗ[k]
-      ((P : r.support) → MvPolynomial (Fin 2) k ⧸ idealOfVars (Fin 2) k ^ r P) :=
-    LinearMap.pi fun P ↦ (chartConditions (i P) (affineChart (i P) P.1) (r P)).domRestrict H
-  have hker : LinearMap.ker Φ = (linearSystem d r).comap H.subtype := by
-    ext ⟨F, hF⟩
-    rw [mem_homogeneousSubmodule] at hF
-    simp only [LinearMap.mem_ker, Submodule.mem_comap, Submodule.subtype_apply,
-      mem_linearSystem, hF, true_and, funext_iff, Φ, LinearMap.pi_apply,
-      LinearMap.domRestrict_apply, Pi.zero_apply]
-    refine ⟨fun h P ↦ ?_, fun h P ↦ ?_⟩
-    · by_cases hP : P ∈ r.support
-      · exact (chartConditions_eq_zero_iff hF (hi P)).1 (h ⟨P, hP⟩)
-      · simp [Finsupp.notMem_support_iff.1 hP]
-    · exact (chartConditions_eq_zero_iff hF (hi P)).2 (h P)
-  have hrange : finrank k (LinearMap.range Φ) ≤ r.sum (fun _ n ↦ n * (n + 1) / 2) := by
-    refine (Submodule.finrank_le _).trans_eq ?_
-    rw [Module.finrank_pi_fintype]
-    simp only [finrank_quotient_pow_idealOfVars_fin_two]
-    exact Finset.sum_coe_sort r.support fun P ↦ r P * (r P + 1) / 2
-  have := LinearMap.finrank_range_add_finrank_ker Φ
-  rw [hker, (Submodule.comapSubtypeEquivOfLe
-      (linearSystem_le_homogeneousSubmodule d _)).finrank_eq,
-    finrank_homogeneousSubmodule_fin_three] at this
+  have h := finrank_range_multConditions_add d r hi
+  have := (Submodule.finrank_le (LinearMap.range (multConditions d r i))).trans_eq
+    (finrank_pi_quotient_pow_idealOfVars r)
   omega
 
 end PlaneCurves.Projective
