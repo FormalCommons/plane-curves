@@ -35,6 +35,8 @@ dehomogenization `G_(i)`.
   degree of `G` with `H(center Q) ≠ 0`; `ordForm_eq_addValuation_mk_pow` for `H = Lᵐ`.
 * `ordForm_mul`, `ordForm_eq_top_iff`, `ordForm_nonneg`, `ordForm_pos_iff`, `ordForm_eq_zero_iff`.
 * `ordForm_eq_addValuation_chartEquiv_symm`: the order in a chart.
+* `mem_placesOver_iff_localSubring_le_map_chartEquiv`, `ordForm_eq_addValuation_map_chartEquiv`:
+  the places over a point of a chart, and their orders, read in the affine curve of the chart.
 
 ## References
 
@@ -270,6 +272,42 @@ theorem ordForm_eq_addValuation_chartEquiv_symm {i : Fin 3}
   simp only [map_pow, dehomogenize_X, Fin.insertNth_apply_same, one_pow, map_one]
   have := isPrime_span_dehomogenize hF (not_dvd_X_of_mem_affineOpen hF _ hQ)
   exact (div_one _).symm
+
+/-- **Places over a point, in a chart.** A place `Q` of `k(C)` lies over a point `P` of the chart
+`Xᵢ ≠ 0` iff the valuation ring of `Q`, carried to `k(F_(i))` by `functionField.chartEquiv`,
+contains the local ring of the affine curve `F_(i) = 0` at the chart point of `P`. -/
+theorem mem_placesOver_iff_localSubring_le_map_chartEquiv {i : Fin 3} (hP : P.1 ∈ affineOpen i)
+    {Q : Place k (functionField hF)} :
+    haveI := isPrime_span_dehomogenize hF (not_dvd_X_of_mem_affineOpen hF P hP)
+    Q ∈ placesOver hF P ↔ (AffineSpace.localSubring (affineChart i P.1)
+        (span_dehomogenize_le_vanishingIdeal hF P hP)).toSubring ≤
+      (Q.map (functionField.chartEquiv hF i
+        (not_dvd_X_of_mem_affineOpen hF P hP))).integers.toSubring := by
+  have := isPrime_span_dehomogenize hF (not_dvd_X_of_mem_affineOpen hF P hP)
+  rw [mem_placesOver_iff_le]
+  refine ⟨fun h w hw ↦ ?_, fun h z hz ↦ ?_⟩
+  · obtain ⟨z, hz⟩ := (localSubring.chartEquiv hF i P hP).surjective ⟨w, hw⟩
+    have hw' := congrArg Subtype.val hz
+    rw [localSubring.coe_chartEquiv] at hw'
+    change w ∈ (Q.map _).integers
+    rw [Place.mem_integers_map_iff, show w = _ from hw'.symm, AlgEquiv.symm_apply_apply]
+    exact h z.2
+  · have := h (localSubring.chartEquiv hF i P hP ⟨z, hz⟩).2
+    rw [localSubring.coe_chartEquiv] at this
+    change _ ∈ (Q.map _).integers at this
+    rwa [Place.mem_integers_map_iff, AlgEquiv.symm_apply_apply] at this
+
+/-- **The order of a form in a chart**, as the order at the place carried to `k(F_(i))`. -/
+theorem ordForm_eq_addValuation_map_chartEquiv {i : Fin 3} (hP : P.1 ∈ affineOpen i)
+    {Q : Place k (functionField hF)} (hQ : Q ∈ placesOver hF P) {m : ℕ}
+    {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous m) :
+    haveI := isPrime_span_dehomogenize hF (not_dvd_X_of_mem_affineOpen hF P hP)
+    ordForm hF Q hG = (Q.map (functionField.chartEquiv hF i
+        (not_dvd_X_of_mem_affineOpen hF P hP))).addValuation
+      (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {dehomogenize i F}) (dehomogenize i G))) := by
+  rw [mem_placesOver_iff] at hQ
+  subst hQ
+  rw [ordForm_eq_addValuation_chartEquiv_symm hP hG, Place.addValuation_map]
 
 end PlaneCurves.Projective
 
