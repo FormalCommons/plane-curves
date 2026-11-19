@@ -46,8 +46,9 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
   `PlaneCurves.Projective.exists_isTangentAt_iff_affine`: conversely, every tangent of the
   dehomogenization comes from a tangent of `F`, so common tangents correspond.
 * `PlaneCurves.Projective.leadingForm_linearSubst`,
-  `PlaneCurves.Projective.isTangentAt_linearSubst_iff`: leading forms and tangent lines under an
-  invertible linear change of coordinates.
+  `PlaneCurves.Projective.isTangentAt_linearSubst_iff`,
+  `PlaneCurves.Projective.isOrdinaryMultiplePoint_linearSubst_iff`: leading forms, tangent lines
+  and ordinary multiple points under an invertible linear change of coordinates.
 * `PlaneCurves.Projective.IsSimplePoint.isTangentAt_tangentLine`: at a simple point the line
   `F_X(v) X + F_Y(v) Y + F_Z(v) Z` is tangent, and
   `PlaneCurves.Projective.IsSimplePoint.associated_tangentLine_of_isTangentAt`: it is the only
@@ -422,6 +423,16 @@ theorem isTangentAt_linearSubst_iff (hF : F.IsHomogeneous d) {M : Matrix (Fin 3)
   refine and_congr_right fun hL ↦ and_congr_right fun _ ↦ and_congr_left fun _ ↦ ?_
   conv_rhs => rw [← Q.mk_rep, map_mk]
   rw [eval_linearSubst, hL.eval_rep_mk_eq_zero_iff, Matrix.mulVecLin_apply]
+
+/-- **Ordinary multiple points under a change of coordinates.** For an invertible matrix `M`,
+`Q` is an ordinary multiple point of `F(MX)` exactly when `MQ` is one of `F`. -/
+theorem isOrdinaryMultiplePoint_linearSubst_iff (hF : F.IsHomogeneous d)
+    {M : Matrix (Fin 3) (Fin 3) k} (hM : Function.Injective M.mulVecLin) (Q : ℙ k (Fin 3 → k)) :
+    IsOrdinaryMultiplePoint (linearSubst M F) Q ↔
+      IsOrdinaryMultiplePoint F (Projectivization.map M.mulVecLin hM Q) := by
+  rw [isOrdinaryMultiplePoint_def, isOrdinaryMultiplePoint_def,
+    isMultiplePoint_linearSubst_iff hF hM, (leadingForm_linearSubst hF hM Q).squarefree_iff,
+    squarefree_linearSubst_iff (Matrix.isUnit_det_of_mulVecLin_injective hM)]
 
 /-! ### Problems 5.5 and 5.6 -/
 
