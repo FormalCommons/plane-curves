@@ -89,13 +89,6 @@ theorem intersectionNumber_eq_one_iff (hF : F.IsHomogeneous d) (hL : L.IsHomogen
 
 /-! ### Finiteness of sets of lines -/
 
-/-- The linear form with dual coordinates `c` is nonzero. -/
-theorem sum_C_mul_X_rep_ne_zero (c : ℙ k (Fin 3 → k)) :
-    (∑ i, C (c.rep i) * X i : MvPolynomial (Fin 3) k) ≠ 0 := by
-  intro h
-  apply c.rep_ne_zero
-  exact sum_C_mul_X_injective (h.trans (by simp))
-
 /-- Only finitely many lines divide a nonzero form `G`: the lines `∑ i, c.rep i X i` dividing `G`
 are, up to scalars, among its irreducible factors. -/
 theorem finite_setOf_sum_C_mul_X_dvd {G : MvPolynomial (Fin 3) k} (hG : G ≠ 0) :
@@ -111,8 +104,8 @@ theorem finite_setOf_sum_C_mul_X_dvd {G : MvPolynomial (Fin 3) k} (hG : G ≠ 0)
   refine (((UniqueFactorizationMonoid.factors G).map Associates.mk).toFinset.finite_toSet).subset ?_
   rintro _ ⟨c, hc, rfl⟩
   obtain ⟨q, hq, hcq⟩ := UniqueFactorizationMonoid.exists_mem_factors_of_dvd hG
-    (irreducible_of_isHomogeneous_one (isHomogeneous_sum_C_mul_X _) (sum_C_mul_X_rep_ne_zero c))
-    hc
+    (irreducible_of_isHomogeneous_one (isHomogeneous_sum_C_mul_X _)
+      (sum_C_mul_X_ne_zero c.rep_ne_zero)) hc
   simp only [Finset.mem_coe, Multiset.mem_toFinset, Multiset.mem_map]
   exact ⟨q, hq, (Associates.mk_eq_mk_iff_associated.2 hcq).symm⟩
 

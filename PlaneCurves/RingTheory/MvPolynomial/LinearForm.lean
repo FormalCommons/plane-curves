@@ -21,6 +21,7 @@ shape.
 * `MvPolynomial.eval_sum_C_mul_X`: the value of `∑ i, C (a i) * X i` at `x` is `a ⬝ᵥ x`.
 * `MvPolynomial.coeff_single_sum_C_mul_X`, `MvPolynomial.sum_C_mul_X_injective`: the
   coefficient vector is recovered from the form.
+* `MvPolynomial.sum_C_mul_X_eq_zero_iff`: a linear form vanishes iff its coefficients do.
 * `MvPolynomial.IsHomogeneous.eq_sum_C_mul_X`: a form of degree one is the linear form of its
   coefficients of the monomials `X i`.
 * `MvPolynomial.associated_sum_C_mul_X_iff`: over a field, two linear forms are associated iff
@@ -60,6 +61,17 @@ theorem sum_C_mul_X_injective : Function.Injective fun a : σ → R ↦ ∑ i, C
   intro a b h
   funext i
   simpa using congrArg (·.coeff (Finsupp.single i 1)) h
+
+/-- A linear form vanishes iff its coefficient vector does. -/
+@[simp]
+theorem sum_C_mul_X_eq_zero_iff {a : σ → R} :
+    (∑ i, C (a i) * X i : MvPolynomial σ R) = 0 ↔ a = 0 :=
+  sum_C_mul_X_injective.eq_iff' (by simp)
+
+/-- A linear form with a nonzero coefficient vector is nonzero. -/
+theorem sum_C_mul_X_ne_zero {a : σ → R} (ha : a ≠ 0) :
+    (∑ i, C (a i) * X i : MvPolynomial σ R) ≠ 0 :=
+  sum_C_mul_X_eq_zero_iff.not.2 ha
 
 /-- A form of degree one is the linear form whose coefficients are its coefficients of the
 monomials `X i`. -/
