@@ -23,6 +23,7 @@ For a polynomial `p` in the variables `X j`, `j ∈ σ`, the substitution
   divisible by `X i`.
 * `MvPolynomial.X_dvd_iff_bind₁_update_X_zero_eq_zero`: `X i` divides `p` exactly when `p`
   vanishes at `X i = 0`.
+* `MvPolynomial.eval_bind₁_update_X_zero`: evaluating `p` with `X i` set to zero.
 -/
 
 public section
@@ -64,6 +65,18 @@ theorem X_dvd_iff_bind₁_update_X_zero_eq_zero {i : σ} {p : MvPolynomial σ R}
   refine ⟨?_, X_dvd_of_bind₁_update_X_zero_eq_zero⟩
   rintro ⟨q, rfl⟩
   simp
+
+/-- Evaluating `p` with `X i` set to zero at `v` is evaluating `p` at `v` with its `i`-th
+coordinate set to zero. -/
+theorem eval_bind₁_update_X_zero (i : σ) (v : σ → R) (p : MvPolynomial σ R) :
+    eval v (bind₁ (Function.update X i 0) p) = eval (Function.update v i 0) p := by
+  induction p using MvPolynomial.induction_on with
+  | C a => simp
+  | add p q hp hq => simp [hp, hq]
+  | mul_X p j hp =>
+    rcases eq_or_ne j i with rfl | hj
+    · simp
+    · simp [hp, hj]
 
 end MvPolynomial
 
