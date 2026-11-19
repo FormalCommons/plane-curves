@@ -142,6 +142,10 @@ theorem IsSimplePoint.degree_ne_zero (hF : F.IsHomogeneous d) (h : IsSimplePoint
     map_zero] at hi
   exact hi rfl
 
+/-- A multiple point of a form lies on the curve. -/
+theorem IsMultiplePoint.eval_rep_eq_zero (h : IsMultiplePoint F P) : eval P.rep F = 0 :=
+  mult_pos_iff_eval_rep.1 (lt_of_lt_of_le (by norm_num) (isMultiplePoint_def.1 h))
+
 theorem IsMultiplePoint.not_isSimplePoint (h : IsMultiplePoint F P) : ¬IsSimplePoint F P :=
   (isMultiplePoint_iff_not_isSimplePoint.1 h).2
 
