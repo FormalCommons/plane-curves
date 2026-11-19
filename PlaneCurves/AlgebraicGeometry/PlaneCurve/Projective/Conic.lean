@@ -8,6 +8,7 @@ module
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.Hypersurface
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
+public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
 public import Mathlib.Algebra.MvPolynomial.Funext
 
@@ -89,13 +90,6 @@ open scoped LinearAlgebra.Projectivization Matrix
 
 variable {k : Type*} [Field k]
 
-/-- A product of two polynomials that vanish at the origin is not irreducible. -/
-private theorem not_irreducible_mul {p q : MvPolynomial (Fin 3) k} (hp : eval 0 p = 0)
-    (hq : eval 0 q = 0) : ¬Irreducible (p * q) := fun h ↦ by
-  rcases h.isUnit_or_isUnit rfl with h | h
-  · exact (h.map (eval 0)).ne_zero hp
-  · exact (h.map (eval 0)).ne_zero hq
-
 /-- The conic `YZ - X²` is nonsingular, in every characteristic. -/
 theorem isNonsingular_X_mul_X_sub_X_sq :
     IsNonsingular (X 1 * X 2 - X 0 ^ 2 : MvPolynomial (Fin 3) k) := by
@@ -120,7 +114,7 @@ private theorem not_irreducible_binary (a e c : k) :
         X 2 * (C e * X 0 + C c * X 2) := by
       subst ha; simp; ring
     rw [this]
-    exact not_irreducible_mul (by simp) (by simp)
+    exact not_irreducible_mul_of_eval_eq_zero (x := 0) (by simp) (by simp)
   · obtain ⟨t, ht⟩ := IsAlgClosed.exists_root (Polynomial.C a * Polynomial.X ^ 2 +
       Polynomial.C e * Polynomial.X + Polynomial.C c) (by rw [Polynomial.degree_quadratic ha]; simp)
     have ht : a * t ^ 2 + e * t + c = 0 := by simpa using ht
@@ -130,7 +124,7 @@ private theorem not_irreducible_binary (a e c : k) :
       simp only [map_add, map_mul, map_sub, map_pow, eval_C, eval_X]
       linear_combination (x 2 ^ 2) * ht
     rw [this]
-    exact not_irreducible_mul (by simp) (by simp)
+    exact not_irreducible_mul_of_eval_eq_zero (x := 0) (by simp) (by simp)
 
 /-- An irreducible form `YZ + a X² + e XZ + c Z²` is carried to `YZ - X²` by a change of
 coordinates. -/
@@ -142,7 +136,8 @@ private theorem exists_linearSubst_eq_of_mul_add {a e c : k}
         X 1 * X 2 - X 0 ^ 2 := by
   have ha : a ≠ 0 := by
     rintro rfl
-    refine not_irreducible_mul (p := X 2) (q := X 1 + C e * X 0 + C c * X 2) (by simp) (by simp) ?_
+    refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 2)
+      (q := X 1 + C e * X 0 + C c * X 2) (by simp) (by simp) ?_
     convert h using 1
     simp; ring
   obtain ⟨s, hs⟩ := IsAlgClosed.exists_pow_nat_eq (-a⁻¹) two_pos
