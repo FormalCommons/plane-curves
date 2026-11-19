@@ -314,10 +314,8 @@ theorem exists_isHomogeneous_intersectionCycle_eq_sub_of_card_eq_mul
     (hHs : ∀ P ∈ s, eval P.rep H = 0) :
     e ≤ r ∧ ∃ B : MvPolynomial (Fin 3) k, B.IsHomogeneous (r - e) ∧ B ≠ 0 ∧ IsRelPrime F B ∧
       intersectionCycle B F = intersectionCycle H F - intersectionCycle G F := by
-  have hFG : IsRelPrime F G := isRelPrime_of_finite_zeroLocus_pair hF hG
-    (s.finite_toSet.subset fun Q hQ ↦ (hs Q).2 (by
-      rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨d, hF⟩, ⟨e, hG⟩])] at hQ
-      exact ⟨hQ F (by simp), hQ G (by simp)⟩))
+  have hFG : IsRelPrime F G :=
+    isRelPrime_of_forall_eval_eq_zero_mem hF hG fun P h₁ h₂ ↦ (hs P).2 ⟨h₁, h₂⟩
   obtain ⟨her, B, hB, hBne, hFB, hc⟩ :=
     exists_isHomogeneous_intersectionCycle_eq_add_of_forall_noetherConditionsAt hF hG hH hd hFG
       hFH fun P hPF hPG ↦
