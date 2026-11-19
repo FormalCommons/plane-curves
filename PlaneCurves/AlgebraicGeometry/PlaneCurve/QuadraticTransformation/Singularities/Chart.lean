@@ -53,6 +53,9 @@ results of the blow-up apply: Fulton's step (7)(2)(c).
   off the fundamental triangle.
 * `PlaneCurves.Projective.isOrdinaryMultiplePoint_properTransform_quadraticMap_iff`: `Q(P)` is
   an ordinary multiple point of `F'` iff `P` is one of `F`, for `P` off the fundamental triangle.
+* `PlaneCurves.Projective.mult_properTransform_of_notMem_fundamentalTriangle` and
+  `isOrdinaryMultiplePoint_properTransform_iff_of_notMem_fundamentalTriangle`: the same at a
+  point `P` off the triangle, compared with `Q(P)` on `F`.
 
 These hold for every form `F`; that no exceptional line is a component of `F` is not needed.
 
@@ -423,6 +426,25 @@ theorem isOrdinaryMultiplePoint_properTransform_quadraticMap_iff [IsAlgClosed k]
     · have := isMultiplePoint_def.1 (isOrdinaryMultiplePoint_def.1 h).1
       rw [h0] at this
       exact absurd this (by decide)
+
+/-- Off the fundamental triangle, `m_P(F') = m_{Q(P)}(F)` for every form `F`: the quadratic map
+is an involution there, so this is `mult_properTransform_quadraticMap` at `Q(P)`. -/
+theorem mult_properTransform_of_notMem_fundamentalTriangle (hF : F.IsHomogeneous n)
+    (hP : P ∉ fundamentalTriangle) :
+    mult (properTransform F) P = mult F (quadraticMap P) := by
+  conv_lhs => rw [← quadraticMap_quadraticMap hP]
+  exact mult_properTransform_quadraticMap hF
+    (bijOn_quadraticMap_compl_fundamentalTriangle.mapsTo hP)
+
+/-- Over an algebraically closed field, off the fundamental triangle, `P` is an ordinary multiple
+point of the proper transform `F'` exactly when `Q(P)` is one of `F`, for every form `F`. -/
+theorem isOrdinaryMultiplePoint_properTransform_iff_of_notMem_fundamentalTriangle
+    [IsAlgClosed k] (hF : F.IsHomogeneous n) (hP : P ∉ fundamentalTriangle) :
+    IsOrdinaryMultiplePoint (properTransform F) P ↔
+      IsOrdinaryMultiplePoint F (quadraticMap P) := by
+  conv_lhs => rw [← quadraticMap_quadraticMap hP]
+  exact isOrdinaryMultiplePoint_properTransform_quadraticMap_iff hF
+    (bijOn_quadraticMap_compl_fundamentalTriangle.mapsTo hP)
 
 end Field
 
