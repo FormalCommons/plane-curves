@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.Algebra.MvPolynomial.Funext
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Conic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.MultiplePoints
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
@@ -93,6 +94,10 @@ All in the namespace `PlaneCurves.Projective`, unless named in full.
 * `IsNonsingular.exists_linearSubst_eq_legendre`: over an algebraically closed field with
   `2 ≠ 0`, a nonsingular cubic is carried to `Y²Z = X(X - Z)(X - λZ)`, `λ ≠ 0, 1`, by a change
   of coordinates (Problem 5.24 (b)).
+* `exists_linearSubst_eq_normalForm_of_degree_three`: in characteristic zero, an irreducible
+  cubic is carried to the cuspidal, the nodal or a Legendre cubic.
+* `normalForms_of_conics_and_cubics`: the projective normal forms of irreducible conics and
+  cubics, collected in one statement.
 * `WeierstrassCurve.toProjective_polynomial_eq_prod`: the Weierstrass cubic
   `Y²Z = (X - e₁Z)(X - e₂Z)(X - e₃Z)` from the roots of its `2`-division polynomial.
 * `MvPolynomial.irreducible_X_sq_mul_X_sub_X_pow_three`,
@@ -974,6 +979,84 @@ theorem IsNonsingular.exists_linearSubst_eq_legendre (h2 : (2 : k) ≠ 0)
       rw [← map_pow, ← map_mul, hs, mul_inv_cancel₀ hcu, map_one]
     rw [linearSubst_mul_apply, hTV, map_mul, hDG, algHom_C, algebraMap_eq]
     linear_combination G * hs1
+
+/-! ### The normal forms -/
+
+section CharZero
+
+variable [CharZero k]
+
+/-- **Normal forms of an irreducible cubic.** Over an algebraically closed field of
+characteristic zero, an irreducible cubic `F` is projectively equivalent to the cuspidal cubic
+`Y²Z = X³`, to the nodal cubic `Y²Z = X²(X + Z)`, or to a Legendre cubic
+`Y²Z = X(X - Z)(X - λZ)` with `λ ≠ 0, 1` ([Fulton2008], Problems 5.10, 5.11 and 5.24 (b)). -/
+theorem exists_linearSubst_eq_normalForm_of_degree_three (hF : F.IsHomogeneous 3)
+    (hirr : Irreducible F) :
+    ∃ M : Matrix (Fin 3) (Fin 3) k, Function.Injective M.mulVecLin ∧
+      (linearSubst M F = X 1 ^ 2 * X 2 - X 0 ^ 3 ∨
+        linearSubst M F = X 1 ^ 2 * X 2 - X 0 ^ 2 * (X 0 + X 2) ∨
+        ∃ l : k, l ≠ 0 ∧ l ≠ 1 ∧
+          linearSubst M F = X 1 ^ 2 * X 2 - X 0 * (X 0 - X 2) * (X 0 - C l * X 2)) := by
+  obtain h | ⟨P, hP, -, hnode | ⟨L, hL, hLm⟩⟩ :=
+    isNonsingular_or_exists_isMultiplePoint_iff_of_degree_three hF hirr
+  · obtain ⟨M, l, hM, hl0, hl1, hMF⟩ := h.exists_linearSubst_eq_legendre two_ne_zero hF
+    exact ⟨M, hM, Or.inr (Or.inr ⟨l, hl0, hl1, hMF⟩)⟩
+  · obtain ⟨M, hM, hMF⟩ := exists_linearSubst_eq_X_sq_mul_X_sub_X_sq_mul_X_add_X hF hirr hnode
+    exact ⟨M, hM, Or.inr (Or.inl hMF)⟩
+  · obtain ⟨M, hM, hMF⟩ :=
+      exists_linearSubst_eq_X_sq_mul_X_sub_X_pow_three hF hirr ((hP P).2 rfl) hL hLm
+    exact ⟨M, hM, Or.inl hMF⟩
+
+end CharZero
+
+/-- **Projective normal forms of irreducible conics and cubics.** Over an algebraically closed
+field `k`:
+
+* (a) an irreducible conic is nonsingular and projectively equivalent to `YZ = X²`
+  ([Fulton2008], Problem 5.9);
+* (b) an irreducible cubic is nonsingular, or it has exactly one multiple point, a double point
+  that is a node or a cusp (Problem 5.13);
+* (c) at a flex `O` of an irreducible cubic `F`, a change of coordinates `T` sending
+  `[0 : 1 : 0]` to `O` carries `F` to a nonzero multiple of a Weierstrass cubic, and the
+  tangent at `O` to `Z = 0`; if `2 ≠ 0` in `k`, one may take `a₁ = a₃ = 0` (Problem 5.24 (a));
+* (d) in characteristic zero, an irreducible cubic is projectively equivalent to `Y²Z = X³`,
+  to `Y²Z = X²(X + Z)`, or to `Y²Z = X(X - Z)(X - λZ)` with `λ ≠ 0, 1`
+  (Problems 5.10, 5.11 and 5.24 (b)).
+
+Milestone: *Projective normal forms of irreducible conics and cubics (Weierstrass form)*. -/
+theorem normalForms_of_conics_and_cubics :
+    (∀ F : MvPolynomial (Fin 3) k, F.IsHomogeneous 2 → Irreducible F →
+      IsNonsingular F ∧ ∃ M : Matrix (Fin 3) (Fin 3) k, Function.Injective M.mulVecLin ∧
+        linearSubst M F = X 1 * X 2 - X 0 ^ 2) ∧
+    (∀ F : MvPolynomial (Fin 3) k, F.IsHomogeneous 3 → Irreducible F →
+      IsNonsingular F ∨ ∃ P : ℙ k (Fin 3 → k), (∀ Q, IsMultiplePoint F Q ↔ Q = P) ∧
+        mult F P = 2 ∧
+          (IsOrdinaryMultiplePoint F P ∨
+            ∃ L, IsTangentAt F P L ∧ tangentMultiplicity F P L = 2)) ∧
+    (∀ (F : MvPolynomial (Fin 3) k) (O : ℙ k (Fin 3 → k)), F.IsHomogeneous 3 →
+      Irreducible F → IsFlex F O →
+      ∃ (T : Matrix (Fin 3) (Fin 3) k) (c : k) (W : WeierstrassCurve k),
+        Function.Injective T.mulVecLin ∧ c ≠ 0 ∧ T *ᵥ ![0, 1, 0] = O.rep ∧
+        linearSubst T F = c • W.toProjective.polynomial ∧
+        ((2 : k) ≠ 0 → W.a₁ = 0 ∧ W.a₃ = 0) ∧
+        tangentLine (linearSubst T F) ![0, 1, 0] = c • X 2) ∧
+    (CharZero k → ∀ F : MvPolynomial (Fin 3) k, F.IsHomogeneous 3 → Irreducible F →
+      ∃ M : Matrix (Fin 3) (Fin 3) k, Function.Injective M.mulVecLin ∧
+        (linearSubst M F = X 1 ^ 2 * X 2 - X 0 ^ 3 ∨
+          linearSubst M F = X 1 ^ 2 * X 2 - X 0 ^ 2 * (X 0 + X 2) ∨
+          ∃ l : k, l ≠ 0 ∧ l ≠ 1 ∧
+            linearSubst M F = X 1 ^ 2 * X 2 - X 0 * (X 0 - X 2) * (X 0 - C l * X 2))) := by
+  refine ⟨fun F hF h ↦ ⟨isNonsingular_of_irreducible_of_isHomogeneous_two hF h,
+      exists_linearSubst_eq_X_mul_X_sub_X_sq hF h⟩,
+    fun F hF h ↦ isNonsingular_or_exists_isMultiplePoint_iff_of_degree_three hF h,
+    fun F O hF h hO ↦ ?_,
+    fun _ F hF h ↦ exists_linearSubst_eq_normalForm_of_degree_three hF h⟩
+  by_cases h2 : (2 : k) = 0
+  · obtain ⟨T, c, W, hT, hc, hTO, hTF, hL⟩ := hO.exists_linearSubst_eq_smul_polynomial hF h
+    exact ⟨T, c, W, hT, hc, hTO, hTF, fun h2' ↦ absurd h2 h2', hL⟩
+  · obtain ⟨T, c, W, hT, hc, hTO, hTF, h1, h3, hL⟩ :=
+      hO.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero h2 hF h
+    exact ⟨T, c, W, hT, hc, hTO, hTF, fun _ ↦ ⟨h1, h3⟩, hL⟩
 
 end IsAlgClosed
 
