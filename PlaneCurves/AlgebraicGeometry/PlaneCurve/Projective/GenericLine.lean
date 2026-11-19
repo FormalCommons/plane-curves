@@ -38,7 +38,11 @@ Problem 5.26).
   tangent to `F` at `P`.
 * `intersectionNumber_eq_one_iff`: `I(P, F ∩ L) = 1` iff `P` is a simple point of `F` and `L` is
   not tangent to `F` at `P`.
-* `finite_setOf_sum_C_mul_X_dvd`, `finite_setOf_isTangentAt`: finitely many lines divide a
+* `intersectionNumber_bind₁_update_X_zero`: setting `Xⱼ = 0` in `F` does not change its
+  intersection numbers with the line `Xⱼ = 0`.
+* `squarefree_of_forall_intersectionNumber_le_one`: a form that meets a curve with all
+  intersection numbers at most one is squarefree.
+* `finite_setOf_sum_C_mul_X_dvd`,`finite_setOf_isTangentAt`: finitely many lines divide a
   nonzero form, so finitely many lines are tangent to `F ≠ 0` at `P`.
 * `subsingleton_setOf_eval_sum_C_mul_X_eq_zero`: at most one line passes through two distinct
   points.
@@ -101,6 +105,51 @@ theorem intersectionNumber_eq_one_iff (hF : F.IsHomogeneous d) (hL : L.IsHomogen
   · rintro ⟨hs, ht⟩
     rw [← isSimplePoint_def.1 hs]
     exact (intersectionNumber_eq_mult_iff_not_isTangentAt hF hs.ne_zero hL hL0 hLP).2 ht
+
+/-! ### Restriction to a coordinate line and squarefree forms -/
+
+/-- Setting `Xⱼ = 0` in `F` does not change its intersection numbers with the line `Xⱼ = 0`:
+`F` and `F(…, 0, …)` agree modulo `Xⱼ`. -/
+theorem intersectionNumber_bind₁_update_X_zero (P : ℙ k (Fin 3 → k))
+    (F : MvPolynomial (Fin 3) k) (j : Fin 3) :
+    intersectionNumber P (bind₁ (Function.update X j 0) F) (X j) =
+      intersectionNumber P F (X j) := by
+  obtain ⟨A, hA⟩ := X_dvd_sub_bind₁_update_X_zero j F
+  rw [intersectionNumber_comm, intersectionNumber_comm P F, ← intersectionNumber_add_mul P (X j)
+    (bind₁ (Function.update X j 0) F) A, mul_comm A, ← hA, add_sub_cancel]
+
+/-- **A squarefree criterion.** Over an algebraically closed field, a nonzero form `G` that
+meets a form `L` of positive degree with all intersection numbers at most one is squarefree: a
+square factor `p²` of `G` meets `L` at some point `P`, where
+`I(P, G ∩ L) ≥ 2 I(P, p ∩ L) ≥ 2`. -/
+theorem squarefree_of_forall_intersectionNumber_le_one [IsAlgClosed k]
+    {G : MvPolynomial (Fin 3) k} {e : ℕ} (hG : G.IsHomogeneous e) (hG0 : G ≠ 0)
+    (hL : L.IsHomogeneous d) (hd : d ≠ 0) (h : ∀ P, intersectionNumber P G L ≤ 1) :
+    Squarefree G := by
+  classical
+  rintro p ⟨K, rfl⟩
+  by_contra hp
+  obtain ⟨e', he', hp'⟩ := hG.exists_isHomogeneous_of_dvd hG0
+    (dvd_mul_of_dvd_left (dvd_mul_right p p) K) hp
+  have hK : K.IsHomogeneous K.totalDegree := by
+    rw [mul_comm] at hG
+    exact hG.of_mul_left (left_ne_zero_of_mul hG0)
+  obtain ⟨P, hP⟩ := zeroLocus_nonempty_of_card_le (n := 2) (s := {p, L})
+    Finset.card_le_two (by
+      intro f hf
+      rcases Finset.mem_insert.1 hf with rfl | hf
+      · exact ⟨e', he', hp'⟩
+      · rw [Finset.mem_singleton.1 hf]
+        exact ⟨d, hd, hL⟩)
+  rw [Finset.coe_insert, Finset.coe_singleton, mem_zeroLocus_iff_eval_rep (by
+    rintro f (rfl | rfl)
+    exacts [⟨e', hp'⟩, ⟨d, hL⟩])] at hP
+  have h1 := one_le_intersectionNumber hp' hL (hP p (by simp)) (hP L (by simp))
+  have h2 := h P
+  rw [intersectionNumber_mul_left (hp'.mul hp') hK hL, intersectionNumber_mul_left hp' hp' hL]
+    at h2
+  have : (1 + 1 : ℕ∞) ≤ 1 := (add_le_add h1 h1).trans (le_self_add.trans h2)
+  exact absurd this (by decide)
 
 /-! ### Finiteness of sets of lines -/
 
