@@ -95,6 +95,30 @@ variable (hF P) in
 theorem placesOver_nonempty : (placesOver hF P).Nonempty :=
   center_surjective hF P
 
+/-- **Centres along an isomorphism of function fields.** If an isomorphism `e : k(C) ≅ k(D)` of
+the function fields of the curves `C : F = 0` and `D : G = 0` carries `𝒪_P(C)` onto `𝒪_{P'}(D)`,
+then a place of `k(C)`, moved to `k(D)`, is centred at `P'` iff it is centred at `P`. -/
+theorem center_map_eq_iff_of_map_localSubring {G : MvPolynomial (Fin 3) k} {m : ℕ}
+    {hG : G.IsHomogeneous m} [Fact (Irreducible G)] (e : functionField hF ≃ₐ[k] functionField hG)
+    {P' : zeroLocus (projectivePlaneCurve.ideal hG : Set (MvPolynomial (Fin 3) k))}
+    (h : (localSubring hF P).map (e : functionField hF →+* _) = localSubring hG P') :
+    center hG (Q.map e) = P' ↔ center hF Q = P := by
+  rw [center_eq_iff_le, center_eq_iff_le, ← h, LocalSubring.map_toSubring,
+    Subring.map_le_iff_le_comap]
+  refine ⟨fun h z hz ↦ ?_, fun h z hz ↦ ?_⟩
+  · simpa using (Place.mem_integers_map_iff _ Q).1 (h hz)
+  · exact (Place.mem_integers_map_iff _ Q).2 (by simpa using h hz)
+
+/-- Centres do not change along `ProjectiveSpace.functionField.equivOfEq`, the identification of
+the function fields of two forms with the same ideal. -/
+theorem coe_center_map_equivOfEq {G : MvPolynomial (Fin 3) k} {m : ℕ} {hG : G.IsHomogeneous m}
+    [Fact (Irreducible G)] (hI : projectivePlaneCurve.ideal hF = projectivePlaneCurve.ideal hG)
+    (Q : Place k (functionField hF)) :
+    (center hG (Q.map (ProjectiveSpace.functionField.equivOfEq hI))).1 = (center hF Q).1 :=
+  congrArg Subtype.val ((center_map_eq_iff_of_map_localSubring _
+    (ProjectiveSpace.map_localSubring_equivOfEq hI (center hF Q) ⟨_, hI ▸ (center hF Q).2⟩
+      rfl)).2 rfl)
+
 /-! ### The order of a form at a place -/
 
 /-- The local ring at the centre of `Q` lies in the valuation ring of `Q`. -/
@@ -228,6 +252,13 @@ theorem ordForm_eq_addValuation_aeval {i : Fin 3} (hi : eval (center hF Q).1.rep
         G) := by
   rw [functionField.aeval_mk_X]
   exact ordForm_eq_addValuation_mk hG _ (eval_X_pow_ne_zero hi m)
+
+/-- The order of a form at a place depends only on the form and its degree, not on the proof
+that it is homogeneous. -/
+theorem ordForm_congr (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') (hGG' : G = G')
+    (hm : m = m') : ordForm hF Q hG = ordForm hF Q hG' := by
+  subst hGG' hm
+  rfl
 
 /-- The order of a product of forms is the sum of the orders. -/
 theorem ordForm_mul (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') :
