@@ -92,27 +92,8 @@ theorem exists_formQuotient_eq (z : (functionField hF)ˣ) :
     exact (projectivePlaneCurve.mem_ideal_iff hF).2 h)
   exact ⟨m, G, H, hG, hH, hFG, hFH, Units.ext (by rw [coe_formQuotient, hz])⟩
 
-variable [IsAlgClosed k]
-
-/-- **`ord_Q(G / H) = ord_Q(G) - ord_Q(H)`**, in the additive form
-`ord_Q(G) = ord_Q(G / H) + ord_Q(H)`, for forms `G`, `H` of the same degree with `F ∤ H`. -/
-theorem ordForm_eq_addValuation_mk_add (Q : Place k (functionField hF)) (hG : G.IsHomogeneous m)
-    (hH : H.IsHomogeneous m) (hFH : ¬ F ∣ H) :
-    ordForm hF Q hG = Q.addValuation
-      (functionField.mk hG hH (projectivePlaneCurve.notMem_ideal_of_not_dvd hF hFH)) +
-      ordForm hF Q hH := by
-  obtain ⟨i, hi⟩ := (center hF Q).1.exists_mem_affineOpen
-  have hXQ : eval (center hF Q).1.rep (X i ^ m) ≠ 0 := by
-    simpa using pow_ne_zero m ((mem_affineOpen_iff _ _).1 hi)
-  rw [ordForm_eq_addValuation_mk hG (isHomogeneous_X_pow i m) hXQ,
-    ordForm_eq_addValuation_mk hH (isHomogeneous_X_pow i m) hXQ, ← Q.addValuation.map_mul,
-    functionField.mk_mul_mk]
-  congr 1
-  exact functionField.mk_eq_mk_of_mul_eq _ _ _ _ _ _ (by ring)
-
 /-! ### The divisor of a form -/
 
-omit [IsAlgClosed k] in
 variable (hF) in
 /-- A form `G` with `F ∤ G` vanishes at only finitely many points of `C`. -/
 theorem finite_setOf_eval_eq_zero (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G) :
@@ -125,6 +106,8 @@ theorem finite_setOf_eval_eq_zero (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G) :
     rintro f (rfl | rfl); exacts [⟨d, hF⟩, ⟨m, hG⟩])]
   rintro f (rfl | rfl)
   exacts [(mem_zeroLocus_ideal_iff hF).1 P.2.out, hP]
+
+variable [IsAlgClosed k]
 
 /-- The places at which a form `G` with `F ∤ G` has nonzero order are finite in number: they
 lie over the finitely many points of `C` where `G` vanishes. -/
