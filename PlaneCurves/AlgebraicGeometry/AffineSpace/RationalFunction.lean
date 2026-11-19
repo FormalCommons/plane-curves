@@ -48,6 +48,8 @@ prime ideals of `𝒪_P(V)`.
 * `PlaneCurves.AffineSpace.ker_evalAt`: the kernel of the value map is the maximal ideal.
 * `PlaneCurves.AffineSpace.isUnit_iff_evalAt_ne_zero`: the units of `𝒪_P(V)` are the functions
   not vanishing at `P`.
+* `PlaneCurves.AffineSpace.quotientAlgEquiv_eq_mk_mk'`: `𝒪_P(V) ≅ 𝒪_P(𝔸ⁿ) ⧸ I 𝒪_P(𝔸ⁿ)` sends
+  `a / b` to the class of `a / b`.
 * `PlaneCurves.AffineSpace.poleSet_eq_zeroLocus`: the pole set is the zero set of the ideal of
   denominators, so it is algebraic.
 * `PlaneCurves.AffineSpace.mem_range_algebraMap_iff`: over an algebraically closed field,
@@ -354,6 +356,23 @@ theorem quotientAlgEquiv_symm_mk (f : MvPolynomial σ k) :
     (quotientAlgEquiv P hI).symm (Ideal.Quotient.mk _ (algebraMap _ (localRing k P) f)) =
       algebraMap _ _ (Ideal.Quotient.mk I f) := by
   rw [AlgEquiv.symm_apply_eq, quotientAlgEquiv_algebraMap]
+
+/-- The isomorphism `𝒪_P(V) ≅ 𝒪_P(𝔸ⁿ) ⧸ I 𝒪_P(𝔸ⁿ)` sends a fraction `a / b`, with `b(P) ≠ 0`, to
+the class of the fraction `a / b` of `𝒪_P(𝔸ⁿ)`. -/
+theorem quotientAlgEquiv_eq_mk_mk' {f : (localSubring P hI).toSubring} {a b : MvPolynomial σ k}
+    (hb : eval P b ≠ 0)
+    (hf : (f : functionField I) =
+      algebraMap _ _ (Ideal.Quotient.mk I a) / algebraMap _ _ (Ideal.Quotient.mk I b)) :
+    quotientAlgEquiv P hI f = Ideal.Quotient.mk _ (IsLocalization.mk' (localRing k P) a
+      (⟨b, by simpa [mem_vanishingIdeal_singleton_iff] using hb⟩ :
+        (vanishingIdeal k {P}).primeCompl)) := by
+  have hfb : f * algebraMap _ _ (Ideal.Quotient.mk I b) = algebraMap _ _ (Ideal.Quotient.mk I a) :=
+    Subtype.ext (by simp [hf, div_mul_cancel₀ _ (algebraMap_mk_ne_zero hI hb)])
+  refine (((localRing.isUnit_algebraMap_iff (P := P)).2 hb).map
+    (Ideal.Quotient.mk (I.map (algebraMap _ (localRing k P))))).mul_left_injective ?_
+  simp only
+  rw [← quotientAlgEquiv_algebraMap P hI, ← map_mul, hfb, quotientAlgEquiv_algebraMap,
+    quotientAlgEquiv_algebraMap, ← map_mul, IsLocalization.mk'_spec]
 
 /-- Two ring maps out of `𝒪_P(V)` that agree on `Γ(V)` are equal. -/
 theorem ringHom_ext {R : Type*} [Semiring R] {φ φ' : (localSubring P hI).toSubring →+* R}
