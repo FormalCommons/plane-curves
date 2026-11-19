@@ -40,14 +40,7 @@ namespace PlaneCurves.Projective
 open MvPolynomial Projectivization PlaneCurves.ProjectiveSpace
 open scoped LinearAlgebra.Projectivization
 
-variable {k : Type*} [Field k]
-
-private theorem eval_eq_zero_of_dvd {σ : Type*} {p q : MvPolynomial σ k} (h : p ∣ q)
-    {v : σ → k} (hv : eval v p = 0) : eval v q = 0 := by
-  obtain ⟨c, rfl⟩ := h
-  simp [hv]
-
-variable [IsAlgClosed k]
+variable {k : Type*} [Field k] [IsAlgClosed k]
 
 /-- **The opposite sides of a hexagon inscribed in a conic meet in collinear points.** Let `k`
 be algebraically closed, `G` a conic (a form of degree 2, possibly reducible), `P₀, …, P₅` points
@@ -78,21 +71,15 @@ theorem exists_isHomogeneous_one_of_hexagon {G : MvPolynomial (Fin 3) k}
   -- a side meets `G` only in its two vertices
   have hside i S (hS : eval S.rep (L i) = 0) (hSG : eval S.rep G = 0) :
       S = P i ∨ S = P (i + 1) := by
-    by_contra! h
     have hne : P i ≠ P (i + 1) := hinj.ne (by grind)
-    have := card_le_mul_of_isRelPrime (hL i) hG ((hirr i).isRelPrime_iff_not_dvd.2 (hLG i))
-      (s := {P i, P (i + 1), S}) (by
-        simp only [Finset.mem_insert, Finset.mem_singleton, forall_eq_or_imp, forall_eq]
-        exact ⟨⟨(hLP i).1, hPG i⟩, ⟨(hLP i).2, hPG _⟩, hS, hSG⟩)
-    rw [Finset.card_insert_of_notMem (by simp [hne, Ne.symm h.1]),
-      Finset.card_pair (Ne.symm h.2)] at this
-    omega
+    exact eq_or_eq_of_isHomogeneous_one_of_not_dvd (hL i) (hL0 i) hG (hLG i) hne
+      ⟨(hLP i).1, hPG i⟩ ⟨(hLP i).2, hPG _⟩ ⟨hS, hSG⟩
   have hLL i j (hij : i ≠ j) : IsRelPrime (L i) (L j) := by
     refine (hirr i).isRelPrime_iff_not_dvd.2 fun hd ↦ ?_
     have key : (i ≠ j ∧ i ≠ j + 1) ∨ (i + 1 ≠ j ∧ i + 1 ≠ j + 1) := by grind
     rcases key with h | h
-    · exact hLP' j i h.1 h.2 (eval_eq_zero_of_dvd hd (hLP i).1)
-    · exact hLP' j (i + 1) h.1 h.2 (eval_eq_zero_of_dvd hd (hLP i).2)
+    · exact hLP' j i h.1 h.2 (zero_dvd_iff.1 ((hLP i).1 ▸ map_dvd (eval (P i).rep) hd))
+    · exact hLP' j (i + 1) h.1 h.2 (zero_dvd_iff.1 ((hLP i).2 ▸ map_dvd (eval (P (i + 1)).rep) hd))
   set F := L 0 * L 2 * L 4 with hFdef
   set H := L 1 * L 3 * L 5 with hHdef
   have hF : F.IsHomogeneous 3 := ((hL 0).mul (hL 2)).mul (hL 4)
@@ -197,14 +184,9 @@ theorem pascal {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous 2) (hirr : Irr
     omega
   refine exists_isHomogeneous_one_of_hexagon hG hPG hL hL0 hLG hLP (fun i j hji hji' hj ↦ ?_) hR
   -- otherwise `Lᵢ` meets `G` in three points
-  have := card_le_mul_of_isRelPrime (hL i) hG ((hirrL i).isRelPrime_iff_not_dvd.2 (hLG i))
-    (s := {P i, P (i + 1), P j}) (by
-      simp only [Finset.mem_insert, Finset.mem_singleton, forall_eq_or_imp, forall_eq]
-      exact ⟨⟨(hLP i).1, hPG i⟩, ⟨(hLP i).2, hPG _⟩, hj, hPG j⟩)
-  have hne : P i ≠ P (i + 1) := hP.ne (by grind)
-  rw [Finset.card_insert_of_notMem (by simp [hne, hP.ne hji.symm]),
-    Finset.card_pair (hP.ne hji'.symm)] at this
-  omega
+  rcases eq_or_eq_of_isHomogeneous_one_of_not_dvd (hL i) (hL0 i) hG (hLG i) (hP.ne (by grind))
+      ⟨(hLP i).1, hPG i⟩ ⟨(hLP i).2, hPG _⟩ ⟨hj, hPG j⟩ with h | h
+  exacts [hji (hP h), hji' (hP h)]
 
 /-- **Pappus's theorem** (Fulton, §5.6, Corollary 2). Let `k` be algebraically closed, `A` and
 `B` lines, `P₀, P₁, P₂` distinct points of `A` not on `B`, and `Q₀, Q₁, Q₂` distinct points of `B`
@@ -227,15 +209,17 @@ theorem pappus {A B : MvPolynomial (Fin 3) k} (hA : A.IsHomogeneous 1) (hB : B.I
   have hB0 : B ≠ 0 := fun h ↦ hPB 0 (by simp [h])
   -- `Lᵢⱼ` passes through no other `Pᵢ'` or `Qⱼ'`, and is neither `A` nor `B`
   have hP' i j i' (h : i' ≠ i) : eval (P i').rep (L i j) ≠ 0 := fun h0 ↦
-    hQA j (eval_eq_zero_of_dvd (associated_of_eval_rep_eq_zero_of_ne (hL i j) (hL0 i j) hA hA0
-      (hP.ne h.symm) (hLP i j).1 h0 (hPA i) (hPA i')).dvd (hLP i j).2)
+    hQA j (zero_dvd_iff.1 ((hLP i j).2 ▸ map_dvd (eval _)
+      (associated_of_eval_rep_eq_zero_of_ne (hL i j) (hL0 i j) hA hA0
+        (hP.ne h.symm) (hLP i j).1 h0 (hPA i) (hPA i')).dvd))
   have hQ' i j j' (h : j' ≠ j) : eval (Q j').rep (L i j) ≠ 0 := fun h0 ↦
-    hPB i (eval_eq_zero_of_dvd (associated_of_eval_rep_eq_zero_of_ne (hL i j) (hL0 i j) hB hB0
-      (hQ.ne h.symm) (hLP i j).2 h0 (hQB j) (hQB j')).dvd (hLP i j).1)
+    hPB i (zero_dvd_iff.1 ((hLP i j).1 ▸ map_dvd (eval _)
+      (associated_of_eval_rep_eq_zero_of_ne (hL i j) (hL0 i j) hB hB0
+        (hQ.ne h.symm) (hLP i j).2 h0 (hQB j) (hQB j')).dvd))
   have hLG i j : ¬L i j ∣ A * B := fun h ↦
     ((irreducible_of_isHomogeneous_one (hL i j) (hL0 i j)).prime.dvd_or_dvd h).elim
-      (fun h ↦ hQA j (eval_eq_zero_of_dvd h (hLP i j).2))
-      (fun h ↦ hPB i (eval_eq_zero_of_dvd h (hLP i j).1))
+      (fun h ↦ hQA j (zero_dvd_iff.1 ((hLP i j).2 ▸ map_dvd (eval _) h)))
+      (fun h ↦ hPB i (zero_dvd_iff.1 ((hLP i j).1 ▸ map_dvd (eval _) h)))
   -- the hexagon `P₀ Q₁ P₂ Q₀ P₁ Q₂`, with sides `L₀₁, L₂₁, L₂₀, L₁₀, L₁₂, L₀₂`
   set V : Fin 6 → ℙ k (Fin 3 → k) := ![P 0, Q 1, P 2, Q 0, P 1, Q 2]
   set ip : Fin 6 → Fin 3 := ![0, 2, 2, 1, 1, 0]
