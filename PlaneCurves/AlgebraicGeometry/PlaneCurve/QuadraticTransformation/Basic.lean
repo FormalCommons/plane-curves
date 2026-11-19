@@ -180,6 +180,12 @@ theorem mem_fundamentalTriangle_iff {P : ℙ k (Fin 3 → k)} :
   conv_lhs => rw [← P.mk_rep]
   exact mk_mem_fundamentalTriangle_iff _ _
 
+/-- A point off the fundamental triangle lies in every affine chart. -/
+theorem mem_affineOpen_of_notMem_fundamentalTriangle {P : ℙ k (Fin 3 → k)}
+    (hP : P ∉ fundamentalTriangle) (i : Fin 3) : P ∈ affineOpen i := by
+  rw [mem_affineOpen_iff]
+  exact fun h ↦ hP (mem_fundamentalTriangle_iff.2 ⟨i, h⟩)
+
 theorem fundamentalPoint_mem_fundamentalTriangle (i : Fin 3) :
     fundamentalPoint (k := k) i ∈ fundamentalTriangle := by
   rw [fundamentalPoint_def, mk_mem_fundamentalTriangle_iff]
