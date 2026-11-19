@@ -129,12 +129,8 @@ theorem center_map_linearSubstEquiv_eq_iff
     (hQP : map M.1.mulVecLin (mulVec_injective_of_isUnit M.isUnit) P'.1 = P.1)
     {Q : Place k (functionField hF)} :
     center (hF.linearSubst M.1) (Q.map (functionField.linearSubstEquiv hF M)) = P' ↔
-      center hF Q = P := by
-  rw [center_eq_iff_le, center_eq_iff_le, ← map_localSubring_linearSubstEquiv hQP,
-    LocalSubring.map_toSubring, Subring.map_le_iff_le_comap]
-  refine ⟨fun h z hz ↦ ?_, fun h z hz ↦ ?_⟩
-  · simpa using (Place.mem_integers_map_iff _ Q).1 (h hz)
-  · exact (Place.mem_integers_map_iff _ Q).2 (by simpa using h hz)
+      center hF Q = P :=
+  center_map_eq_iff_of_map_localSubring _ (map_localSubring_linearSubstEquiv hQP)
 
 /-- **The centre of the moved place is the moved centre**: `M` sends the centre on `C^M` of a
 place of `k(C)`, moved to `k(C^M)`, to its centre on `C`. -/
