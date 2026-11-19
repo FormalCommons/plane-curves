@@ -45,7 +45,8 @@ coordinates, general position and the lines of the plane in equations.
   on a hyperplane.
 * `exists_linearSubst_sum_C_mul_X_eq_X`, `exists_preimage_map_zeroLocus_eq`: independent linear
   forms can be made coordinates, and every linear subvariety of dimension `m` is carried to
-  `V(X (m + 1), …, X n)`.
+  `V(X (m + 1), …, X n)`; `map_mk_single_eq_of_linearSubst_sum_C_mul_X_eq_X`: where such a change
+  of coordinates sends the coordinate points.
 * `exists_sum_C_mul_X_forall_notMem_zeroLocus`,
   `exists_sum_C_mul_X_mem_zeroLocus_forall_notMem_zeroLocus`,
   `exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus`, `setOf_mem_zeroLocus_sum_C_mul_X`:
@@ -53,6 +54,8 @@ coordinates, general position and the lines of the plane in equations.
   hyperplanes through a point.
 * `exists_eval_rep_ne_zero_notMem`: over an infinite field, a point off a hypersurface and off
   a finite set.
+* `linearIndependent_rep_of_dotProduct`: two distinct hyperplanes through a point and one missing
+  it are independent.
 * `zeroLocus_singleton_sum_C_mul_X_crossProduct`, `zeroLocus_pair_sum_C_mul_X`,
   `single_one_mem_zeroLocus_sum_C_mul_X_iff`: in `ℙ²`, the line through two points, the point
   of two lines, and the lines through `[0 : 1 : 0]`.
@@ -277,6 +280,33 @@ theorem exists_linearSubst_sum_C_mul_X_eq_X {ι : Type*} [Finite ι] {a : ι →
   · rw [linearSubst_sum_C_mul_X, Matrix.vecMul_transpose, LinearMap.toMatrix'_mulVec]
     simp [he, Pi.single_apply]
 
+open scoped Matrix in
+/-- **Where the coordinate points go.** If a change of coordinates `M` carries the linear forms
+`∑ i, a j i * X i` to the coordinates `X j`, it sends the coordinate point `[eᵢ]` to every point
+at which the forms with `j ≠ i` vanish. -/
+theorem map_mk_single_eq_of_linearSubst_sum_C_mul_X_eq_X
+    {M : Matrix (Fin (n + 1)) (Fin (n + 1)) k} (hM : Function.Injective M.mulVecLin)
+    {a : Fin (n + 1) → Fin (n + 1) → k} (hMa : ∀ j, linearSubst M (∑ i, C (a j i) * X i) = X j)
+    {i : Fin (n + 1)} {P : ℙ k (Fin (n + 1) → k)} (hP : ∀ j ≠ i, a j ⬝ᵥ P.rep = 0) :
+    map M.mulVecLin hM (mk k (Pi.single i 1) (by simp)) = P := by
+  classical
+  obtain ⟨x, hx⟩ := (LinearMap.injective_iff_surjective.1 hM) P.rep
+  have hcoord (j : Fin (n + 1)) : a j ⬝ᵥ P.rep = x j := by
+    rw [← eval_sum_C_mul_X, ← hx, Matrix.mulVecLin_apply, ← eval_linearSubst, hMa, eval_X]
+  have hxe : x = x i • Pi.single i 1 := by
+    ext j
+    by_cases hj : j = i
+    · subst hj
+      simp
+    · simp [hj, ← hcoord, hP j hj]
+  have hxi : x i ≠ 0 := fun h0 ↦ P.rep_ne_zero (by rw [← hx, hxe, h0, zero_smul, map_zero])
+  rw [map_mk]
+  conv_rhs => rw [← P.mk_rep]
+  rw [mk_eq_mk_iff']
+  refine ⟨(x i)⁻¹, ?_⟩
+  have hMx : M.mulVecLin x = x i • M.mulVecLin (Pi.single i 1) := by rw [← map_smul, ← hxe]
+  rw [← hx, hMx, smul_smul, inv_mul_cancel₀ hxi, one_smul]
+
 /-- **Normal form of a linear subvariety, in equations.** If the linear forms with coefficients
 in `s` have rank `n - m`, then a change of coordinates carries their zero locus to
 `V(X (m + 1), …, X n)`, the coordinate subvariety of dimension `m`. -/
@@ -473,6 +503,29 @@ theorem zeroLocus_pair_sum_C_mul_X {a b : Fin 3 → k} (h : LinearIndependent k 
   refine ⟨fun hP ↦ ?_, fun hP ↦ hP ▸ le_rfl⟩
   rw [← submodule_injective.eq_iff]
   exact Submodule.eq_of_le_of_finrank_eq hP (by rw [finrank_submodule, finrank_submodule])
+
+/-- **Two hyperplanes through a point and a third missing it are independent.** If two distinct
+hyperplanes `[c₀]`, `[c₁]` contain a point `[v]` and a third `[c₂]` does not, then the coefficient
+vectors of the three are linearly independent. -/
+theorem linearIndependent_rep_of_dotProduct {c₀ c₁ c₂ : ℙ k (Fin (n + 1) → k)}
+    {v : Fin (n + 1) → k} (h01 : c₀ ≠ c₁) (h0 : c₀.rep ⬝ᵥ v = 0) (h1 : c₁.rep ⬝ᵥ v = 0)
+    (h2 : c₂.rep ⬝ᵥ v ≠ 0) : LinearIndependent k ![c₀.rep, c₁.rep, c₂.rep] := by
+  rw [Fintype.linearIndependent_iff]
+  intro g hg
+  have hg2 : g 2 = 0 := by
+    have := congrArg (· ⬝ᵥ v) hg
+    simp only [Fin.sum_univ_three, add_dotProduct, smul_dotProduct, zero_dotProduct] at this
+    simpa [h0, h1, h2] using this
+  have hpair : LinearIndependent k ![c₀.rep, c₁.rep] := by
+    have := independent_iff.1 ((independent_pair_iff_ne c₀ c₁).2 h01)
+    convert this using 1
+    ext i : 1
+    fin_cases i <;> rfl
+  obtain ⟨hg0, hg1⟩ := LinearIndependent.pair_iff.1 hpair (g 0) (g 1)
+    (by simpa [Fin.sum_univ_three, hg2] using hg)
+  intro i
+  fin_cases i
+  exacts [hg0, hg1, hg2]
 
 /-- **The lines through `[0 : 1 : 0]`.** In `ℙ²`, a linear form `∑ i, a i X i`, `a ≠ 0`, vanishes
 at `[0 : 1 : 0]` iff it is a nonzero multiple of `X 0 - λ X 2` for some `λ`, or of `X 2`. -/

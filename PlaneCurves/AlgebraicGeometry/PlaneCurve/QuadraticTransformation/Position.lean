@@ -6,6 +6,8 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.GenericLine
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.TerriblePoint
+public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.GoodPosition
 
 /-!
@@ -29,6 +31,9 @@ squarefree criterion by intersection numbers,
 ## Main definitions
 
 * `PlaneCurves.Projective.IsExcellentPosition F`: `F` is in excellent position.
+* `PlaneCurves.Projective.IsQuadraticTransformAt F P G`: `G` is a quadratic transformation of `F`
+  centred at `P`, the proper transform of `F` after a change of coordinates moving `[0 : 0 : 1]`
+  to `P` and putting `F` in excellent position.
 
 ## Main results
 
@@ -46,6 +51,14 @@ squarefree criterion by intersection numbers,
 * `PlaneCurves.Projective.IsExcellentPosition.ncard_zeroLocus_X_two`,
   `PlaneCurves.Projective.IsExcellentPosition.ncard_zeroLocus_X_diff`: `L` meets `F` in `n`
   points, `L'` and `L''` in `n - r` points other than `P`.
+* `PlaneCurves.Projective.exists_isExcellentPosition`: Fulton's Lemma 1, for every point that is
+  not terrible, in any characteristic;
+  `PlaneCurves.Projective.exists_isExcellentPosition_of_charZero` is the book's
+  form, for every point in characteristic zero.
+* `PlaneCurves.Projective.exists_isQuadraticTransformAt`: quadratic transformations centred at a
+  point that is not terrible exist; `PlaneCurves.Projective.IsQuadraticTransformAt.isHomogeneous`
+  and `PlaneCurves.Projective.IsQuadraticTransformAt.irreducible` give their degree `2n - m_P(F)`
+  and irreducibility.
 
 ## References
 
@@ -350,6 +363,223 @@ theorem ncard_zeroLocus_X_diff [IsAlgClosed k] (h : IsExcellentPosition F)
     fun Q hQ hQP ↦ h.intersectionNumber_eq_one hQ hQP
 
 end IsExcellentPosition
+
+/-! ### Existence of excellent position -/
+
+section Existence
+
+/-- A line `L` that meets an irreducible curve `F` with intersection number one at each common
+point other than `P` is not a component of `F`: otherwise every point of `F` would have an
+infinite intersection number. -/
+private theorem isRelPrime_of_intersectionNumber_eq_one [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {L : MvPolynomial (Fin 3) k} {d : ℕ} (hL : L.IsHomogeneous d)
+    {P : ℙ k (Fin 3 → k)} (h : ∀ Q ∈ zeroLocus {F, L}, Q ≠ P → intersectionNumber Q F L = 1) :
+    IsRelPrime F L := by
+  rw [hirr.isRelPrime_iff_not_dvd]
+  intro hFL
+  have hn : n ≠ 0 := hF.degree_ne_zero_of_irreducible hirr
+  obtain ⟨Q, hQF, hQP⟩ :=
+    ((zeroLocus_singleton_infinite (n := 2) le_rfl hF hn).sdiff (Set.finite_singleton P)).nonempty
+  have hQF' := (eval_rep_eq_zero_iff_mem hF).2 hQF
+  have hQL : Q ∈ zeroLocus {L} := by
+    obtain ⟨g, rfl⟩ := hFL
+    exact (eval_rep_eq_zero_iff_mem hL).1 (by rw [map_mul, hQF', zero_mul])
+  have htop : intersectionNumber Q F L = ⊤ := by
+    by_contra hne
+    exact (intersectionNumber_ne_top_iff hF hL).1 hne F hirr dvd_rfl hFL hQF'
+  rw [h Q (mem_zeroLocus_pair_iff.2 ⟨hQF, hQL⟩) hQP] at htop
+  exact ENat.one_ne_top htop
+
+/-- **The excellent-position conditions in new coordinates.** Let `M` carry the linear forms
+`ℓⱼ = ∑ i, a j i * X i` to the coordinates `X j` and send `[0 : 0 : 1]` to `P`. Suppose that every
+point `Q ≠ P` of `F` on `ℓⱼ` has `I(Q, F ∩ ℓⱼ) = 1`, that `I(P, F ∩ ℓⱼ) = m_P(F)` for `j ≠ 2`,
+and that no point of `F` on `ℓ₀` or `ℓ₁` is on `ℓ₂`. Then `F(M X)` is in excellent position. -/
+private theorem isExcellentPosition_linearSubst_of_lines [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {M : Matrix (Fin 3) (Fin 3) k} (hM : Function.Injective M.mulVecLin)
+    {a : Fin 3 → Fin 3 → k} (hMa : ∀ j, linearSubst M (∑ i, C (a j i) * X i) = X j)
+    {P : ℙ k (Fin 3 → k)} (hTP : map M.mulVecLin hM (fundamentalPoint 2) = P)
+    (hI : ∀ j, ∀ Q ∈ zeroLocus {F, ∑ i, C (a j i) * X i}, Q ≠ P →
+      intersectionNumber Q F (∑ i, C (a j i) * X i) = 1)
+    (hIP : ∀ j ≠ 2, intersectionNumber P F (∑ i, C (a j i) * X i) = mult F P)
+    (h2 : ∀ j ≠ 2, ∀ Q ∈ zeroLocus {F, ∑ i, C (a j i) * X i},
+      Q ∉ zeroLocus {∑ i, C (a 2 i) * X i}) :
+    IsExcellentPosition (linearSubst M F) := by
+  have hdet : IsUnit M.det := Matrix.isUnit_det_of_mulVecLin_injective hM
+  set T := map M.mulVecLin hM
+  set G := linearSubst M F
+  have hG : G.IsHomogeneous n := hF.linearSubst M
+  have hG0 : G ≠ 0 := ((irreducible_linearSubst_iff hdet).2 hirr).ne_zero
+  have hzero (H : MvPolynomial (Fin 3) k) (Q : ℙ k (Fin 3 → k)) :
+      Q ∈ zeroLocus {linearSubst M H} ↔ T Q ∈ zeroLocus {H} := by
+    rw [← Set.image_singleton, zeroLocus_linearSubst]
+    rfl
+  have hmemX {Q : ℙ k (Fin 3 → k)} {j : Fin 3} :
+      Q ∈ zeroLocus {X j} ↔ T Q ∈ zeroLocus {∑ i, C (a j i) * X i} := by
+    rw [← hMa j, hzero]
+  have hIX (Q : ℙ k (Fin 3 → k)) (j : Fin 3) :
+      intersectionNumber Q G (X j) = intersectionNumber (T Q) F (∑ i, C (a j i) * X i) := by
+    rw [← hMa j]
+    exact intersectionNumber_linearSubst hF (isHomogeneous_sum_C_mul_X _)
+      (Matrix.nonsingInvUnit M hdet) Q
+  -- `T` sends `[1 : 0 : 0]` and `[0 : 1 : 0]` off `F`.
+  have hfund {i : Fin 3} (hi : i ≠ 2) : T (fundamentalPoint i) ∉ zeroLocus {F} := by
+    intro hiF
+    have hℓ {j : Fin 3} (hj : j ≠ i) : T (fundamentalPoint i) ∈ zeroLocus {∑ l, C (a j l) * X l} :=
+      hmemX.1 (fundamentalPoint_mem_zeroLocus_X_iff.2 hj.symm)
+    obtain rfl | rfl : i = 0 ∨ i = 1 := by fin_cases i <;> simp at hi ⊢
+    · exact h2 1 (by decide) _ (mem_zeroLocus_pair_iff.2 ⟨hiF, hℓ (by decide)⟩) (hℓ hi.symm)
+    · exact h2 0 (by decide) _ (mem_zeroLocus_pair_iff.2 ⟨hiF, hℓ (by decide)⟩) (hℓ hi.symm)
+  refine ⟨?_, fun j Q hQ hQP ↦ ?_⟩
+  · -- Good position: at `[0 : 0 : 1]` the first two lines are not tangent.
+    rw [isGoodPosition_def]
+    intro i j hij ht
+    by_cases hi : i = 2
+    · subst hi
+      rw [isTangentAt_iff_mult_lt_intersectionNumber hG hG0 (isHomogeneous_X k j) (X_ne_zero j)
+        (isTangentAt_def.1 ht).2.2.1, mult_linearSubst hF hM, hIX] at ht
+      change mult F (T _) < _ at ht
+      rw [hTP, hIP j hij.symm] at ht
+      exact lt_irrefl _ ht
+    · exact hfund hi ((hzero F _).1 ((eval_rep_eq_zero_iff_mem hG).1 ht.eval_rep_eq_zero))
+  · rw [mem_zeroLocus_pair_iff, hzero, hmemX] at hQ
+    have hTQP : T Q ≠ P := fun h ↦ hQP (map_injective _ hM (h.trans hTP.symm))
+    refine ⟨fun i hi ↦ ?_, ?_⟩
+    · subst hi
+      by_cases hi2 : i = 2
+      · exact hQP (hi2 ▸ rfl)
+      · exact hfund hi2 hQ.1
+    · rw [hIX]
+      exact hI j _ (mem_zeroLocus_pair_iff.2 hQ) hTQP
+
+/-- **Existence of excellent position** (Fulton, §7.4, Lemma 1). Let `k` be algebraically closed,
+`F` an irreducible form of degree `n`, and `P` a point of `ℙ²`, on `F` or not, that is not
+terrible for `F`. Then there is a projective change of coordinates `T`, given by an invertible
+matrix `M`, with `T([0 : 0 : 1]) = P` and `F^T = F(M X)` in excellent position.
+
+The lines `T(V(X))` and `T(V(Y))` are two lines through `P` that meet `F` transversally in
+`n - m_P(F)` further points and are not tangent at `P`; `T(V(Z))` is a line through no point of
+`F` on them, and not through `P`, that meets `F` transversally in `n` points. -/
+theorem exists_isExcellentPosition [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {P : ℙ k (Fin 3 → k)} (hP : ¬ IsTerriblePoint F P.rep) :
+    ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+      map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) := by
+  classical
+  obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F P = r :=
+    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+  have hℓ (a : Fin 3 → k) := isHomogeneous_sum_C_mul_X (σ := Fin 3) (R := k) a
+  -- Two distinct lines through `P` meeting `F` as part (d) of the terrible-point theorem says.
+  have hgood := Filter.eventually_cofinite.1
+    (eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF hirr hP hr)
+  obtain ⟨c₀, hc₀, c₁, hc₁, h01⟩ :=
+    ((infinite_setOf_eval_sum_C_mul_X_eq_zero P).sdiff hgood).nontrivial
+  simp only [Set.mem_sdiff, Set.mem_ofPred_eq, not_not] at hc₀ hc₁
+  obtain ⟨-, hI₀, hIP₀⟩ := hc₀.2 hc₀.1
+  obtain ⟨-, hI₁, hIP₁⟩ := hc₁.2 hc₁.1
+  have h0 : c₀.rep ⬝ᵥ P.rep = 0 := by rw [← eval_sum_C_mul_X]; exact hc₀.1
+  have h1 : c₁.rep ⬝ᵥ P.rep = 0 := by rw [← eval_sum_C_mul_X]; exact hc₁.1
+  -- A third line, through no point of `F` on the first two, and not through `P`.
+  set S := zeroLocus {F, ∑ i, C (c₀.rep i) * X i} ∪ zeroLocus {F, ∑ i, C (c₁.rep i) * X i} ∪ {P}
+  have hS : S.Finite :=
+    ((finite_zeroLocus_pair_of_isRelPrime hF (hℓ _)
+      (isRelPrime_of_intersectionNumber_eq_one hF hirr (hℓ _) hI₀)).union
+     (finite_zeroLocus_pair_of_isRelPrime hF (hℓ _)
+      (isRelPrime_of_intersectionNumber_eq_one hF hirr (hℓ _) hI₁))).union
+     (Set.finite_singleton P)
+  obtain ⟨c₂, hc₂, -, hI₂⟩ := exists_ncard_zeroLocus_pair_sum_C_mul_X_eq hF hirr hS
+  have h2 : c₂.rep ⬝ᵥ P.rep ≠ 0 := by
+    rw [← eval_sum_C_mul_X]
+    exact hc₂ P (by simp [S])
+  -- The three lines are independent, so a change of coordinates moves them to `V(Xⱼ)`.
+  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X
+    (linearIndependent_rep_of_dotProduct h01 h0 h1 h2) Function.injective_id
+  have hTP : map M.mulVecLin hM (fundamentalPoint 2) = P := by
+    rw [fundamentalPoint_def]
+    refine map_mk_single_eq_of_linearSubst_sum_C_mul_X_eq_X hM hMa fun j hj ↦ ?_
+    fin_cases j
+    exacts [h0, h1, absurd rfl hj]
+  refine ⟨M, hM, hTP, isExcellentPosition_linearSubst_of_lines hF hirr hM hMa hTP
+    (fun j ↦ ?_) (fun j hj ↦ ?_) (fun j hj Q hQ hQ2 ↦ hc₂ Q ?_ ?_)⟩
+  · fin_cases j
+    exacts [hI₀, hI₁, fun Q hQ _ ↦ hI₂ Q hQ]
+  · fin_cases j
+    exacts [hIP₀.trans hr.symm, hIP₁.trans hr.symm, absurd rfl hj]
+  · fin_cases j
+    exacts [Or.inl (Or.inl hQ), Or.inl (Or.inr hQ), absurd rfl hj]
+  · rw [eval_sum_C_mul_X]
+    exact (mem_zeroLocus_singleton_sum_C_mul_X_iff _ _).1 hQ2
+
+/-- **Existence of excellent position in characteristic zero** (Fulton, §7.4, Lemma 1). Over an
+algebraically closed field of characteristic zero, every point `P` of `ℙ²` can be moved to
+`[0 : 0 : 1]` by a projective change of coordinates that puts an irreducible curve in excellent
+position, since no point is terrible. -/
+theorem exists_isExcellentPosition_of_charZero [IsAlgClosed k] [CharZero k]
+    (hF : F.IsHomogeneous n) (hirr : Irreducible F) (P : ℙ k (Fin 3 → k)) :
+    ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+      map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) :=
+  exists_isExcellentPosition hF hirr (not_isTerriblePoint hF hirr P.rep_ne_zero)
+
+end Existence
+
+/-! ### Quadratic transformations centred at a point -/
+
+/-- `G` is *a quadratic transformation of `F` centred at `P`* (Fulton, §7.4): there is a
+projective change of coordinates `T`, given by an invertible matrix `M`, with
+`T([0 : 0 : 1]) = P`, `F^T = F(M X)` in excellent position, and `G` the proper transform of
+`F^T`. -/
+def IsQuadraticTransformAt (F : MvPolynomial (Fin 3) k) (P : ℙ k (Fin 3 → k))
+    (G : MvPolynomial (Fin 3) k) : Prop :=
+  ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+    map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) ∧
+      G = properTransform (linearSubst M F)
+
+theorem isQuadraticTransformAt_def {P : ℙ k (Fin 3 → k)} {G : MvPolynomial (Fin 3) k} :
+    IsQuadraticTransformAt F P G ↔
+      ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+        map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) ∧
+          G = properTransform (linearSubst M F) :=
+  Iff.rfl
+
+/-- The proper transform of a curve in excellent position is a quadratic transformation of it
+centred at `[0 : 0 : 1]`. -/
+theorem IsExcellentPosition.isQuadraticTransformAt (h : IsExcellentPosition F) :
+    IsQuadraticTransformAt F (fundamentalPoint 2) (properTransform F) := by
+  refine ⟨1, fun x y hxy ↦ by simpa using hxy, ?_, by rwa [linearSubst_one], by
+    rw [linearSubst_one]; rfl⟩
+  simp [fundamentalPoint_def, map_mk]
+
+namespace IsQuadraticTransformAt
+
+variable {P : ℙ k (Fin 3 → k)} {G : MvPolynomial (Fin 3) k}
+
+/-- A quadratic transformation of a form `F` of degree `n` centred at `P` is a form of degree
+`2n - r`, where `r = m_P(F)`. -/
+theorem isHomogeneous (h : IsQuadraticTransformAt F P G) (hF : F.IsHomogeneous n) :
+    G.IsHomogeneous (2 * n - (mult F P).toNat) := by
+  obtain ⟨M, hM, hP, hE, rfl⟩ := h
+  have hG := hF.linearSubst M
+  convert hG.properTransform using 1
+  rw [Fin.sum_univ_three, hE.mult_fundamentalPoint_eq_zero hG (by decide),
+    hE.mult_fundamentalPoint_eq_zero hG (by decide), mult_linearSubst hF hM, hP]
+  simp
+
+/-- A quadratic transformation of an irreducible form is irreducible. -/
+theorem irreducible (h : IsQuadraticTransformAt F P G) (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) : Irreducible G := by
+  obtain ⟨M, hM, -, hE, rfl⟩ := h
+  exact irreducible_properTransform (hF.linearSubst M)
+    ((irreducible_linearSubst_iff (Matrix.isUnit_det_of_mulVecLin_injective hM)).2 hirr)
+    hE.not_X_dvd
+
+end IsQuadraticTransformAt
+
+/-- **Existence of quadratic transformations.** Over an algebraically closed field, an
+irreducible curve `F` has a quadratic transformation centred at every point `P` that is not
+terrible for `F`. -/
+theorem exists_isQuadraticTransformAt [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {P : ℙ k (Fin 3 → k)} (hP : ¬ IsTerriblePoint F P.rep) :
+    ∃ G, IsQuadraticTransformAt F P G :=
+  let ⟨M, hM, hTP, hE⟩ := exists_isExcellentPosition hF hirr hP
+  ⟨_, M, hM, hTP, hE, rfl⟩
 
 /-! ### Examples -/
 
