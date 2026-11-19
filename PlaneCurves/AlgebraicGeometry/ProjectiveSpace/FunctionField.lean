@@ -68,7 +68,8 @@ subring of `k(V)`. A projective variety `V` uses `I = vanishingIdeal V`.
   `Γ_h(V)`, when `V` is nonempty.
 * `functionField.mk_eq_mk_iff`: `f / g = f' / g'` in `k(V)` iff `f g' - f' g ∈ I`.
 * `functionField.mk_eq_zero_iff`, `functionField.mk_self`, `functionField.mk_mul_mk_swap`:
-  `f / g = 0` iff `f ∈ I`, `f / f = 1` and `(f / g) (g / f) = 1`.
+  `f / g = 0` iff `f ∈ I`, `f / f = 1` and `(f / g) (g / f) = 1`; `functionField.algebraMap_eq_mk`:
+  a constant `a` is `a / 1`.
 * `functionField.aeval_mk_X`: a form `f` of degree `m` evaluated at the fractions `Xⱼ / Xᵢ` is
   `f / Xᵢᵐ`, so that `f / g = f(X / Xᵢ) / g(X / Xᵢ)` (`functionField.mk_eq_aeval_div_aeval`).
 * `poleSet_eq_inter`: the pole set of `z` is `V(I) ∩ V(J(z))`, and
@@ -726,6 +727,14 @@ theorem functionField.mk_self {d : ℕ} {f : MvPolynomial (Fin (n + 1)) k}
     (hf : f.IsHomogeneous d) (hfI : f ∉ I) : functionField.mk hf hf hfI = 1 := by
   have h := functionField.mk_div_mk hf hf hf hfI hfI
   rwa [div_self (functionField.mk_ne_zero hf hf hfI hfI), eq_comm] at h
+
+/-- A constant `a ∈ k` is the fraction `a / 1` in `k(V)`. -/
+theorem functionField.algebraMap_eq_mk (a : k) (h1 : (1 : MvPolynomial (Fin (n + 1)) k) ∉ I) :
+    algebraMap k (functionField I) a =
+      functionField.mk (isHomogeneous_C (Fin (n + 1)) a) (isHomogeneous_one _ _) h1 := by
+  rw [HomogeneousLocalization.ext_iff_val, functionField.mk_def, HomogeneousLocalization.val_mk]
+  simp
+  rfl
 
 /-- A fraction `f / g` of forms of degree `m` is the quotient of `f` and `g` evaluated at the
 fractions `Xⱼ / Xᵢ`, for any `Xᵢ ∉ I`. -/
