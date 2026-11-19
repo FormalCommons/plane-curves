@@ -59,10 +59,14 @@ squarefree criterion by intersection numbers,
   point that is not terrible exist; `PlaneCurves.Projective.IsQuadraticTransformAt.isHomogeneous`
   and `PlaneCurves.Projective.IsQuadraticTransformAt.irreducible` give their degree `2n - m_P(F)`
   and irreducibility.
+* `PlaneCurves.Projective.exists_isExcellentPosition_avoiding`,
+  `PlaneCurves.Projective.exists_isQuadraticTransformAt_avoiding`: the same, with a given finite
+  set `S` not containing the centre kept off the fundamental triangle (Problem 7.13 (a));
+  `PlaneCurves.Projective.exists_isExcellentPosition` is the case `S = ∅`.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.4
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.4 and Problem 7.13
 -/
 
 public section
