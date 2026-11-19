@@ -51,6 +51,8 @@ coordinates, general position and the lines of the plane in equations.
   `exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus`, `setOf_mem_zeroLocus_sum_C_mul_X`:
   hyperplanes missing finitely many points, one through a point missing another, and the
   hyperplanes through a point.
+* `exists_eval_rep_ne_zero_notMem`: over an infinite field, a point off a hypersurface and off
+  a finite set.
 * `zeroLocus_singleton_sum_C_mul_X_crossProduct`, `zeroLocus_pair_sum_C_mul_X`,
   `single_one_mem_zeroLocus_sum_C_mul_X_iff`: in `ℙ²`, the line through two points, the point
   of two lines, and the lines through `[0 : 1 : 0]`.
@@ -377,6 +379,35 @@ theorem setOf_mem_zeroLocus_sum_C_mul_X (P : ℙ k (Fin (n + 1) → k)) :
       LinearMap.ker (dotProductEquiv k (Fin (n + 1)) P.rep) := by
   ext a
   simp [mem_zeroLocus_singleton_sum_C_mul_X_iff, dotProduct_comm]
+
+/-- **A point off a hypersurface and a finite set.** Over an infinite field, for a nonzero form
+`f` and finitely many points of `ℙⁿ`, `n ≠ 0`, some point is neither on `f = 0` nor among them:
+otherwise the nonzero form `f · ∏_Q ℓ_Q`, with `ℓ_Q` a linear form vanishing at `Q`, would
+vanish on all of `ℙⁿ`. -/
+theorem exists_eval_rep_ne_zero_notMem [Infinite k] (hn : n ≠ 0)
+    {f : MvPolynomial (Fin (n + 1)) k} {d : ℕ} (hf : f.IsHomogeneous d) (hf0 : f ≠ 0)
+    {S : Set (ℙ k (Fin (n + 1) → k))} (hS : S.Finite) :
+    ∃ P : ℙ k (Fin (n + 1) → k), eval P.rep f ≠ 0 ∧ P ∉ S := by
+  classical
+  choose a ha0 haQ _ using fun Q : ℙ k (Fin (n + 1) → k) ↦
+    exists_sum_C_mul_X_mem_zeroLocus_forall_notMem_zeroLocus hn Q Set.finite_empty
+      (Set.notMem_empty Q)
+  set G := f * ∏ Q ∈ hS.toFinset, ∑ i, C (a Q i) * X i
+  have hG : G.IsHomogeneous (d + ∑ _Q ∈ hS.toFinset, 1) :=
+    hf.mul (IsHomogeneous.prod _ _ _ fun Q _ ↦ isHomogeneous_sum_C_mul_X (a Q))
+  have hG0 : G ≠ 0 :=
+    mul_ne_zero hf0 (Finset.prod_ne_zero_iff.2 fun Q _ ↦ sum_C_mul_X_ne_zero (ha0 Q))
+  obtain ⟨P, -, hP⟩ : ∃ P ∈ (Set.univ : Set (ℙ k (Fin (n + 1) → k))), eval P.rep G ≠ 0 := by
+    by_contra! h
+    have h0 := (mem_vanishingIdeal_iff_of_isHomogeneous hG).2 h
+    rw [vanishingIdeal_univ, ← HomogeneousIdeal.mem_iff, HomogeneousIdeal.toIdeal_bot,
+      Ideal.mem_bot] at h0
+    exact hG0 h0
+  rw [map_mul, mul_ne_zero_iff, map_prod, Finset.prod_ne_zero_iff] at hP
+  refine ⟨P, hP.1, fun hPS ↦ hP.2 P (hS.mem_toFinset.2 hPS) ?_⟩
+  have := haQ P
+  rw [mem_zeroLocus_singleton_sum_C_mul_X_iff] at this
+  rwa [eval_sum_C_mul_X]
 
 
 /-! ### The plane -/

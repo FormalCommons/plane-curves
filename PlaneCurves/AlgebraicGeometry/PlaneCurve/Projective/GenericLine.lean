@@ -44,6 +44,7 @@ Problem 5.26).
   points.
 * `finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite`: finitely many lines through `P` meet a
   finite set of other points.
+* `infinite_setOf_eval_sum_C_mul_X_eq_zero`: infinitely many lines pass through a point.
 * `ncard_zeroLocus_pair_diff_add`, `ncard_zeroLocus_pair_diff`: counting the points of
   `V(F) ∩ V(L)` other than `P`.
 * `eq_of_mem_zeroLocus_pair_of_intersectionNumber_eq`: if `I(P, F ∩ L) = deg F`, then `P` is
@@ -160,6 +161,15 @@ theorem finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite {S : Set (ℙ k (Fin 3 �
     (subsingleton_setOf_eval_sum_C_mul_X_eq_zero (Ne.symm hQ.2)).finite).subset ?_
   rintro c ⟨hP, Q, hQ, hQP, hcQ⟩
   exact Set.mem_biUnion (x := Q) ⟨hQ, hQP⟩ ⟨hP, hcQ⟩
+
+/-- Over an algebraically closed field, infinitely many lines pass through a point `P` of `ℙ²`:
+in the dual plane they form the line `∑ i, P.rep i X i = 0`. -/
+theorem infinite_setOf_eval_sum_C_mul_X_eq_zero [IsAlgClosed k] (P : ℙ k (Fin 3 → k)) :
+    {c : ℙ k (Fin 3 → k) | eval P.rep (∑ i, C (c.rep i) * X i) = 0}.Infinite := by
+  refine (zeroLocus_singleton_infinite (n := 2) le_rfl (isHomogeneous_sum_C_mul_X P.rep)
+    one_ne_zero).mono fun c hc ↦ ?_
+  rw [mem_zeroLocus_singleton_sum_C_mul_X_iff] at hc
+  rwa [Set.mem_ofPred_eq, eval_sum_C_mul_X, dotProduct_comm]
 
 /-! ### Counting the points of a line on a curve -/
 
