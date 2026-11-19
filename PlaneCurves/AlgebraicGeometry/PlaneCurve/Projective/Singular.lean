@@ -130,6 +130,15 @@ theorem IsSimplePoint.mem_zeroLocus (hF : F.IsHomogeneous d) (h : IsSimplePoint 
     P ∈ zeroLocus {F} :=
   (mult_pos_iff hF).1 (by rw [isSimplePoint_def.1 h]; exact zero_lt_one)
 
+/-- A form with a simple point has positive degree. -/
+theorem IsSimplePoint.degree_ne_zero (hF : F.IsHomogeneous d) (h : IsSimplePoint F P) :
+    d ≠ 0 := by
+  rintro rfl
+  obtain ⟨-, i, hi⟩ := isSimplePoint_iff_eval_rep.1 h
+  rw [(totalDegree_eq_zero_iff_eq_C (p := F)).1 (by simpa using hF.totalDegree h.ne_zero), pderiv_C,
+    map_zero] at hi
+  exact hi rfl
+
 theorem IsMultiplePoint.not_isSimplePoint (h : IsMultiplePoint F P) : ¬IsSimplePoint F P :=
   (isMultiplePoint_iff_not_isSimplePoint.1 h).2
 

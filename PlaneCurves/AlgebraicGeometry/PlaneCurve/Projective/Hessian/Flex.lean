@@ -452,15 +452,6 @@ private theorem chart_data (hF : F.IsHomogeneous n) (h : IsSimplePoint F P) :
       _ = _ := by
         rw [intersectionNumber_eq_affine hF'.det_hessian hF' hQ, affineChart_two_mk]
 
-/-- A form with a simple point has positive degree. -/
-private theorem IsSimplePoint.degree_ne_zero (hF : F.IsHomogeneous n) (h : IsSimplePoint F P) :
-    n ≠ 0 := by
-  rintro rfl
-  obtain ⟨-, i, hi⟩ := isSimplePoint_iff_eval_rep.1 h
-  rw [(totalDegree_eq_zero_iff_eq_C (p := F)).1 (by simpa using hF.totalDegree h.ne_zero), pderiv_C,
-    map_zero] at hi
-  exact hi rfl
-
 /-- In the chart `Z = 1`, at the origin of a simple point with tangent `y = 0`, the Hessian
 of a form `F` of degree `n` is `-(n - 1)² g(0) = -2 (n - 1)² a`, for `a` the coefficient of `x²`
 in `f = F(x, y, 1)`. -/
@@ -497,16 +488,6 @@ theorem eval_det_hessian_eq_zero_iff (hF : F.IsHomogeneous n)
     interval_cases d <;> assumption
   · exact iff_of_true (hm.eval_det_hessian_eq_zero hF) (Or.inr hm)
 
-/-- If `h ≡ c g` modulo `f` for a nonzero constant `c`, then `I(P, h ∩ f) = I(P, g ∩ f)`. -/
-private theorem intersectionNumber_eq_of_add_C_mul_mem_span {h g f : MvPolynomial (Fin 2) k}
-    {c : k} (hc : c ≠ 0) (P : Fin 2 → k) (hm : h + C c * g ∈ Ideal.span {f}) :
-    Affine.intersectionNumber P h f = Affine.intersectionNumber P g f := by
-  obtain ⟨A, hA⟩ := Ideal.mem_span_singleton'.1 hm
-  rw [show h = g * C (-c) + A * f by rw [map_neg]; linear_combination -hA,
-    Affine.intersectionNumber_comm, Affine.intersectionNumber_add_mul,
-    Affine.intersectionNumber_mul_right_of_eval_ne_zero (by simpa using hc),
-    Affine.intersectionNumber_comm]
-
 /-- **Hessian criterion for ordinary flexes** ([Fulton2008], Problem 5.23). Let `F` be a form of
 degree `n`, `H` its Hessian determinant and `P` a point of the curve `F = 0`. If
 `6 (n - 1) ≠ 0` in `k`, then `I(P, H ∩ F) = 1` iff `P` is an ordinary flex of `F`. -/
@@ -523,7 +504,7 @@ theorem intersectionNumber_det_hessian_eq_one_iff (hF : F.IsHomogeneous n)
     have hmem := (hF.linearSubst M.1).dehomogenize_det_hessian_add_mem_span
     rw [← map_natCast C, ← map_pow] at hmem
     rw [isOrdinaryFlex_def, and_iff_right hs, hT, hI,
-      intersectionNumber_eq_of_add_C_mul_mem_span (pow_ne_zero 2 hn) 0 hmem,
+      Affine.intersectionNumber_eq_of_add_C_mul_mem_span (pow_ne_zero 2 hn) hmem,
       Affine.intersectionNumber_g_eq_one_iff h2 h6 hf0 hfx hfy]
     rw [Affine.eval_zero_eq_coeff] at hf0
     rw [Affine.eval_zero_pderiv_zero] at hfx
@@ -545,6 +526,7 @@ theorem intersectionNumber_det_hessian_eq_one_iff (hF : F.IsHomogeneous n)
       (mul_mult_le_intersectionNumber hF.det_hessian hF)
     rw [h1] at this
     norm_num at this
+
 end PlaneCurves.Projective
 
 end
