@@ -50,6 +50,11 @@ on a cubic `Y²Z = X³ + aX²Z + bXZ² + cZ³` (Problem 5.38), and Mathlib's poi
 `k₀` give the subgroup of `k₀`-rational points (Problem 5.40). Together these are the milestone
 `WeierstrassCurve.Projective.chordTangentAddition_eq_add`.
 
+Last, for any irreducible cubic `F` with a flex `O`, a projective change of coordinates carries
+`F` to a multiple of a Weierstrass cubic `W.polynomial` and `[0 : 1 : 0]` to `O` (Fulton's
+Problem 5.24 (a)); it also carries third points to third points, so that the chord–tangent group
+`CubicGroup F O` is isomorphic to Mathlib's group `W.Point`.
+
 ## Main results
 
 * `WeierstrassCurve.Projective.isSimplePoint_polynomial_mk_iff`: `[v]` is a simple point of `F`
@@ -77,10 +82,14 @@ on a cubic `Y²Z = X³ + aX²Z + bXZ² + cZ³` (Problem 5.38), and Mathlib's poi
   `chord_mem_rationalPoints`: the subgroup of `k₀`-rational points (Problem 5.40).
 * `WeierstrassCurve.Projective.chordTangentAddition_eq_add`: chord–tangent addition on a
   Weierstrass cubic agrees with Mathlib's group law.
+* `PlaneCurves.Projective.exists_addEquiv_weierstrass_of_isFlex`: the group of an irreducible
+  cubic with zero at a flex is the group of a Weierstrass curve, with `Δ ≠ 0` when the cubic is
+  nonsingular.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Problem 3.21, and §5.6, Problems 5.38 and 5.40
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §3.3, Problem 3.21, Problem 5.24, and §5.6,
+  Problems 5.38 and 5.40
 -/
 
 public section
@@ -196,34 +205,18 @@ theorem dehomogenize_two_polynomial :
 
 end CommRing
 
-/-- A point of the plane off the line `Z = 0` is `[a : b : 1]`. -/
-private theorem exists_eq_mk {P : ℙ k (Fin 3 → k)} (hP : P ∈ affineOpen 2) :
-    ∃ a b : k, P = Projectivization.mk k ![a, b, 1] (by simp) := by
-  refine ⟨affineChart 2 P 0, affineChart 2 P 1, ?_⟩
-  calc P = (affineChart 2).symm (affineChart 2 P) :=
-        ((affineChart 2).left_inv (by rwa [affineChart_source])).symm
-    _ = _ := by
-      rw [affineChart_symm_apply]
-      congr 1
-      funext j
-      fin_cases j <;> rfl
+/-- `[a : b : 1]` is the point of the chart `Z = 1` with affine coordinates `(a, b)`. -/
+private theorem mk_eq_mk_insertNth_two (a b : k) :
+    Projectivization.mk k ![a, b, 1] (by simp) =
+      Projectivization.mk k (Fin.insertNth (α := fun _ ↦ k) 2 1 ![a, b])
+        (Fin.insertNth_one_ne_zero 2 _) := by
+  congr 1
+  funext j
+  fin_cases j <;> rfl
 
 private theorem mk_mem_affineOpen (a b : k) :
     Projectivization.mk k ![a, b, 1] (by simp) ∈ affineOpen 2 := by
   simp [mk_mem_affineOpen_iff]
-
-private theorem affineChart_mk_two (a b : k) :
-    affineChart 2 (Projectivization.mk k ![a, b, 1] (by simp)) = ![a, b] := by
-  funext j
-  fin_cases j <;> simp [Fin.succAbove, Fin.lt_def]
-
-private theorem mk_eq_mk_iff_two {a b a' b' : k} :
-    Projectivization.mk k ![a, b, 1] (by simp) = Projectivization.mk k ![a', b', 1] (by simp) ↔
-      a = a' ∧ b = b' := by
-  refine ⟨fun h ↦ ?_, fun ⟨h1, h2⟩ ↦ by subst h1 h2; rfl⟩
-  have := congrArg (affineChart 2) h
-  rw [affineChart_mk_two, affineChart_mk_two] at this
-  exact ⟨by simpa using congrFun this 0, by simpa using congrFun this 1⟩
 
 private theorem rep_two_eq_zero {P : ℙ k (Fin 3 → k)} (hP : P ∉ affineOpen 2) :
     P.rep 2 = 0 := by
@@ -259,7 +252,7 @@ private theorem intersectionNumber_mk_two {L : MvPolynomial (Fin 3) k} (hL : L.I
       PlaneCurves.Affine.intersectionNumber ![a, b] (dehomogenize 2 L)
         (dehomogenize 2 W.polynomial) := by
   rw [intersectionNumber_eq_affine hL W.isHomogeneous_polynomial (mk_mem_affineOpen a b),
-    affineChart_mk_two]
+    mk_eq_mk_insertNth_two, affineChart_mk_insertNth_one]
 
 /-- **No line is a component of the Weierstrass cubic**: every nonzero linear form `L` is
 relatively prime to `W.polynomial`. -/
@@ -336,13 +329,18 @@ theorem intersectionCycle_X_one_sub (ℓ ν : k) :
     rw [this, WeierstrassCurve.Affine.addPolynomial_eq, neg_ne_zero]
     exact Cubic.ne_zero_of_a_ne_zero one_ne_zero
   have hg : Function.Injective fun x : k ↦ Projectivization.mk k ![x, ℓ * x + ν, 1] (by simp) :=
-    fun x x' h ↦ (mk_eq_mk_iff_two.1 h).1
+    fun x x' h ↦ by
+      simp only [mk_eq_mk_insertNth_two, mk_insertNth_one_inj, Matrix.vecCons_inj] at h
+      exact h.1
   rw [hneg, intersectionCycle_smul_left (by norm_num), sum_map_single_eq_toFinsupp]
   ext P
   apply Nat.cast_injective (R := ℕ∞)
   rw [intersectionCycle_apply hL hF hrel, Multiset.toFinsupp_apply]
   by_cases hP : P ∈ affineOpen 2
-  · obtain ⟨a, b, rfl⟩ := exists_eq_mk hP
+  · obtain ⟨a, b, rfl⟩ : ∃ a b : k, P = Projectivization.mk k ![a, b, 1] (by simp) := by
+      refine ⟨affineChart 2 P 0, affineChart 2 P 1, (eq_mk_insertNth_affineChart hP).trans ?_⟩
+      rw [mk_eq_mk_insertNth_two, mk_insertNth_one_inj]
+      ext j; fin_cases j <;> rfl
     rw [intersectionNumber_mk_two hL]
     by_cases hb : b = ℓ * a + ν
     · subst hb
@@ -356,7 +354,7 @@ theorem intersectionCycle_X_one_sub (ℓ ν : k) :
       · simp
       · simp only [Multiset.mem_map, not_exists, not_and]
         intro x _ h
-        obtain ⟨rfl, rfl⟩ := mk_eq_mk_iff_two.1 h
+        obtain ⟨rfl, rfl⟩ : x = a ∧ ℓ * x + ν = b := by simpa [mk_eq_mk_insertNth_two] using h
         exact hb rfl
       · simp only [hLdef, map_add, map_sub, map_mul, eval_C, eval_X, algHom_C, algebraMap_eq,
           dehomogenize_X, insertNth_two_X_zero, insertNth_two_X_one]
@@ -436,10 +434,14 @@ theorem intersectionCycle_X_zero_sub {x y : k} (h : W.toAffine.Equation x y) :
   apply Nat.cast_injective (R := ℕ∞)
   rw [intersectionCycle_apply hL hF hrel]
   by_cases hP : P ∈ affineOpen 2
-  · obtain ⟨a, b, rfl⟩ := exists_eq_mk hP
+  · obtain ⟨a, b, rfl⟩ : ∃ a b : k, P = Projectivization.mk k ![a, b, 1] (by simp) := by
+      refine ⟨affineChart 2 P 0, affineChart 2 P 1, (eq_mk_insertNth_affineChart hP).trans ?_⟩
+      rw [mk_eq_mk_insertNth_two, mk_insertNth_one_inj]
+      ext j; fin_cases j <;> rfl
     rw [intersectionNumber_mk_two hL]
-    simp only [Finsupp.coe_add, Pi.add_apply, Finsupp.single_apply, mk_eq_mk_iff_two,
+    simp only [Finsupp.coe_add, Pi.add_apply, Finsupp.single_apply,
       ite_eq_right_iff.2 (fun h ↦ absurd h (mk_zero_ne_mk a b))]
+    simp only [mk_eq_mk_insertNth_two, mk_insertNth_one_inj, Matrix.vecCons_inj, and_true]
     by_cases ha : x = a
     · subst ha
       have hab : ![x, b] = ![x, 0] + b • ![0, 1] := by
@@ -847,5 +849,81 @@ theorem chordTangentAddition_eq_add :
 end IsAlgClosed
 
 end WeierstrassCurve.Projective
+
+/-! ### Cubics with a flex -/
+
+namespace PlaneCurves.Projective
+
+variable {k : Type*} [Field k] [IsAlgClosed k] {F : MvPolynomial (Fin 3) k}
+  {O : ℙ k (Fin 3 → k)}
+
+open WeierstrassCurve.Projective
+
+/-- Addition of points of `W` under a change of coordinates that carries an irreducible cubic `F`
+to `c • W.polynomial`: if `T` is the projective change of coordinates of `M`, then
+`T(P + Q) = φ(T(O'), φ(T(P), T(Q)))` on `F`, for `O' = [0 : 1 : 0]`. -/
+private theorem map_toProjectivization_add {W : WeierstrassCurve k} (hF : F.IsHomogeneous 3)
+    (hirr : Irreducible F) (M : GL (Fin 3) k) {c : k} (hc : c ≠ 0)
+    (hMF : linearSubst M.1 F = c • W.toProjective.polynomial) (P Q : W.toProjective.Point) :
+    map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) (P + Q).toProjectivization =
+      thirdPoint F
+        (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+          (0 : W.toProjective.Point).toProjectivization)
+        (thirdPoint F (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+          P.toProjectivization)
+          (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+            Q.toProjectivization)) := by
+  have hs (R : W.toProjective.Point) :
+      IsSimplePoint (linearSubst M.1 F) R.toProjectivization := by
+    rw [hMF, isSimplePoint_smul_iff hc]
+    exact R.isSimplePoint_toProjectivization
+  rw [← thirdPoint_linearSubst hF hirr M (hs P) (hs Q), hMF, thirdPoint_smul hc,
+    Point.thirdPoint_toProjectivization, ← thirdPoint_linearSubst hF hirr M (hs 0) (hs _), hMF,
+    thirdPoint_smul hc, Point.thirdPoint_toProjectivization, zero_add, neg_neg]
+
+/-- **The group of a cubic with a flex is the group of a Weierstrass curve.** For an irreducible
+cubic `F` over an algebraically closed field and a flex `O` of `F`, the chord–tangent group
+`CubicGroup F O` of the simple points of `F` with zero `O` is isomorphic to Mathlib's group of
+points of a Weierstrass curve `W`, and `W.Δ ≠ 0` when `F` is nonsingular. The isomorphism is
+the projective change of coordinates that carries `F` to a multiple of `W.polynomial` and
+`[0 : 1 : 0]` to `O` ([Fulton2008], Problem 5.24 (a)), composed with
+`WeierstrassCurve.Projective.Point.toCubicGroup`. -/
+theorem exists_addEquiv_weierstrass_of_isFlex [hF : Fact (F.IsHomogeneous 3)]
+    [hirr : Fact (Irreducible F)] [Fact (IsSimplePoint F O)] (hO : IsFlex F O) :
+    ∃ W : WeierstrassCurve k, (IsNonsingular F → W.Δ ≠ 0) ∧
+      Nonempty (CubicGroup F O ≃+ W.toProjective.Point) := by
+  obtain ⟨T, c, W, hT, hc, hTO, hTF, -⟩ :=
+    hO.exists_linearSubst_eq_smul_polynomial hF.out hirr.out
+  obtain ⟨M, rfl⟩ : ∃ M : GL (Fin 3) k, M.1 = T :=
+    ⟨_, ((Matrix.isUnit_iff_isUnit_det T).2
+      (Matrix.isUnit_det_of_mulVecLin_injective hT)).unit_spec⟩
+  have hb := ProjectiveSpace.bijective_map_mulVecLin M
+  have hMO : map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+      (0 : W.toProjective.Point).toProjectivization = O := by
+    rw [Point.toProjectivization_zero]
+    erw [map_mk]
+    simp only [Matrix.mulVecLin_apply, hTO, mk_rep]
+  have hs (P : W.toProjective.Point) : IsSimplePoint F
+      (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) P.toProjectivization) := by
+    rw [← isSimplePoint_linearSubst_iff hF.out hT, hTF, isSimplePoint_smul_iff hc]
+    exact P.isSimplePoint_toProjectivization
+  let e : W.toProjective.Point ≃ CubicGroup F O := Equiv.ofBijective (fun P ↦ ⟨_, hs P⟩)
+    ⟨fun P Q h ↦ Point.toProjectivization_injective (hb.1 (congrArg CubicGroup.point h)),
+      fun A ↦ by
+        obtain ⟨R, hR⟩ := hb.2 A.point
+        have hRs : IsSimplePoint W.toProjective.polynomial R := by
+          rw [← isSimplePoint_smul_iff hc, ← hTF, isSimplePoint_linearSubst_iff hF.out hT, hR]
+          exact A.isSimplePoint
+        obtain ⟨P, rfl⟩ := (Point.mem_range_toProjectivization_iff_isSimplePoint R).2 hRs
+        exact ⟨P, CubicGroup.ext hR⟩⟩
+  refine ⟨W, fun hns ↦ ?_, ⟨(AddEquiv.mk' e fun P Q ↦ CubicGroup.ext ?_).symm⟩⟩
+  · rw [← isNonsingular_linearSubst_iff hT, hTF, isNonsingular_smul_iff hc] at hns
+    exact isNonsingular_polynomial_iff.1 hns
+  · rw [CubicGroup.point_add]
+    refine (map_toProjectivization_add hF.out hirr.out M hc hTF P Q).trans ?_
+    rw [hMO]
+    rfl
+
+end PlaneCurves.Projective
 
 end

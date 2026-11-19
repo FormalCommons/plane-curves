@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.Tangent
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
+public import PlaneCurves.LinearAlgebra.Projectivization.AffineChart
 public import PlaneCurves.RingTheory.MvPolynomial.LinearForm
 public import PlaneCurves.RingTheory.MvPolynomial.Taylor
 
@@ -115,14 +116,6 @@ theorem associated_leadingForm_mk (hF : F.IsHomogeneous d) (v : Fin 3 → k) (hv
   obtain ⟨c, hc⟩ := exists_smul_eq_mk_rep k v hv
   rw [leadingForm_def, ← hc, Units.smul_def]
   exact hF.associated_leadingFormAt_smul c.isUnit v
-
-/-- A point of the chart `Xᵢ ≠ 0` is the class of `Fin.insertNth i 1 a`, where `a` are its chart
-coordinates. -/
-private theorem eq_mk_insertNth_affineChart {i : Fin 3} (hP : P ∈ affineOpen i) :
-    P = mk k (Fin.insertNth (α := fun _ ↦ k) i 1 (affineChart i P))
-      (Fin.insertNth_one_ne_zero i _) := by
-  rw [← affineChart_symm_apply]
-  exact ((affineChart i).left_inv (by rwa [affineChart_source])).symm
 
 /-- **The leading form in an affine chart.** If `P` lies in the chart `Xᵢ ≠ 0`, with chart
 coordinates `a`, the leading form of a form `F` at `P` is, up to a nonzero scalar, the leading

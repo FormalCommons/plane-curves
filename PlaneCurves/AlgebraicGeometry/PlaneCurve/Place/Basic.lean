@@ -35,6 +35,7 @@ dehomogenization `G_(i)`.
   degree of `G` with `H(center Q) ≠ 0`; `ordForm_eq_addValuation_mk_pow` for `H = Lᵐ`.
 * `ordForm_eq_addValuation_mk_add`: `ord_Q(G) = ord_Q(G / H) + ord_Q(H)` when `F ∤ H`.
 * `ordForm_mul`, `ordForm_eq_top_iff`, `ordForm_nonneg`, `ordForm_pos_iff`, `ordForm_eq_zero_iff`.
+* `ordForm_eq_of_dvd_sub`: `ord_Q(G)` depends only on `G` modulo `F`.
 * `ordForm_eq_addValuation_chartEquiv_symm`: the order in a chart.
 * `mem_placesOver_iff_localSubring_le_map_chartEquiv`, `ordForm_eq_addValuation_map_chartEquiv`:
   the places over a point of a chart, and their orders, read in the affine curve of the chart;
@@ -94,6 +95,30 @@ variable (hF P) in
 /-- Some place lies over every point. -/
 theorem placesOver_nonempty : (placesOver hF P).Nonempty :=
   center_surjective hF P
+
+/-- **Centres along an isomorphism of function fields.** If an isomorphism `e : k(C) ≅ k(D)` of
+the function fields of the curves `C : F = 0` and `D : G = 0` carries `𝒪_P(C)` onto `𝒪_{P'}(D)`,
+then a place of `k(C)`, moved to `k(D)`, is centred at `P'` iff it is centred at `P`. -/
+theorem center_map_eq_iff_of_map_localSubring {G : MvPolynomial (Fin 3) k} {m : ℕ}
+    {hG : G.IsHomogeneous m} [Fact (Irreducible G)] (e : functionField hF ≃ₐ[k] functionField hG)
+    {P' : zeroLocus (projectivePlaneCurve.ideal hG : Set (MvPolynomial (Fin 3) k))}
+    (h : (localSubring hF P).map (e : functionField hF →+* _) = localSubring hG P') :
+    center hG (Q.map e) = P' ↔ center hF Q = P := by
+  rw [center_eq_iff_le, center_eq_iff_le, ← h, LocalSubring.map_toSubring,
+    Subring.map_le_iff_le_comap]
+  refine ⟨fun h z hz ↦ ?_, fun h z hz ↦ ?_⟩
+  · simpa using (Place.mem_integers_map_iff _ Q).1 (h hz)
+  · exact (Place.mem_integers_map_iff _ Q).2 (by simpa using h hz)
+
+/-- Centres do not change along `ProjectiveSpace.functionField.equivOfEq`, the identification of
+the function fields of two forms with the same ideal. -/
+theorem coe_center_map_equivOfEq {G : MvPolynomial (Fin 3) k} {m : ℕ} {hG : G.IsHomogeneous m}
+    [Fact (Irreducible G)] (hI : projectivePlaneCurve.ideal hF = projectivePlaneCurve.ideal hG)
+    (Q : Place k (functionField hF)) :
+    (center hG (Q.map (ProjectiveSpace.functionField.equivOfEq hI))).1 = (center hF Q).1 :=
+  congrArg Subtype.val ((center_map_eq_iff_of_map_localSubring _
+    (ProjectiveSpace.map_localSubring_equivOfEq hI (center hF Q) ⟨_, hI ▸ (center hF Q).2⟩
+      rfl)).2 rfl)
 
 /-! ### The order of a form at a place -/
 
@@ -229,6 +254,13 @@ theorem ordForm_eq_addValuation_aeval {i : Fin 3} (hi : eval (center hF Q).1.rep
   rw [functionField.aeval_mk_X]
   exact ordForm_eq_addValuation_mk hG _ (eval_X_pow_ne_zero hi m)
 
+/-- The order of a form at a place depends only on the form and its degree, not on the proof
+that it is homogeneous. -/
+theorem ordForm_congr (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') (hGG' : G = G')
+    (hm : m = m') : ordForm hF Q hG = ordForm hF Q hG' := by
+  subst hGG' hm
+  rfl
+
 /-- The order of a product of forms is the sum of the orders. -/
 theorem ordForm_mul (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') :
     ordForm hF Q (hG.mul hG') = ordForm hF Q hG + ordForm hF Q hG' := by
@@ -240,6 +272,14 @@ theorem ordForm_mul (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') :
 theorem ordForm_eq_top_iff (hG : G.IsHomogeneous m) : ordForm hF Q hG = ⊤ ↔ F ∣ G := by
   rw [ordForm_def, Q.addValuation_eq_top_iff, functionField.mk_eq_zero_iff,
     projectivePlaneCurve.mem_ideal_iff]
+
+/-- The order of a form at `Q` depends only on the form modulo `F`: forms `G`, `G'` of the same
+degree with `F ∣ G - G'` have the same order. -/
+theorem ordForm_eq_of_dvd_sub (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m)
+    (h : F ∣ G - G') : ordForm hF Q hG = ordForm hF Q hG' := by
+  rw [ordForm_def, ordForm_def, (functionField.mk_eq_mk_iff _ _ _ _ _ _).2]
+  rw [projectivePlaneCurve.mem_ideal_iff, ← sub_mul]
+  exact dvd_mul_of_dvd_left h _
 
 /-- The order of a form at a place is nonnegative. -/
 theorem ordForm_nonneg (hG : G.IsHomogeneous m) : 0 ≤ ordForm hF Q hG := by

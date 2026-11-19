@@ -8,7 +8,7 @@ module
 public import Mathlib.Logic.Relation
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.ChangeOfCoordinates
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Birational
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Singularities.Genus
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Singularities.NonOrdinary
 
 /-!
 # Sequences of quadratic transformations
@@ -25,6 +25,14 @@ increase, and its function field does not change: the change of coordinates and 
 quadratic transformation give an isomorphism `k(F) ≅ k(G)` that carries the local ring of `F` at
 `T R` onto the local ring of `G` at `Q(R)`, for every point `R` of `F^T` off the fundamental
 triangle.
+
+Every irreducible curve over an algebraically closed field is carried by a finite sequence of
+quadratic transformations to a curve with only ordinary multiple points (Fulton, §7.4, Theorem 2,
+and Appendix A). A quadratic transformation centred at a non-ordinary multiple point lowers
+`N(F) + g*(F)`, `N(F)` being the number of non-ordinary multiple points. If that point is
+terrible, a quadratic transformation centred at a simple point or a point off the curve, which
+changes neither `N` nor `g*`, first makes it not terrible. So `2 (N(F) + g*(F))` steps suffice,
+and `N(F) + g*(F)` in characteristic zero, where no point is terrible.
 
 ## Main definitions
 
@@ -43,10 +51,15 @@ triangle.
   `PlaneCurves.Projective.virtualGenus_le_of_reflTransGen_isQuadraticTransform`,
   `PlaneCurves.Projective.nonempty_algEquiv_of_reflTransGen_isQuadraticTransform`: the same for
   a sequence of quadratic transformations.
+* `PlaneCurves.Projective.exists_isQuadraticTransformAt_of_isTerriblePoint`: the auxiliary
+  quadratic transformation at a terrible point.
+* `PlaneCurves.Projective.exists_isChain_isQuadraticTransform_lt`: one or two quadratic
+  transformations lower `N + g*`.
+* `PlaneCurves.Projective.exists_reduction`: **reduction to ordinary multiple points**.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.4
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.4 and Appendix A
 -/
 
 public section
@@ -214,6 +227,196 @@ theorem nonempty_algEquiv_of_reflTransGen_isQuadraticTransform
     obtain ⟨e₁⟩ := ih hd
     obtain ⟨e₂⟩ := hbc.nonempty_algEquiv hd hG
     exact ⟨e₁.trans e₂⟩
+
+/-! ### Points off the fundamental triangle through a change of coordinates -/
+
+section OffTriangle
+
+variable {M : Matrix (Fin 3) (Fin 3) k} {R : ℙ k (Fin 3 → k)}
+
+/-- Off the fundamental triangle, the proper transform of `F^T` has at `Q(R)` the multiplicity of
+`F` at `T R`. -/
+theorem mult_properTransform_linearSubst_quadraticMap (hF : F.IsHomogeneous n)
+    (hM : Function.Injective M.mulVecLin) (hR : R ∉ fundamentalTriangle) :
+    mult (properTransform (linearSubst M F)) (quadraticMap R) = mult F (map M.mulVecLin hM R) := by
+  rw [mult_properTransform_of_notMem_fundamentalTriangle (hF.linearSubst M)
+    (bijOn_quadraticMap_compl_fundamentalTriangle.mapsTo hR), quadraticMap_quadraticMap hR,
+    mult_linearSubst hF hM]
+
+/-- Off the fundamental triangle, `Q(R)` is an ordinary multiple point of the proper transform of
+`F^T` exactly when `T R` is one of `F`. -/
+theorem isOrdinaryMultiplePoint_properTransform_linearSubst_quadraticMap_iff [IsAlgClosed k]
+    (hF : F.IsHomogeneous n) (hM : Function.Injective M.mulVecLin) (hR : R ∉ fundamentalTriangle) :
+    IsOrdinaryMultiplePoint (properTransform (linearSubst M F)) (quadraticMap R) ↔
+      IsOrdinaryMultiplePoint F (map M.mulVecLin hM R) := by
+  rw [isOrdinaryMultiplePoint_properTransform_iff_of_notMem_fundamentalTriangle (hF.linearSubst M)
+    (bijOn_quadraticMap_compl_fundamentalTriangle.mapsTo hR), quadraticMap_quadraticMap hR,
+    isOrdinaryMultiplePoint_linearSubst_iff hF hM]
+
+/-- Off the fundamental triangle, `Q(R)` is a non-ordinary multiple point of the proper transform
+of `F^T` exactly when `T R` is one of `F`. -/
+theorem quadraticMap_mem_nonOrdinaryMultiplePoints_properTransform_linearSubst_iff [IsAlgClosed k]
+    (hF : F.IsHomogeneous n) (hM : Function.Injective M.mulVecLin) (hR : R ∉ fundamentalTriangle) :
+    quadraticMap R ∈ nonOrdinaryMultiplePoints (properTransform (linearSubst M F)) ↔
+      map M.mulVecLin hM R ∈ nonOrdinaryMultiplePoints F := by
+  rw [mem_nonOrdinaryMultiplePoints_iff, mem_nonOrdinaryMultiplePoints_iff, isMultiplePoint_def,
+    isMultiplePoint_def, mult_properTransform_linearSubst_quadraticMap hF hM hR,
+    isOrdinaryMultiplePoint_properTransform_linearSubst_quadraticMap_iff hF hM hR]
+
+end OffTriangle
+
+/-! ### The auxiliary step at a terrible point -/
+
+/-- An irreducible curve of positive degree `n` over an algebraically closed field has, outside
+any finite set, a point `Q` with `m_Q(F) ≤ 1` and `n - m_Q(F) ≠ 0` in `k`: a point off the curve if
+`n ≠ 0` in `k`, and a simple point otherwise. -/
+theorem exists_mult_le_one_natCast_sub_ne_zero [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) (hn : n ≠ 0) {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite) :
+    ∃ Q ∉ S, mult F Q ≤ 1 ∧ ((n - (mult F Q).toNat : ℕ) : k) ≠ 0 := by
+  by_cases hn0 : (n : k) = 0
+  · have hinf : (zeroLocus ({F} : Set (MvPolynomial (Fin 3) k))).Infinite :=
+      zeroLocus_singleton_infinite (n := 2) le_rfl hF hn
+    obtain ⟨Q, hQ, hQS⟩ := (hinf.sdiff
+      (hS.union (finite_setOf_isMultiplePoint_of_irreducible hF hirr))).nonempty
+    simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, isMultiplePoint_def, not_le] at hQS
+    have hpos := (mult_pos_iff hF).2 hQ
+    obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F Q = r :=
+      (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+    rw [hr] at hpos hQS
+    norm_cast at hpos hQS
+    obtain rfl : r = 1 := by omega
+    refine ⟨Q, hQS.1, hr.le, ?_⟩
+    rw [hr, ENat.toNat_natCast, Nat.cast_sub (by omega), hn0]
+    simp
+  · obtain ⟨Q, hQ, hQS⟩ := exists_eval_rep_ne_zero_notMem (n := 2) two_ne_zero hF hirr.ne_zero hS
+    have hQ0 : mult F Q = 0 := nonpos_iff_eq_zero.1 (not_lt.1 (mt mult_pos_iff_eval_rep.1 hQ))
+    exact ⟨Q, hQS, by simp [hQ0], by simpa [hQ0] using hn0⟩
+
+/-- **The auxiliary quadratic transformation at a terrible point** (Fulton, Appendix A). Let `F`
+be an irreducible form of degree `n` over an algebraically closed field, `P` a terrible point of
+`F`, and `S` a finite set of points. There is a point `Q ∉ S`, `Q ≠ P`, with `m_Q(F) ≤ 1`, and a
+change of coordinates `T`, given by an invertible matrix `M`, with `T([0 : 0 : 1]) = Q`, `F^T` in
+excellent position and `T⁻¹(S ∪ {P})` off the fundamental triangle, such that for `T R = P` the
+point `Q(R)` is not terrible for the quadratic transformation `G` of `F^T`.
+
+Indeed `G` has degree `2n - m_Q(F)` and multiplicity `r = m_P(F)` at `Q(R)`, and `Q` is chosen so
+that `n - m_Q(F) ≠ 0` in `k`, while `n - r = 0` in `k` since `P` is terrible; so
+`2n - m_Q(F) - r ≠ 0` in `k`, and `Q(R)` is not terrible. -/
+theorem exists_isQuadraticTransformAt_of_isTerriblePoint [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) (hP : IsTerriblePoint F P.rep) {S : Set (ℙ k (Fin 3 → k))}
+    (hS : S.Finite) :
+    ∃ Q ∉ S, Q ≠ P ∧ mult F Q ≤ 1 ∧
+      ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+        map M.mulVecLin hM (fundamentalPoint 2) = Q ∧ IsExcellentPosition (linearSubst M F) ∧
+        (∀ R, map M.mulVecLin hM R ∈ insert P S → R ∉ fundamentalTriangle) ∧
+        ∀ R, map M.mulVecLin hM R = P →
+          ¬IsTerriblePoint (properTransform (linearSubst M F)) (quadraticMap R).rep := by
+  have hn : 2 ≤ n := hF.totalDegree hirr.ne_zero ▸ hP.two_le_totalDegree
+  obtain ⟨Q, hQS, hQ1, hQn⟩ :=
+    exists_mult_le_one_natCast_sub_ne_zero hF hirr (by omega) (hS.insert P)
+  have hQP : Q ≠ P := fun h ↦ hQS (h ▸ Set.mem_insert Q S)
+  have hQ : ¬IsTerriblePoint F Q.rep := fun h ↦ hQP <| by
+    simpa using (hP.mk_eq_mk hF hirr P.rep_ne_zero Q.rep_ne_zero h).symm
+  obtain ⟨M, hM, hTQ, hE, hav⟩ :=
+    exists_isExcellentPosition_avoiding hF hirr hQ (hS.insert P) hQS
+  refine ⟨Q, fun h ↦ hQS (Set.mem_insert_of_mem P h), hQP, hQ1, M, hM, hTQ, hE, hav,
+    fun R hR hT ↦ ?_⟩
+  have hRt : R ∉ fundamentalTriangle := hav R (hR ▸ Set.mem_insert P S)
+  have hG := (isQuadraticTransformAt_def.2 ⟨M, hM, hTQ, hE, rfl⟩ :
+    IsQuadraticTransformAt F Q _).isHomogeneous hF
+  obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F P = r :=
+    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+  have hrn : r < n := by exact_mod_cast hr ▸ hP.mult_lt hF hirr P
+  have hPr := hP.natCast_sub_eq_zero hF P.rep_ne_zero (r := r) (by rwa [mk_rep])
+  have hGr := hT.natCast_sub_eq_zero hG (quadraticMap R).rep_ne_zero (r := r) (by
+    rw [mk_rep, mult_properTransform_linearSubst_quadraticMap hF hM hRt, hR, hr])
+  obtain ⟨m, hm⟩ : ∃ m : ℕ, mult F Q = m :=
+    (ENat.ne_top_iff_exists.1 (mult_eq_top_iff.not.2 hirr.ne_zero)).imp fun _ h ↦ h.symm
+  rw [hm, ENat.toNat_natCast] at hGr
+  rw [hm, ENat.toNat_natCast] at hQn
+  have hm1 : m ≤ 1 := by exact_mod_cast hm ▸ hQ1
+  rw [show 2 * n - m - r = (n - m) + (n - r) by omega, Nat.cast_add, hPr, add_zero] at hGr
+  exact hQn hGr
+
+/-! ### The reduction -/
+
+/-- **One or two quadratic transformations lower `N + g*`** (Fulton, §7.4, proof of Theorem 2,
+and Appendix A). Let `F` be an irreducible form over an algebraically closed field with a
+non-ordinary multiple point. There is a sequence `F, l, G` of quadratic transformations, with
+`l` of length at most one and empty in characteristic zero, such that `G` is an irreducible form
+with `N(G) + g*(G) < N(F) + g*(F)` and `g*(G) ≤ g*(F)`, `N` counting the non-ordinary multiple
+points. -/
+theorem exists_isChain_isQuadraticTransform_lt [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) (hP : P ∈ nonOrdinaryMultiplePoints F) :
+    ∃ (l : List (MvPolynomial (Fin 3) k)) (G : MvPolynomial (Fin 3) k) (d : ℕ),
+      List.IsChain IsQuadraticTransform (F :: (l ++ [G])) ∧ G.IsHomogeneous d ∧ Irreducible G ∧
+      ((nonOrdinaryMultiplePoints G).ncard : ℤ) + virtualGenus G <
+        (nonOrdinaryMultiplePoints F).ncard + virtualGenus F ∧
+      virtualGenus G ≤ virtualGenus F ∧ l.length ≤ 1 ∧ (CharZero k → l = []) := by
+  by_cases hT : IsTerriblePoint F P.rep
+  · obtain ⟨Q, -, -, hQ1, M, hM, hTQ, hE, hav, hnt⟩ :=
+      exists_isQuadraticTransformAt_of_isTerriblePoint hF hirr hT Set.finite_empty
+    have h₁ : IsQuadraticTransformAt F Q (properTransform (linearSubst M F)) :=
+      isQuadraticTransformAt_def.2 ⟨M, hM, hTQ, hE, rfl⟩
+    obtain ⟨R, hR⟩ := (bijective_map_mulVecLin ((Matrix.isUnit_iff_isUnit_det M).2
+      (Matrix.isUnit_det_of_mulVecLin_injective hM)).unit).2 P
+    have hRt : R ∉ fundamentalTriangle := hav R (hR ▸ Set.mem_insert P ∅)
+    have hG₁ := h₁.isHomogeneous hF
+    have hirr₁ := h₁.irreducible hF hirr
+    have hP₁ := (quadraticMap_mem_nonOrdinaryMultiplePoints_properTransform_linearSubst_iff hF hM
+      hRt).2 (hR ▸ hP)
+    obtain ⟨G, h₂⟩ := exists_isQuadraticTransformAt hG₁ hirr₁ (hnt R hR)
+    have hN := h₁.ncard_nonOrdinaryMultiplePoints_eq hF (Or.inl hQ1)
+    have hg := (h₁.virtualGenus_eq hF hirr (Or.inl hQ1)).1
+    refine ⟨[properTransform (linearSubst M F)], G, _, ?_, h₂.isHomogeneous hG₁,
+      h₂.irreducible hG₁ hirr₁, ?_, ?_, by simp,
+      fun _ ↦ absurd hT (not_isTerriblePoint hF hirr P.rep_ne_zero)⟩
+    · simpa using ⟨h₁.isQuadraticTransform, h₂.isQuadraticTransform⟩
+    · simpa [hN, hg] using h₂.ncard_add_virtualGenus_lt hG₁ hirr₁ hP₁
+    · simpa [hg] using h₂.isQuadraticTransform.virtualGenus_le hG₁ hirr₁
+  · obtain ⟨G, h⟩ := exists_isQuadraticTransformAt hF hirr hT
+    exact ⟨[], G, _, by simpa using h.isQuadraticTransform, h.isHomogeneous hF,
+      h.irreducible hF hirr, h.ncard_add_virtualGenus_lt hF hirr hP,
+      h.isQuadraticTransform.virtualGenus_le hF hirr, by simp, fun _ ↦ rfl⟩
+
+/-- **Reduction to ordinary multiple points** (Fulton, §7.4, Theorem 2, and Appendix A). Let `F`
+be an irreducible form over an algebraically closed field. There is a finite sequence
+`F = F₁, …, F_m = G` of quadratic transformations such that `G` is an irreducible form with only
+ordinary multiple points and `g*(G) ≤ g*(F)`. The number of steps `m - 1` is at most
+`2 (N(F) + g*(F))`, and at most `N(F) + g*(F)` in characteristic zero, where `N(F)` is the number
+of non-ordinary multiple points of `F` and `g*` the virtual genus. -/
+theorem exists_reduction [IsAlgClosed k] (hF : F.IsHomogeneous n) (hirr : Irreducible F) :
+    ∃ (l : List (MvPolynomial (Fin 3) k)) (G : MvPolynomial (Fin 3) k) (d : ℕ),
+      List.IsChain IsQuadraticTransform (F :: l) ∧ (F :: l).getLast (List.cons_ne_nil F l) = G ∧
+      G.IsHomogeneous d ∧ Irreducible G ∧
+      (∀ Q, IsMultiplePoint G Q → IsOrdinaryMultiplePoint G Q) ∧
+      (l.length : ℤ) ≤ 2 * ((nonOrdinaryMultiplePoints F).ncard + virtualGenus F) ∧
+      (CharZero k → (l.length : ℤ) ≤ (nonOrdinaryMultiplePoints F).ncard + virtualGenus F) ∧
+      virtualGenus G ≤ virtualGenus F := by
+  induction hμ : (((nonOrdinaryMultiplePoints F).ncard : ℤ) + virtualGenus F).toNat
+    using Nat.strong_induction_on generalizing F n with
+  | _ μ ih =>
+  have hg := virtualGenus_nonneg hF hirr
+  by_cases h0 : nonOrdinaryMultiplePoints F = ∅
+  · exact ⟨[], F, n, List.isChain_singleton F, rfl, hF, hirr,
+      nonOrdinaryMultiplePoints_eq_empty_iff.1 h0, by simp; omega, fun _ ↦ by simp; omega,
+      le_rfl⟩
+  obtain ⟨P, hP⟩ := Set.nonempty_iff_ne_empty.2 h0
+  obtain ⟨l₁, G₁, d₁, hc₁, hG₁, hirr₁, hlt, hgle, hl₁, hl₁0⟩ :=
+    exists_isChain_isQuadraticTransform_lt hF hirr hP
+  have hg₁ := virtualGenus_nonneg hG₁ hirr₁
+  obtain ⟨l₂, G, d, hc₂, hl₂G, hG, hirrG, hord, h2, h0', hgG⟩ := ih _ (by omega) hG₁ hirr₁ rfl
+  refine ⟨l₁ ++ G₁ :: l₂, G, d, List.isChain_cons_split.2 ⟨hc₁, hc₂⟩, ?_, hG, hirrG, hord, ?_,
+    fun h ↦ ?_, hgG.trans hgle⟩
+  · rw [← hl₂G, List.getLast_cons (by simp), List.getLast_append_of_ne_nil (by simp)]
+  · simp only [List.length_append, List.length_cons]
+    push_cast
+    omega
+  · obtain rfl := hl₁0 h
+    have := h0' h
+    simp only [List.nil_append, List.length_cons]
+    push_cast
+    omega
 
 end PlaneCurves.Projective
 
