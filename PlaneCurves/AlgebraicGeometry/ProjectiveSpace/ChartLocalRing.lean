@@ -65,7 +65,7 @@ along these equalities gives `Γ_h(W)_(xᵢ) ≅ Γ(W_*)`, `k(W) ≅ k(W_*)` and
   substitutes `X_{i.succAbove j} / Xᵢ` for `Yⱼ`.
 * `localRing.evalAt_chartEquiv`: the isomorphism preserves values at `P` and at `φᵢ(P)`.
 * `map_dehomogenize_le_vanishingIdeal`: `I_*` vanishes at `φᵢ(P)`.
-* `isPrime_map_dehomogenize`: `J = I_*` is prime.
+* `isPrime_map_dehomogenize`: `J = I_*` is prime; `homogenization_map_dehomogenize`: `J* = I`.
 * `functionField.chartEquiv_mk`: `f / g ↦ f_* / g_*`.
 * `varietyLocalRing.coe_chartEquiv`: the local isomorphism is the restriction of the
   function-field isomorphism.
@@ -426,6 +426,16 @@ theorem dehomogenize_notMem_map {p : MvPolynomial (Fin (n + 1)) k} {m : ℕ}
       (Ideal.Quotient.eq_zero_iff_mem.2 h)).trans (map_zero _).symm))
   rw [map_zero, awayToFunctionField_mk hp] at h0
   exact functionField.mk_ne_zero hp _ _ hpI h0
+
+include hi in
+/-- For a homogeneous prime `I` with `Xᵢ ∉ I`, homogenizing the dehomogenization `I_*` gives
+back `I`: `(I_*)* = I`. -/
+theorem homogenization_map_dehomogenize :
+    (I.toIdeal.map (dehomogenize i)).homogenization i = I := by
+  refine le_antisymm (fun q hq ↦ ?_) (Ideal.le_homogenization_iff.mpr le_rfl)
+  rw [← HomogeneousIdeal.mem_iff, mem_iff_homogeneousComponent_mem I.isHomogeneous]
+  refine fun d ↦ not_not.mp fun h ↦ dehomogenize_notMem_map hi
+    (homogeneousComponent_isHomogeneous d q) h (Ideal.mem_homogenization_iff.mp hq d)
 
 /-! ### The function field -/
 
