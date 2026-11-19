@@ -54,6 +54,8 @@ or both are the tangent to `F` at one point.
 * `finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite`: finitely many lines through `P` meet a
   finite set of other points.
 * `infinite_setOf_eval_sum_C_mul_X_eq_zero`: infinitely many lines pass through a point.
+* `exists_map_eq_and_linearSubst_eq_X_zero`: a change of coordinates moves a point to
+  `[0 : 0 : 1]` and a line through it to `X₀ = 0`.
 * `exists_associated_sum_C_rep_mul_X`: every line is associated to the line
   `∑ i, c.rep i X i` of a point `c` of the dual plane.
 * `associated_of_eval_rep_eq_zero_of_ne`: two lines through two distinct points agree.
@@ -232,6 +234,47 @@ theorem infinite_setOf_eval_sum_C_mul_X_eq_zero [IsAlgClosed k] (P : ℙ k (Fin 
     one_ne_zero).mono fun c hc ↦ ?_
   rw [mem_zeroLocus_singleton_sum_C_mul_X_iff] at hc
   rwa [Set.mem_ofPred_eq, eval_sum_C_mul_X, dotProduct_comm]
+
+variable (P) in
+/-- **Moving a point to `[0 : 0 : 1]` and a line through it to `X₀ = 0`.** For a point `P` of `ℙ²`
+and a line `L = ∑ cᵢ Xᵢ` through `P`, there is a change of coordinates `M` with
+`M·[0 : 0 : 1] = P` and `L^M = X₀`. -/
+theorem exists_map_eq_and_linearSubst_eq_X_zero [IsAlgClosed k] {c : ℙ k (Fin 3 → k)}
+    (hc : eval P.rep (∑ i, C (c.rep i) * X i) = 0) :
+    ∃ M : GL (Fin 3) k, map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+        (mk k (Pi.single 2 1) (by simp)) = P ∧
+      linearSubst M.1 (∑ i, C (c.rep i) * X i) = X 0 := by
+  obtain ⟨c', hc'P, hc'c⟩ :=
+    ((infinite_setOf_eval_sum_C_mul_X_eq_zero P).sdiff (Set.finite_singleton c)).nonempty
+  have hind : LinearIndependent k ![c.rep, c'.rep] := by
+    rw [← crossProduct_ne_zero_iff_linearIndependent]
+    refine mt (mk_eq_mk_iff_crossProduct_eq_zero c.rep_ne_zero c'.rep_ne_zero).mpr ?_
+    simpa using Ne.symm hc'c
+  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X hind (τ := ![0, 1])
+    (by intro i j h; fin_cases i <;> fin_cases j <;> simp_all)
+  have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.1 hM
+  refine ⟨hU.unit, ?_, by simpa using hMa 0⟩
+  have hS : ∀ f ∈ ({∑ i, C (c.rep i) * X i, ∑ i, C (c'.rep i) * X i} :
+      Set (MvPolynomial (Fin 3) k)), ∃ d, f.IsHomogeneous d := by
+    rintro f (rfl | rfl) <;> exact ⟨1, isHomogeneous_sum_C_mul_X _⟩
+  have h0' : linearSubst hU.unit.1 (∑ i, C (c.rep i) * X i) = X 0 := by simpa using hMa 0
+  have h1' : linearSubst hU.unit.1 (∑ i, C (c'.rep i) * X i) = X 1 := by simpa using hMa 1
+  have hR : map hU.unit.1.mulVecLin (Matrix.mulVec_injective_of_isUnit hU.unit.isUnit)
+      (mk k (Pi.single 2 1) (by simp)) ∈ zeroLocus {∑ i, C (c.rep i) * X i,
+        ∑ i, C (c'.rep i) * X i} := by
+    refine (mem_zeroLocus_iff_eval_rep hS).2 ?_
+    rintro f (rfl | rfl) <;>
+      rw [← eval_rep_linearSubst_eq_zero_iff hU.unit (isHomogeneous_sum_C_mul_X _)]
+    · rw [h0', (isHomogeneous_X k _).eval_rep_mk_eq_zero_iff]
+      simp
+    · rw [h1', (isHomogeneous_X k _).eval_rep_mk_eq_zero_iff]
+      simp
+  have hPz : P ∈ zeroLocus {∑ i, C (c.rep i) * X i, ∑ i, C (c'.rep i) * X i} := by
+    refine (mem_zeroLocus_iff_eval_rep hS).2 ?_
+    rintro f (rfl | rfl)
+    exacts [hc, hc'P]
+  rw [zeroLocus_pair_sum_C_mul_X hind] at hR hPz
+  exact hR.trans hPz.symm
 
 /-! ### Lines sharing points of a curve -/
 

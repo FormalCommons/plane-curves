@@ -40,6 +40,8 @@ dehomogenization.
   factor `f*` of `F`.
 * `MvPolynomial.isRelPrime_dehomogenize`: the dehomogenizations of relatively prime forms are
   relatively prime.
+* `MvPolynomial.associated_dehomogenize_iff`: forms of the same degree are associated iff their
+  dehomogenizations are.
 * `MvPolynomial.homogenize_totalDegree_spec`: all of these together, with Tau Ceti's
   `MvPolynomial.IsHomogeneous.of_mul_left`, that the factors of a form are forms.
 
@@ -223,6 +225,17 @@ theorem isRelPrime_dehomogenize {F G : MvPolynomial (Fin (n + 1)) R} {m d : ℕ}
   intro f hfF hfG
   simpa using (h (homogenize_totalDegree_dvd_of_dvd_dehomogenize hF hfF)
     (homogenize_totalDegree_dvd_of_dvd_dehomogenize hG hfG)).map (dehomogenize i)
+
+/-- Over a ring without zero divisors, forms of the same degree are associated exactly when their
+dehomogenizations are: the units of the polynomial ring are the constant units. -/
+theorem associated_dehomogenize_iff {F G : MvPolynomial (Fin (n + 1)) R} {m : ℕ}
+    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous m) :
+    Associated (dehomogenize i F) (dehomogenize i G) ↔ Associated F G := by
+  refine ⟨fun ⟨u, hu⟩ ↦ ?_, fun h ↦ h.map (dehomogenize i)⟩
+  obtain ⟨c, hc, hcu⟩ := (isUnit_iff_eq_C_of_isReduced (R := R)).1 u.isUnit
+  refine ⟨(hc.map C).unit, dehomogenize_injOn i m
+    (by simpa using hF.mul (isHomogeneous_C _ c)) hG ?_⟩
+  simpa [hcu] using hu
 
 /-- Proposition 5 of §2.6 of Fulton's book and its corollary, for Fulton's homogenization
 `f* = homogenize i f.totalDegree f` and dehomogenization `F_* = dehomogenize i F` in any variable
