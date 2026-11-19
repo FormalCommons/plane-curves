@@ -28,6 +28,8 @@ tangent lines at the point.
 
 ## Main results
 
+* `MvPolynomial.orderAt_ne_top`, `MvPolynomial.natCast_toNat_orderAt`: a nonzero polynomial has
+  finite order at every point.
 * `MvPolynomial.leadingFormAt_eq_zero_iff`: the leading form vanishes only for `p = 0`;
   `MvPolynomial.isUnit_leadingFormAt_iff`: over a domain it is a unit exactly when `p(a)` is.
 * `MvPolynomial.le_orderAt_iff_homogeneousComponent`: the order is at least `n` exactly when the
@@ -85,6 +87,15 @@ variable {σ τ R : Type*}
 section CommSemiring
 
 variable [CommSemiring R] {p q : MvPolynomial σ R} {a : σ → R}
+
+/-- A nonzero polynomial has finite order at every point. -/
+theorem orderAt_ne_top (hp : p ≠ 0) : p.orderAt a ≠ ⊤ :=
+  mt orderAt_eq_top_iff.1 hp
+
+/-- The order of a nonzero polynomial at a point is a natural number. -/
+@[simp]
+theorem natCast_toNat_orderAt (hp : p ≠ 0) : ((p.orderAt a).toNat : ℕ∞) = p.orderAt a :=
+  ENat.natCast_toNat (orderAt_ne_top hp)
 
 /-- The leading form of `p` at `a`: the homogeneous component of the Taylor shift `p(X + a)`
 of degree the order of `p` at `a`. It is the lowest-degree nonzero form of `p(X + a)`, and `0`
@@ -157,7 +168,7 @@ theorem taylor_eq_leadingFormAt (h : (p.totalDegree : ℕ∞) ≤ p.orderAt a) :
 theorem leadingFormAt_eq_zero_iff : p.leadingFormAt a = 0 ↔ p = 0 := by
   refine ⟨fun h ↦ ?_, fun h ↦ h ▸ leadingFormAt_zero a⟩
   by_contra hp
-  obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (orderAt_eq_top_iff.not.2 hp)
+  obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (orderAt_ne_top hp)
   obtain ⟨⟨d, hd, hdn⟩, -⟩ := orderAt_eq_coe_iff.1 hn.symm
   rw [leadingFormAt_def, ← hn, ENat.toNat_natCast] at h
   have := coeff_homogeneousComponent (φ := taylor a p) (n := n) d
@@ -239,8 +250,8 @@ theorem leadingFormAt_mul [NoZeroDivisors R] (p q : MvPolynomial σ R) (a : σ �
   · simp
   rcases eq_or_ne q 0 with rfl | hq
   · simp
-  obtain ⟨m, hm⟩ := ENat.ne_top_iff_exists.1 (orderAt_eq_top_iff.not.2 hp : p.orderAt a ≠ ⊤)
-  obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (orderAt_eq_top_iff.not.2 hq : q.orderAt a ≠ ⊤)
+  obtain ⟨m, hm⟩ := ENat.ne_top_iff_exists.1 (orderAt_ne_top (a := a) hp)
+  obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (orderAt_ne_top (a := a) hq)
   rw [leadingFormAt_def, leadingFormAt_def, leadingFormAt_def, orderAt_mul, ← hm, ← hn,
     ← Nat.cast_add, ENat.toNat_natCast, ENat.toNat_natCast, ENat.toNat_natCast, ← coe_inj, map_mul,
     coe_mul, coe_homogeneousComponent, coe_homogeneousComponent, coe_homogeneousComponent]
@@ -308,7 +319,7 @@ theorem orderAt_pderiv_of_pderiv_leadingFormAt_ne_zero {i : σ}
   have h1 := one_le_toNat_orderAt_of_pderiv_leadingFormAt_ne_zero h
   have hp : p ≠ 0 := by rintro rfl; simp at h
   have hn : p.orderAt a = (p.orderAt a).toNat :=
-    (ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hp)).symm
+    (natCast_toNat_orderAt hp).symm
   refine orderAt_eq_of_homogeneousComponent_ne_zero ?_ ?_
   · refine le_orderAt_pderiv ?_ i
     conv_rhs => rw [hn]
@@ -402,7 +413,7 @@ theorem orderAt_eq_and_leadingFormAt_eq_neg_of_orderAt_lt_orderAt_add
     {p q : MvPolynomial σ R} {a : σ → R} (h : p.orderAt a < (p + q).orderAt a) :
     q.orderAt a = p.orderAt a ∧ q.leadingFormAt a = -p.leadingFormAt a := by
   have hp : p.orderAt a ≠ ⊤ := h.ne_top
-  have hp₀ : p ≠ 0 := orderAt_eq_top_iff.not.1 hp
+  have hp₀ : p ≠ 0 := mt orderAt_eq_top_iff.2 hp
   have hle : p.orderAt a ≤ q.orderAt a := by
     have := min_orderAt_le_orderAt_add (p + q) (-p) a
     rwa [orderAt_neg, show p + q + -p = q by ring, min_eq_right h.le] at this
@@ -428,7 +439,7 @@ theorem isUnit_leadingFormAt_iff [IsDomain R] {p : MvPolynomial σ R}
     have hd := (isHomogeneous_leadingFormAt p a).totalDegree (leadingFormAt_ne_zero hp)
     rw [(isUnit_iff_totalDegree_of_isReduced.1 h).2] at hd
     have h0 : p.orderAt a = 0 := by
-      rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hp), ← hd, Nat.cast_zero]
+      rw [← natCast_toNat_orderAt hp, ← hd, Nat.cast_zero]
     rw [leadingFormAt_of_eval_ne_zero (orderAt_eq_zero_iff.1 h0)] at h
     simpa using h.map (constantCoeff (σ := σ) (R := R))
   · rw [leadingFormAt_of_eval_ne_zero h.ne_zero]
@@ -461,7 +472,7 @@ theorem orderAt_aeval_eq
       (p.leadingFormAt fun i ↦ eval b (g i)) ≠ 0) :
     (aeval g p).orderAt b = p.orderAt fun i ↦ eval b (g i) := by
   have hp : p ≠ 0 := by rintro rfl; simp at h
-  have hfin : p.orderAt (fun i ↦ eval b (g i)) ≠ ⊤ := orderAt_eq_top_iff.not.2 hp
+  have hfin : p.orderAt (fun i ↦ eval b (g i)) ≠ ⊤ := orderAt_ne_top hp
   rw [← ENat.natCast_toNat hfin]
   refine orderAt_eq_of_homogeneousComponent_ne_zero ?_
     (by rwa [homogeneousComponent_taylor_aeval])

@@ -424,7 +424,7 @@ theorem exists_leadingFormAt_eq_C_mul_prod (hF : F ≠ 0) :
   obtain ⟨ε, hε, s, hcard, hs, heq⟩ :=
     (isHomogeneous_leadingFormAt F P).exists_eq_C_mul_prod (leadingFormAt_ne_zero hF)
   refine ⟨ε, hε, s.map fun ℓ ↦ C ℓ.1 * X 0 + C ℓ.2 * X 1, ?_, fun L hL ↦ ?_, heq⟩
-  · rw [Multiset.card_map, hcard, ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF)]
+  · rw [Multiset.card_map, hcard, natCast_toNat_orderAt hF]
   · obtain ⟨ℓ, hℓ, rfl⟩ := Multiset.mem_map.1 hL
     exact ⟨(isHomogeneous_C_mul_X ℓ.1 0).add (isHomogeneous_C_mul_X ℓ.2 1),
       (irreducible_C_mul_X_add_C_mul_X (hs ℓ hℓ)).ne_zero,
@@ -522,8 +522,8 @@ theorem IsOrdinaryMultiplePoint.orderAt_le_of_forall_isTangentAt
   have hdeg := totalDegree_le_of_dvd_of_isDomain hdvd (leadingFormAt_ne_zero hG)
   rw [(isHomogeneous_leadingFormAt F P).totalDegree (leadingFormAt_ne_zero h.ne_zero),
     (isHomogeneous_leadingFormAt G P).totalDegree (leadingFormAt_ne_zero hG)] at hdeg
-  rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 h.ne_zero),
-    ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG)]
+  rw [← natCast_toNat_orderAt h.ne_zero,
+    ← natCast_toNat_orderAt hG]
   exact_mod_cast hdeg
 
 /-- Over an algebraically closed field, a multiple point is ordinary exactly when it has

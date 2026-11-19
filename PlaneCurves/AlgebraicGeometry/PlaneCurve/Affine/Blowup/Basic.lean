@@ -346,7 +346,7 @@ theorem blowupStrictTransform_mul (F G : MvPolynomial (Fin 2) R) :
   rcases eq_or_ne G 0 with rfl | hG
   · simp
   refine blowupStrictTransform_eq_of_aeval_eq ?_
-  rw [orderAt_mul, ENat.toNat_add (orderAt_eq_top_iff.not.2 hF) (orderAt_eq_top_iff.not.2 hG),
+  rw [orderAt_mul, ENat.toNat_add (orderAt_ne_top hF) (orderAt_ne_top hG),
     map_mul, ← X_pow_mul_blowupStrictTransform F, ← X_pow_mul_blowupStrictTransform G]
   ring
 

@@ -182,7 +182,7 @@ theorem maximalIdeal_pow_le_span_pair {t : ℕ}
   have hpos {p : MvPolynomial (Fin 2) k} (hp : p ≠ 0) (hp0 : eval P p = 0) :
       1 ≤ (p.orderAt P).toNat := by
     have h1 := orderAt_pos_iff.2 hp0
-    rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hp)] at h1
+    rw [← natCast_toNat_orderAt hp] at h1
     exact_mod_cast h1
   have hm := hpos (hprop.ne_zero_left hG) hF
   have hn := hpos (hprop.ne_zero_right hF) hG
@@ -240,8 +240,8 @@ private theorem le_orderAt_of_isRelPrime_leadingFormAt (hF : F ≠ 0)
   have hA : A ≠ 0 := by
     rintro rfl
     simp at hlt
-  have hAfin : A.orderAt P ≠ ⊤ := orderAt_eq_top_iff.not.2 hA
-  have hFfin : F.orderAt P ≠ ⊤ := orderAt_eq_top_iff.not.2 hF
+  have hAfin : A.orderAt P ≠ ⊤ := orderAt_ne_top hA
+  have hFfin : F.orderAt P ≠ ⊤ := orderAt_ne_top hF
   have hAF : (A * F).orderAt P < (A * F + B * G).orderAt P := by
     refine lt_of_lt_of_le ?_ h
     obtain ⟨r, hr⟩ := ENat.ne_top_iff_exists.1 hAfin
@@ -533,8 +533,8 @@ theorem mul_orderAt_le_intersectionNumber (P : Fin 2 → k) (F G : MvPolynomial 
   rcases eq_or_ne G 0 with rfl | hG
   · rw [mul_comm, intersectionNumber_comm]
     exact orderAt_mul_orderAt_zero_left_le F
-  rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF),
-    ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG), ← Nat.cast_mul]
+  rw [← natCast_toNat_orderAt hF,
+    ← natCast_toNat_orderAt hG, ← Nat.cast_mul]
   exact (mul_toNat_le_intersectionNumber_and_eq_iff hF hG).1
 
 /-- **The equality case of property (5)**, over any field: for nonzero `F` and `G`,
@@ -543,8 +543,8 @@ prime. -/
 theorem intersectionNumber_eq_mul_orderAt_iff (hF : F ≠ 0) (hG : G ≠ 0) :
     intersectionNumber P F G = F.orderAt P * G.orderAt P ↔
       IsRelPrime (F.leadingFormAt P) (G.leadingFormAt P) := by
-  rw [← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF),
-    ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG), ← Nat.cast_mul]
+  rw [← natCast_toNat_orderAt hF,
+    ← natCast_toNat_orderAt hG, ← Nat.cast_mul]
   exact (mul_toNat_le_intersectionNumber_and_eq_iff hF hG).2
 
 /-- At simple points of `F` and `G`, the leading forms are relatively prime iff they are not
@@ -572,8 +572,8 @@ theorem intersectionNumber_eq_one_iff :
       exact this
     have hF := hprop.ne_zero_left hP.2
     have hG := hprop.ne_zero_right hP.1
-    obtain ⟨m, hm⟩ := ENat.ne_top_iff_exists.1 (orderAt_eq_top_iff.not.2 hF)
-    obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (orderAt_eq_top_iff.not.2 hG)
+    obtain ⟨m, hm⟩ := ENat.ne_top_iff_exists.1 (orderAt_ne_top hF)
+    obtain ⟨n, hn⟩ := ENat.ne_top_iff_exists.1 (orderAt_ne_top hG)
     have hm1 := orderAt_pos_iff.2 hP.1
     have hn1 := orderAt_pos_iff.2 hP.2
     have hle := mul_orderAt_le_intersectionNumber P F G
