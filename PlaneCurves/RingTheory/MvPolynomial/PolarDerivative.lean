@@ -5,6 +5,7 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 public import Mathlib.RingTheory.MvPolynomial.EulerIdentity
 public import PlaneCurves.RingTheory.MvPolynomial.LeadingForm
 public import TauCeti.RingTheory.MvPolynomial.DirectionalOrder
@@ -41,6 +42,8 @@ Problem 5.26 that the `Y^{n-r-1}` coefficient of `F_Y` is `(n - r) A_r`.
   `MvPolynomial.IsHomogeneous.leadingFormAt_polarDerivative`,
   `MvPolynomial.IsHomogeneous.polarDerivative_ne_zero`: if `F` has order `r` at `v` and
   `(n - r : R) ≠ 0`, then `D_v F` has order `r` at `v` and is nonzero.
+* `MvPolynomial.IsHomogeneous.isRelPrime_polarDerivative`: an irreducible form is relatively
+  prime to each of its nonzero polar derivatives.
 
 ## References
 
@@ -238,6 +241,24 @@ theorem IsHomogeneous.polarDerivative {F : MvPolynomial σ R} {n : ℕ} (hF : F.
     simpa using (isHomogeneous_C σ (v i)).mul (hF.pderiv (i := i))
 
 end Homogeneous
+
+section Irreducible
+
+variable [CommRing R] [IsDomain R] [Fintype σ]
+
+/-- An irreducible form `F` is relatively prime to each of its nonzero polar derivatives
+`D_v F`: these have smaller degree, so `F` does not divide them. -/
+theorem IsHomogeneous.isRelPrime_polarDerivative {F : MvPolynomial σ R} {n : ℕ}
+    (hF : F.IsHomogeneous n) (hirr : Irreducible F) {v : σ → R}
+    (hD : MvPolynomial.polarDerivative v F ≠ 0) :
+    IsRelPrime F (MvPolynomial.polarDerivative v F) := by
+  refine hirr.isRelPrime_iff_not_dvd.2 fun hdvd ↦ hD ?_
+  have hle := totalDegree_le_of_dvd_of_isDomain hdvd hD
+  rw [hF.totalDegree hirr.ne_zero, (hF.polarDerivative _).totalDegree hD] at hle
+  rw [(totalDegree_eq_zero_iff_eq_C (p := F)).1 (by rw [hF.totalDegree hirr.ne_zero]; omega),
+    polarDerivative_C]
+
+end Irreducible
 
 end MvPolynomial
 

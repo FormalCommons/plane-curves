@@ -62,6 +62,12 @@ through `P` meet an irreducible `F` in `deg F - m_P(F)` further points, transver
   have `I(P, F ∩ L) = r`.
 * `PlaneCurves.Projective.exists_ncard_zeroLocus_pair_sum_C_mul_X_eq`: a line through no
   point of a given finite set meets an irreducible `F` of degree `n` transversally in `n` points.
+* `PlaneCurves.Projective.isTerriblePoint_iff_forall_isSimplePoint`: for `n ≥ 2`, `[v]` is
+  terrible iff the tangent line at every simple point passes through `[v]`.
+* `PlaneCurves.Projective.infinite_setOf_ncard_zeroLocus_pair_diff_lt_iff`: `P` is terrible iff
+  infinitely many lines through `P` meet `F` in fewer than `n - m_P(F)` points other than `P`
+  (Fulton's definition).
+* `PlaneCurves.Projective.isTerriblePoint_spec`: these results combined in one statement.
 
 ## References
 
@@ -305,6 +311,159 @@ theorem exists_ncard_zeroLocus_pair_sum_C_mul_X_eq [IsAlgClosed k] (hF : F.IsHom
   rw [Set.sdiff_singleton_eq_self hPZ, Nat.sub_zero] at hn
   refine ⟨c, fun Q hQ hQc ↦ hc.2 ⟨hcP, Q, hQ, fun h ↦ hPS.1 (h ▸ hQ), hQc⟩, hn, fun Q hQ ↦
     h1 Q hQ fun h ↦ hPZ (h ▸ hQ)⟩
+
+/-! ### The geometric characterization -/
+
+/-- **Terrible points and tangent lines.** Let `k` be algebraically closed and `F` an irreducible
+form of degree `n ≥ 2`. Then `[v]` is terrible for `F` if and only if the tangent line at every
+simple point of `F` passes through `[v]`. -/
+theorem isTerriblePoint_iff_forall_isSimplePoint [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) (hn : 2 ≤ n) :
+    IsTerriblePoint F v ↔ ∀ Q, IsSimplePoint F Q → eval v (tangentLine F Q.rep) = 0 := by
+  refine ⟨fun h Q _ ↦ by
+    rw [eval_tangentLine_eq_eval_polarDerivative, h.polarDerivative_eq_zero, map_zero],
+    fun h ↦ ⟨hF.totalDegree hirr.ne_zero ▸ hn, ?_⟩⟩
+  by_contra hD
+  refine ((zeroLocus_singleton_infinite (n := 2) le_rfl hF (by omega)).sdiff
+    (finite_setOf_isMultiplePoint_of_irreducible hF hirr)).mono (fun Q hQ ↦ ?_)
+    (finite_zeroLocus_pair_of_isRelPrime hF (hF.polarDerivative _)
+      (hF.isRelPrime_polarDerivative hirr hD))
+  have hQs := (isSimplePoint_or_isMultiplePoint hF hQ.1).resolve_right hQ.2
+  rw [mem_zeroLocus_iff_eval_rep
+    (by rintro f (rfl | rfl); exacts [⟨n, hF⟩, ⟨_, hF.polarDerivative _⟩])]
+  rintro f (rfl | rfl)
+  exacts [hQs.eval_rep_eq_zero, (eval_tangentLine_eq_eval_polarDerivative F v Q.rep).symm.trans
+    (h Q hQs)]
+
+/-- At a terrible point `P` of an irreducible form `F` over an algebraically closed field, with
+`r = m_P(F)`, the tangent line at every simple point `Q ≠ P` of `F` is a line through `P` that
+meets `F` in fewer than `n - r` points other than `P`. -/
+theorem IsTerriblePoint.exists_ncard_zeroLocus_pair_diff_lt [IsAlgClosed k]
+    (hF : F.IsHomogeneous n) (hirr : Irreducible F) {P Q : ℙ k (Fin 3 → k)}
+    (h : IsTerriblePoint F P.rep) {r : ℕ} (hr : mult F P = r) (hQ : IsSimplePoint F Q)
+    (hQP : Q ≠ P) :
+    ∃ c : ℙ k (Fin 3 → k), eval P.rep (∑ i, C (c.rep i) * X i) = 0 ∧
+      eval Q.rep (∑ i, C (c.rep i) * X i) = 0 ∧
+      (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard < n - r := by
+  have hT := hQ.isTangentAt_tangentLine hF
+  set w : Fin 3 → k := fun i ↦ eval Q.rep (pderiv i F)
+  have hw : w ≠ 0 := fun h0 ↦
+    (isTangentAt_def.1 hT).2.1 (by simp [tangentLine_def, w, h0] at *)
+  obtain ⟨a, ha⟩ := exists_smul_eq_mk_rep k w hw
+  set c := mk k w hw
+  have hLc : ∑ i, C (c.rep i) * X i = C (a : k) * tangentLine F Q.rep := by
+    simp [← ha, tangentLine_def, w, Finset.mul_sum, Units.smul_def, mul_assoc]
+  have hL := isHomogeneous_sum_C_mul_X c.rep
+  have hL0 := sum_C_mul_X_ne_zero c.rep_ne_zero
+  have hcQ : eval Q.rep (∑ i, C (c.rep i) * X i) = 0 := by
+    rw [hLc, map_mul, (isTangentAt_def.1 hT).2.2.1, mul_zero]
+  have hcP : eval P.rep (∑ i, C (c.rep i) * X i) = 0 := by
+    rw [hLc, map_mul, eval_tangentLine_eq_eval_polarDerivative, h.polarDerivative_eq_zero,
+      map_zero, mul_zero]
+  have hcT : IsTangentAt F Q (∑ i, C (c.rep i) * X i) :=
+    isTangentAt_def.2 ⟨hL, hL0, hcQ, by
+      rw [hLc]; exact (a.isUnit.map C).mul_left_dvd.2 (isTangentAt_def.1 hT).2.2.2⟩
+  have hLF : ¬(∑ i, C (c.rep i) * X i) ∣ F := fun hd ↦ by
+    have hassoc := (irreducible_of_isHomogeneous_one hL hL0).associated_of_dvd hirr hd
+    have hle := totalDegree_le_of_dvd_of_isDomain hassoc.symm.dvd hL0
+    rw [hF.totalDegree hirr.ne_zero, hL.totalDegree hL0] at hle
+    have := h.two_le_totalDegree
+    rw [hF.totalDegree hirr.ne_zero] at this
+    omega
+  exact ⟨c, hcP, hcQ, ncard_zeroLocus_pair_diff_lt_of_isTangentAt hF hL hL0 hLF hr hcP hQP hcT⟩
+
+/-- **The geometric characterization of terrible points.** Let `k` be algebraically closed, `F`
+an irreducible form of degree `n` and `P` a point of `ℙ²` with `r = m_P(F)`. Then infinitely
+many lines `L = ∑ i, c i X i` through `P` meet `F` in fewer than `n - r` points other than `P`
+(Fulton's definition of a terrible point) if and only if `P` is terrible for `F`. -/
+theorem infinite_setOf_ncard_zeroLocus_pair_diff_lt_iff [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {P : ℙ k (Fin 3 → k)} {r : ℕ} (hr : mult F P = r) :
+    {c : ℙ k (Fin 3 → k) | eval P.rep (∑ i, C (c.rep i) * X i) = 0 ∧
+      (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard < n - r}.Infinite ↔
+      IsTerriblePoint F P.rep := by
+  refine ⟨fun hinf ↦ ?_, fun h hfin ↦ ?_⟩
+  · by_contra hP
+    have hgood := Filter.eventually_cofinite.1
+      (eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF hirr hP hr)
+    refine hinf (hgood.subset fun c hc hc' ↦ ?_)
+    have := (hc' hc.1).1
+    have := hc.2
+    omega
+  -- Every simple point `Q ≠ P` of `F` lies on one of the finitely many lines in the set.
+  have hn : n ≠ 0 := by
+    have := h.two_le_totalDegree
+    rw [hF.totalDegree hirr.ne_zero] at this
+    omega
+  refine (((zeroLocus_singleton_infinite (n := 2) le_rfl hF hn).sdiff
+    (finite_setOf_isMultiplePoint_of_irreducible hF hirr)).sdiff (Set.finite_singleton P)).mono
+    (fun Q hQ ↦ ?_) (hfin.biUnion fun c _ ↦ finite_zeroLocus_pair_of_isRelPrime hF
+      (isHomogeneous_sum_C_mul_X c.rep) (hirr.isRelPrime_iff_not_dvd.2 fun hd ↦ ?_))
+  · have hQs := (isSimplePoint_or_isMultiplePoint hF hQ.1.1).resolve_right hQ.1.2
+    obtain ⟨c, hcP, hcQ, hlt⟩ := h.exists_ncard_zeroLocus_pair_diff_lt hF hirr hr hQs hQ.2
+    refine Set.mem_biUnion (x := c) ⟨hcP, hlt⟩ ?_
+    rw [mem_zeroLocus_iff_eval_rep
+      (by rintro f (rfl | rfl); exacts [⟨n, hF⟩, ⟨_, isHomogeneous_sum_C_mul_X _⟩])]
+    rintro f (rfl | rfl)
+    exacts [hQs.eval_rep_eq_zero, hcQ]
+  · have hle := totalDegree_le_of_dvd_of_isDomain hd (sum_C_mul_X_ne_zero c.rep_ne_zero)
+    rw [hF.totalDegree hirr.ne_zero, (isHomogeneous_sum_C_mul_X c.rep).totalDegree
+      (sum_C_mul_X_ne_zero c.rep_ne_zero)] at hle
+    exact absurd (hF.totalDegree hirr.ne_zero ▸ h.two_le_totalDegree) (by omega)
+
+/-- **Terrible points and lines meeting a plane curve in `n` distinct points.** Let `k` be
+algebraically closed, of any characteristic, and `F` an irreducible form of degree `n`.
+
+* (a) A point `P` with `r = m_P(F)` is terrible for `F` if and only if infinitely many lines
+  through `P` meet `F` in fewer than `n - r` points other than `P`. If `n = 1`, no point is
+  terrible; if `n ≥ 2`, `[v]` is terrible if and only if `D_v F = 0`, if and only if the tangent
+  line at every simple point of `F` passes through `[v]`.
+* (b) At a terrible point `P` with `r = m_P(F)`, `r < n` and `(n - r) · 1 = 0` in `k`; in
+  characteristic zero no point is terrible.
+* (c) At most one point is terrible for `F`.
+* (d) If `P` is not terrible, all but finitely many lines through `P` meet `F` in exactly `n - r`
+  points other than `P`, transversally, and have `I(P, F ∩ L) = r`. Hence for every finite set
+  `S` there is a line through no point of `S` meeting `F` transversally in `n` points.
+
+Milestone: *Terrible points and lines meeting a plane curve in n distinct points*. -/
+theorem isTerriblePoint_spec [IsAlgClosed k] (hF : F.IsHomogeneous n) (hirr : Irreducible F) :
+    -- (a)
+    (∀ (P : ℙ k (Fin 3 → k)) (r : ℕ), mult F P = r →
+      ({c : ℙ k (Fin 3 → k) | eval P.rep (∑ i, C (c.rep i) * X i) = 0 ∧
+        (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard < n - r}.Infinite ↔
+        IsTerriblePoint F P.rep)) ∧
+    (n = 1 → ∀ v, ¬IsTerriblePoint F v) ∧
+    (2 ≤ n → ∀ v, IsTerriblePoint F v ↔ polarDerivative v F = 0) ∧
+    (2 ≤ n → ∀ v, IsTerriblePoint F v ↔
+      ∀ Q, IsSimplePoint F Q → eval v (tangentLine F Q.rep) = 0) ∧
+    -- (b)
+    (∀ (P : ℙ k (Fin 3 → k)) (r : ℕ), mult F P = r → IsTerriblePoint F P.rep →
+      r < n ∧ ((n - r : ℕ) : k) = 0) ∧
+    (CharZero k → ∀ P : ℙ k (Fin 3 → k), ¬IsTerriblePoint F P.rep) ∧
+    -- (c)
+    {P : ℙ k (Fin 3 → k) | IsTerriblePoint F P.rep}.Subsingleton ∧
+    -- (d)
+    (∀ (P : ℙ k (Fin 3 → k)) (r : ℕ), mult F P = r → ¬IsTerriblePoint F P.rep →
+      ∀ᶠ c : ℙ k (Fin 3 → k) in Filter.cofinite, eval P.rep (∑ i, C (c.rep i) * X i) = 0 →
+        (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard = n - r ∧
+        (∀ Q ∈ zeroLocus {F, ∑ i, C (c.rep i) * X i}, Q ≠ P →
+          intersectionNumber Q F (∑ i, C (c.rep i) * X i) = 1) ∧
+        intersectionNumber P F (∑ i, C (c.rep i) * X i) = r) ∧
+    (∀ S : Set (ℙ k (Fin 3 → k)), S.Finite →
+      ∃ c : ℙ k (Fin 3 → k), (∀ Q ∈ S, eval Q.rep (∑ i, C (c.rep i) * X i) ≠ 0) ∧
+        (zeroLocus {F, ∑ i, C (c.rep i) * X i}).ncard = n ∧
+        ∀ Q ∈ zeroLocus {F, ∑ i, C (c.rep i) * X i},
+          intersectionNumber Q F (∑ i, C (c.rep i) * X i) = 1) := by
+  have hdeg := hF.totalDegree hirr.ne_zero
+  refine ⟨fun P r hr ↦ infinite_setOf_ncard_zeroLocus_pair_diff_lt_iff hF hirr hr,
+    fun hn v ↦ not_isTerriblePoint_of_totalDegree_le_one (by omega),
+    fun hn v ↦ ⟨IsTerriblePoint.polarDerivative_eq_zero, fun h ↦ ⟨by omega, h⟩⟩,
+    fun hn v ↦ isTerriblePoint_iff_forall_isSimplePoint hF hirr hn,
+    fun P r hr h ↦ h.mult_lt_and_natCast_sub_eq_zero hF hirr P.rep_ne_zero (by rwa [mk_rep]),
+    fun _ P ↦ not_isTerriblePoint hF hirr P.rep_ne_zero,
+    fun Q hQ Q' hQ' ↦ by simpa using hQ.mk_eq_mk hF hirr Q.rep_ne_zero Q'.rep_ne_zero hQ',
+    fun P r hr hP ↦
+      eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF hirr hP hr,
+    fun S hS ↦ exists_ncard_zeroLocus_pair_sum_C_mul_X_eq hF hirr hS⟩
 
 end PlaneCurves.Projective
 
