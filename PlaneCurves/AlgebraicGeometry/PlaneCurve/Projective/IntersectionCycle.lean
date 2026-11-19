@@ -32,6 +32,7 @@ its intersection number (Fulton, §5.5). Zero-cycles are finitely supported func
 * `intersectionCycle_add_mul`: `F • (G + A F) = F • G`.
 * `intersectionCycle_smul_left`, `intersectionCycle_C_left`: scaling `F` does not change `F • G`,
   and a nonzero constant meets nothing.
+* `intersectionCycle_linearSubst`: a projective change of coordinates moves `F • G`.
 * `degree_intersectionCycle`: **Bézout's theorem** in the form `deg (F • G) = deg F * deg G`,
   over an algebraically closed field.
 
@@ -168,6 +169,37 @@ theorem intersectionCycle_mul_right (hF : F.IsHomogeneous m) (hG : G.IsHomogeneo
     intersectionCycle F (G * H) = intersectionCycle F G + intersectionCycle F H := by
   rw [intersectionCycle_comm, intersectionCycle_mul_left hG hH hF hFG.symm hFH.symm,
     intersectionCycle_comm G, intersectionCycle_comm H]
+
+/-- **Intersection cycles under a change of coordinates.** For forms `F` and `G`, an invertible
+matrix `M` with projective change of coordinates `T`, and `F^T = F(M X)`, the cycle `F^T • G^T`
+takes at `Q` the value of `F • G` at `T(Q)`. -/
+theorem intersectionCycle_linearSubst (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n)
+    (M : GL (Fin 3) k) (Q : ℙ k (Fin 3 → k)) :
+    intersectionCycle (linearSubst M.1 F) (linearSubst M.1 G) Q =
+      intersectionCycle F G (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q) := by
+  have hT := ProjectiveSpace.bijective_map_mulVecLin M
+  have hI : (fun Q ↦ intersectionNumber Q (linearSubst M.1 F) (linearSubst M.1 G)) =
+      (fun P ↦ intersectionNumber P F G) ∘
+        map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) :=
+    funext fun Q ↦ intersectionNumber_linearSubst hF hG M Q
+  have hS : (Function.support fun Q ↦
+      intersectionNumber Q (linearSubst M.1 F) (linearSubst M.1 G)) =
+      map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) ⁻¹'
+        Function.support fun P ↦ intersectionNumber P F G := by
+    rw [hI, Function.support_comp_eq_preimage]
+  rw [intersectionCycle_def, intersectionCycle_def]
+  by_cases h : (Function.support fun P ↦ intersectionNumber P F G).Finite ∧
+      ∀ P, intersectionNumber P F G ≠ ⊤
+  · rw [dite_eq_left ⟨hS ▸ h.1.preimage hT.1.injOn,
+      fun Q ↦ (intersectionNumber_linearSubst hF hG M Q).symm ▸ h.2 _⟩, dite_eq_left h]
+    simp only [Finsupp.ofSupportFinite_coe, intersectionNumber_linearSubst hF hG M]
+  · have h' : ¬((Function.support fun Q ↦
+        intersectionNumber Q (linearSubst M.1 F) (linearSubst M.1 G)).Finite ∧
+        ∀ Q, intersectionNumber Q (linearSubst M.1 F) (linearSubst M.1 G) ≠ ⊤) := fun h' ↦
+      h ⟨Set.Finite.of_preimage (hS ▸ h'.1) hT.2, hT.2.forall.2 fun Q ↦
+        (intersectionNumber_linearSubst hF hG M Q) ▸ h'.2 Q⟩
+    rw [dite_eq_right h', dite_eq_right h]
+    rfl
 
 /-- **Bézout's theorem** for intersection cycles: over an algebraically closed field, for
 relatively prime forms `F` and `G` of degrees `m` and `n`, the zero-cycle `F • G` has degree

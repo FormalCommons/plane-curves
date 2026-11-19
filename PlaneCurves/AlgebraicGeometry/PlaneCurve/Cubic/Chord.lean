@@ -51,6 +51,9 @@ Bézout's theorem gives `L • F = P + Q + R` for `L = chordLine F P Q` and a un
 * `PlaneCurves.Projective.isSimplePoint_thirdPoint`, `PlaneCurves.Projective.thirdPoint_comm`,
   `PlaneCurves.Projective.thirdPoint_thirdPoint`: `φ(P, Q)` is simple, `φ(P, Q) = φ(Q, P)` and
   `φ(P, φ(P, Q)) = Q`.
+* `PlaneCurves.Projective.thirdPoint_smul`, `PlaneCurves.Projective.thirdPoint_linearSubst`:
+  `φ` does not change when `F` is multiplied by a nonzero constant, and a projective change of
+  coordinates carries the third points of `F(M X)` to those of `F`.
 
 ## References
 
@@ -389,6 +392,33 @@ theorem thirdPoint_thirdPoint' (hF : F.IsHomogeneous 3) (hirr : Irreducible F)
   (eq_thirdPoint_of_intersectionCycle_eq hF hirr (isSimplePoint_thirdPoint hF hirr hP hQ) hQ
     (isHomogeneous_chordLine F P Q) (chordLine_ne_zero hF (Or.inr hP))
     (by rw [intersectionCycle_chordLine hF hirr hP hQ]; abel)).symm
+
+/-- **Third points under a change of coordinates.** For an irreducible cubic `F`, an invertible
+matrix `M` with projective change of coordinates `T`, and simple points `P`, `Q` of
+`F^T = F(M X)`, `T` carries the third point `φ(P, Q)` on `F^T` to the third point
+`φ(T(P), T(Q))` on `F`. -/
+theorem thirdPoint_linearSubst (hF : F.IsHomogeneous 3) (hirr : Irreducible F)
+    (M : GL (Fin 3) k) (hP : IsSimplePoint (linearSubst M.1 F) P)
+    (hQ : IsSimplePoint (linearSubst M.1 F) Q) :
+    map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+        (thirdPoint (linearSubst M.1 F) P Q) =
+      thirdPoint F (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) P)
+        (map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit) Q) := by
+  have hT := ProjectiveSpace.bijective_map_mulVecLin M
+  have hF' := hF.linearSubst M.1
+  have hirr' : Irreducible (linearSubst M.1 F) :=
+    (irreducible_linearSubst_iff ((Matrix.isUnit_iff_isUnit_det _).1 M.isUnit)).2 hirr
+  have hL' := isHomogeneous_chordLine (linearSubst M.1 F) P Q
+  have hZ := intersectionCycle_chordLine hF' hirr' hP hQ
+  refine eq_thirdPoint_of_intersectionCycle_eq hF hirr
+    ((isSimplePoint_linearSubst_iff hF _ P).1 hP) ((isSimplePoint_linearSubst_iff hF _ Q).1 hQ)
+    (L := linearSubst (M⁻¹).1 (chordLine (linearSubst M.1 F) P Q)) (hL'.linearSubst _)
+    (fun h0 ↦ chordLine_ne_zero hF' (Or.inr hP) (Q := Q) ?_) ?_
+  · rw [← linearSubst_linearSubst_inv M (chordLine _ P Q), h0, map_zero]
+  · ext S
+    obtain ⟨S, rfl⟩ := hT.2 S
+    rw [← intersectionCycle_linearSubst (hL'.linearSubst _) hF M, linearSubst_linearSubst_inv, hZ]
+    simp only [Finsupp.coe_add, Pi.add_apply, Finsupp.single_apply_left hT.1]
 
 end IsAlgClosed
 
