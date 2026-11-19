@@ -96,21 +96,6 @@ private theorem not_irreducible_mul {p q : MvPolynomial (Fin 3) k} (hp : eval 0 
   · exact (h.map (eval 0)).ne_zero hp
   · exact (h.map (eval 0)).ne_zero hq
 
-private theorem isUnit_det_of_injective {M : Matrix (Fin 3) (Fin 3) k}
-    (hM : Function.Injective M.mulVecLin) : IsUnit M.det := by
-  rw [← Matrix.isUnit_iff_isUnit_det, ← Matrix.mulVec_injective_iff_isUnit]; exact hM
-
-private theorem injective_mulVecLin {M : Matrix (Fin 3) (Fin 3) k} (hM : M.det ≠ 0) :
-    Function.Injective M.mulVecLin := by
-  rw [Matrix.coe_mulVecLin, Matrix.mulVec_injective_iff_isUnit, Matrix.isUnit_iff_isUnit_det]
-  exact hM.isUnit
-
-private theorem injective_mulVecLin_mul {M N : Matrix (Fin 3) (Fin 3) k}
-    (hM : Function.Injective M.mulVecLin) (hN : Function.Injective N.mulVecLin) :
-    Function.Injective (M * N).mulVecLin := by
-  rw [Matrix.mulVecLin_mul, LinearMap.coe_comp]
-  exact hM.comp hN
-
 /-- The conic `YZ - X²` is nonsingular, in every characteristic. -/
 theorem isNonsingular_X_mul_X_sub_X_sq :
     IsNonsingular (X 1 * X 2 - X 0 ^ 2 : MvPolynomial (Fin 3) k) := by
@@ -163,8 +148,9 @@ private theorem exists_linearSubst_eq_of_mul_add {a e c : k}
   obtain ⟨s, hs⟩ := IsAlgClosed.exists_pow_nat_eq (-a⁻¹) two_pos
   have hs' : a * s ^ 2 = -1 := by rw [hs]; field_simp
   have hs0 : s ≠ 0 := by rintro rfl; simp at hs'
-  refine ⟨!![s, 0, 0; -e * s, 1, -c; 0, 0, 1], injective_mulVecLin (by simp [Matrix.det_fin_three,
-    hs0]), MvPolynomial.funext fun x ↦ ?_⟩
+  refine ⟨!![s, 0, 0; -e * s, 1, -c; 0, 0, 1],
+    Matrix.mulVecLin_injective_iff_isUnit_det.2 <| Ne.isUnit (by simp [Matrix.det_fin_three, hs0]),
+    MvPolynomial.funext fun x ↦ ?_⟩
   simp [Fin.sum_univ_three]
   linear_combination (x 0 ^ 2) * hs'
 
@@ -188,12 +174,14 @@ private theorem exists_linearSubst_eq_of_coeff_eq_zero {a c d e f : k}
       · refine absurd h ?_
         convert not_irreducible_binary a e c using 2
         simp [G, hf, hd]; ring
-      refine ⟨!![0, 0, 1 / d; 0, 1, 0; 1, 0, 0], injective_mulVecLin (by
+      refine ⟨!![0, 0, 1 / d; 0, 1, 0; 1, 0, 0],
+        Matrix.mulVecLin_injective_iff_isUnit_det.2 <| Ne.isUnit (by
         simp [Matrix.det_fin_three, hd]), c, e / d, a / d ^ 2, MvPolynomial.funext fun x ↦ ?_⟩
       simp [G, hf, Fin.sum_univ_three]
       field_simp
       ring
-    · refine ⟨!![1, 0, 0; 0, 1, 0; -d / f, 0, 1 / f], injective_mulVecLin (by
+    · refine ⟨!![1, 0, 0; 0, 1, 0; -d / f, 0, 1 / f],
+        Matrix.mulVecLin_injective_iff_isUnit_det.2 <| Ne.isUnit (by
         simp [Matrix.det_fin_three, hf]), a - e * d / f + c * d ^ 2 / f ^ 2,
         e / f - 2 * c * d / f ^ 2, c / f ^ 2, MvPolynomial.funext fun x ↦ ?_⟩
       simp [G, Fin.sum_univ_three]
@@ -201,10 +189,10 @@ private theorem exists_linearSubst_eq_of_coeff_eq_zero {a c d e f : k}
       ring
   -- Then normalize it.
   have hG : Irreducible (linearSubst M G) :=
-    (irreducible_linearSubst_iff (isUnit_det_of_injective hM)).2 h
+    (irreducible_linearSubst_iff (Matrix.isUnit_det_of_mulVecLin_injective hM)).2 h
   rw [hMG] at hG
   obtain ⟨N, hN, hNG⟩ := exists_linearSubst_eq_of_mul_add hG
-  exact ⟨M * N, injective_mulVecLin_mul hM hN, by rw [linearSubst_mul_apply, hMG, hNG]⟩
+  exact ⟨M * N, Matrix.mulVecLin_mul_injective hM hN, by rw [linearSubst_mul_apply, hMG, hNG]⟩
 
 /-- The conic `YZ - X²` is irreducible, over an algebraically closed field. -/
 theorem irreducible_X_mul_X_sub_X_sq :
@@ -241,10 +229,11 @@ theorem exists_linearSubst_eq_X_mul_X_sub_X_sq {F : MvPolynomial (Fin 3) k}
       C (G.coeff (Finsupp.single 0 1 + Finsupp.single 1 1)) * (X 0 * X 1) +
       C (G.coeff (Finsupp.single 0 1 + Finsupp.single 2 1)) * (X 0 * X 2) +
       C (G.coeff (Finsupp.single 1 1 + Finsupp.single 2 1)) * (X 1 * X 2) := hGe
-  have hGi : Irreducible G := (irreducible_linearSubst_iff (isUnit_det_of_injective hM)).2 h
+  have hGi : Irreducible G :=
+    (irreducible_linearSubst_iff (Matrix.isUnit_det_of_mulVecLin_injective hM)).2 h
   rw [hGe'] at hGi
   obtain ⟨N, hN, hNG⟩ := exists_linearSubst_eq_of_coeff_eq_zero hGi
-  refine ⟨M * N, injective_mulVecLin_mul hM hN, ?_⟩
+  refine ⟨M * N, Matrix.mulVecLin_mul_injective hM hN, ?_⟩
   rw [linearSubst_mul_apply, ← hGdef, hGe', hNG]
 
 /-- **Irreducible conics are nonsingular.** Over an algebraically closed field, an irreducible
@@ -262,7 +251,7 @@ theorem irreducible_iff_exists_linearSubst_eq_X_mul_X_sub_X_sq {F : MvPolynomial
     Irreducible F ↔ ∃ M : Matrix (Fin 3) (Fin 3) k, Function.Injective M.mulVecLin ∧
       linearSubst M F = X 1 * X 2 - X 0 ^ 2 := by
   refine ⟨exists_linearSubst_eq_X_mul_X_sub_X_sq hF, fun ⟨M, hM, hMF⟩ ↦ ?_⟩
-  rw [← irreducible_linearSubst_iff (isUnit_det_of_injective hM), hMF]
+  rw [← irreducible_linearSubst_iff (Matrix.isUnit_det_of_mulVecLin_injective hM), hMF]
   exact irreducible_X_mul_X_sub_X_sq
 
 end PlaneCurves.Projective
