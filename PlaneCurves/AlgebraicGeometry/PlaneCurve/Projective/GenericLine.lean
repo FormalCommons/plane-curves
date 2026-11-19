@@ -48,8 +48,10 @@ Problem 5.26).
   `V(F) ∩ V(L)` other than `P`.
 * `eq_of_mem_zeroLocus_pair_of_intersectionNumber_eq`: if `I(P, F ∩ L) = deg F`, then `P` is
   the only common point of `F` and `L`.
-* `eventually_cofinite_ncard_zeroLocus_pair_diff_eq`: generic lines through `P` meet an
-  irreducible `F` in `deg F - m_P(F)` distinct further points, transversally.
+* `eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_zero`: if `D_P F ≠ 0`,
+  generic lines through `P` meet an irreducible `F` in `deg F - m_P(F)` distinct further points,
+  transversally.
+* `eventually_cofinite_ncard_zeroLocus_pair_diff_eq`: the same when `deg F - m_P(F) ≠ 0` in `k`.
 
 ## References
 
@@ -220,24 +222,19 @@ theorem eq_of_mem_zeroLocus_pair_of_intersectionNumber_eq [IsAlgClosed k]
   have h2 : (d : ℕ∞) + 1 ≤ d := (add_le_add_right h1 _).trans hle
   exact absurd h2 (by norm_cast; omega)
 
-/-- **Generic lines through a point.** Let `k` be algebraically closed, `F` an irreducible form of
-degree `d`, `P` a point of `ℙ²` and `r = m_P(F)`, and suppose that `d - r` is nonzero in `k` (for
-instance, `k` has characteristic zero) or that `d = r`. Then for all but finitely many lines
+/-- **Generic lines through a point, from the polar derivative.** Let `k` be algebraically
+closed, `F` an irreducible form of degree `d`, `P` a point of `ℙ²` and `r = m_P(F)`, and suppose
+that the polar derivative `D_P F` is nonzero or that `d = r`. Then for all but finitely many lines
 `L = ∑ i, c i X i` through `P`, the line `L` meets `F` in exactly `d - r` points other than `P`,
 with `I(Q, F ∩ L) = 1` at each of them, and `I(P, F ∩ L) = r`.
 
 The excluded lines are the component of `F` if `F` is a line, the tangents to `F` at `P`, the
 lines through `P` and a multiple point of `F`, and the lines through `P` and a point `Q ≠ P` of
-`V(F) ∩ V(D_P F)`, where `D_P F` is the polar derivative; the last set is finite because
-`D_P F ≠ 0` when `d - r ≠ 0` in `k`. Without that hypothesis the statement can fail in
-characteristic `p ∣ d - r`: for `F = X^{p+1} - Y^p Z` and `P = [0 : 1 : 0]`, every tangent to `F`
-at a simple point passes through `P`, so every line through `P` meets `F` in at most one point
-other than `P` (Fulton, Problem 5.28).
-
-Milestone: *Generic lines through a point meet an irreducible curve in distinct points*. -/
-theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq [IsAlgClosed k]
-    (hF : F.IsHomogeneous d) (hirr : Irreducible F) {r : ℕ} (hr : mult F P = r)
-    (hdr : ((d - r : ℕ) : k) ≠ 0 ∨ d = r) :
+`V(F) ∩ V(D_P F)`; the last set is finite because `F` does not divide `D_P F ≠ 0`, which has
+smaller degree. -/
+theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_zero
+    [IsAlgClosed k] (hF : F.IsHomogeneous d) (hirr : Irreducible F) {r : ℕ} (hr : mult F P = r)
+    (hD : polarDerivative P.rep F ≠ 0 ∨ d = r) :
     ∀ᶠ c : ℙ k (Fin 3 → k) in Filter.cofinite, eval P.rep (∑ i, C (c.rep i) * X i) = 0 →
       (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard = d - r ∧
       (∀ Q ∈ zeroLocus {F, ∑ i, C (c.rep i) * X i}, Q ≠ P →
@@ -255,13 +252,13 @@ theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq [IsAlgClosed k]
       ∀ {L : MvPolynomial (Fin 3) k}, L.IsHomogeneous 1 → L ≠ 0 → ¬L ∣ F →
         eval P.rep L = 0 → ¬IsTangentAt F P L → (∀ Q ∈ S, Q ≠ P → eval Q.rep L ≠ 0) →
         ∀ Q ∈ zeroLocus {F, L}, Q ≠ P → intersectionNumber Q F L = 1 := by
-    rcases hdr with hdr | rfl
-    · have hD0 := hF.polarDerivative_ne_zero (v := P.rep) (by rw [← mult_def, hr]) hdr
-      have hrel : IsRelPrime F (polarDerivative P.rep F) := by
-        refine hirr.isRelPrime_iff_not_dvd.2 fun hdvd ↦ hdr ?_
+    rcases hD with hD0 | rfl
+    · have hrel : IsRelPrime F (polarDerivative P.rep F) := by
+        refine hirr.isRelPrime_iff_not_dvd.2 fun hdvd ↦ hD0 ?_
         have := totalDegree_le_of_dvd_of_isDomain hdvd hD0
         rw [hF.totalDegree hF0, (hF.polarDerivative _).totalDegree hD0] at this
-        simp [show d = 0 by omega]
+        rw [(totalDegree_eq_zero_iff_eq_C (p := F)).1 (by rw [hF.totalDegree hF0]; omega),
+          polarDerivative_C]
       refine ⟨{Q | IsMultiplePoint F Q} ∪ zeroLocus {F, polarDerivative P.rep F},
         (finite_setOf_isMultiplePoint_of_irreducible hF hirr).union
           (finite_zeroLocus_pair_of_isRelPrime hF (hF.polarDerivative _) hrel), ?_⟩
@@ -299,6 +296,32 @@ theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq [IsAlgClosed k]
     rw [(intersectionNumber_eq_mult_iff_not_isTangentAt hF hF0 hL hL0 hcP).2 htan, hr]
   have h1 := hgood hL hL0 hdvd hcP htan fun Q hQ hQP ↦ hS' hcP Q hQ hQP
   exact hbad ⟨ncard_zeroLocus_pair_diff hF hL hL0 hdvd hP h1, h1, hP⟩
+
+/-- **Generic lines through a point.** Let `k` be algebraically closed, `F` an irreducible form of
+degree `d`, `P` a point of `ℙ²` and `r = m_P(F)`, and suppose that `d - r` is nonzero in `k` (for
+instance, `k` has characteristic zero) or that `d = r`. Then for all but finitely many lines
+`L = ∑ i, c i X i` through `P`, the line `L` meets `F` in exactly `d - r` points other than `P`,
+with `I(Q, F ∩ L) = 1` at each of them, and `I(P, F ∩ L) = r`.
+
+The excluded lines are the component of `F` if `F` is a line, the tangents to `F` at `P`, the
+lines through `P` and a multiple point of `F`, and the lines through `P` and a point `Q ≠ P` of
+`V(F) ∩ V(D_P F)`, where `D_P F` is the polar derivative; the last set is finite because
+`D_P F ≠ 0` when `d - r ≠ 0` in `k`. Without that hypothesis the statement can fail in
+characteristic `p ∣ d - r`: for `F = X^{p+1} - Y^p Z` and `P = [0 : 1 : 0]`, every tangent to `F`
+at a simple point passes through `P`, so every line through `P` meets `F` in at most one point
+other than `P` (Fulton, Problem 5.28).
+
+Milestone: *Generic lines through a point meet an irreducible curve in distinct points*. -/
+theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq [IsAlgClosed k]
+    (hF : F.IsHomogeneous d) (hirr : Irreducible F) {r : ℕ} (hr : mult F P = r)
+    (hdr : ((d - r : ℕ) : k) ≠ 0 ∨ d = r) :
+    ∀ᶠ c : ℙ k (Fin 3 → k) in Filter.cofinite, eval P.rep (∑ i, C (c.rep i) * X i) = 0 →
+      (zeroLocus {F, ∑ i, C (c.rep i) * X i} \ {P}).ncard = d - r ∧
+      (∀ Q ∈ zeroLocus {F, ∑ i, C (c.rep i) * X i}, Q ≠ P →
+        intersectionNumber Q F (∑ i, C (c.rep i) * X i) = 1) ∧
+      intersectionNumber P F (∑ i, C (c.rep i) * X i) = r :=
+  eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_zero hF hirr hr
+    (hdr.imp_left (hF.polarDerivative_ne_zero (by rw [← mult_def, hr])))
 
 end PlaneCurves.Projective
 
