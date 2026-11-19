@@ -53,30 +53,6 @@ open MvPolynomial IsLocalRing Ideal
 
 namespace PlaneCurves
 
-namespace AffineSpace.localRing
-
-variable {k : Type*} [Field k] {σ : Type*} {P : σ → k} {F : MvPolynomial σ k}
-
-/-- For `F(P) = 0`, the local ring `𝒪_P(𝔸ⁿ) ⧸ (F)` of the hypersurface `F` at `P` is a local
-ring. -/
-theorem isLocalRing_quotient_span_singleton (hF : eval P F = 0) :
-    IsLocalRing (localRing k P ⧸ span {algebraMap _ (localRing k P) F}) := by
-  have := isLocalRing_quotient (P := P) (I := span {F})
-    (span_le.2 (Set.singleton_subset_iff.2 ((mem_vanishingIdeal_singleton_iff P F).2 hF)))
-  rwa [Ideal.map_span, Set.image_singleton] at this
-
-/-- Every element of `𝒪_P(𝔸ⁿ) ⧸ I` is the image of a polynomial up to a unit. -/
-theorem exists_mul_isUnit_eq_mk (I : Ideal (localRing k P)) (r : localRing k P ⧸ I) :
-    ∃ (G : MvPolynomial σ k) (u : localRing k P ⧸ I), IsUnit u ∧
-      r * u = Ideal.Quotient.mk I (algebraMap _ _ G) := by
-  obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective r
-  obtain ⟨⟨G, s⟩, rfl⟩ := IsLocalization.mk'_surjective (vanishingIdeal k {P}).primeCompl x
-  refine ⟨G, Ideal.Quotient.mk I (algebraMap _ _ (s : MvPolynomial σ k)),
-    (IsLocalization.map_units (localRing k P) s).map _, ?_⟩
-  rw [← map_mul, IsLocalization.mk'_spec]
-
-end AffineSpace.localRing
-
 namespace Affine
 
 open AffineSpace localRing
@@ -158,30 +134,6 @@ theorem forall_two_le_orderAt_taylor (hL : L.IsHomogeneous 1) (hL₀ : L ≠ 0)
     exact associated_unit_mul_left L' (C (-β)) ((isUnit_iff_ne_zero.2 (neg_ne_zero.2 hβ)).map C)
 
 /-! ### Residues in `𝔪 / 𝔪²` -/
-
-/-- Membership in a power of the image of an ideal in a quotient ring. -/
-private theorem mk_mem_map_pow_iff {A : Type*} [CommRing A] (I J : Ideal A) (r : ℕ) (x : A) :
-    Ideal.Quotient.mk I x ∈ J.map (Ideal.Quotient.mk I) ^ r ↔ x ∈ J ^ r ⊔ I := by
-  rw [← Ideal.map_pow, mem_quotient_iff_mem_sup]
-
-/-- For `F(P) = 0`, an element of `𝒪_P(𝔸²)` maps into the maximal ideal of `𝒪_P(𝔸²) ⧸ (F)` iff it
-lies in `𝔪_P`. -/
-theorem mk_mem_map_maximalIdeal_iff (hF : eval P F = 0) (x : localRing k P) :
-    Ideal.Quotient.mk (span {algebraMap _ (localRing k P) F}) x ∈
-        (maximalIdeal (localRing k P)).map (Ideal.Quotient.mk _) ↔
-      x ∈ maximalIdeal (localRing k P) := by
-  rw [mem_quotient_iff_mem_sup, sup_eq_left.2]
-  exact span_le.2 (Set.singleton_subset_iff.2 (localRing.algebraMap_mem_maximalIdeal_iff.2 hF))
-
-/-- For `r ≤ m_P(F)`, an element of `𝒪_P(𝔸²)` maps into the `r`-th power of the maximal ideal of
-`𝒪_P(𝔸²) ⧸ (F)` iff it lies in `𝔪_P ^ r`. -/
-theorem mk_mem_map_maximalIdeal_pow_iff {r : ℕ} (hr : (r : ℕ∞) ≤ F.orderAt P)
-    (x : localRing k P) :
-    Ideal.Quotient.mk (span {algebraMap _ (localRing k P) F}) x ∈
-        (maximalIdeal (localRing k P)).map (Ideal.Quotient.mk _) ^ r ↔
-      x ∈ maximalIdeal (localRing k P) ^ r := by
-  rw [mk_mem_map_pow_iff, sup_eq_left.2]
-  exact span_le.2 (Set.singleton_subset_iff.2 (algebraMap_mem_maximalIdeal_pow_iff.2 hr))
 
 /-- **Independent residues in `𝔪 / 𝔪²`.** Let `m_P(F) ≥ 2`, `G`, `H` polynomials vanishing at
 `P` and `g`, `h` their images in `𝒪 = 𝒪_P(𝔸²) ⧸ (F)`, with maximal ideal `𝔪`. The residues of
