@@ -731,7 +731,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | T1 | `Projective/TerriblePoint.lean` | **7-terrible** | Q13, Q15, L10 |
 | T2 | `QuadraticTransformation/Basic.lean`, `GoodPosition.lean`, `Birational.lean` | **7-quadratic** | Q3, Q5, P7 |
 | T3 | `QuadraticTransformation/Position.lean`, `Singularities/` | **7-quadratic-centre** (*large*) | T1, T2, B1, L5, L12, Q14, P9 |
-| T4 | `QuadraticTransformation/Resolution.lean` | **7-reduce** | T3 |
+| T4 | `QuadraticTransformation/Resolution.lean` | **7-reduce** | T3, V2, V3, B3 |
 | T5 | `QuadraticTransformation/NeighbouringSingularities.lean` | the global form of **7-noether-formula** | T4, B4, Q12 |
 
 ### Stage 4: Noether's conditions at an ordinary multiple point
