@@ -6,22 +6,48 @@ Authors: The FormalCommons contributors
 module
 
 public import Mathlib.Algebra.MvPolynomial.Funext
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.MultiplePoints
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Tangent
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
 public import PlaneCurves.RingTheory.MvPolynomial.Homogenize.Factorization
 public import PlaneCurves.RingTheory.MvPolynomial.Irreducible
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
+public import TauCeti.AlgebraicGeometry.EllipticCurve.Projective.VariableChange
 
 /-!
 # Normal forms of irreducible cubics
 
-This file describes the singular points of an irreducible plane cubic `F` over an algebraically
-closed field, in every characteristic (Problem 5.13 of Fulton). By the bound on the multiple
-points, `F` has at most one multiple point (`eq_of_isMultiplePoint_of_degree_three`), and it is
-a double point (`mult_eq_two_of_degree_three`). A double point is a *node*, an ordinary double
-point with two distinct tangents, or a *cusp*, with a single tangent of multiplicity `2`
-(`isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two`).
+This file describes an irreducible plane cubic `F` near its special points: its multiple point,
+if it has one, and its flexes.
+
+## Singular points
+
+Over an algebraically closed field, in every characteristic, `F` has at most one multiple point
+(`eq_of_isMultiplePoint_of_degree_three`), by the bound on the multiple points, and it is a
+double point (`mult_eq_two_of_degree_three`) (Problem 5.13 of Fulton). A double point is a
+*node*, an ordinary double point with two distinct tangents, or a *cusp*, with a single tangent
+of multiplicity `2` (`isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two`).
+
+## Weierstrass form at a flex
+
+Let `F` be an irreducible cubic form over a field `k` and `O` a flex of `F`. Then a projective
+change of coordinates sends `[0 : 1 : 0]` to `O` and the tangent line at `O` to `Z = 0`, and
+carries `F` to a nonzero multiple of a Weierstrass cubic
+`Y²Z + a₁XYZ + a₃YZ² - (X³ + a₂X²Z + a₄XZ² + a₆Z³)` (Mathlib's
+`WeierstrassCurve.Projective.polynomial`). This holds in every characteristic; if `2 ≠ 0` in
+`k`, completing the square makes `a₁ = a₃ = 0` ([Fulton2008], Problem 5.24 (a)).
+
+The proof moves `O` to `[0 : 0 : 1]` and its tangent to `Y = 0`, as for the Hessian criterion.
+There the cubic has no `Z³` and no `XZ²` term, and its `YZ²` term can be taken to be `1`. On the
+tangent `Y = 0` it is `X²(aX + bZ)`, which meets `Y = 0` at `[0 : 0 : 1]` only twice unless
+`b = 0`; and `a ≠ 0`, since otherwise `Y` divides the cubic. Exchanging `Y` and `Z` and scaling
+`Y` makes the `Y²Z` and `X³` coefficients opposite, with no square or cube roots needed.
+
+Changes of coordinates are Tau Ceti's `MvPolynomial.linearSubst M`, `F ↦ F(M X)`, along a matrix
+`M` with `M.mulVecLin` injective, as in the rest of the library.
+
+## Normal forms of the cuspidal and the nodal cubic
 
 In characteristic zero a singular irreducible cubic is projectively equivalent to the cuspidal
 cubic `Y²Z = X³` or to the nodal cubic `Y²Z = X²(X + Z)` (Problems 5.10 and 5.11). The proof
@@ -37,6 +63,14 @@ which needs `3 ≠ 0`.
 
 All in the namespace `PlaneCurves.Projective`, unless named in full.
 
+* `MvPolynomial.IsHomogeneous.eq_of_fin_three_three`: a cubic form in three variables is the sum
+  of its ten monomials.
+* `WeierstrassCurve.Projective.tangentLine_polynomial_zero`: the tangent line of a
+  Weierstrass cubic at `[0 : 1 : 0]` is `Z = 0`.
+* `IsFlex.exists_linearSubst_eq_smul_polynomial`: an irreducible cubic is
+  in Weierstrass form after moving a flex to `[0 : 1 : 0]`.
+* `IsFlex.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero`: the same
+  with `a₁ = a₃ = 0`, when `2 ≠ 0`.
 * `isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two_of_degree_three`:
   a multiple point of an irreducible cubic is a node or a cusp.
 * `isNonsingular_or_exists_isMultiplePoint_iff_of_degree_three`: an
@@ -53,12 +87,11 @@ All in the namespace `PlaneCurves.Projective`, unless named in full.
 * `MvPolynomial.irreducible_X_sq_mul_X_sub_X_sq_mul_X_add_X`,
   `isOrdinaryMultiplePoint_X_sq_mul_X_sub_X_sq_mul_X_add_X`: `Y²Z = X²(X + Z)` is irreducible,
   with a node at `[0 : 0 : 1]` when `2 ≠ 0`.
-* `MvPolynomial.IsHomogeneous.eq_of_fin_three_three`: a form of degree three in three variables
-  is the sum of its ten monomials.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], Problems 5.10, 5.11, 5.13
+* [W. Fulton, *Algebraic Curves: An Introduction to Algebraic Geometry*][Fulton2008],
+  Problems 5.10, 5.11, 5.13 and 5.24
 -/
 
 public section
@@ -153,12 +186,205 @@ end CommRing
 
 end MvPolynomial
 
+namespace WeierstrassCurve.Projective
+
+open MvPolynomial
+
+variable {k : Type*} [Field k]
+
+/-- The tangent line of the Weierstrass cubic `Y²Z + a₁XYZ + a₃YZ² - (X³ + a₂X²Z + a₄XZ² + a₆Z³)`
+at its point at infinity `[0 : 1 : 0]` is the line at infinity `Z = 0`. -/
+theorem tangentLine_polynomial_zero (W : WeierstrassCurve.Projective k) :
+    PlaneCurves.Projective.tangentLine W.polynomial ![0, 1, 0] = X 2 := by
+  simp [PlaneCurves.Projective.tangentLine_def, Fin.sum_univ_three, polynomial]
+
+end WeierstrassCurve.Projective
+
 namespace PlaneCurves.Projective
 
 open MvPolynomial Projectivization PlaneCurves.ProjectiveSpace
 open scoped LinearAlgebra.Projectivization Matrix
 
-variable {k : Type*} [Field k] [IsAlgClosed k] {F : MvPolynomial (Fin 3) k}
+variable {k : Type*} [Field k]
+
+/-- The point `[0 : 0 : 1]` lies on `X` and `Y` with intersection number one. -/
+private theorem intersectionNumber_X_one_X_zero :
+    intersectionNumber (mk k ![0, 0, 1] (by simp)) (X 1 : MvPolynomial (Fin 3) k) (X 0) = 1 := by
+  have hP2 : (mk k ![0, 0, 1] (by simp) : ℙ k (Fin 3 → k)) ∈ affineOpen 2 := by simp
+  have ha : affineChart 2 (mk k ![0, 0, 1] (by simp) : ℙ k (Fin 3 → k)) = 0 := by
+    funext j
+    fin_cases j <;> simp [Fin.succAbove, Fin.lt_def]
+  rw [intersectionNumber_eq_affine (isHomogeneous_X k 1) (isHomogeneous_X k 0) hP2, ha,
+    Affine.intersectionNumber_comm]
+  simpa [Fin.insertNth_apply_below (show (1 : Fin 3) < 2 by decide)] using
+    Affine.intersectionNumber_X_sub_C_X_sub_C (0 : Fin 2 → k)
+
+variable {F : MvPolynomial (Fin 3) k} {O : ℙ k (Fin 3 → k)}
+
+/-- A flex `O` of a form `F` and its tangent line are moved to `[0 : 0 : 1]` and `Y = 0` by a
+change of coordinates `M`; there `F(M X)` has no `Z³` and `XZ²` term, and its `YZ²` term is
+`1`. -/
+private theorem exists_flex_standard (hF : F.IsHomogeneous 3) (hO : IsFlex F O) :
+    ∃ M : GL (Fin 3) k, M.1 *ᵥ ![0, 0, 1] = O.rep ∧
+      eval ![0, 0, 1] (linearSubst M.1 F) = 0 ∧
+      (∀ j, eval ![0, 0, 1] (pderiv j (linearSubst M.1 F)) = (Pi.single 1 1 : Fin 3 → k) j) ∧
+      3 ≤ intersectionNumber (mk k ![0, 0, 1] (by simp)) (X 1) (linearSubst M.1 F) := by
+  set t : Fin 3 → k := fun i ↦ eval O.rep (pderiv i F)
+  have ht : t ≠ 0 := by
+    obtain ⟨-, i, hi⟩ := isSimplePoint_iff_eval_rep.1 hO.isSimplePoint
+    exact fun h0 ↦ hi (congrFun h0 i)
+  have htp : t ⬝ᵥ O.rep = 0 := by
+    simpa [dotProduct] using eval_tangentLine_self hF hO.isSimplePoint.eval_rep_eq_zero
+  obtain ⟨M, hMp, hMt⟩ :=
+    Matrix.exists_mulVec_single_eq_and_vecMul_eq_single ht O.rep_ne_zero htp
+  have he : (Pi.single 2 1 : Fin 3 → k) = ![0, 0, 1] := by
+    funext i; fin_cases i <;> simp
+  rw [he] at hMp
+  have hQO : map M.1.mulVecLin (Matrix.mulVec_injective_of_isUnit M.isUnit)
+      (mk k ![0, 0, 1] (by simp)) = O := by
+    erw [map_mk]
+    simp only [Matrix.mulVecLin_apply, hMp]
+    exact O.mk_rep
+  have hT : linearSubst M.1 (tangentLine F O.rep) = X 1 := by
+    have : linearSubst M.1 (tangentLine F O.rep) = ∑ j, C ((t ᵥ* M.1) j) * X j := by
+      simp only [tangentLine_def, map_mul, linearSubst_X, Matrix.vecMul, dotProduct,
+        Fin.sum_univ_three, map_add, map_mul, algHom_C, t]
+      simp only [algebraMap_eq]
+      ring
+    rw [this, hMt]
+    simp [Fin.sum_univ_three]
+  refine ⟨M, hMp, ?_, fun j ↦ ?_, ?_⟩
+  · rw [eval_linearSubst, hMp]
+    exact hO.isSimplePoint.eval_rep_eq_zero
+  · rw [← hMt]
+    simp [pderiv_linearSubst, eval_linearSubst, hMp, Matrix.vecMul, dotProduct, mul_comm, t]
+  · rw [intersectionNumber_comm, ← hT,
+      intersectionNumber_linearSubst hF (isHomogeneous_tangentLine _ _), hQO]
+    exact (isFlex_def.1 hO).2
+
+/-- An irreducible cubic `H` with a flex at `[0 : 0 : 1]` with tangent `Y = 0`, normalized as by
+`exists_flex_standard`, is `a X³ + b Y³ + c X²Y + d XY² + e Y²Z + YZ² + g XYZ` with `a ≠ 0`. -/
+private theorem exists_coeff_of_flex {H : MvPolynomial (Fin 3) k} (hH : H.IsHomogeneous 3)
+    (hi : Irreducible H) (h0 : eval ![0, 0, 1] H = 0)
+    (hd : ∀ j, eval ![0, 0, 1] (pderiv j H) = (Pi.single 1 1 : Fin 3 → k) j)
+    (hI : 3 ≤ intersectionNumber (mk k ![0, 0, 1] (by simp)) (X 1) H) :
+    ∃ a b c d e g : k, a ≠ 0 ∧
+      H = C a * X 0 ^ 3 + C b * X 1 ^ 3 + C c * (X 0 ^ 2 * X 1) + C d * (X 0 * X 1 ^ 2) +
+        C e * (X 1 ^ 2 * X 2) + X 1 * X 2 ^ 2 + C g * (X 0 * X 1 * X 2) := by
+  have hH := hH.eq_of_fin_three_three
+  generalize H.coeff (Finsupp.single 0 3) = a300, H.coeff (Finsupp.single 1 3) = a030,
+    H.coeff (Finsupp.single 2 3) = a003,
+    H.coeff (Finsupp.single 0 2 + Finsupp.single 1 1) = a210,
+    H.coeff (Finsupp.single 0 2 + Finsupp.single 2 1) = a201,
+    H.coeff (Finsupp.single 0 1 + Finsupp.single 1 2) = a120,
+    H.coeff (Finsupp.single 1 2 + Finsupp.single 2 1) = a021,
+    H.coeff (Finsupp.single 0 1 + Finsupp.single 2 2) = a102,
+    H.coeff (Finsupp.single 1 1 + Finsupp.single 2 2) = a012,
+    H.coeff (Finsupp.single 0 1 + Finsupp.single 1 1 + Finsupp.single 2 1) = a111 at hH
+  subst hH
+  have h003 : a003 = 0 := by simpa using h0
+  have h102 : a102 = 0 := by simpa [pderiv_X] using hd 0
+  have h012 : a012 = 1 := by simpa [pderiv_X] using hd 1
+  subst h003 h102 h012
+  have hX0 : (X 0 : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k 0
+  have hX1 : (X 1 : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k 1
+  have h201 : a201 = 0 := by
+    by_contra h201
+    have hL : (C a300 * X 0 + C a201 * X 2 : MvPolynomial (Fin 3) k).IsHomogeneous 1 :=
+      ((isHomogeneous_C_mul_X _ _)).add (isHomogeneous_C_mul_X _ _)
+    have : 3 ≤ intersectionNumber (mk k ![0, 0, 1] (by simp)) (X 1)
+        (X 0 ^ 2 * (C a300 * X 0 + C a201 * X 2) + (C a030 * X 1 ^ 2 + C a210 * X 0 ^ 2 +
+          C a120 * (X 0 * X 1) + C a021 * (X 1 * X 2) + X 2 ^ 2 + C a111 * (X 0 * X 2)) * X 1) := by
+      convert hI using 2
+      simp only [map_zero, zero_mul, add_zero, map_one, one_mul]
+      ring
+    rw [intersectionNumber_add_mul,
+      intersectionNumber_mul_right_of_eval_ne_zero hX1 (hX0.pow 2) hL
+        (by rw [Ne, hL.eval_rep_mk_eq_zero_iff]; simpa using h201), pow_two,
+      intersectionNumber_mul_right hX1 hX0 hX0,
+      intersectionNumber_X_one_X_zero] at this
+    exact absurd this (by decide)
+  subst h201
+  refine ⟨a300, a030, a210, a120, a021, a111, fun h300 ↦ ?_, by simp⟩
+  subst h300
+  refine not_irreducible_mul_of_eval_eq_zero (x := (0 : Fin 3 → k)) (p := X 1)
+    (q := C a030 * X 1 ^ 2 + C a210 * X 0 ^ 2 + C a120 * (X 0 * X 1) +
+      C a021 * (X 1 * X 2) + X 2 ^ 2 + C a111 * (X 0 * X 2))
+    (by simp) (by simp) ?_
+  convert hi using 1
+  simp
+  ring
+
+/-- **Weierstrass form of a cubic at a flex.** Let `F` be an irreducible cubic form over a field
+`k` and `O` a flex of `F`. Then a projective change of coordinates `T` sends `[0 : 1 : 0]` to `O`
+and carries `F` to a nonzero multiple of a Weierstrass cubic
+`Y²Z + a₁XYZ + a₃YZ² - (X³ + a₂X²Z + a₄XZ² + a₆Z³)`; the tangent line at `O` becomes the line
+at infinity `Z = 0`. This holds in every characteristic, and `k` need not be algebraically
+closed. -/
+theorem IsFlex.exists_linearSubst_eq_smul_polynomial (hF : F.IsHomogeneous 3)
+    (hirr : Irreducible F) (hO : IsFlex F O) :
+    ∃ (T : Matrix (Fin 3) (Fin 3) k) (c : k) (W : WeierstrassCurve k),
+      Function.Injective T.mulVecLin ∧ c ≠ 0 ∧ T *ᵥ ![0, 1, 0] = O.rep ∧
+      linearSubst T F = c • W.toProjective.polynomial ∧
+      tangentLine (linearSubst T F) ![0, 1, 0] = c • X 2 := by
+  obtain ⟨M, hMO, h0, hd, hI⟩ := exists_flex_standard hF hO
+  have hi : Irreducible (linearSubst M.1 F) :=
+    (irreducible_linearSubst_iff ((Matrix.isUnit_iff_isUnit_det _).1 M.isUnit)).2 hirr
+  obtain ⟨a, b, c, d, e, g, ha, hH⟩ := exists_coeff_of_flex (hF.linearSubst M.1) hi h0 hd hI
+  set N : Matrix (Fin 3) (Fin 3) k := !![1, 0, 0; 0, 0, -a; 0, 1, 0]
+  have hN : Function.Injective N.mulVecLin :=
+    Matrix.mulVecLin_injective_iff_isUnit_det.2 <| Ne.isUnit (by simp [N, Matrix.det_fin_three, ha])
+  have hTF : linearSubst (M.1 * N) F = (-a) • (⟨g, -c, -e * a, d * a, -b * a ^ 2⟩ :
+      WeierstrassCurve k).toProjective.polynomial := by
+    rw [linearSubst_mul_apply, hH]
+    simp [N, WeierstrassCurve.Projective.polynomial, linearSubst_X, Fin.sum_univ_three,
+      smul_eq_C_mul]
+    ring
+  refine ⟨M.1 * N, -a, _, Matrix.mulVecLin_mul_injective
+    (Matrix.mulVec_injective_of_isUnit M.isUnit) hN, neg_ne_zero.2 ha, ?_, hTF, ?_⟩
+  · rw [← Matrix.mulVec_mulVec, ← hMO]
+    congr 1
+    funext i
+    fin_cases i <;> simp [N]
+  · rw [hTF, tangentLine_smul, WeierstrassCurve.Projective.tangentLine_polynomial_zero]
+
+/-- **Weierstrass form of a cubic at a flex, away from characteristic two** ([Fulton2008],
+Problem 5.24 (a)). Let `F` be an irreducible cubic form over a field `k` with `2 ≠ 0`, and `O` a
+flex of `F`. Then a projective change of coordinates `T` sends `[0 : 1 : 0]` to `O` and carries
+`F` to a nonzero multiple of `Y²Z - (X³ + a₂X²Z + a₄XZ² + a₆Z³)`, a Weierstrass cubic with
+`a₁ = a₃ = 0`; the tangent line at `O` becomes `Z = 0`. -/
+theorem IsFlex.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero (h2 : (2 : k) ≠ 0)
+    (hF : F.IsHomogeneous 3) (hirr : Irreducible F) (hO : IsFlex F O) :
+    ∃ (T : Matrix (Fin 3) (Fin 3) k) (c : k) (W : WeierstrassCurve k),
+      Function.Injective T.mulVecLin ∧ c ≠ 0 ∧ T *ᵥ ![0, 1, 0] = O.rep ∧
+      linearSubst T F = c • W.toProjective.polynomial ∧ W.a₁ = 0 ∧ W.a₃ = 0 ∧
+      tangentLine (linearSubst T F) ![0, 1, 0] = c • X 2 := by
+  obtain ⟨T, c, W, hT, hc, hTO, hTF, -⟩ := hO.exists_linearSubst_eq_smul_polynomial hF hirr
+  -- Complete the square in `Y`: `y ↦ y - (a₁ x + a₃) / 2`.
+  set V : WeierstrassCurve.VariableChange k := ⟨1, 0, -W.a₁ / 2, -W.a₃ / 2⟩
+  have hV : Function.Injective V.toMatrix.mulVecLin :=
+    Matrix.mulVecLin_injective_iff_isUnit_det.2 <| Ne.isUnit <| by
+      simp [V, WeierstrassCurve.VariableChange.toMatrix_def, Matrix.det_fin_three]
+  have hVF : linearSubst (T * V.toMatrix) F = c • (V • W).toProjective.polynomial := by
+    rw [linearSubst_mul_apply, hTF, map_smul,
+      WeierstrassCurve.Projective.linearSubst_polynomial]
+    simp [V]
+  refine ⟨T * V.toMatrix, c, V • W, Matrix.mulVecLin_mul_injective hT hV, hc, ?_, hVF, ?_, ?_,
+    by rw [hVF, tangentLine_smul, WeierstrassCurve.Projective.tangentLine_polynomial_zero]⟩
+  · rw [← Matrix.mulVec_mulVec, ← hTO]
+    congr 1
+    funext i
+    fin_cases i <;> simp [V, WeierstrassCurve.VariableChange.toMatrix_def]
+  · simp [V, WeierstrassCurve.variableChange_a₁]
+    field_simp
+    ring
+  · simp [V, WeierstrassCurve.variableChange_a₃]
+    field_simp
+    ring
+
+section IsAlgClosed
+
+variable [IsAlgClosed k]
 
 /-- A multiple point `P` of an irreducible cubic `F` is a *node*, an ordinary double point, or a
 *cusp*: `F` has a single tangent `L` at `P`, of multiplicity `2`. -/
@@ -617,6 +843,8 @@ theorem isOrdinaryMultiplePoint_X_sq_mul_X_sub_X_sq_mul_X_add_X (h2 : (2 : k) �
   obtain ⟨h1, h2'⟩ := mult_and_leadingForm_shape (a := (1 : k)) (b := 2) (d := 0) (e := 0) (f := 0)
     (g := -1) (Or.inl one_ne_zero)
   exact ⟨h1.ge, h2'.squarefree_iff.2 ((squarefree_C_mul_X_sq_add_iff (Or.inl one_ne_zero)).2 h2)⟩
+
+end IsAlgClosed
 
 end PlaneCurves.Projective
 

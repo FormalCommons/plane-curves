@@ -41,6 +41,13 @@ map `𝒪_P(𝔸ⁿ) → k`, and describes its maximal ideal, its powers and its
   induced by a polynomial map `V → W` sending `P` to `Q`, and the isomorphisms
   `𝒪_Q(V) ≅ 𝒪_P(V^T)` induced by the Taylor shift (`localRing.quotientTaylorEquiv`) and by
   invertible linear substitutions (`localRing.quotientLinearSubstEquiv`).
+* `PlaneCurves.AffineSpace.localRing.ofAway`: the map `k[X][1/h] → 𝒪_P(𝔸ⁿ)` for `h(P) ≠ 0`;
+  `PlaneCurves.AffineSpace.localRing.mapOfAway`: the map `𝒪_P(𝔸ⁿ) → 𝒪_Q(𝔸ᵐ)` induced by a
+  `k`-algebra map `k[X][1/h] → k[Y][1/h']` compatible with the values at `P` and `Q`.
+* `PlaneCurves.AffineSpace.localRingEquivOfAway`: the isomorphism `𝒪_P(𝔸ⁿ) ≅ 𝒪_Q(𝔸ᵐ)` induced
+  by such an isomorphism `k[X][1/h] ≅ k[Y][1/h']`, and
+  `PlaneCurves.AffineSpace.quotientEquivOfAway`: the isomorphism
+  `𝒪_P(𝔸ⁿ) ⧸ (f) ≅ 𝒪_Q(𝔸ᵐ) ⧸ (g)` when it sends `f` to a unit times `g`.
 
 ## Main results
 
@@ -730,6 +737,255 @@ theorem quotientLinearSubstEquiv_algebraMap [Fintype σ] [DecidableEq σ]
   by rw [← linearSubstAlgEquiv_apply]; exact quotientMapEquiv_algebraMap _ _ _ g
 
 end localRing
+
+/-! #### Isomorphisms from localizations away from a polynomial -/
+
+namespace localRing
+
+variable {k P} {τ : Type*} {Q : τ → k}
+
+variable (P) in
+/-- For `h(P) ≠ 0`, the `k`-algebra map `k[X][1/h] → 𝒪_P(𝔸ⁿ)`: `h` is a unit in `𝒪_P(𝔸ⁿ)`. -/
+noncomputable def ofAway (h : MvPolynomial σ k) (hP : eval P h ≠ 0) :
+    Localization.Away h →ₐ[k] localRing k P :=
+  IsLocalization.liftAlgHom (M := Submonoid.powers h)
+    (f := IsScalarTower.toAlgHom k (MvPolynomial σ k) (localRing k P)) fun s => by
+      obtain ⟨n, hn⟩ := s.2
+      rw [← hn]
+      simpa using (isUnit_algebraMap_iff.2 hP).pow n
+
+theorem ofAway_def (h : MvPolynomial σ k) (hP : eval P h ≠ 0) : ofAway P h hP =
+    IsLocalization.liftAlgHom (M := Submonoid.powers h)
+      (f := IsScalarTower.toAlgHom k (MvPolynomial σ k) (localRing k P)) fun s => by
+        obtain ⟨n, hn⟩ := s.2
+        rw [← hn]
+        simpa using (isUnit_algebraMap_iff.2 hP).pow n :=
+  (rfl)
+
+@[simp]
+theorem ofAway_algebraMap {h : MvPolynomial σ k} (hP : eval P h ≠ 0) (f : MvPolynomial σ k) :
+    ofAway P h hP (algebraMap _ _ f) = algebraMap _ _ f := by
+  simp [ofAway_def]
+
+/-- The value at `P` of the image of `x ∈ k[X][1/h]` in `𝒪_P(𝔸ⁿ)` is the value of `x` at `P`. -/
+@[simp]
+theorem evalAt_ofAway {h : MvPolynomial σ k} (hP : eval P h ≠ 0) (x : Localization.Away h) :
+    evalAt k P (ofAway P h hP x) =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP) x := by
+  have : ((evalAt k P).toRingHom.comp (ofAway P h hP).toRingHom) =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP) :=
+    IsLocalization.ringHom_ext (Submonoid.powers h) <| RingHom.ext fun f => by
+      simp [Localization.awayLift]
+  exact congr($this x)
+
+/-- An element of `𝒪_P(𝔸ⁿ)` is a unit iff its value at `P` is nonzero. -/
+theorem isUnit_iff_evalAt_ne_zero {f : localRing k P} : IsUnit f ↔ evalAt k P f ≠ 0 := by
+  rw [ne_eq, evalAt_eq_zero_iff, mem_maximalIdeal, mem_nonunits_iff, not_not]
+
+/-- A `k`-algebra map `e : k[X][1/h] → k[Y][1/h']` with `(e x)(Q) = x(P)`, for `h(P) ≠ 0` and
+`h'(Q) ≠ 0`, induces a `k`-algebra map `𝒪_P(𝔸ⁿ) → 𝒪_Q(𝔸ᵐ)`. -/
+noncomputable def mapOfAway {h : MvPolynomial σ k} {h' : MvPolynomial τ k}
+    (e : Localization.Away h →ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) :
+    localRing k P →ₐ[k] localRing k Q :=
+  IsLocalization.liftAlgHom (M := (vanishingIdeal k {P}).primeCompl)
+    (f := (ofAway Q h' hQ).comp (e.comp (IsScalarTower.toAlgHom k _ _))) fun s => by
+      rw [isUnit_iff_evalAt_ne_zero]
+      have := congr($he (algebraMap _ (Localization.Away h) s.1))
+      simp only [RingHom.coe_comp, RingHom.coe_coe, Function.comp_apply] at this
+      simpa [this, Localization.awayLift, IsLocalization.Away.lift_eq] using eval_ne_zero s
+
+theorem mapOfAway_def {h : MvPolynomial σ k} {h' : MvPolynomial τ k}
+    (e : Localization.Away h →ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) :
+    mapOfAway e hP hQ he = IsLocalization.liftAlgHom (M := (vanishingIdeal k {P}).primeCompl)
+      (f := (ofAway Q h' hQ).comp (e.comp (IsScalarTower.toAlgHom k _ _))) fun s => by
+        rw [isUnit_iff_evalAt_ne_zero]
+        have := congr($he (algebraMap _ (Localization.Away h) s.1))
+        simp only [RingHom.coe_comp, RingHom.coe_coe, Function.comp_apply] at this
+        simpa [this, Localization.awayLift, IsLocalization.Away.lift_eq] using eval_ne_zero s :=
+  (rfl)
+
+@[simp]
+theorem mapOfAway_algebraMap {h : MvPolynomial σ k} {h' : MvPolynomial τ k}
+    (e : Localization.Away h →ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) (f : MvPolynomial σ k) :
+    mapOfAway e hP hQ he (algebraMap _ _ f) = ofAway Q h' hQ (e (algebraMap _ _ f)) := by
+  simp [mapOfAway_def]
+
+/-- On the image of `k[X][1/h]`, the map induced by `e` is `e`. -/
+@[simp]
+theorem mapOfAway_ofAway {h : MvPolynomial σ k} {h' : MvPolynomial τ k}
+    (e : Localization.Away h →ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) (x : Localization.Away h) :
+    mapOfAway e hP hQ he (ofAway P h hP x) = ofAway Q h' hQ (e x) := by
+  have : (mapOfAway e hP hQ he).toRingHom.comp (ofAway P h hP).toRingHom =
+      (ofAway Q h' hQ).toRingHom.comp (e : Localization.Away h →+* Localization.Away h') :=
+    IsLocalization.ringHom_ext (Submonoid.powers h) <| RingHom.ext fun f => by simp
+  exact congr($this x)
+
+/-- The map induced by `e` respects values: `(ẽ f)(Q) = f(P)`. -/
+@[simp]
+theorem evalAt_mapOfAway {h : MvPolynomial σ k} {h' : MvPolynomial τ k}
+    (e : Localization.Away h →ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) (f : localRing k P) :
+    evalAt k Q (mapOfAway e hP hQ he f) = evalAt k P f := by
+  have : (evalAt k Q).toRingHom.comp (mapOfAway e hP hQ he).toRingHom =
+      (evalAt k P).toRingHom :=
+    IsLocalization.ringHom_ext (vanishingIdeal k {P}).primeCompl <| RingHom.ext fun f => by
+      have := congr($he (algebraMap _ (Localization.Away h) f))
+      simp only [RingHom.coe_comp, RingHom.coe_coe, Function.comp_apply] at this
+      simpa [Localization.awayLift, IsLocalization.Away.lift_eq] using this
+  exact congr($this f)
+
+end localRing
+
+open localRing
+
+variable {k P} {τ : Type*} {Q : τ → k} {h : MvPolynomial σ k} {h' : MvPolynomial τ k}
+
+/-- An isomorphism `e : k[X][1/h] ≅ k[Y][1/h']` with `(e x)(Q) = x(P)`, for `h(P) ≠ 0` and
+`h'(Q) ≠ 0`, induces an isomorphism of local rings `𝒪_P(𝔸ⁿ) ≅ 𝒪_Q(𝔸ᵐ)`. -/
+noncomputable def localRingEquivOfAway
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) :
+    localRing k P ≃ₐ[k] localRing k Q :=
+  AlgEquiv.ofAlgHom (mapOfAway e.toAlgHom hP hQ he)
+    (mapOfAway e.symm.toAlgHom hQ hP (by rw [← he]; exact RingHom.ext fun x => by simp))
+    (AlgHom.toRingHom_injective <| IsLocalization.ringHom_ext (vanishingIdeal k {Q}).primeCompl <|
+      RingHom.ext fun g => by
+        have h1 := mapOfAway_ofAway e.toAlgHom hP hQ he
+        simp [← ofAway_algebraMap hQ g, -ofAway_algebraMap, h1])
+    (AlgHom.toRingHom_injective <| IsLocalization.ringHom_ext (vanishingIdeal k {P}).primeCompl <|
+      RingHom.ext fun f => by
+        have h1 := mapOfAway_ofAway e.toAlgHom hP hQ he
+        have h2 := mapOfAway_ofAway e.symm.toAlgHom hQ hP
+          (by rw [← he]; exact RingHom.ext fun x => by simp)
+        simp [← ofAway_algebraMap hP f, -ofAway_algebraMap, h1, h2])
+
+theorem localRingEquivOfAway_def
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) :
+    (localRingEquivOfAway e hP hQ he : localRing k P →ₐ[k] localRing k Q) =
+      mapOfAway e.toAlgHom hP hQ he :=
+  (rfl)
+
+/-- On the image of `k[X][1/h]`, the isomorphism induced by `e` is `e`. -/
+@[simp]
+theorem localRingEquivOfAway_ofAway
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) (x : Localization.Away h) :
+    localRingEquivOfAway e hP hQ he (ofAway P h hP x) = ofAway Q h' hQ (e x) := by
+  rw [← AlgEquiv.coe_toAlgHom, localRingEquivOfAway_def]
+  exact mapOfAway_ofAway e.toAlgHom hP hQ he x
+
+/-- On polynomials, the isomorphism induced by `e` is `e`. -/
+@[simp]
+theorem localRingEquivOfAway_algebraMap
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) (f : MvPolynomial σ k) :
+    localRingEquivOfAway e hP hQ he (algebraMap _ _ f) =
+      ofAway Q h' hQ (e (algebraMap _ _ f)) := by
+  rw [← ofAway_algebraMap hP f, localRingEquivOfAway_ofAway]
+
+/-- The inverse of the isomorphism induced by `e` is the one induced by `e⁻¹`. -/
+theorem localRingEquivOfAway_symm
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) :
+    (localRingEquivOfAway e hP hQ he).symm = localRingEquivOfAway e.symm hQ hP
+      (by rw [← he]; exact RingHom.ext fun x => by simp) :=
+  (rfl)
+
+/-- The isomorphism induced by `e` respects values: `(ẽ f)(Q) = f(P)`. -/
+@[simp]
+theorem evalAt_localRingEquivOfAway
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP)) (f : localRing k P) :
+    evalAt k Q (localRingEquivOfAway e hP hQ he f) = evalAt k P f := by
+  rw [← AlgEquiv.coe_toAlgHom, localRingEquivOfAway_def]
+  exact evalAt_mapOfAway e.toAlgHom hP hQ he f
+
+/-- If moreover `e f = u g` for a unit `u` of `k[Y][1/h']`, the isomorphism induced by `e`
+passes to the quotients: `𝒪_P(𝔸ⁿ) ⧸ (f) ≅ 𝒪_Q(𝔸ᵐ) ⧸ (g)`. -/
+noncomputable def quotientEquivOfAway
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP))
+    {f : MvPolynomial σ k} {g : MvPolynomial τ k} (u : (Localization.Away h')ˣ)
+    (hfg : e (algebraMap _ _ f) = u * algebraMap _ _ g) :
+    (localRing k P ⧸ span {algebraMap _ (localRing k P) f}) ≃ₐ[k]
+      (localRing k Q ⧸ span {algebraMap _ (localRing k Q) g}) :=
+  Ideal.quotientEquivAlg _ _ (localRingEquivOfAway e hP hQ he) <| by
+    rw [Ideal.map_span, Set.image_singleton, RingHom.coe_coe, localRingEquivOfAway_algebraMap,
+      hfg, map_mul, ofAway_algebraMap, span_singleton_mul_left_unit ((u.isUnit).map _)]
+
+@[simp]
+theorem quotientEquivOfAway_mk
+    (e : Localization.Away h ≃ₐ[k] Localization.Away h') (hP : eval P h ≠ 0)
+    (hQ : eval Q h' ≠ 0)
+    (he : (Localization.awayLift (eval Q) h' (isUnit_iff_ne_zero.2 hQ)).comp
+      (e : Localization.Away h →+* Localization.Away h') =
+      Localization.awayLift (eval P) h (isUnit_iff_ne_zero.2 hP))
+    {f : MvPolynomial σ k} {g : MvPolynomial τ k} (u : (Localization.Away h')ˣ)
+    (hfg : e (algebraMap _ _ f) = u * algebraMap _ _ g) (x : localRing k P) :
+    quotientEquivOfAway e hP hQ he u hfg (Ideal.Quotient.mk _ x) =
+      Ideal.Quotient.mk _ (localRingEquivOfAway e hP hQ he x) :=
+  (rfl)
+
+/-- The Taylor shift `taylorEquiv P` is the isomorphism induced by the automorphism of
+`k[X][1/h]` that the Taylor shift induces, for any `h` with `h(P) ≠ 0`. -/
+example (h : MvPolynomial σ k) (hP : eval P h ≠ 0) :
+    localRingEquivOfAway (Q := (0 : σ → k)) (h' := taylor P h)
+      (IsLocalization.algEquivOfAlgEquiv (M := Submonoid.powers h)
+        (T := Submonoid.powers (taylor P h)) _ _ (taylorAlgEquiv P)
+        (by rw [Submonoid.map_powers, coe_taylorAlgEquiv]))
+      hP (by simpa using hP) (IsLocalization.ringHom_ext (Submonoid.powers h) <|
+        RingHom.ext fun f => by
+          simp only [RingHom.coe_comp, Function.comp_apply, RingHom.coe_coe]
+          rw [IsLocalization.algEquivOfAlgEquiv_eq]
+          simp [Localization.awayLift]) =
+      taylorEquiv P := by
+  refine AlgEquiv.coe_toAlgHom_injective <| AlgHom.toRingHom_injective <|
+    IsLocalization.ringHom_ext (vanishingIdeal k {P}).primeCompl <| RingHom.ext fun f => ?_
+  simp only [RingHom.coe_comp, RingHom.coe_coe, Function.comp_apply,
+    AlgEquiv.coe_toAlgHom, localRingEquivOfAway_algebraMap]
+  rw [IsLocalization.algEquivOfAlgEquiv_eq]
+  simp
 
 end PlaneCurves.AffineSpace
 

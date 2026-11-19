@@ -114,6 +114,17 @@ theorem mem_ideal_iff {R : Type*} [CommRing R] {G H : MvPolynomial (Fin 3) R}
     (hG : G.IsHomogeneous d) : H ∈ ideal hG ↔ G ∣ H := by
   rw [← HomogeneousIdeal.mem_iff, toIdeal_ideal, Ideal.mem_span_singleton]
 
+/-- A polynomial not divisible by `G` is not in the ideal `(G)`. -/
+theorem notMem_ideal_of_not_dvd {R : Type*} [CommRing R] {G H : MvPolynomial (Fin 3) R}
+    (hG : G.IsHomogeneous d) (h : ¬ G ∣ H) : H ∉ ideal hG :=
+  mt (mem_ideal_iff hG).1 h
+
+/-- For an irreducible form `F` and a polynomial `G` not divisible by `F`, no power of `G` lies
+in `(F)`. -/
+theorem pow_notMem_ideal (hF : F.IsHomogeneous d) [Fact (Irreducible F)]
+    {G : MvPolynomial (Fin 3) k} (h : ¬ F ∣ G) (r : ℕ) : G ^ r ∉ ideal hF :=
+  notMem_ideal_of_not_dvd hF fun h' ↦ h ((Fact.out : Irreducible F).prime.dvd_of_dvd_pow h')
+
 /-- The class of a form of degree `m` lies in the degree `m • 1` part of the homogeneous coordinate
 ring, the degree in which Tau Ceti's charts take numerators. -/
 theorem mk_mem_quotientGrading_smul_one (hF : F.IsHomogeneous d) {m : ℕ}
