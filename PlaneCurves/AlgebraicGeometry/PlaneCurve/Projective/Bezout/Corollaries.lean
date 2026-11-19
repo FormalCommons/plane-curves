@@ -108,10 +108,8 @@ theorem intersectionNumber_eq_one_of_card_eq_mul (hF : F.IsHomogeneous m)
     (hG : G.IsHomogeneous n) {s : Finset (ℙ k (Fin 3 → k))}
     (hs : ∀ P, P ∈ s ↔ eval P.rep F = 0 ∧ eval P.rep G = 0) (h : s.card = m * n) {P}
     (hP : P ∈ s) : intersectionNumber P F G = 1 := by
-  have hFG : IsRelPrime F G := isRelPrime_of_finite_zeroLocus_pair hF hG
-    (s.finite_toSet.subset fun Q hQ ↦ (hs Q).2 (by
-      rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨m, hF⟩, ⟨n, hG⟩])] at hQ
-      exact ⟨hQ F (by simp), hQ G (by simp)⟩))
+  have hFG : IsRelPrime F G :=
+    isRelPrime_of_forall_eval_eq_zero_mem hF hG fun P h₁ h₂ ↦ (hs P).2 ⟨h₁, h₂⟩
   have htop (Q : ℙ k (Fin 3 → k)) : intersectionNumber Q F G ≠ ⊤ :=
     intersectionNumber_ne_top_of_isRelPrime hF hG hFG
   have hone : ∀ Q ∈ s, 1 ≤ (intersectionNumber Q F G).toNat := fun Q hQ ↦ by
