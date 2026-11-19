@@ -175,6 +175,8 @@ PlaneCurves/
 │   │   └── LocalSubring.lean            local subrings of a field: domination, ofPrime
 │   ├── DiscreteValuationRing/
 │   │   └── Colength.lean                order = colength, expansions (A12)
+│   ├── Valuation/
+│   │   └── ValuationSubring.lean        a valuation ring containing a field below L is L (V4)
 │   ├── KrullDimension/
 │   │   └── TrdegOne.lean                domains of transcendence degree one (R3)
 │   └── UniqueFactorizationDomain/
@@ -195,6 +197,7 @@ PlaneCurves/
 │       ├── PlaneModel.lean              K ≅ k(F) for an irreducible plane F (R6)
 │       ├── RationalMap.lean             domination, rational maps of curves (R7)
 │       ├── Place/
+│       │   ├── Basic.lean               valuation ring 𝒪_Q of a place: isEquiv, ≠ K (V2)
 │       │   └── AddValuation.lean        TauCeti.Place.addValuation : K → WithTop ℤ (V1)
 │       ├── HolomorphyRing/
 │       │   └── Length.lean              ℓ(𝒪_S/g) = Σ ord_Q g (V7)

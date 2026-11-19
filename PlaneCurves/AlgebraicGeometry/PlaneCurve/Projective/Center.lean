@@ -12,6 +12,7 @@ public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.PlaneCurveDimension
 public import Mathlib.RingTheory.Valuation.LocalSubring
 public import TauCeti.FieldTheory.FunctionField.Place.Zeros
 public import TauCeti.FieldTheory.FunctionField.Place.Existence
+public import PlaneCurves.FieldTheory.FunctionField.Place.Basic
 
 /-!
 # The centre of a valuation ring on a projective plane curve
@@ -192,11 +193,8 @@ theorem exists_isCenter [IsAlgClosed k] (hkR : ∀ c : k, algebraMap k L c ∈ R
         R.valuation (ψ (aeval c f)) / R.valuation (ψ (aeval c g)) := fun hf hg hgI ↦ by
     rw [functionField.mk_eq_aeval_div_aeval hi, map_div₀, map_div₀]
   have hle : ∀ f, R.valuation (ψ (aeval c f)) ≤ 1 := fun f ↦ by
-    rw [R.valuation_le_one_iff, ← AlgHom.comp_apply, MvPolynomial.comp_aeval]
-    induction f using MvPolynomial.induction_on with
-    | C a => simpa using hkR a
-    | add p q hp hq => simpa using add_mem hp hq
-    | mul_X p l hp => simpa using mul_mem hp (hc l)
+    rw [R.valuation_le_one_iff, ← AlgHom.comp_apply, MvPolynomial.comp_aeval, aeval_def]
+    exact eval₂_mem (fun _ _ ↦ hkR _) hc
   have h0 : ∃ f : MvPolynomial (Fin 3) k, aeval c f ≠ 0 ∧ R.valuation (ψ (aeval c f)) < 1 := by
     by_contra! h
     obtain ⟨z, hz⟩ := hR
@@ -335,21 +333,6 @@ open TauCeti
 
 variable (hF)
 
-/-- A valuation of a place `Q` of `k(C)` is `< 1` exactly when the valuation of its valuation
-ring is. -/
-private theorem Place.valuation_lt_one_iff (Q : Place k (functionField hF))
-    {z : functionField hF} : Q.integers.valuation z < 1 ↔ Q.valuation z < 1 := by
-  rw [Place.integers_def]
-  exact (Valuation.isEquiv_valuation_valuationSubring Q.valuation).lt_one_iff_lt_one.symm
-
-/-- The valuation ring of a place of `k(C)` is not all of `k(C)`. -/
-private theorem Place.exists_notMem_integers (Q : Place k (functionField hF)) :
-    ∃ z, AlgHom.id k (functionField hF) z ∉ Q.integers := by
-  obtain ⟨z, -, hz⟩ := Q.exists_ne_zero_ord_eq (-1)
-  refine ⟨z, fun h ↦ ?_⟩
-  rw [AlgHom.id_apply, Place.mem_integers_iff_ord_nonneg, hz] at h
-  exact absurd h (by decide)
-
 variable [IsAlgClosed k]
 
 /-- The **centre** of a place `Q` of the function field `k(C)` of an irreducible projective plane
@@ -357,14 +340,16 @@ curve `C : F = 0` over an algebraically closed field: the unique point `P ∈ C`
 valuation ring of `Q` dominates `𝒪_P(C)` (`center_eq_iff`). -/
 noncomputable def center (Q : Place k (functionField hF)) :
     zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) :=
-  (exists_isCenter Q.algebraMap_mem_integers (Place.exists_notMem_integers hF Q)).choose
+  (exists_isCenter (ψ := AlgHom.id k (functionField hF)) Q.algebraMap_mem_integers
+    Q.exists_notMem_integers).choose
 
 variable {hF}
 
 /-- The valuation ring of a place dominates the local ring of `C` at its centre. -/
 theorem isCenter_center (Q : Place k (functionField hF)) :
     IsCenter hF (AlgHom.id k _) Q.integers (center hF Q) :=
-  (exists_isCenter Q.algebraMap_mem_integers (Place.exists_notMem_integers hF Q)).choose_spec
+  (exists_isCenter (ψ := AlgHom.id k (functionField hF)) Q.algebraMap_mem_integers
+    Q.exists_notMem_integers).choose_spec
 
 /-- The centre of a place `Q` is `P` iff the valuation ring of `Q` dominates `𝒪_P(C)`. -/
 theorem center_eq_iff {Q : Place k (functionField hF)} :
@@ -376,7 +361,7 @@ theorem center_eq_iff_le {Q : Place k (functionField hF)} :
     center hF Q = P ↔ (localSubring hF P).toSubring ≤ Q.integers.toSubring := by
   rw [center_eq_iff, isCenter_iff_forall_mem]
   · rfl
-  · exact Place.exists_notMem_integers hF Q
+  · exact Q.exists_notMem_integers
 
 variable (hF) in
 /-- Every point of `C` is the centre of some place of `k(C)`: by Chevalley's extension theorem,
@@ -390,7 +375,7 @@ theorem center_surjective : Function.Surjective (center hF) := by
     (IsLocalRing.maximalIdeal.isMaximal _).ne_top
     ((Submodule.ne_bot_iff _).2 ⟨z, hzm, hz0⟩)
   exact ⟨Q, center_eq_iff.2 (isCenter_iff.2 ⟨fun z hz ↦ hQ1 ⟨z, hz⟩,
-    fun z hz ↦ (Place.valuation_lt_one_iff hF Q).2 (hQ2 z hz)⟩)⟩
+    fun z hz ↦ Q.valuation_integers_lt_one_iff.2 (hQ2 z hz)⟩)⟩
 
 variable (hF P) in
 /-- Only finitely many places of `k(C)` have a given centre `P`: they are zeros of a nonzero
@@ -399,7 +384,7 @@ theorem finite_setOf_center_eq : {Q : Place k (functionField hF) | center hF Q =
   obtain ⟨z, hzm, hz0⟩ := exists_ne_zero_mem_maximalIdeal_localSubring hF P
   refine (Place.finite_setOf_ord_pos (functionField.isFunctionField hF) z).subset fun Q hQ ↦ ?_
   have := (isCenter_iff.1 (center_eq_iff.1 hQ)).2 z hzm
-  rw [AlgHom.id_apply, Place.valuation_lt_one_iff] at this
+  rw [AlgHom.id_apply, Place.valuation_integers_lt_one_iff] at this
   exact (Q.valuation_lt_one_iff_ord_pos fun h ↦ hz0 (Subtype.ext h)).1 this
 
 end Place
