@@ -41,11 +41,16 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
   `PlaneCurves.Projective.tangentMultiplicity_eq_affine`,
   `PlaneCurves.Projective.isOrdinaryMultiplePoint_iff_affine`: tangent lines, their
   multiplicities and ordinary multiple points are those of the dehomogenization in any chart.
+* `PlaneCurves.Projective.isTangentAt_aeval_chart_iff`,
+  `PlaneCurves.Projective.exists_isTangentAt_iff_affine`: conversely, every tangent of the
+  dehomogenization comes from a tangent of `F`, so common tangents correspond.
 * `PlaneCurves.Projective.leadingForm_linearSubst`,
   `PlaneCurves.Projective.isTangentAt_linearSubst_iff`: leading forms and tangent lines under an
   invertible linear change of coordinates.
 * `PlaneCurves.Projective.IsSimplePoint.isTangentAt_tangentLine`: at a simple point the line
-  `F_X(v) X + F_Y(v) Y + F_Z(v) Z` is tangent.
+  `F_X(v) X + F_Y(v) Y + F_Z(v) Z` is tangent, and
+  `PlaneCurves.Projective.IsSimplePoint.associated_tangentLine_of_isTangentAt`: it is the only
+  tangent there, up to a scalar.
 * `PlaneCurves.Projective.mult_eq_and_isTangentAt_iff_of_eq_sum`: Problem 5.5 of Fulton, the
   multiplicity and the tangent lines at `[0 : 1 : 0]` of `F = ∑ᵢ Fᵢ(X, Z) Y^{d-i}`.
 * `PlaneCurves.Projective.mult_sub_one_le_mult_pderiv`: Problem 5.6 of Fulton,
@@ -207,12 +212,22 @@ private theorem aeval_chart_taylor_dehomogenize (hL : L.IsHomogeneous 1)
   linear_combination (1 - X i) * h'
 
 /-- The affine part `L_(i)(Y + a)` of a linear form is linear. -/
-private theorem isHomogeneous_taylor_dehomogenize (hL : L.IsHomogeneous 1)
+theorem isHomogeneous_taylor_dehomogenize (hL : L.IsHomogeneous 1)
     (hLa : eval (Fin.insertNth (α := fun _ ↦ k) i 1 a) L = 0) :
     (taylor a (dehomogenize i L)).IsHomogeneous 1 := by
   rw [← aeval_insertNth_zero_aeval i a (taylor a (dehomogenize i L)),
     aeval_chart_taylor_dehomogenize i a hL hLa]
   simpa only [one_mul] using hL.aeval _ (isHomogeneous_insertNth_zero_X i)
+
+/-- The substitution `Yⱼ ↦ X (i.succAbove j) - aⱼ Xᵢ` followed by dehomogenization at `Xᵢ` and
+the Taylor shift to `a` is the identity: every polynomial `p` is the affine part, centred at
+`a`, of `p(X (i.succAbove j) - aⱼ Xᵢ)`. -/
+theorem taylor_dehomogenize_aeval_chart (p : MvPolynomial (Fin 2) k) :
+    taylor a (dehomogenize i (aeval (fun j ↦ X (i.succAbove j) - C (a j) * X i) p)) = p := by
+  have h : (taylor a).comp ((dehomogenize i).comp
+      (aeval fun j ↦ X (i.succAbove j) - C (a j) * X i)) = AlgHom.id k _ :=
+    algHom_ext fun j ↦ by simp [dehomogenize_X, taylor_X]
+  exact DFunLike.congr_fun h p
 
 end Chart
 
@@ -290,6 +305,36 @@ theorem isTangentAt_iff_affine (hF : F.IsHomogeneous d) {i : Fin 3} (hP : P ∈ 
   · rintro rfl
     simp at hL0
 
+/-- **Affine tangent lines give projective ones.** If `P` lies in the chart `Xᵢ ≠ 0`, with
+chart coordinates `a`, a linear form `L'` in `Y₀, Y₁` is tangent to the dehomogenization `F_(i)`
+at `a` exactly when the linear form `L'(X (i.succAbove j) - aⱼ Xᵢ)` is tangent to `F` at `P`.
+With `isTangentAt_iff_affine`, the tangents of `F` at `P` and of `F_(i)` at `a` correspond. -/
+theorem isTangentAt_aeval_chart_iff (hF : F.IsHomogeneous d) {i : Fin 3}
+    (hP : P ∈ affineOpen i) {L' : MvPolynomial (Fin 2) k} (hL' : L'.IsHomogeneous 1) :
+    IsTangentAt F P (aeval (fun j ↦ X (i.succAbove j) - C (affineChart i P j) * X i) L') ↔
+      Affine.IsTangentAt (dehomogenize i F) (affineChart i P) L' := by
+  set a := affineChart i P
+  have hL : (aeval (fun j ↦ X (i.succAbove j) - C (a j) * X i) L').IsHomogeneous 1 := by
+    simpa only [one_mul] using hL'.aeval _ (isHomogeneous_chart i a)
+  have hLP : eval P.rep (aeval (fun j ↦ X (i.succAbove j) - C (a j) * X i) L') = 0 := by
+    rw [eval_rep_eq_zero_iff_affine hL hP]
+    obtain ⟨c, hc⟩ : ∃ c : Fin 2 → k, L' = ∑ r, C (c r) * X r := ⟨_, hL'.eq_sum_C_mul_X⟩
+    simp [hc, a]
+  rw [isTangentAt_iff_affine hF hP hL hLP, taylor_dehomogenize_aeval_chart]
+
+/-- **Common tangents in an affine chart.** If `P` lies in the chart `Xᵢ ≠ 0`, the forms `F` and
+`G` have a common tangent at `P` exactly when their dehomogenizations `F_(i)` and `G_(i)` have a
+common tangent at the chart point of `P`. -/
+theorem exists_isTangentAt_iff_affine {G : MvPolynomial (Fin 3) k} {e : ℕ}
+    (hF : F.IsHomogeneous d) (hG : G.IsHomogeneous e) {i : Fin 3} (hP : P ∈ affineOpen i) :
+    (∃ L, IsTangentAt F P L ∧ IsTangentAt G P L) ↔
+      ∃ L, Affine.IsTangentAt (dehomogenize i F) (affineChart i P) L ∧
+        Affine.IsTangentAt (dehomogenize i G) (affineChart i P) L := by
+  refine ⟨fun ⟨L, hLF, hLG⟩ ↦ ⟨_, (isTangentAt_iff_affine hF hP hLF.1 hLF.2.2.1).1 hLF,
+    (isTangentAt_iff_affine hG hP hLG.1 hLG.2.2.1).1 hLG⟩, fun ⟨L, hLF, hLG⟩ ↦ ⟨_,
+    (isTangentAt_aeval_chart_iff hF hP hLF.isHomogeneous).2 hLF,
+    (isTangentAt_aeval_chart_iff hG hP hLF.isHomogeneous).2 hLG⟩⟩
+
 /-- **Tangent multiplicities in an affine chart.** If `P` lies in the chart `Xᵢ ≠ 0`, with chart
 coordinates `a`, the multiplicity of a linear form `L` vanishing at `P` as a tangent of the form
 `F` at `P` is the multiplicity of its affine part `L_(i)(Y + a)` as a tangent of `F_(i)` at
@@ -325,6 +370,18 @@ theorem IsSimplePoint.isTangentAt_tangentLine (hF : F.IsHomogeneous d) (h : IsSi
   rw [leadingForm_def, leadingFormAt_eq_sum_pderiv (by rwa [isSimplePoint_def, mult_def] at h),
     tangentLine_def]
   simp only [smul_eq_C_mul, dvd_refl]
+
+/-- At a simple point `P = [v]`, every tangent of the form `F` is, up to a nonzero scalar, the
+line `F_X(v) X + F_Y(v) Y + F_Z(v) Z`: a simple point has exactly one tangent line. -/
+theorem IsSimplePoint.associated_tangentLine_of_isTangentAt (hF : F.IsHomogeneous d)
+    (h : IsSimplePoint F P) (hL : IsTangentAt F P L) : Associated L (tangentLine F P.rep) := by
+  have hT := h.isTangentAt_tangentLine hF
+  have hlead : leadingForm F P = tangentLine F P.rep := by
+    rw [leadingForm_def, leadingFormAt_eq_sum_pderiv (by rwa [isSimplePoint_def, mult_def] at h),
+      tangentLine_def]
+    simp only [smul_eq_C_mul]
+  exact (irreducible_of_isHomogeneous_one hL.1 hL.2.1).associated_of_dvd
+    (irreducible_of_isHomogeneous_one hT.1 hT.2.1) (hlead ▸ hL.2.2.2)
 
 /-! ### Linear changes of coordinates -/
 
