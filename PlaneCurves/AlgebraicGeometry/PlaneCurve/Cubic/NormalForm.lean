@@ -43,11 +43,11 @@ Changes of coordinates are Tau Ceti's `MvPolynomial.linearSubst M`, `F ↦ F(M X
 
 ## Main results
 
-All in the namespace `PlaneCurves.Projective`, except the first.
+All in the namespace `PlaneCurves.Projective`, except the first two.
 
 * `MvPolynomial.IsHomogeneous.eq_of_fin_three_three`: a cubic form in three variables is the sum
   of its ten monomials.
-* `tangentLine_weierstrassCurve_polynomial`: the tangent line of a
+* `WeierstrassCurve.Projective.tangentLine_polynomial_zero`: the tangent line of a
   Weierstrass cubic at `[0 : 1 : 0]` is `Z = 0`.
 * `IsFlex.exists_linearSubst_eq_smul_polynomial`: an irreducible cubic is
   in Weierstrass form after moving a flex to `[0 : 1 : 0]`.
@@ -109,18 +109,27 @@ theorem IsHomogeneous.eq_of_fin_three_three {F : MvPolynomial (Fin 3) k}
     simp [hm, Finsupp.degree_single]
 
 end MvPolynomial
+
+namespace WeierstrassCurve.Projective
+
+open MvPolynomial
+
+variable {k : Type*} [Field k]
+
+/-- The tangent line of the Weierstrass cubic `Y²Z + a₁XYZ + a₃YZ² - (X³ + a₂X²Z + a₄XZ² + a₆Z³)`
+at its point at infinity `[0 : 1 : 0]` is the line at infinity `Z = 0`. -/
+theorem tangentLine_polynomial_zero (W : WeierstrassCurve.Projective k) :
+    PlaneCurves.Projective.tangentLine W.polynomial ![0, 1, 0] = X 2 := by
+  simp [PlaneCurves.Projective.tangentLine_def, Fin.sum_univ_three, polynomial]
+
+end WeierstrassCurve.Projective
+
 namespace PlaneCurves.Projective
 
 open MvPolynomial Projectivization PlaneCurves.ProjectiveSpace
 open scoped LinearAlgebra.Projectivization Matrix
 
 variable {k : Type*} [Field k]
-
-/-- The tangent line of the Weierstrass cubic `Y²Z + a₁XYZ + a₃YZ² - (X³ + a₂X²Z + a₄XZ² + a₆Z³)`
-at its point at infinity `[0 : 1 : 0]` is the line at infinity `Z = 0`. -/
-theorem tangentLine_weierstrassCurve_polynomial (W : WeierstrassCurve k) :
-    tangentLine W.toProjective.polynomial ![0, 1, 0] = X 2 := by
-  simp [tangentLine_def, Fin.sum_univ_three, WeierstrassCurve.Projective.polynomial]
 
 /-- The point `[0 : 0 : 1]` lies on `X` and `Y` with intersection number one. -/
 private theorem intersectionNumber_X_one_X_zero :
@@ -267,7 +276,7 @@ theorem IsFlex.exists_linearSubst_eq_smul_polynomial (hF : F.IsHomogeneous 3)
     congr 1
     funext i
     fin_cases i <;> simp [N]
-  · rw [hTF, tangentLine_smul, tangentLine_weierstrassCurve_polynomial]
+  · rw [hTF, tangentLine_smul, WeierstrassCurve.Projective.tangentLine_polynomial_zero]
 
 /-- **Weierstrass form of a cubic at a flex, away from characteristic two** ([Fulton2008],
 Problem 5.24 (a)). Let `F` be an irreducible cubic form over a field `k` with `2 ≠ 0`, and `O` a
@@ -291,7 +300,7 @@ theorem IsFlex.exists_linearSubst_eq_smul_polynomial_of_two_ne_zero (h2 : (2 : k
       WeierstrassCurve.Projective.linearSubst_polynomial]
     simp [V]
   refine ⟨T * V.toMatrix, c, V • W, Matrix.mulVecLin_mul_injective hT hV, hc, ?_, hVF, ?_, ?_,
-    by rw [hVF, tangentLine_smul, tangentLine_weierstrassCurve_polynomial]⟩
+    by rw [hVF, tangentLine_smul, WeierstrassCurve.Projective.tangentLine_polynomial_zero]⟩
   · rw [← Matrix.mulVec_mulVec, ← hTO]
     congr 1
     funext i
