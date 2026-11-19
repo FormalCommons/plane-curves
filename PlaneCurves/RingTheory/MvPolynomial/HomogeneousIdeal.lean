@@ -25,6 +25,9 @@ by finitely many forms (Fulton, Proposition 1 of §4.2).
 
 * `Ideal.IsHomogeneous.exists_finset_span_eq`: a homogeneous ideal of a Noetherian graded ring
   is spanned by a finite set of homogeneous elements.
+* `Ideal.exists_homogeneous_mul_add_mul_eq_of_mem_span_pair`: in a ring graded by `ℕ`, a
+  homogeneous element of the ideal of two homogeneous elements is a combination of them with
+  homogeneous coefficients.
 * `Ideal.IsHomogeneous.span_setOf_isHomogeneous`: a homogeneous ideal of a polynomial ring is
   spanned by the forms it contains.
 * `MvPolynomial.exists_finset_isHomogeneous_span_eq`: a homogeneous ideal of `MvPolynomial σ R`,
@@ -86,6 +89,35 @@ theorem Ideal.IsHomogeneous.exists_finset_span_eq [IsNoetherianRing A] {I : Idea
     exact ⟨x, hx, i, hi, rfl⟩
 
 end GradedRing
+
+section GradedCommRing
+
+variable {σ A : Type*} [CommSemiring A] [SetLike σ A] [AddSubmonoidClass σ A] {𝒜 : ℕ → σ}
+  [GradedRing 𝒜]
+
+/-- **Homogeneous coefficients in an ideal of two homogeneous elements.** In a commutative ring
+graded by `ℕ`, let `a` and `b` be homogeneous of degrees `i` and `j`. A homogeneous element `c` of
+degree `n` of the ideal `(a, b)` is `x a + y b` with `x` homogeneous of degree `n - i` and `y` of
+degree `n - j`, where `x = 0` if `n < i` and `y = 0` if `n < j`. -/
+theorem Ideal.exists_homogeneous_mul_add_mul_eq_of_mem_span_pair {a b c : A} {i j n : ℕ}
+    (ha : a ∈ 𝒜 i) (hb : b ∈ 𝒜 j) (hc : c ∈ 𝒜 n) (h : c ∈ Ideal.span {a, b}) :
+    ∃ x y, x ∈ 𝒜 (n - i) ∧ y ∈ 𝒜 (n - j) ∧ (n < i → x = 0) ∧ (n < j → y = 0) ∧
+      x * a + y * b = c := by
+  classical
+  obtain ⟨p, q, rfl⟩ := Ideal.mem_span_pair.1 h
+  refine ⟨if i ≤ n then (decompose 𝒜 p (n - i) : A) else 0,
+    if j ≤ n then (decompose 𝒜 q (n - j) : A) else 0, ?_, ?_, fun hn ↦ by simp [not_le.2 hn],
+    fun hn ↦ by simp [not_le.2 hn], ?_⟩
+  · split_ifs
+    exacts [SetLike.coe_mem _, zero_mem _]
+  · split_ifs
+    exacts [SetLike.coe_mem _, zero_mem _]
+  · conv_rhs => rw [← decompose_of_mem_same 𝒜 hc]
+    rw [decompose_add, DirectSum.add_apply, AddMemClass.coe_add,
+      coe_decompose_mul_of_right_mem 𝒜 n ha, coe_decompose_mul_of_right_mem 𝒜 n hb]
+    split_ifs <;> simp
+
+end GradedCommRing
 
 namespace MvPolynomial
 
