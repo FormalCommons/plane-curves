@@ -144,14 +144,6 @@ theorem exists_ne_zero_mul_mem_range_localSubring [Finite σ] :
   exact ⟨c, congrArg Subtype.val hc⟩
 
 omit [IsAlgClosed k] in
-/-- The residue field of `𝒪_P(V)` is `k`. -/
-theorem surjective_algebraMap_residueField_localSubring :
-    Function.Surjective
-      (algebraMap k (IsLocalRing.ResidueField (localSubring P hI).toSubring)) := fun w ↦
-  ⟨residueFieldAlgEquiv P hI w, (residueFieldAlgEquiv P hI).injective (by
-    rw [AlgEquiv.commutes, Algebra.algebraMap_self, RingHom.id_apply])⟩
-
-omit [IsAlgClosed k] in
 /-- **The integral closure of `𝒪_P(V)`** in `k(V)` is the holomorphy ring of the places over
 `P`, for `k(V)` a function field. -/
 theorem integralClosure_localSubring (hK : IsFunctionField k (functionField I)) :
