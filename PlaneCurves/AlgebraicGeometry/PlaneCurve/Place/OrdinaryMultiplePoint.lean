@@ -461,9 +461,7 @@ theorem le_orderAt_iff_forall_le_addValuation_blowupPlace (hT : ¬IsTangentAt F 
     by_contra! hall'
     exact (h.orderAt_le_of_forall_isTangentAt hG hall').not_gt hlt'
   obtain ⟨α, hLα⟩ := hL.exists_associated_X_one_sub_C_mul_X_zero hT
-  have hα : IsTangentAt F 0 (X 1 - C α * X 0) := isTangentAt_def.2
-    ⟨isHomogeneous_X_one_sub_C_mul_X_zero α, X_one_sub_C_mul_X_zero_ne_zero α,
-      hLα.symm.dvd.trans hL.dvd⟩
+  have hα := hL.isTangentAt_X_one_sub_C_mul_X_zero_of_associated hLα
   have hαG : ¬IsTangentAt G 0 (X 1 - C α * X 0) := fun hT' ↦ hLG (isTangentAt_def.2
     ⟨hL.isHomogeneous, hL.ne_zero, hLα.dvd.trans hT'.dvd⟩)
   have h1 := hall α hα
@@ -526,10 +524,6 @@ private theorem rename_succAbove_X_one_sub_C_mul_X_zero (α : k) :
 private theorem dehomogenize_X_one_sub_C_mul_X_zero (α : k) :
     dehomogenize 2 (X 1 - C α * X 0 : MvPolynomial (Fin 3) k) = X 1 - C α * X 0 := by
   rw [← rename_succAbove_X_one_sub_C_mul_X_zero, dehomogenize_rename_succAbove]
-
-private theorem isHomogeneous_X_one_sub_C_mul_X_zero' (α : k) :
-    (X 1 - C α * X 0 : MvPolynomial (Fin 3) k).IsHomogeneous 1 :=
-  (isHomogeneous_X k 1).sub (isHomogeneous_C_mul_X α 0)
 
 variable (hP : P ∈ affineOpen 2) (h0 : affineChart 2 P = 0)
 include hP h0
@@ -675,7 +669,7 @@ private theorem existsUnique_mem_placesOver_associated (hP : P.1 ∈ affineOpen 
   obtain ⟨α, hLα⟩ := hLa.exists_associated_X_one_sub_C_mul_X_zero hT
   have hα := hLa.isTangentAt_X_one_sub_C_mul_X_zero_of_associated hLα
   have hLα' : Associated L (X 1 - C α * X 0) :=
-    (associated_dehomogenize_iff hLh (isHomogeneous_X_one_sub_C_mul_X_zero' α)).1
+    (associated_dehomogenize_iff hLh (isHomogeneous_X_one_sub_C_mul_X_zero α)).1
       (by rwa [dehomogenize_X_one_sub_C_mul_X_zero])
   have hmem := map_symm_blowupPlace_mem_placesOver hP h0 hf hX h' hα
   have haα : a ((Affine.blowupPlace hf hX h' hα).map
@@ -687,8 +681,8 @@ private theorem existsUnique_mem_placesOver_associated (hP : P.1 ∈ affineOpen 
     exact (Affine.eq_of_blowupPlace_eq hf hX h' hα hβ this).symm
   refine ⟨_, ⟨hmem, by rwa [haα]⟩, fun Q ⟨hQ, hLQ⟩ ↦ ?_⟩
   obtain ⟨hβ, hQβ⟩ := ha Q hQ
-  have h2 := (associated_dehomogenize_iff (i := 2) (isHomogeneous_X_one_sub_C_mul_X_zero' α)
-    (isHomogeneous_X_one_sub_C_mul_X_zero' (a Q))).2 (hLα'.symm.trans hLQ)
+  have h2 := (associated_dehomogenize_iff (i := 2) (isHomogeneous_X_one_sub_C_mul_X_zero α)
+    (isHomogeneous_X_one_sub_C_mul_X_zero (a Q))).2 (hLα'.symm.trans hLQ)
   rw [dehomogenize_X_one_sub_C_mul_X_zero, dehomogenize_X_one_sub_C_mul_X_zero] at h2
   exact hQβ.trans (congrArg (fun R ↦ R.map
     (functionField.chartEquiv hF 2 (not_dvd_X_of_mem_affineOpen hF P hP)).symm)
