@@ -125,6 +125,11 @@ theorem homogeneousComponent_taylor_eq_zero_of_lt {i : ℕ} (hi : i < p.orderAt 
     homogeneousComponent i (taylor a p) = 0 :=
   le_orderAt_iff_homogeneousComponent.1 (Order.add_one_le_of_lt hi) i (Nat.lt_succ_self i)
 
+/-- Every monomial of `p` has total degree at least the order of `p` at the origin. -/
+theorem toNat_orderAt_zero_le_degree {d : σ →₀ ℕ} (hd : d ∈ p.support) :
+    (p.orderAt 0).toNat ≤ d.degree :=
+  ENat.toNat_le_of_le_natCast (orderAt_le (by rwa [taylor_zero, ← mem_support_iff]))
+
 /-- The leading form of `p` at `a` is zero only for `p = 0`. -/
 @[simp]
 theorem leadingFormAt_eq_zero_iff : p.leadingFormAt a = 0 ↔ p = 0 := by

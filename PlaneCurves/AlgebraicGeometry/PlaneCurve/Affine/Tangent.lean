@@ -36,6 +36,8 @@ squarefree.
 
 ## Main results
 
+* `PlaneCurves.Affine.isTangentAt_zero_X_zero_iff`: `X` is tangent at the origin exactly when
+  the coefficient of `Y ^ r` in `F` vanishes, `r` being the multiplicity there.
 * `PlaneCurves.Affine.tangentMultiplicity_mul`, `PlaneCurves.Affine.tangentMultiplicity_pow`,
   `PlaneCurves.Affine.tangentMultiplicity_prod`: tangent multiplicities are additive.
 * `PlaneCurves.Affine.tangentMultiplicity_linearSubst`: an invertible linear change of
@@ -108,6 +110,38 @@ theorem tangentMultiplicity_taylor (a : Fin 2 → R) :
 theorem isTangentAt_taylor_iff (a : Fin 2 → R) :
     IsTangentAt (taylor a F) P L ↔ IsTangentAt F (P + a) L := by
   simp [isTangentAt_def]
+
+/-- The line `X = 0` is tangent to `F` at the origin exactly when the coefficient `a_{0r}` of
+`Y ^ r` in `F` vanishes, `r` being the multiplicity of `F` at the origin. -/
+theorem isTangentAt_zero_X_zero_iff [Nontrivial R] :
+    IsTangentAt F 0 (X 0) ↔ F.coeff (Finsupp.single 1 (F.orderAt 0).toNat) = 0 := by
+  classical
+  have hL : F.leadingFormAt 0 = homogeneousComponent (F.orderAt 0).toNat F := by
+    rw [leadingFormAt_def, taylor_zero]
+  rw [isTangentAt_def, hL]
+  simp only [isHomogeneous_X, ne_eq, X_ne_zero, not_false_eq_true, true_and]
+  constructor
+  · rintro ⟨q, hq⟩
+    have h := congrArg
+      (fun p : MvPolynomial (Fin 2) R ↦ p.coeff (Finsupp.single 1 (F.orderAt 0).toNat)) hq
+    rw [coeff_homogeneousComponent, coeff_X_mul'] at h
+    simpa [Finsupp.degree_single] using h
+  · intro h
+    rw [X_dvd_iff_modMonomial_eq_zero]
+    ext m
+    by_cases hm : Finsupp.single 0 1 ≤ m
+    · rw [coeff_modMonomial_of_le _ hm]; rfl
+    · rw [coeff_modMonomial_of_not_le _ hm, coeff_homogeneousComponent]
+      split_ifs with hd
+      · have h0 : m 0 = 0 := by
+          by_contra h0
+          exact hm (Finsupp.single_le_iff.2 (Nat.one_le_iff_ne_zero.2 h0))
+        have : m = Finsupp.single 1 (F.orderAt 0).toNat := by
+          rw [Finsupp.degree_eq_sum, Fin.sum_univ_two] at hd
+          ext i
+          fin_cases i <;> simp <;> omega
+        rwa [this]
+      · rfl
 
 end Defs
 
