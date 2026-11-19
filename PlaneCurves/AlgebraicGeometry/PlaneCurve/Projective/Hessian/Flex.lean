@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Line
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Bezout.Corollaries
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionNumber.Properties
 public import PlaneCurves.LinearAlgebra.Matrix.GeneralLinearGroup
@@ -53,6 +54,14 @@ chart `Z = 1`, `H ≡ -(n - 1)² g` modulo `f` for `g = f_y² f_xx + f_x² f_yy 
   multiple point.
 * `PlaneCurves.Projective.intersectionNumber_det_hessian_eq_one_iff`: `I(P, H ∩ F) = 1` iff `P`
   is an ordinary flex.
+* `PlaneCurves.Projective.IsNonsingular.exists_isFlex`: a nonsingular curve of degree `n ≥ 3`
+  has a flex, when `2 (n - 1) ≠ 0`.
+* `PlaneCurves.Projective.IsFlex.isOrdinaryFlex_of_irreducible`: flexes of an irreducible cubic
+  are ordinary.
+* `PlaneCurves.Projective.IsNonsingular.ncard_setOf_isFlex`: a nonsingular cubic has exactly
+  nine flexes, when `6 ≠ 0`.
+* `PlaneCurves.Projective.isFlex_det_hessian_spec`: the Hessian criterion and the nine flexes
+  of a nonsingular cubic together.
 
 ## References
 
@@ -526,6 +535,162 @@ theorem intersectionNumber_det_hessian_eq_one_iff (hF : F.IsHomogeneous n)
       (mul_mult_le_intersectionNumber hF.det_hessian hF)
     rw [h1] at this
     norm_num at this
+
+/-! ### Flexes of nonsingular curves and the nine flexes of a cubic -/
+
+section IsAlgClosed
+
+variable [IsAlgClosed k]
+
+/-- **Nonsingular curves have flexes** ([Fulton2008], Corollary of Problem 5.23). Over an
+algebraically closed field, a nonsingular plane curve `F` of degree `n ≥ 3` has a flex, when
+`2 (n - 1) ≠ 0` in `k`: the Hessian `H`, of degree `3 (n - 2) > 0`, meets `F`, and a common
+zero is a flex since `F` has no multiple points. -/
+theorem IsNonsingular.exists_isFlex (hF : F.IsHomogeneous n) (h : IsNonsingular F)
+    (hn : 3 ≤ n) (hchar : (2 * (n - 1) : k) ≠ 0) : ∃ P, IsFlex F P := by
+  classical
+  set H := (TauCeti.hessian pderiv F).det
+  have hH : H.IsHomogeneous (3 * (n - 2)) := by simpa using hF.det_hessian
+  have hS : ∀ f ∈ (({F, H} : Finset (MvPolynomial (Fin 3) k)) : Set (MvPolynomial (Fin 3) k)),
+      ∃ d ≠ 0, f.IsHomogeneous d := by
+    simp only [Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
+      Set.mem_singleton_iff, forall_eq_or_imp, forall_eq]
+    exact ⟨⟨n, by omega, hF⟩, ⟨_, by omega, hH⟩⟩
+  obtain ⟨P, hP⟩ := zeroLocus_nonempty_of_card_le (n := 2) Finset.card_le_two hS
+  rw [mem_zeroLocus_iff_eval_rep fun f hf ↦ (hS f hf).imp fun _ ↦ And.right] at hP
+  have hPF : P ∈ zeroLocus {F} :=
+    (mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)).2 (by simpa using hP F (by simp))
+  rcases (eval_det_hessian_eq_zero_iff hF hPF hchar).1 (hP H (by simp)) with hfl | hm
+  · exact ⟨P, hfl⟩
+  · exact absurd ((isNonsingular_iff_forall_isSimplePoint hF).1 h P hPF) hm.not_isSimplePoint
+
+/-- A simple point `P` of a plane curve `F` of degree `n` whose tangent line `T` at `P` is not a
+component of `F` has `I(P, F ∩ T) ≤ n`. -/
+theorem IsSimplePoint.intersectionNumber_tangentLine_le (hF : F.IsHomogeneous n)
+    (h : IsSimplePoint F P) (hT : ¬tangentLine F P.rep ∣ F) :
+    intersectionNumber P F (tangentLine F P.rep) ≤ n := by
+  have hT0 : tangentLine F P.rep ≠ 0 := by
+    have hs := h
+    rw [← P.mk_rep] at hs
+    exact hs.tangentLine_ne_zero hF
+  have hrel : IsRelPrime F (tangentLine F P.rep) :=
+    ((irreducible_of_isHomogeneous_one (isHomogeneous_tangentLine F _) hT0).isRelPrime_iff_not_dvd
+      |>.2 hT).symm
+  simpa using sum_intersectionNumber_le_mul hF (isHomogeneous_tangentLine F _) hrel {P}
+
+/-- **Flexes of an irreducible cubic are ordinary.** A line meets an irreducible cubic in three
+points counted with multiplicity, so the tangent line at a flex meets it there exactly three
+times. -/
+theorem IsFlex.isOrdinaryFlex_of_irreducible (hF : F.IsHomogeneous 3) (hirr : Irreducible F)
+    (h : IsFlex F P) : IsOrdinaryFlex F P := by
+  refine ⟨h.1, le_antisymm (h.1.intersectionNumber_tangentLine_le hF fun hT ↦ ?_) h.2⟩
+  have hT0 : tangentLine F P.rep ≠ 0 := fun h0 ↦ by
+    rw [h0, zero_dvd_iff] at hT
+    exact hirr.ne_zero hT
+  have hTirr := irreducible_of_isHomogeneous_one (isHomogeneous_tangentLine F P.rep) hT0
+  have := totalDegree_le_of_dvd_of_isDomain (hTirr.associated_of_dvd hirr hT).symm.dvd hT0
+  rw [hF.totalDegree hirr.ne_zero, (isHomogeneous_tangentLine F _).totalDegree hT0] at this
+  omega
+
+/-- On a nonsingular cubic, every flex is ordinary. -/
+theorem IsNonsingular.isOrdinaryFlex_of_isFlex (hF : F.IsHomogeneous 3) (h : IsNonsingular F)
+    (hP : IsFlex F P) : IsOrdinaryFlex F P :=
+  hP.isOrdinaryFlex_of_irreducible hF (h.irreducible hF (by norm_num))
+
+omit [IsAlgClosed k] in
+/-- If `6 ≠ 0` in `k`, the characteristic conditions of the Hessian criterion hold for cubics. -/
+private theorem ne_zero_of_six_ne_zero (h6 : (6 : k) ≠ 0) :
+    (2 * ((3 : ℕ) - 1) : k) ≠ 0 ∧ (6 * ((3 : ℕ) - 1) : k) ≠ 0 := by
+  have h2 : (2 : k) ≠ 0 := fun h2 ↦ h6 (by rw [show (6 : k) = 2 * 3 by norm_num, h2, zero_mul])
+  rw [show (2 * ((3 : ℕ) - 1) : k) = 2 * 2 by norm_num,
+    show (6 * ((3 : ℕ) - 1) : k) = 6 * 2 by norm_num]
+  exact ⟨mul_ne_zero h2 h2, mul_ne_zero h6 h2⟩
+
+open Classical in
+/-- On a nonsingular cubic, when `6 ≠ 0` in `k`, the Hessian `H` meets `F` exactly at the flexes,
+each with intersection number one: `I(P, H ∩ F)` is `1` at a flex and `0` elsewhere. -/
+theorem IsNonsingular.intersectionNumber_det_hessian_eq (hF : F.IsHomogeneous 3)
+    (h : IsNonsingular F) (h6 : (6 : k) ≠ 0) (P : ℙ k (Fin 3 → k)) :
+    intersectionNumber P (TauCeti.hessian pderiv F).det F = if IsFlex F P then 1 else 0 := by
+  obtain ⟨h2, h12⟩ := ne_zero_of_six_ne_zero h6
+  have hH := (hF.det_hessian (σ := Fin 3))
+  by_cases hPF : P ∈ zeroLocus {F}
+  · split_ifs with hfl
+    · exact (intersectionNumber_det_hessian_eq_one_iff hF hPF h12).2
+        (h.isOrdinaryFlex_of_isFlex hF hfl)
+    · refine (intersectionNumber_eq_zero_iff hH hF).2 (Or.inl fun h0 ↦ ?_)
+      rcases (eval_det_hessian_eq_zero_iff hF hPF h2).1 h0 with hfl' | hm
+      · exact hfl hfl'
+      · exact hm.not_isSimplePoint ((isNonsingular_iff_forall_isSimplePoint hF).1 h P hPF)
+  · have hfl : ¬IsFlex F P := fun hfl ↦ hPF (hfl.isSimplePoint.mem_zeroLocus hF)
+    simp only [hfl, ↓reduceIte]
+    refine (intersectionNumber_eq_zero_iff hH hF).2 (Or.inr fun h0 ↦ hPF ?_)
+    exact (mem_zeroLocus_iff_eval_rep (by simpa using ⟨3, hF⟩)).2 (by simpa using h0)
+
+/-- On a nonsingular cubic, when `6 ≠ 0` in `k`, the curve and its Hessian are relatively prime:
+otherwise `I(P, H ∩ F) = ⊤` at every point, in particular at a flex. -/
+theorem IsNonsingular.isRelPrime_det_hessian (hF : F.IsHomogeneous 3) (h : IsNonsingular F)
+    (h6 : (6 : k) ≠ 0) : IsRelPrime (TauCeti.hessian pderiv F).det F := by
+  have hirr := h.irreducible hF (by norm_num)
+  refine (hirr.isRelPrime_iff_not_dvd.2 fun hd ↦ ?_).symm
+  obtain ⟨P, hP⟩ := h.exists_isFlex hF le_rfl (ne_zero_of_six_ne_zero h6).1
+  have h1 := h.intersectionNumber_det_hessian_eq hF h6 P
+  simp only [hP, ↓reduceIte] at h1
+  refine (intersectionNumber_ne_top_iff (hF.det_hessian (σ := Fin 3)) hF).1 (by simp [h1]) F
+    hirr hd dvd_rfl hP.isSimplePoint.eval_rep_eq_zero
+
+/-- **The nine flexes of a nonsingular cubic** ([Fulton2008], Corollary of Problem 5.23). Over
+an algebraically closed field with `6 ≠ 0`, a nonsingular cubic has exactly nine flexes: by
+Bézout's theorem its Hessian, a cubic prime to it, meets it in nine points counted with
+multiplicity, and these are the flexes, each counted once. -/
+theorem IsNonsingular.ncard_setOf_isFlex (hF : F.IsHomogeneous 3) (h : IsNonsingular F)
+    (h6 : (6 : k) ≠ 0) : {P | IsFlex F P}.ncard = 9 := by
+  classical
+  have hH := (hF.det_hessian (σ := Fin 3))
+  have hrel := h.isRelPrime_det_hessian hF h6
+  have hsum := finsum_intersectionNumber_eq_mul hH hF hrel
+  have hfin := finite_support_intersectionNumber hH hF hrel
+  have hsupp : (Function.support fun P ↦ intersectionNumber P (TauCeti.hessian pderiv F).det F)
+      = {P | IsFlex F P} := by
+    ext P
+    simp [h.intersectionNumber_det_hessian_eq hF h6 P]
+  rw [hsupp] at hfin
+  rw [finsum_eq_sum_of_support_subset (s := hfin.toFinset) _ (by rw [hsupp]; simp),
+    Finset.sum_congr rfl (g := fun _ ↦ (1 : ℕ∞)) fun P hP ↦
+      (h.intersectionNumber_det_hessian_eq hF h6 P).trans
+        (by simp only [Set.Finite.mem_toFinset, Set.mem_ofPred_eq] at hP; simp [hP])] at hsum
+  rw [Set.ncard_eq_toFinset_card _ hfin]
+  simp only [Finset.sum_const, nsmul_eq_mul, mul_one, Fintype.card_fin] at hsum
+  exact_mod_cast hsum
+
+end IsAlgClosed
+
+/-- **Hessian criterion for flexes and the nine flexes of a nonsingular cubic** ([Fulton2008],
+Problem 5.23 and its Corollary). Let `k` be algebraically closed, `F` a form of degree `n` and
+`H = det (Fᵢⱼ)` its Hessian determinant.
+
+1. If `2 (n - 1) ≠ 0` in `k`, a point `P` of `F = 0` has `H(P) = 0` iff it is a flex or a
+   multiple point of `F`.
+2. If `6 (n - 1) ≠ 0` in `k`, a point `P` of `F = 0` has `I(P, H ∩ F) = 1` iff it is an
+   ordinary flex of `F`.
+3. If `F` is nonsingular, `n ≥ 3` and `2 (n - 1) ≠ 0` in `k`, then `F` has a flex.
+4. If `F` is a nonsingular cubic and `6 ≠ 0` in `k`, every flex of `F` is ordinary, and `F` has
+   exactly nine flexes.
+
+Milestone: *Hessian criterion for flexes and the nine flexes of a nonsingular cubic*. -/
+theorem isFlex_det_hessian_spec [IsAlgClosed k] (hF : F.IsHomogeneous n) :
+    (∀ P ∈ zeroLocus {F}, (2 * (n - 1) : k) ≠ 0 →
+      (eval P.rep (TauCeti.hessian pderiv F).det = 0 ↔ IsFlex F P ∨ IsMultiplePoint F P)) ∧
+    (∀ P ∈ zeroLocus {F}, (6 * (n - 1) : k) ≠ 0 →
+      (intersectionNumber P (TauCeti.hessian pderiv F).det F = 1 ↔ IsOrdinaryFlex F P)) ∧
+    (IsNonsingular F → 3 ≤ n → (2 * (n - 1) : k) ≠ 0 → ∃ P, IsFlex F P) ∧
+    (IsNonsingular F → n = 3 → (6 : k) ≠ 0 →
+      (∀ P, IsFlex F P → IsOrdinaryFlex F P) ∧ {P | IsFlex F P}.ncard = 9) := by
+  refine ⟨fun P hP h ↦ eval_det_hessian_eq_zero_iff hF hP h,
+    fun P hP h ↦ intersectionNumber_det_hessian_eq_one_iff hF hP h,
+    fun h hn hchar ↦ h.exists_isFlex hF hn hchar, ?_⟩
+  rintro h rfl h6
+  exact ⟨fun P hP ↦ h.isOrdinaryFlex_of_isFlex hF hP, h.ncard_setOf_isFlex hF h6⟩
 
 end PlaneCurves.Projective
 
