@@ -6,9 +6,11 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Affine.IntersectionNumber.Line
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.GroupLaw
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionCycle
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
+public import TauCeti.AlgebraicGeometry.EllipticCurve.Affine.Point.Collinear
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Affine.Singular
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Projective.CoordinateRing
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Projective.Prime
@@ -36,6 +38,12 @@ over any field; the cycle of `Z = 0` itself, and so the flex, uses Bézout's the
 algebraically closed field. The affine points are read off from the restriction of `F` to the
 line (Problem 3.21 of Fulton, `PlaneCurves.Affine.intersectionNumber_line_eq_rootMultiplicity`).
 
+Finally, these computations show that three points of `W` add to zero exactly when a line cuts
+them out of `F`, so that Fulton's third point `φ(P, Q)` of the chord through `P` and `Q` is
+`-(P + Q)`, and Mathlib's group `W.Point` is isomorphic to Fulton's chord–tangent group
+`CubicGroup F O` of the simple points of `F` with zero `O`, through the bijection above. No group
+axiom is proved again: the isomorphism only has to preserve addition.
+
 ## Main results
 
 * `WeierstrassCurve.Projective.isSimplePoint_polynomial_mk_iff`: `[v]` is a simple point of `F`
@@ -53,6 +61,10 @@ line (Problem 3.21 of Fulton, `PlaneCurves.Affine.intersectionNumber_line_eq_roo
 * `WeierstrassCurve.Projective.isFlex_zero`: `O` is a flex of `F`.
 * `WeierstrassCurve.Projective.intersectionCycle_X_zero_sub`: the cycle of a vertical line.
 * `WeierstrassCurve.Projective.intersectionCycle_X_one_sub`: the cycle of a non-vertical line.
+* `WeierstrassCurve.Projective.Point.add_add_eq_zero_iff`: `P + Q + R = 0` iff a line meets `F`
+  in `P + Q + R`.
+* `WeierstrassCurve.Projective.Point.thirdPoint_toProjectivization`: `φ(P, Q) = -(P + Q)`.
+* `WeierstrassCurve.Projective.Point.toCubicGroup`: the isomorphism `W.Point ≃+ CubicGroup F O`.
 
 ## References
 
@@ -438,6 +450,39 @@ theorem intersectionCycle_X_zero_sub {x y : k} (h : W.toAffine.Equation x y) :
       push Not at hc
       exact hPO (eq_mk_zero_of_rep_two_eq_zero h2 hc.2).symm
 
+/-! ### Collinearity and the chord–tangent group -/
+
+/-- `W.polynomial` is a cubic form, as an instance for the chord–tangent group `CubicGroup`. -/
+instance fact_isHomogeneous_polynomial : Fact (W.polynomial.IsHomogeneous 3) :=
+  ⟨W.isHomogeneous_polynomial⟩
+
+/-- `W.polynomial` is irreducible, as an instance for the chord–tangent group `CubicGroup`. -/
+instance fact_irreducible_polynomial : Fact (Irreducible W.polynomial) :=
+  ⟨W.prime_polynomial.irreducible⟩
+
+/-- `O = [0 : 1 : 0]` is a simple point of `W.polynomial`, as an instance for the chord–tangent
+group `CubicGroup` with zero `O`. -/
+instance fact_isSimplePoint_toProjectivization_zero :
+    Fact (IsSimplePoint W.polynomial (0 : W.Point).toProjectivization) :=
+  ⟨Point.isSimplePoint_toProjectivization 0⟩
+
+/-- The line `X - xZ` is a nonzero linear form. -/
+private theorem isHomogeneous_X_zero_sub (x : k) :
+    (X 0 - C x * X 2 : MvPolynomial (Fin 3) k).IsHomogeneous 1 :=
+  (isHomogeneous_X k 0).sub (isHomogeneous_C_mul_X x 2)
+
+private theorem X_zero_sub_ne_zero (x : k) : (X 0 - C x * X 2 : MvPolynomial (Fin 3) k) ≠ 0 :=
+  fun h ↦ by simpa using congrArg (eval ![1, 0, 0]) h
+
+/-- The line `Y - ℓX - νZ` is a nonzero linear form. -/
+private theorem isHomogeneous_X_one_sub (ℓ ν : k) :
+    (X 1 - C ℓ * X 0 - C ν * X 2 : MvPolynomial (Fin 3) k).IsHomogeneous 1 :=
+  ((isHomogeneous_X k 1).sub (isHomogeneous_C_mul_X ℓ 0)).sub (isHomogeneous_C_mul_X ν 2)
+
+private theorem X_one_sub_ne_zero (ℓ ν : k) :
+    (X 1 - C ℓ * X 0 - C ν * X 2 : MvPolynomial (Fin 3) k) ≠ 0 :=
+  fun h ↦ by simpa using congrArg (eval ![0, 1, 0]) h
+
 section IsAlgClosed
 
 variable [IsAlgClosed k]
@@ -468,6 +513,122 @@ theorem isFlex_zero : IsFlex W.polynomial (Projectivization.mk k ![0, 1, 0] (by 
     (isRelPrime_polynomial (isHomogeneous_X k 2) (X_ne_zero 2)), intersectionCycle_X_two,
     Finsupp.single_eq_same]
   norm_num
+
+namespace Point
+
+/-- `O`, `P` and `-P` are the intersection of a line with `W.polynomial`: the line at infinity if
+`P = 0`, and a vertical line otherwise. -/
+private theorem exists_line_zero_neg (P : W.Point) :
+    ∃ L : MvPolynomial (Fin 3) k, L.IsHomogeneous 1 ∧ L ≠ 0 ∧
+      intersectionCycle L W.polynomial = single (0 : W.Point).toProjectivization 1 +
+        single P.toProjectivization 1 + single (-P).toProjectivization 1 := by
+  classical
+  obtain ⟨A, rfl⟩ := (toAffineAddEquiv W).symm.surjective P
+  rw [← map_neg, toAffineAddEquiv_symm_apply, toAffineAddEquiv_symm_apply]
+  rcases A with _ | ⟨x, y, h⟩
+  · refine ⟨X 2, isHomogeneous_X k 2, X_ne_zero 2, ?_⟩
+    rw [← Affine.Point.zero_def, neg_zero, fromAffine_zero, intersectionCycle_X_two,
+      toProjectivization_zero, ← Finsupp.single_add, ← Finsupp.single_add]
+  · refine ⟨X 0 - C x * X 2, isHomogeneous_X_zero_sub x, X_zero_sub_ne_zero x, ?_⟩
+    rw [Affine.Point.neg_some, toProjectivization_fromAffine_some,
+      toProjectivization_fromAffine_some, toProjectivization_zero,
+      intersectionCycle_X_zero_sub h.1]
+
+omit [IsAlgClosed k] in
+/-- Three nonzero points of `W` that add to zero are the intersection of a non-vertical line with
+`W.polynomial`. -/
+private theorem exists_line_of_add_add_eq_zero_of_ne_zero {P Q R : W.Point} (h : P + Q + R = 0)
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hR : R ≠ 0) :
+    ∃ L : MvPolynomial (Fin 3) k, L.IsHomogeneous 1 ∧ L ≠ 0 ∧
+      intersectionCycle L W.polynomial = single P.toProjectivization 1 +
+        single Q.toProjectivization 1 + single R.toProjectivization 1 := by
+  classical
+  obtain ⟨A, rfl⟩ := (toAffineAddEquiv W).symm.surjective P
+  obtain ⟨B, rfl⟩ := (toAffineAddEquiv W).symm.surjective Q
+  obtain ⟨C', rfl⟩ := (toAffineAddEquiv W).symm.surjective R
+  rw [← map_add, ← map_add, AddEquivClass.map_eq_zero_iff] at h
+  simp only [toAffineAddEquiv_symm_apply] at hP hQ hR ⊢
+  rcases A with _ | ⟨x₁, y₁, h₁⟩
+  · exact absurd (by rw [← Affine.Point.zero_def, fromAffine_zero]) hP
+  rcases B with _ | ⟨x₂, y₂, h₂⟩
+  · exact absurd (by rw [← Affine.Point.zero_def, fromAffine_zero]) hQ
+  rcases C' with _ | ⟨x₃, y₃, h₃⟩
+  · exact absurd (by rw [← Affine.Point.zero_def, fromAffine_zero]) hR
+  obtain ⟨ℓ, ν, rfl, rfl, rfl, hW⟩ := (Affine.Point.some_add_some_add_some_eq_zero_iff h₁ h₂ h₃).1 h
+  refine ⟨_, isHomogeneous_X_one_sub ℓ ν, X_one_sub_ne_zero ℓ ν, ?_⟩
+  have hne : ∀ x : k, Polynomial.X - Polynomial.C x ≠ 0 := Polynomial.X_sub_C_ne_zero
+  rw [intersectionCycle_X_one_sub, hW, Polynomial.roots_neg,
+    Polynomial.roots_mul (mul_ne_zero (mul_ne_zero (hne _) (hne _)) (hne _)),
+    Polynomial.roots_mul (mul_ne_zero (hne _) (hne _))]
+  simp [toProjectivization_fromAffine_some, add_assoc]
+
+/-- Three points of `W` that add to zero are the intersection of a line with `W.polynomial`. -/
+private theorem exists_line_of_add_add_eq_zero {P Q R : W.Point} (h : P + Q + R = 0) :
+    ∃ L : MvPolynomial (Fin 3) k, L.IsHomogeneous 1 ∧ L ≠ 0 ∧
+      intersectionCycle L W.polynomial = single P.toProjectivization 1 +
+        single Q.toProjectivization 1 + single R.toProjectivization 1 := by
+  by_cases hP : P = 0
+  · subst hP
+    rw [zero_add, add_eq_zero_iff_neg_eq] at h
+    subst h
+    exact exists_line_zero_neg Q
+  by_cases hQ : Q = 0
+  · subst hQ
+    rw [add_zero, add_eq_zero_iff_neg_eq] at h
+    subst h
+    obtain ⟨L, hL, hL0, hc⟩ := exists_line_zero_neg P
+    exact ⟨L, hL, hL0, by rw [hc]; abel⟩
+  by_cases hR : R = 0
+  · subst hR
+    rw [add_zero, add_eq_zero_iff_neg_eq] at h
+    subst h
+    obtain ⟨L, hL, hL0, hc⟩ := exists_line_zero_neg P
+    exact ⟨L, hL, hL0, by rw [hc]; abel⟩
+  exact exists_line_of_add_add_eq_zero_of_ne_zero h hP hQ hR
+
+/-- **Fulton's third point on a Weierstrass cubic**: the third point `φ(P, Q)` of the chord through
+the points of `W.polynomial` given by `P` and `Q` is the point given by `-(P + Q)`. -/
+theorem thirdPoint_toProjectivization (P Q : W.Point) :
+    thirdPoint W.polynomial P.toProjectivization Q.toProjectivization =
+      (-(P + Q)).toProjectivization := by
+  obtain ⟨L, hL, hL0, h⟩ := exists_line_of_add_add_eq_zero (add_neg_cancel (P + Q))
+  exact (eq_thirdPoint_of_intersectionCycle_eq W.isHomogeneous_polynomial
+    W.prime_polynomial.irreducible P.isSimplePoint_toProjectivization
+    Q.isSimplePoint_toProjectivization hL hL0 h).symm
+
+/-- **Three points of a Weierstrass curve add to zero exactly when they are collinear**: for
+points `P`, `Q`, `R` of `W`, `P + Q + R = 0` if and only if some line `L` meets the cubic
+`W.polynomial` in `L • W.polynomial = P + Q + R`, counted with multiplicity. -/
+theorem add_add_eq_zero_iff (P Q R : W.Point) :
+    P + Q + R = 0 ↔ ∃ L : MvPolynomial (Fin 3) k, L.IsHomogeneous 1 ∧ L ≠ 0 ∧
+      intersectionCycle L W.polynomial = single P.toProjectivization 1 +
+        single Q.toProjectivization 1 + single R.toProjectivization 1 := by
+  refine ⟨exists_line_of_add_add_eq_zero, fun ⟨L, hL, hL0, h⟩ ↦ ?_⟩
+  have hR := eq_thirdPoint_of_intersectionCycle_eq W.isHomogeneous_polynomial
+    W.prime_polynomial.irreducible P.isSimplePoint_toProjectivization
+    Q.isSimplePoint_toProjectivization hL hL0 h
+  rw [thirdPoint_toProjectivization] at hR
+  rw [toProjectivization_injective hR, add_neg_cancel]
+
+/-- **Mathlib's group law on a Weierstrass curve is Fulton's chord–tangent group law**: the
+bijection `toSimplePoint` between the points of `W` and the simple points of `W.polynomial` is an
+isomorphism from `W.Point` to the chord–tangent group `CubicGroup W.polynomial O` with zero
+`O = [0 : 1 : 0]`. -/
+noncomputable def toCubicGroup :
+    W.Point ≃+ CubicGroup W.polynomial (0 : W.Point).toProjectivization :=
+  AddEquiv.mk' (toSimplePoint.trans CubicGroup.equivSubtype.symm) fun P Q ↦ by
+    refine CubicGroup.ext ?_
+    simp only [Equiv.trans_apply, CubicGroup.point_equivSubtype_symm_apply,
+      coe_toSimplePoint_apply, CubicGroup.point_add]
+    rw [thirdPoint_toProjectivization, thirdPoint_toProjectivization, zero_add, neg_neg]
+
+/-- `toCubicGroup` sends a point of `W` to its line in `ℙ²`. -/
+@[simp]
+theorem point_toCubicGroup_apply (P : W.Point) :
+    (toCubicGroup P).point = P.toProjectivization :=
+  CubicGroup.point_equivSubtype_symm_apply (toSimplePoint P)
+
+end Point
 
 end IsAlgClosed
 
