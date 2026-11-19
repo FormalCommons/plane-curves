@@ -90,6 +90,10 @@ private theorem quadVec_ne_zero_of_forall_ne_zero {v : Fin 3 → k} (h : ∀ i, 
     ![v 1 * v 2, v 0 * v 2, v 0 * v 1] ≠ 0 := fun h0 ↦ by
   simpa [h] using congrFun h0 0
 
+private theorem quadVec_ne_zero_of_forall_ne_fundamentalPoint {v : Fin 3 → k} {hv : v ≠ 0}
+    (hP : ∀ i, mk k v hv ≠ fundamentalPoint i) : ![v 1 * v 2, v 0 * v 2, v 0 * v 1] ≠ 0 :=
+  fun h ↦ have ⟨i, hi⟩ := (quadVec_eq_zero_iff v hv).1 h; hP i hi
+
 private theorem forall_rep_ne_zero_of_notMem {v : Fin 3 → k} {hv : v ≠ 0}
     (h : mk k v hv ∉ fundamentalTriangle) : ∀ i, v i ≠ 0 := by
   simpa [mk_mem_fundamentalTriangle_iff] using h
@@ -149,9 +153,7 @@ theorem quadraticMap_mem_fundamentalTriangle_iff {P : ℙ k (Fin 3 → k)}
     (hP : ∀ i, P ≠ fundamentalPoint i) :
     quadraticMap P ∈ fundamentalTriangle ↔ P ∈ fundamentalTriangle := by
   induction P using Projectivization.ind with | h v hv =>
-  have hw : ![v 1 * v 2, v 0 * v 2, v 0 * v 1] ≠ 0 := fun h ↦
-    have ⟨i, hi⟩ := (quadVec_eq_zero_iff v hv).1 h
-    hP i hi
+  have hw := quadVec_ne_zero_of_forall_ne_fundamentalPoint hP
   rw [quadraticMap_mk v hv hw, mk_mem_fundamentalTriangle_iff, mk_mem_fundamentalTriangle_iff]
   simp [Fin.exists_fin_succ]
   tauto
@@ -171,12 +173,7 @@ theorem quadraticMap_eq_fundamentalPoint_iff {P : ℙ k (Fin 3 → k)}
     (hP : ∀ i, P ≠ fundamentalPoint i) (i : Fin 3) :
     quadraticMap P = fundamentalPoint i ↔ P ∈ zeroLocus {X i} := by
   induction P using Projectivization.ind with | h v hv =>
-  have hw : ![v 1 * v 2, v 0 * v 2, v 0 * v 1] ≠ 0 := fun h ↦
-    have ⟨i, hi⟩ := (quadVec_eq_zero_iff v hv).1 h
-    hP i hi
-  have hv' : v 0 ≠ 0 ∨ v 1 ≠ 0 ∨ v 2 ≠ 0 := by
-    by_contra h
-    exact hv (funext fun i ↦ by fin_cases i <;> simp_all)
+  have hw := quadVec_ne_zero_of_forall_ne_fundamentalPoint hP
   simp only [mk_eq_fundamentalPoint_iff, ne_eq] at hP
   rw [quadraticMap_mk v hv hw, mk_eq_fundamentalPoint_iff,
     mk_mem_zeroLocus_iff (by simpa using ⟨1, isHomogeneous_X k i⟩)]
@@ -227,9 +224,7 @@ theorem quadraticMap_mem_zeroLocus_of_mem_zeroLocus_properTransform (hF : F.IsHo
     {P : ℙ k (Fin 3 → k)} (hP : ∀ i, P ≠ fundamentalPoint i)
     (h : P ∈ zeroLocus {properTransform F}) : quadraticMap P ∈ zeroLocus {F} := by
   induction P using Projectivization.ind with | h v hv =>
-  have hw : ![v 1 * v 2, v 0 * v 2, v 0 * v 1] ≠ 0 := fun h ↦
-    have ⟨i, hi⟩ := (quadVec_eq_zero_iff v hv).1 h
-    hP i hi
+  have hw := quadVec_ne_zero_of_forall_ne_fundamentalPoint hP
   rw [mk_mem_zeroLocus_iff (by simpa using ⟨_, hF.properTransform⟩)] at h
   rw [quadraticMap_mk v hv hw, mk_mem_zeroLocus_iff (by simpa using ⟨_, hF⟩)]
   simp only [Set.mem_singleton_iff, forall_eq] at h ⊢
@@ -249,9 +244,9 @@ theorem bijOn_quadraticMap (hF : F.IsHomogeneous n) :
   · exact quadraticMap_mem_zeroLocus_of_mem_zeroLocus_properTransform hF
       (ne_fundamentalPoint_of_notMem hP.2) hP.1
 
-/-- An irreducible form `G` with no exceptional component vanishes on every form that vanishes on
-`V(G) ∖ V(XYZ)`, over an algebraically closed field: `V(G)` is the closure of
-`V(G) ∖ V(XYZ)`. -/
+/-- Let `G` be an irreducible form with no exceptional component, over an algebraically closed
+field. Every form that vanishes on `V(G) ∖ V(XYZ)` vanishes on `V(G)`, so `V(G)` is the closure
+`V(I(·))` of `V(G) ∖ V(XYZ)`. -/
 theorem zeroLocus_vanishingIdeal_zeroLocus_diff_fundamentalTriangle [IsAlgClosed k]
     {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous n) (hirr : Irreducible G)
     (hX : ∀ i, ¬ X i ∣ G) :
