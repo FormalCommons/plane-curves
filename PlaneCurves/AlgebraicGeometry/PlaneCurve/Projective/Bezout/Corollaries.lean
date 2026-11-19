@@ -28,7 +28,8 @@ component has infinitely many zeros.
 
 ## Main results
 
-* `PlaneCurves.Projective.finsum_mult_mul_mult_le`: Corollary 1.
+* `PlaneCurves.Projective.finsum_mult_mul_mult_le`: Corollary 1, and
+  `PlaneCurves.Projective.sum_mult_mul_mult_le`, its form over a `Finset` of points.
 * `PlaneCurves.Projective.sum_intersectionNumber_le_mul`: for relatively prime forms, the sum of
   the intersection numbers over any `Finset` of points is at most `mn`.
 * `PlaneCurves.Projective.card_le_mul_of_isRelPrime`: relatively prime forms have at most `mn`
@@ -72,6 +73,15 @@ theorem sum_intersectionNumber_le_mul (hF : F.IsHomogeneous m) (hG : G.IsHomogen
   rw [← finsum_intersectionNumber_eq_mul hF hG hFG,
     finsum_eq_sum_of_support_subset (s := s ∪ hfin.toFinset) _ (by simp)]
   exact Finset.sum_le_sum_of_subset Finset.subset_union_left
+
+/-- **Corollary 1 of Bézout's theorem**, over a `Finset` of points. Let `k` be algebraically
+closed and `F`, `G` forms of degrees `m` and `n` with no common component. Then
+`∑_{P ∈ s} m_P(F) m_P(G) ≤ mn` for every finite set `s` of points. -/
+theorem sum_mult_mul_mult_le (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n)
+    (hFG : IsRelPrime F G) (s : Finset (ℙ k (Fin 3 → k))) :
+    ∑ P ∈ s, mult F P * mult G P ≤ ↑(m * n) :=
+  (Finset.sum_le_sum fun _ _ ↦ mul_mult_le_intersectionNumber hF hG).trans
+    (sum_intersectionNumber_le_mul hF hG hFG s)
 
 /-- Relatively prime forms of degrees `m` and `n`, over an algebraically closed field, have at
 most `mn` common zeros in `ℙ²`. -/

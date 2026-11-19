@@ -118,8 +118,7 @@ theorem sum_mult_mul_mult_sub_one_le_mul_sub_one (hF : F.IsHomogeneous n)
   have hrel : IsRelPrime F (pderiv i F) :=
     hirr.isRelPrime_iff_not_dvd.2 fun hd ↦ hi (pderiv_eq_zero_of_dvd hd)
   refine (Finset.sum_le_sum fun P _ ↦ ?_).trans
-    ((Finset.sum_le_sum fun P _ ↦ mul_mult_le_intersectionNumber hF hF.pderiv).trans
-      (sum_intersectionNumber_le_mul hF hF.pderiv hrel s))
+    (sum_mult_mul_mult_le hF hF.pderiv hrel s)
   exact mul_le_mul_right (mult_sub_one_le_mult_pderiv F P i) _
 
 /-- **The polar bound.** Let `k` be algebraically closed and `F` an irreducible form of degree
@@ -219,10 +218,8 @@ private theorem sum_toNat_mult_mul_sub_one_le (hF : F.IsHomogeneous n) (hirr : I
     rw [Finset.sum_congr rfl fun P _ ↦ by rw [sub_one_mul_sub_one_add_one], ← hδ, hTcard]
     omega)
   -- Corollary 1 of Bézout's theorem for `F` and `G`
-  have hbez := (Finset.sum_le_sum fun P (_ : P ∈ s ∪ T) ↦
-    mul_mult_le_intersectionNumber hF hG).trans
-    (sum_intersectionNumber_le_mul hF hG (hF.isRelPrime_of_irreducible hirr hG hG0 (by omega))
-      (s ∪ T))
+  have hbez := sum_mult_mul_mult_le hF hG (hF.isRelPrime_of_irreducible hirr hG hG0 (by omega))
+    (s ∪ T)
   rw [Finset.sum_union hTs] at hbez
   have hs : (D : ℕ∞) ≤ ∑ P ∈ s, mult F P * mult G P := by
     rw [hD, Nat.cast_sum]
