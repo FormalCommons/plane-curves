@@ -44,6 +44,9 @@ tangent lines at the point.
 * `MvPolynomial.leadingFormAt_rename`: leading forms commute with injective renamings.
 * `MvPolynomial.orderAt_sub_one_le_orderAt_pderiv`: a partial derivative lowers the order by
   at most one, in every characteristic (Problem 5.6 of Fulton, in affine space).
+* `MvPolynomial.orderAt_add_of_ne`, `MvPolynomial.orderAt_add_of_lt`,
+  `MvPolynomial.orderAt_add_of_gt`: if `p` and `q` have different orders at `a`, `p + q` has
+  the smaller one.
 * `MvPolynomial.IsHomogeneous.orderAt_zero`: a nonzero form of degree `d` has order `d` at the
   origin.
 * `MvPolynomial.IsHomogeneous.leadingFormAt_zero`: a form is its own leading form at the origin.
@@ -285,6 +288,23 @@ theorem orderAt_sub_one_le_orderAt_pderiv (p : MvPolynomial σ R) (a : σ → R)
   rcases eq_or_ne (p.orderAt a) 0 with h | h
   · simp [h]
   exact le_orderAt_pderiv (by rw [tsub_add_cancel_of_le (Order.one_le_iff_ne_zero.2 h)]) i
+
+/-- If `p` and `q` have different orders at `a`, the order of `p + q` there is the smaller
+one. -/
+theorem orderAt_add_of_ne (h : p.orderAt a ≠ q.orderAt a) :
+    (p + q).orderAt a = min (p.orderAt a) (q.orderAt a) := by
+  rw [orderAt_def, orderAt_def] at h
+  simpa [orderAt_def] using MvPowerSeries.order_add_of_order_ne h
+
+/-- If `p` has smaller order at `a` than `q`, then `p + q` has the order of `p` there. -/
+theorem orderAt_add_of_lt (h : p.orderAt a < q.orderAt a) :
+    (p + q).orderAt a = p.orderAt a := by
+  rw [orderAt_add_of_ne h.ne, min_eq_left h.le]
+
+/-- If `q` has smaller order at `a` than `p`, then `p + q` has the order of `q` there. -/
+theorem orderAt_add_of_gt (h : q.orderAt a < p.orderAt a) :
+    (p + q).orderAt a = q.orderAt a := by
+  rw [orderAt_add_of_ne h.ne', min_eq_right h.le]
 
 /-- A form of degree `d` has order at least `d` at the origin. -/
 theorem IsHomogeneous.natCast_le_orderAt_zero {d : ℕ} (hp : p.IsHomogeneous d) :
