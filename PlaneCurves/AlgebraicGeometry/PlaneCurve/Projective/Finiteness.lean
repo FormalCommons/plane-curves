@@ -81,18 +81,8 @@ form of positive degree (or `F = G = 0`), with infinitely many zeros. -/
 theorem isRelPrime_of_finite_zeroLocus_pair [IsAlgClosed k] (hF : F.IsHomogeneous m)
     (hG : G.IsHomogeneous n) (h : (zeroLocus ({F, G} : Set (MvPolynomial (Fin 3) k))).Finite) :
     IsRelPrime F G := by
-  intro H hHF hHG
-  by_contra hH
-  -- a form of positive degree dividing `F` and `G`
-  obtain ⟨H', e, he, hH'e, hH'F, hH'G⟩ :
-      ∃ H' : MvPolynomial (Fin 3) k, ∃ e ≠ 0, H'.IsHomogeneous e ∧ H' ∣ F ∧ H' ∣ G := by
-    by_cases hF0 : F = 0
-    · by_cases hG0 : G = 0
-      · exact ⟨X 0, 1, one_ne_zero, isHomogeneous_X k 0, by simp [hF0], by simp [hG0]⟩
-      · obtain ⟨e, he, hHe⟩ := hG.exists_isHomogeneous_of_dvd hG0 hHG hH
-        exact ⟨H, e, he, hHe, hHF, hHG⟩
-    · obtain ⟨e, he, hHe⟩ := hF.exists_isHomogeneous_of_dvd hF0 hHF hH
-      exact ⟨H, e, he, hHe, hHF, hHG⟩
+  by_contra hFG
+  obtain ⟨H', e, he, hH'e, hH'F, hH'G⟩ := hF.exists_isHomogeneous_dvd_of_not_isRelPrime hG hFG
   refine zeroLocus_singleton_infinite le_rfl hH'e he (h.subset fun P hP ↦ ?_)
   rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨e, hH'e⟩)] at hP
   rw [mem_zeroLocus_iff_eval_rep (forall_isHomogeneous_pair hF hG)]

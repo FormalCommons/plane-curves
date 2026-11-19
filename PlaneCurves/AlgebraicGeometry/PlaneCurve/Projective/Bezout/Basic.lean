@@ -89,24 +89,9 @@ theorem isRelPrime_bind₁_update_X_zero [IsAlgClosed k] (hF : F.IsHomogeneous m
   have hφ {p : MvPolynomial (Fin 3) k} {d : ℕ} (hp : p.IsHomogeneous d) :
       (φ p).IsHomogeneous d := by
     simpa using hp.aeval _ hg
-  -- a common factor that is a form of positive degree
-  have hdeg {H K : MvPolynomial (Fin 3) k} {d : ℕ} (hK : K.IsHomogeneous d) (hK0 : K ≠ 0)
-      (hHK : H ∣ K) (hH : ¬ IsUnit H) : ∃ e ≠ 0, H.IsHomogeneous e := by
-    obtain ⟨c, rfl⟩ := hHK
-    refine ⟨H.totalDegree, fun h0 ↦ hH ?_, hK.of_mul_left (right_ne_zero_of_mul hK0)⟩
-    rw [totalDegree_eq_zero_iff_eq_C.1 h0, isUnit_map_iff, isUnit_iff_ne_zero]
-    rintro hc
-    rw [totalDegree_eq_zero_iff_eq_C.1 h0, hc, map_zero, zero_mul] at hK0
-    exact hK0 rfl
-  intro H hHF hHG
-  by_contra hH
-  obtain ⟨H', ⟨e, he, hH'⟩, hH'F, hH'G⟩ : ∃ H' : MvPolynomial (Fin 3) k,
-      (∃ e ≠ 0, H'.IsHomogeneous e) ∧ H' ∣ φ F ∧ H' ∣ φ G := by
-    by_cases hF0 : φ F = 0
-    · by_cases hG0 : φ G = 0
-      · exact ⟨X 0, ⟨1, one_ne_zero, isHomogeneous_X k 0⟩, by simp [hF0], by simp [hG0]⟩
-      · exact ⟨H, hdeg (hφ hG) hG0 hHG hH, hHF, hHG⟩
-    · exact ⟨H, hdeg (hφ hF) hF0 hHF hH, hHF, hHG⟩
+  by_contra hφFG
+  obtain ⟨H', e, he, hH', hH'F, hH'G⟩ :=
+    (hφ hF).exists_isHomogeneous_dvd_of_not_isRelPrime (hφ hG) hφFG
   obtain ⟨P, hP⟩ := zeroLocus_nonempty_of_card_le (s := {H', X i}) Finset.card_le_two (by
     simp only [Finset.mem_insert, Finset.mem_singleton]
     rintro f (rfl | rfl)
