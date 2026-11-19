@@ -30,10 +30,11 @@ The file then computes the intersection cycle `L • F` of each kind of line `L`
 line at infinity `Z = 0` meets `F` only at `O`, three times, so that `O` is a flex; a vertical
 line `X = xZ` through an affine point `(x, y)` meets `F` at `O`, `[x : y : 1]` and
 `[x : negY x y : 1]`; and a non-vertical line `Y = ℓX + νZ` meets `F` at the points
-`[x : ℓx + ν : 1]`, for the roots `x` of `W(X, ℓX + ν)`, counted with multiplicity. The last
-holds over any field; the others use Bézout's theorem, over an algebraically closed field. The
-affine points are read off from the restriction of `F` to the line (Problem 3.21 of Fulton,
-`PlaneCurves.Affine.intersectionNumber_line_eq_rootMultiplicity`).
+`[x : ℓx + ν : 1]`, for the roots `x` of `W(X, ℓX + ν)`, counted with multiplicity.
+The lines other than `Z = 0`, and the fact that `Z = 0` is the tangent line at `O`, are handled
+over any field; the cycle of `Z = 0` itself, and so the flex, uses Bézout's theorem, over an
+algebraically closed field. The affine points are read off from the restriction of `F` to the
+line (Problem 3.21 of Fulton, `PlaneCurves.Affine.intersectionNumber_line_eq_rootMultiplicity`).
 
 ## Main results
 
@@ -45,9 +46,11 @@ affine points are read off from the restriction of `F` to the line (Problem 3.21
   simple points of `F`.
 * `WeierstrassCurve.Projective.isNonsingular_polynomial_iff`: over a perfect field, `F` is
   nonsingular exactly when `W.Δ ≠ 0`.
+* `WeierstrassCurve.Projective.isRelPrime_polynomial`: no line is a component of `F`.
+* `WeierstrassCurve.Projective.isTangentAt_zero_X_two`: the tangent line of `F` at `O` is
+  `Z = 0`.
 * `WeierstrassCurve.Projective.intersectionCycle_X_two`: `Z • F = 3 O`.
-* `WeierstrassCurve.Projective.isFlex_zero`: `O` is a flex of `F`, with tangent `Z = 0`
-  (`WeierstrassCurve.Projective.isTangentAt_zero_X_two`).
+* `WeierstrassCurve.Projective.isFlex_zero`: `O` is a flex of `F`.
 * `WeierstrassCurve.Projective.intersectionCycle_X_zero_sub`: the cycle of a vertical line.
 * `WeierstrassCurve.Projective.intersectionCycle_X_one_sub`: the cycle of a non-vertical line.
 
@@ -143,26 +146,24 @@ section CommRing
 
 variable {R : Type*} [CommRing R] (W' : WeierstrassCurve.Projective R)
 
+@[simp]
+private theorem insertNth_two_X_zero :
+    Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) R) 2 1 X 0 = X 0 :=
+  (rfl)
+
+@[simp]
+private theorem insertNth_two_X_one :
+    Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) R) 2 1 X 1 = X 1 :=
+  (rfl)
+
 /-- In the chart `Z = 1`, the Weierstrass cubic is the affine Weierstrass polynomial
 `Y² + a₁XY + a₃Y - (X³ + a₂X² + a₄X + a₆)`. -/
 theorem dehomogenize_two_polynomial :
     dehomogenize 2 W'.polynomial = X 1 ^ 2 + C W'.a₁ * X 0 * X 1 + C W'.a₃ * X 1 -
       (X 0 ^ 3 + C W'.a₂ * X 0 ^ 2 + C W'.a₄ * X 0 + C W'.a₆) := by
-  have h0 : Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) R) 2 1 X 0 = X 0 := rfl
-  have h1 : Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) R) 2 1 X 1 = X 1 := rfl
-  simp [polynomial, dehomogenize_X, h0, h1]
+  simp [polynomial, dehomogenize_X]
 
 end CommRing
-
-@[simp]
-private theorem insertNth_two_X_zero :
-    Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) k) 2 1 X 0 = X 0 :=
-  (rfl)
-
-@[simp]
-private theorem insertNth_two_X_one :
-    Fin.insertNth (α := fun _ ↦ MvPolynomial (Fin 2) k) 2 1 X 1 = X 1 :=
-  (rfl)
 
 /-- A point of the plane off the line `Z = 0` is `[a : b : 1]`. -/
 private theorem exists_eq_mk {P : ℙ k (Fin 3 → k)} (hP : P ∈ affineOpen 2) :
@@ -229,8 +230,9 @@ private theorem intersectionNumber_mk_two {L : MvPolynomial (Fin 3) k} (hL : L.I
   rw [intersectionNumber_eq_affine hL W.isHomogeneous_polynomial (mk_mem_affineOpen a b),
     affineChart_mk_two]
 
-/-- No line is a component of the Weierstrass cubic. -/
-private theorem isRelPrime_polynomial {L : MvPolynomial (Fin 3) k} (hL : L.IsHomogeneous 1)
+/-- **No line is a component of the Weierstrass cubic**: every nonzero linear form `L` is
+relatively prime to `W.polynomial`. -/
+theorem isRelPrime_polynomial {L : MvPolynomial (Fin 3) k} (hL : L.IsHomogeneous 1)
     (hL0 : L ≠ 0) : IsRelPrime L W.polynomial :=
   (W.isHomogeneous_polynomial.isRelPrime_of_irreducible (prime_polynomial W).irreducible hL hL0
     (by norm_num)).symm
@@ -343,53 +345,18 @@ theorem intersectionCycle_X_one_sub (ℓ ν : k) :
       intro x _ h
       exact hP (h ▸ mk_mem_affineOpen _ _)
 
-section IsAlgClosed
-
-variable [IsAlgClosed k]
-
-/-- **The line at infinity meets the Weierstrass cubic only at `O`, three times**:
-`Z • W.polynomial = 3 O`, for `O = [0 : 1 : 0]`. -/
-theorem intersectionCycle_X_two :
-    intersectionCycle (X 2) W.polynomial =
-      single (Projectivization.mk k ![0, 1, 0] (by simp)) 3 := by
-  have hL : (X 2 : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k 2
-  have hrel := isRelPrime_polynomial (W := W) hL (X_ne_zero 2)
-  have hsupp : (intersectionCycle (X 2) W.polynomial).support ⊆
-      {Projectivization.mk k ![0, 1, 0] (by simp)} := by
-    intro P hP
-    rw [mem_support_intersectionCycle_iff hL W.isHomogeneous_polynomial hrel, eval_X] at hP
-    exact Finset.mem_singleton.2 (eq_mk_zero_of_rep_two_eq_zero hP.1 hP.2)
-  rw [Finsupp.support_subset_singleton] at hsupp
-  have hdeg := degree_intersectionCycle hL W.isHomogeneous_polynomial hrel
-  rw [hsupp, Finsupp.degree_single] at hdeg
-  rw [hsupp, hdeg]
-
 /-- The tangent line of `W.polynomial` at `O = [0 : 1 : 0]` is the line at infinity `Z = 0`. -/
 theorem isTangentAt_zero_X_two :
     IsTangentAt W.polynomial (Projectivization.mk k ![0, 1, 0] (by simp)) (X 2) := by
-  have hL : (X 2 : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k 2
-  have hrel := isRelPrime_polynomial (W := W) hL (X_ne_zero 2)
-  have hI := intersectionCycle_apply hL W.isHomogeneous_polynomial hrel
-    (Projectivization.mk k ![0, 1, 0] (by simp))
-  rw [intersectionCycle_X_two, Finsupp.single_eq_same, intersectionNumber_comm] at hI
-  have hO := (mem_support_intersectionCycle_iff hL W.isHomogeneous_polynomial hrel).1
-    (show Projectivization.mk k ![0, 1, 0] (by simp) ∈
-        (intersectionCycle (X 2) W.polynomial).support by
-      rw [intersectionCycle_X_two]; simp)
-  rw [isTangentAt_iff_mult_lt_intersectionNumber W.isHomogeneous_polynomial
-    (prime_polynomial W).ne_zero hL (X_ne_zero 2) hO.1, ← hI,
-    isSimplePoint_def.1 isSimplePoint_polynomial_zero]
-  norm_num
-
-/-- **`O = [0 : 1 : 0]` is a flex of the Weierstrass cubic**: its tangent line `Z = 0` meets
-`W.polynomial` there three times. -/
-theorem isFlex_zero : IsFlex W.polynomial (Projectivization.mk k ![0, 1, 0] (by simp)) := by
-  rw [isFlex_iff_of_isTangentAt W.isHomogeneous_polynomial isSimplePoint_polynomial_zero
-    isTangentAt_zero_X_two, intersectionNumber_comm, ← intersectionCycle_apply
-    (isHomogeneous_X k 2) W.isHomogeneous_polynomial
-    (isRelPrime_polynomial (isHomogeneous_X k 2) (X_ne_zero 2)), intersectionCycle_X_two,
-    Finsupp.single_eq_same]
-  norm_num
+  have hT :=
+    isSimplePoint_polynomial_zero.isTangentAt_tangentLine W.isHomogeneous_polynomial
+  obtain ⟨a, ha⟩ := exists_smul_eq_mk_rep k (![0, 1, 0] : Fin 3 → k) (by simp)
+  rw [← ha, tangentLine_def] at hT
+  simp only [Fin.sum_univ_three, polynomial] at hT
+  refine isTangentAt_def.2 ⟨isHomogeneous_X k 2, X_ne_zero 2, by simp [← ha],
+    dvd_of_mul_left_dvd (a := C ((a : k) ^ 2)) ?_⟩
+  simpa [polynomial, pderiv_X, Pi.single_apply, Units.smul_def] using
+    (isTangentAt_def.1 hT).2.2.2
 
 /-- A line through `O` other than the line at infinity meets `W.polynomial` at `O` once. -/
 private theorem intersectionNumber_zero_eq_one {L : MvPolynomial (Fin 3) k}
@@ -470,6 +437,37 @@ theorem intersectionCycle_X_zero_sub {x y : k} (h : W.toAffine.Equation x y) :
       by_contra hc
       push Not at hc
       exact hPO (eq_mk_zero_of_rep_two_eq_zero h2 hc.2).symm
+
+section IsAlgClosed
+
+variable [IsAlgClosed k]
+
+/-- **The line at infinity meets the Weierstrass cubic only at `O`, three times**:
+`Z • W.polynomial = 3 O`, for `O = [0 : 1 : 0]`. -/
+theorem intersectionCycle_X_two :
+    intersectionCycle (X 2) W.polynomial =
+      single (Projectivization.mk k ![0, 1, 0] (by simp)) 3 := by
+  have hL : (X 2 : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k 2
+  have hrel := isRelPrime_polynomial (W := W) hL (X_ne_zero 2)
+  have hsupp : (intersectionCycle (X 2) W.polynomial).support ⊆
+      {Projectivization.mk k ![0, 1, 0] (by simp)} := by
+    intro P hP
+    rw [mem_support_intersectionCycle_iff hL W.isHomogeneous_polynomial hrel, eval_X] at hP
+    exact Finset.mem_singleton.2 (eq_mk_zero_of_rep_two_eq_zero hP.1 hP.2)
+  rw [Finsupp.support_subset_singleton] at hsupp
+  have hdeg := degree_intersectionCycle hL W.isHomogeneous_polynomial hrel
+  rw [hsupp, Finsupp.degree_single] at hdeg
+  rw [hsupp, hdeg]
+
+/-- **`O = [0 : 1 : 0]` is a flex of the Weierstrass cubic**: its tangent line `Z = 0` meets
+`W.polynomial` there three times. -/
+theorem isFlex_zero : IsFlex W.polynomial (Projectivization.mk k ![0, 1, 0] (by simp)) := by
+  rw [isFlex_iff_of_isTangentAt W.isHomogeneous_polynomial isSimplePoint_polynomial_zero
+    isTangentAt_zero_X_two, intersectionNumber_comm, ← intersectionCycle_apply
+    (isHomogeneous_X k 2) W.isHomogeneous_polynomial
+    (isRelPrime_polynomial (isHomogeneous_X k 2) (X_ne_zero 2)), intersectionCycle_X_two,
+    Finsupp.single_eq_same]
+  norm_num
 
 end IsAlgClosed
 
