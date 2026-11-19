@@ -7,7 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Finiteness
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Position
-import PlaneCurves.Algebra.Squarefree.Basic
+import TauCeti.Algebra.Squarefree
 
 /-!
 # The proper transform of a curve in excellent position
@@ -571,17 +571,17 @@ theorem squarefree_leadingFormAt_properTransform [IsAlgClosed k] (h : IsExcellen
     rw [rename_swap_aeval (Equiv.swap 1 2) ![0, X 1, X 2] _ (fun m ↦ by
       fin_cases m <;> simp), hH, map_mul, map_pow, rename_X,
       Equiv.swap_apply_left] at key
-    exact (mul_left_cancel₀ hX2 key) ▸ (MulEquiv.squarefree_iff (renameEquiv k _)).2 hsq
+    exact (mul_left_cancel₀ hX2 key) ▸ (TauCeti.squarefree_map_iff (renameEquiv k _)).2 hsq
   · obtain ⟨H, hH, hsq, -, -⟩ := h.restrict_X_one_eq hF
     have key := h.X_two_pow_mul_leadingFormAt_properTransform_single_one hF
     rw [rename_swap_aeval (Equiv.swap 0 2) ![X 0, 0, X 2] _ (fun m ↦ by
       fin_cases m <;> simp), hH, map_mul, map_pow, rename_X,
       Equiv.swap_apply_left] at key
-    exact (mul_left_cancel₀ hX2 key) ▸ (MulEquiv.squarefree_iff (renameEquiv k _)).2 hsq
+    exact (mul_left_cancel₀ hX2 key) ▸ (TauCeti.squarefree_map_iff (renameEquiv k _)).2 hsq
   · change Squarefree ((properTransform F).leadingFormAt (Pi.single 2 1))
     rw [h.leadingFormAt_properTransform_single_two hF, rename_swap_aeval (Equiv.swap 0 1)
       ![X 0, X 1, 0] _ (fun m ↦ by fin_cases m <;> simp)]
-    exact (MulEquiv.squarefree_iff (renameEquiv k _)).2 (h.squarefree_restrict_X_two hF).1
+    exact (TauCeti.squarefree_map_iff (renameEquiv k _)).2 (h.squarefree_restrict_X_two hF).1
 
 /-- The leading form of `C'` at each fundamental point is squarefree. -/
 theorem squarefree_leadingForm_properTransform [IsAlgClosed k] (h : IsExcellentPosition F)
