@@ -156,10 +156,8 @@ omit [Fact (Irreducible F)] [IsAlgClosed k] in
 /-- Every point of a nonsingular curve is a simple point. -/
 theorem IsNonsingular.isSimplePoint (hns : IsNonsingular F)
     (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))) :
-    IsSimplePoint F P.1 := by
-  refine (isNonsingular_iff_forall_isSimplePoint hF).1 hns P.1 ?_
-  rw [mem_zeroLocus_singleton_iff hF]
-  exact (mem_zeroLocus_ideal_iff hF).1 P.2
+    IsSimplePoint F P.1 :=
+  (isNonsingular_iff_forall_isSimplePoint hF).1 hns P.1 (zeroLocus_ideal hF ▸ P.2)
 
 variable (hF) in
 /-- **The points of a nonsingular projective plane curve are the places of its function field.**

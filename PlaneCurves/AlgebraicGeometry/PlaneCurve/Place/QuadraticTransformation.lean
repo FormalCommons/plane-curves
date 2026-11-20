@@ -75,11 +75,9 @@ theorem center_map_quadraticFunctionFieldEquiv (hX : ∀ i, ¬ X i ∣ F)
       quadraticMap (center hF p).1 := by
   have hR : quadraticMap (center hF p).1 ∈ zeroLocus
       (projectivePlaneCurve.ideal hF.properTransform : Set (MvPolynomial (Fin 3) k)) := by
-    have h := (quadraticMap_mem_zeroLocus_properTransform_iff hF hp).2 (by
-      rw [mem_zeroLocus_singleton_iff hF]
-      simpa using (mem_zeroLocus_ideal_iff hF).1 (center hF p).2)
-    rw [mem_zeroLocus_singleton_iff hF.properTransform] at h
-    exact (mem_zeroLocus_ideal_iff _).2 (by simpa using h)
+    rw [zeroLocus_ideal]
+    exact (quadraticMap_mem_zeroLocus_properTransform_iff hF hp).2
+      (zeroLocus_ideal hF ▸ (center hF p).2)
   exact congrArg Subtype.val ((center_map_eq_iff_of_map_localSubring _
     (map_localSubring_quadraticFunctionFieldEquiv hF hX (R' := ⟨_, hR⟩) hp rfl)).2 rfl)
 
