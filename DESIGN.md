@@ -311,7 +311,9 @@ PlaneCurves/
         │   │   ├── Basic.lean           proper transform in excellent position (T3)
         │   │   ├── Chart.lean           local isomorphisms of Q and the blow-up (T3)
         │   │   └── Genus.lean           virtual genus, g*, the milestone (T3)
-        │   ├── Resolution.lean          reduction to ordinary points (T4)
+        │   ├── Resolution/
+        │   │   ├── Basic.lean           reduction to ordinary points (T4)
+        │   │   └── StrongForm.lean      strong forms, the milestone (T4)
         │   └── NeighbouringSingularities.lean Noether's formula, global form (T5)
         ├── Divisor.lean                 div G of a form (D4)
         ├── Adjoint/
@@ -732,7 +734,7 @@ Varieties and rational maps (Chapter 6), beside Chapter 3:
 | T1 | `Projective/TerriblePoint.lean` | **7-terrible** | Q13, Q15, L10 |
 | T2 | `QuadraticTransformation/Basic.lean`, `GoodPosition.lean`, `Birational.lean` | **7-quadratic** | Q3, Q5, P7 |
 | T3 | `QuadraticTransformation/Position.lean`, `Singularities/` | **7-quadratic-centre** (*large*) | T1, T2, B1, L5, L12, Q14, P9 |
-| T4 | `QuadraticTransformation/Resolution.lean` | **7-reduce** | T3, V2, V3, B3 |
+| T4 | `QuadraticTransformation/Resolution/` | **7-reduce** | T3, V2, V3, B3 |
 | T5 | `QuadraticTransformation/NeighbouringSingularities.lean` | the global form of **7-noether-formula** | T4, Q12, Q13 |
 
 ### Stage 4: Noether's conditions at an ordinary multiple point
@@ -885,7 +887,7 @@ completes it, in `TwoGenerators.lean`, for every `x ∉ k`.
 | 7-quadratic | Proper transform of a plane curve under the standard quadratic transformation | `PlaneCurve/QuadraticTransformation/Birational.lean` (T2), with `Basic.lean` and `GoodPosition.lean` |
 | 7-terrible | Terrible points and lines meeting a plane curve in n distinct points | `PlaneCurve/Projective/TerriblePoint.lean` (T1) |
 | 7-quadratic-centre | Quadratic transformation centred at a point and its new singularities | `PlaneCurve/QuadraticTransformation/Singularities/Genus.lean` (T3) |
-| 7-reduce | Reduction of a plane curve to ordinary multiple points by quadratic transformations | `PlaneCurve/QuadraticTransformation/Resolution.lean` (T4) |
+| 7-reduce | Reduction of a plane curve to ordinary multiple points by quadratic transformations | `PlaneCurve/QuadraticTransformation/Resolution/StrongForm.lean` (T4) |
 | 7-noether-formula | Noether's formula for intersection numbers at infinitely near points | `PlaneCurve/QuadraticTransformation/NeighbouringSingularities.lean` (T5), with the local form in `Affine/Blowup/IntersectionNumber.lean` (B4) |
 | 7-model | Existence and uniqueness of the nonsingular model of a projective curve | `PlaneCurve/NonsingularModel/Basic.lean` (V5) |
 | 7-classify | Nonsingular projective curves correspond to function fields of one variable | existing: Tau Ceti's `AlgebraicGeometry.Scheme.homOfFunctionFieldAlgHom`, `AlgebraicGeometry.Scheme.functionFieldAlgHom_homOfFunctionFieldAlgHom`, `AlgebraicGeometry.Scheme.homOfFunctionFieldAlgHom_functionFieldAlgHom`, `AlgebraicGeometry.Scheme.isoOfFunctionFieldAlgEquiv` (`TauCeti/AlgebraicGeometry/Birational/AlgHom.lean`) and `TauCeti.AlgebraicGeometry.RegularProjectiveCurveCat.equivFunctionFieldCat` (`TauCeti/AlgebraicGeometry/Curves/TwoChartModel/AntiEquivalence.lean`); "dominant morphisms are surjective" (Problem 8.18) is Mathlib's instance `AlgebraicGeometry.Surjective.of_universallyClosed_of_isDominant` (`Mathlib/AlgebraicGeometry/Morphisms/UniversallyClosed.lean`), and for places Tau Ceti's `TauCeti.Place.restrict_surjective` |
