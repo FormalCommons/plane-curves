@@ -42,6 +42,8 @@ variables.
   `m_{[eᵢ]}(F)` at `[eᵢ]`.
 * `PlaneCurves.Projective.mult_fundamentalPoint_le_multiplicity_bind₁`: the restriction of `F`
   to `V(Xⱼ)` vanishes to order at least `m_{[eᵢ]}(F)` at `[eᵢ]`.
+* `PlaneCurves.Projective.isGoodPosition_mul_iff`: a product is in good position exactly when
+  each factor is.
 * `PlaneCurves.Projective.isGoodPosition_rename_iff`: good position is invariant under
   permutations of the variables.
 * `PlaneCurves.Projective.IsGoodPosition.not_X_dvd`: a curve in good position has no exceptional
@@ -340,6 +342,14 @@ theorem isGoodPosition_smul_iff {c : k} (hc : c ≠ 0) :
 theorem IsGoodPosition.smul (h : IsGoodPosition F) {c : k} (hc : c ≠ 0) :
     IsGoodPosition (c • F) :=
   (isGoodPosition_smul_iff hc).2 h
+
+/-- A product is in good position exactly when each factor is: the tangents of `F G` at a point
+are those of `F` and those of `G`. -/
+theorem isGoodPosition_mul_iff {G : MvPolynomial (Fin 3) k} :
+    IsGoodPosition (F * G) ↔ IsGoodPosition F ∧ IsGoodPosition G := by
+  simp only [isGoodPosition_def, isTangentAt_mul_iff, not_or]
+  exact ⟨fun h ↦ ⟨fun i j hij ↦ (h i j hij).1, fun i j hij ↦ (h i j hij).2⟩,
+    fun h i j hij ↦ ⟨h.1 i j hij, h.2 i j hij⟩⟩
 
 /-- Good position is invariant under permutations of the variables. -/
 theorem isGoodPosition_rename_iff (hF : F.IsHomogeneous n) (σ : Equiv.Perm (Fin 3)) :
