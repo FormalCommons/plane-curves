@@ -7,7 +7,7 @@ module
 
 public import Mathlib.Data.List.Range
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.NormalForm
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Resolution
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Resolution.Basic
 
 /-!
 # Sequences of quadratic transformations with explicit coordinates
