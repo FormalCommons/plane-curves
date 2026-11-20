@@ -34,6 +34,13 @@ For one irreducible curve `F` of degree `n`, the virtual genus drops along a seq
 
 for every sequence of quadratic transformations of `F`.
 
+In characteristic zero, for forms `F` and `G` with `F G` squarefree, there is a sequence whose
+last pair has only ordinary multiple points and no common tangents (Fulton, §7.4,
+Problem 7.16 (a)). The proof is induction on
+`∑_k (N(q_k) + g*(q_k)) + ∑_{k ≠ l} D(q_k, q_l)` over the irreducible factors `q_k` of `F G`,
+`N` counting the non-ordinary multiple points: each step, centred at a non-ordinary multiple
+point of the product, lowers it.
+
 ## Main results
 
 * `PlaneCurves.Projective.IsQuadraticTransformSeq.mul_add_finsum_mult_mul_mult`: the identity
@@ -45,6 +52,16 @@ for every sequence of quadratic transformations of `F`.
   along a sequence of an irreducible curve.
 * `PlaneCurves.Projective.IsQuadraticTransformSeq.finsum_mult_mul_mult_sub_one_add_le`: the
   inequality.
+* `PlaneCurves.Projective.exists_isQuadraticTransformSeq_forall_isOrdinaryMultiplePoint`: in
+  characteristic zero, for forms `F` and `G` with `F G` squarefree, a sequence after which
+  `F_s G_s` has only ordinary multiple points (Fulton, §7.4, Problem 7.16 (a)); also for a
+  squarefree form
+  (`exists_isQuadraticTransformSeq_forall_isOrdinaryMultiplePoint_of_squarefree`)
+  and for a family of pairwise relatively prime irreducible forms
+  (`exists_isQuadraticTransformSeq_prod_forall_isOrdinaryMultiplePoint`).
+* `PlaneCurves.Projective.exists_isQuadraticTransformSeq_forall_not_isTangentAt`: its corollary,
+  a sequence after which `F_s` and `G_s` have only ordinary multiple points and no common
+  tangent at any point, the last pair of Noether's formula.
 
 ## References
 
@@ -212,6 +229,294 @@ theorem finsum_mult_mul_mult_sub_one_add_le [IsAlgClosed k] (h : IsQuadraticTran
   linarith [virtualGenus_nonneg hd (h.irreducible hF hirr le_rfl)]
 
 end IsQuadraticTransformSeq
+
+/-! ### Existence of sequences to ordinary multiple points -/
+
+section Existence
+
+variable [IsAlgClosed k]
+
+/-- One step for a pair of factors: for relatively prime forms `F` and `G` with `F G` in
+excellent position after the change of coordinates `M`, centred at `P`, the defect
+`D(F, G) = m n - ∑_Q m_Q(F) m_Q(G)` of the pair does not grow, and it drops when `F` and `G`
+have a common tangent at `P`. -/
+private theorem defect_properTransform_linearSubst_le (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous n) (hFG : IsRelPrime F G) {M : Matrix (Fin 3) (Fin 3) k}
+    (hM : Function.Injective M.mulVecLin) (h : IsExcellentPosition (linearSubst M (F * G)))
+    {P : ℙ k (Fin 3 → k)} (hP : map M.mulVecLin hM (fundamentalPoint 2) = P) :
+    ((((2 * m - (mult F P).toNat) * (2 * n - (mult G P).toNat) : ℕ) : ℤ) -
+        ((∑ᶠ Q, mult (properTransform (linearSubst M F)) Q *
+          mult (properTransform (linearSubst M G)) Q).toNat : ℤ) ≤
+      ((m * n : ℕ) : ℤ) - ((∑ᶠ Q, mult F Q * mult G Q).toNat : ℤ)) ∧
+    ((∃ L, IsTangentAt F P L ∧ IsTangentAt G P L) →
+      ((((2 * m - (mult F P).toNat) * (2 * n - (mult G P).toNat) : ℕ) : ℤ) -
+          ((∑ᶠ Q, mult (properTransform (linearSubst M F)) Q *
+            mult (properTransform (linearSubst M G)) Q).toNat : ℤ) <
+        ((m * n : ℕ) : ℤ) - ((∑ᶠ Q, mult F Q * mult G Q).toNat : ℤ))) := by
+  subst hP
+  have hE := h
+  rw [map_mul] at hE
+  have hFe := hE.of_mul_left (hF.linearSubst M) (hG.linearSubst M)
+  have hGe := hE.of_mul_right (hF.linearSubst M) (hG.linearSubst M)
+  have hF1 := hFe.isHomogeneous_properTransform (hF.linearSubst M)
+  have hG1 := hGe.isHomogeneous_properTransform (hG.linearSubst M)
+  rw [mult_linearSubst hF hM] at hF1
+  rw [mult_linearSubst hG hM] at hG1
+  have hU := Matrix.isUnit_det_of_mulVecLin_injective hM
+  have hFG1 := ((isRelPrime_linearSubst_iff hU).2 hFG).properTransform (hF.linearSubst M)
+    (hG.linearSubst M) hFe.not_X_dvd hGe.not_X_dvd
+  have hS' := finsum_mult_mul_mult_le hF1 hG1 hFG1
+  have key := mul_add_finsum_mult_mul_mult_properTransform_linearSubst hF hG hFG hM h
+  generalize (2 * m - (mult F (map M.mulVecLin hM (fundamentalPoint 2))).toNat) *
+    (2 * n - (mult G (map M.mulVecLin hM (fundamentalPoint 2))).toNat) = A at key hS' ⊢
+  have hJ : ∀ L, IsTangentAt F (map M.mulVecLin hM (fundamentalPoint 2)) L →
+      IsTangentAt G (map M.mulVecLin hM (fundamentalPoint 2)) L →
+      1 ≤ ∑ᶠ Q ∈ pointsOverCentre (linearSubst M (F * G)),
+        mult (properTransform (linearSubst M F)) Q * mult (properTransform (linearSubst M G)) Q :=
+    fun L hLF hLG ↦ by
+      rw [map_mul]
+      exact hE.one_le_finsum_mult_mul_mult_pointsOverCentre (hF.linearSubst M) (hG.linearSubst M)
+        ((isTangentAt_linearSubst_iff hF hM _).2 hLF) ((isTangentAt_linearSubst_iff hG hM _).2 hLG)
+  revert key hJ hS'
+  generalize ∑ᶠ Q, mult (properTransform (linearSubst M F)) Q *
+    mult (properTransform (linearSubst M G)) Q = S'
+  generalize ∑ᶠ Q, mult F Q * mult G Q = S
+  generalize ∑ᶠ Q ∈ pointsOverCentre (linearSubst M (F * G)),
+    mult (properTransform (linearSubst M F)) Q * mult (properTransform (linearSubst M G)) Q = J
+  intro key hS' hJ
+  obtain ⟨S', rfl⟩ := ENat.ne_top_iff_exists.1 (ne_top_of_le_ne_top (ENat.natCast_ne_top _) hS')
+  have hfin : (A : ℕ∞) + S + J ≠ ⊤ := by
+    rw [key, ← Nat.cast_add]; exact ENat.natCast_ne_top _
+  simp only [ne_eq, ENat.add_eq_top, not_or] at hfin
+  obtain ⟨⟨-, hS⟩, hJ0⟩ := hfin
+  obtain ⟨S, rfl⟩ := ENat.ne_top_iff_exists.1 hS
+  obtain ⟨J, rfl⟩ := ENat.ne_top_iff_exists.1 hJ0
+  have key' : A + S + J = m * n + S' := by exact_mod_cast key
+  simp only [ENat.toNat_natCast]
+  zify at key'
+  push_cast
+  refine ⟨by linarith, fun ⟨L, hLF, hLG⟩ ↦ ?_⟩
+  have : (1 : ℤ) ≤ J := by exact_mod_cast hJ L hLF hLG
+  linarith
+
+/-- The measure of the existence proof, for a family `q` of curves indexed by `s`:
+`∑_a (N(q_a) + g*(q_a)) + ∑_{a ≠ b} D(q_a, q_b)`, with `N` the number of non-ordinary multiple
+points and `D(q_a, q_b) = d_a d_b - ∑_P m_P(q_a) m_P(q_b)`. -/
+private noncomputable def measure {ι : Type*} (s : Finset ι) (q : ι → MvPolynomial (Fin 3) k)
+    (d : ι → ℕ) : ℤ :=
+  ∑ a ∈ s, (((nonOrdinaryMultiplePoints (q a)).ncard : ℤ) + virtualGenus (q a)) +
+    ∑ p ∈ s.offDiag,
+      (((d p.1 * d p.2 : ℕ) : ℤ) - ((∑ᶠ P, mult (q p.1) P * mult (q p.2) P).toNat : ℤ))
+
+/-- The measure of a family of pairwise relatively prime irreducible forms is nonnegative. -/
+private theorem measure_nonneg {ι : Type*} {s : Finset ι} {q : ι → MvPolynomial (Fin 3) k}
+    {d : ι → ℕ} (hq : ∀ a ∈ s, (q a).IsHomogeneous (d a)) (hirr : ∀ a ∈ s, Irreducible (q a))
+    (hrel : ∀ a ∈ s, ∀ b ∈ s, a ≠ b → IsRelPrime (q a) (q b)) : 0 ≤ measure s q d := by
+  refine add_nonneg (Finset.sum_nonneg fun a ha ↦
+    add_nonneg (Nat.cast_nonneg _) (virtualGenus_nonneg (hq a ha) (hirr a ha)))
+    (Finset.sum_nonneg fun p hp ↦ ?_)
+  obtain ⟨h1, h2, h12⟩ := Finset.mem_offDiag.1 hp
+  have := ENat.toNat_le_toNat (finsum_mult_mul_mult_le (hq _ h1) (hq _ h2)
+    (hrel _ h1 _ h2 h12)) (ENat.natCast_ne_top _)
+  rw [ENat.toNat_natCast] at this
+  omega
+
+/-- The existence of a sequence to ordinary multiple points, by induction on a bound `N` for the
+measure. -/
+private theorem exists_isQuadraticTransformSeq_prod_of_measure_lt [CharZero k] {ι : Type*}
+    (s : Finset ι) (N : ℕ) :
+    ∀ (q : ι → MvPolynomial (Fin 3) k) (d : ι → ℕ), (∀ a ∈ s, (q a).IsHomogeneous (d a)) →
+      (∀ a ∈ s, Irreducible (q a)) → (∀ a ∈ s, ∀ b ∈ s, a ≠ b → IsRelPrime (q a) (q b)) →
+      measure s q d < N →
+      ∃ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (t : ℕ),
+        IsQuadraticTransformSeq M (∏ a ∈ s, q a) t ∧
+          nonOrdinaryMultiplePoints (quadraticTransformSeq M (∏ a ∈ s, q a) t) = ∅ := by
+  induction N with
+  | zero =>
+    intro q d hq hirr hrel hμ
+    exact absurd hμ (not_lt.2 (measure_nonneg hq hirr hrel))
+  | succ N ih =>
+    intro q d hq hirr hrel hμ
+    by_cases hN : nonOrdinaryMultiplePoints (∏ a ∈ s, q a) = ∅
+    · exact ⟨fun _ ↦ 1, 0, isQuadraticTransformSeq_zero _ _, by rwa [quadraticTransformSeq_zero]⟩
+    obtain ⟨P, hP⟩ := Set.nonempty_iff_ne_empty.2 hN
+    obtain ⟨M, hM, hTP, hE0, -⟩ := exists_isExcellentPosition_prod_avoiding hq hirr hrel
+      (fun a ha ↦ not_isTerriblePoint (hq a ha) (hirr a ha) P.rep_ne_zero) Set.finite_empty
+      (Set.notMem_empty P)
+    have hE := hE0
+    rw [map_prod, isExcellentPosition_prod_iff fun a ha ↦ (hq a ha).linearSubst M] at hE
+    have hU := Matrix.isUnit_det_of_mulVecLin_injective hM
+    have hq' (a : ι) (ha : a ∈ s) : (properTransform (linearSubst M (q a))).IsHomogeneous
+        (2 * d a - (mult (q a) P).toNat) := by
+      have := (hE.1 a ha).isHomogeneous_properTransform ((hq a ha).linearSubst M)
+      rwa [mult_linearSubst (hq a ha) hM, hTP] at this
+    have hirr' (a : ι) (ha : a ∈ s) : Irreducible (properTransform (linearSubst M (q a))) :=
+      irreducible_properTransform ((hq a ha).linearSubst M)
+        ((irreducible_linearSubst_iff hU).2 (hirr a ha)) (hE.1 a ha).not_X_dvd
+    have hrel' (a : ι) (ha : a ∈ s) (b : ι) (hb : b ∈ s) (hab : a ≠ b) :
+        IsRelPrime (properTransform (linearSubst M (q a)))
+          (properTransform (linearSubst M (q b))) :=
+      ((isRelPrime_linearSubst_iff hU).2 (hrel a ha b hb hab)).properTransform
+        ((hq a ha).linearSubst M) ((hq b hb).linearSubst M) (hE.1 a ha).not_X_dvd
+        (hE.1 b hb).not_X_dvd
+    have hprod : properTransform (linearSubst M (∏ a ∈ s, q a)) =
+        ∏ a ∈ s, properTransform (linearSubst M (q a)) := by
+      rw [map_prod, properTransform_prod s fun a ha ↦ (hq a ha).linearSubst M]
+    -- The terms of one factor do not grow, and drop for a factor with `P` non-ordinary.
+    have hN1 (a : ι) (ha : a ∈ s) :
+        ((nonOrdinaryMultiplePoints (properTransform (linearSubst M (q a)))).ncard : ℤ) +
+            virtualGenus (properTransform (linearSubst M (q a))) ≤
+          (nonOrdinaryMultiplePoints (q a)).ncard + virtualGenus (q a) := by
+      have := (hE.1 a ha).ncard_add_virtualGenus_properTransform_le ((hq a ha).linearSubst M)
+        ((irreducible_linearSubst_iff hU).2 (hirr a ha))
+      rwa [ncard_nonOrdinaryMultiplePoints_linearSubst (hq a ha) hM,
+        virtualGenus_linearSubst (hq a ha) hM] at this
+    have hN2 (a : ι) (ha : a ∈ s) (hPa : P ∈ nonOrdinaryMultiplePoints (q a)) :
+        ((nonOrdinaryMultiplePoints (properTransform (linearSubst M (q a)))).ncard : ℤ) +
+            virtualGenus (properTransform (linearSubst M (q a))) <
+          (nonOrdinaryMultiplePoints (q a)).ncard + virtualGenus (q a) := by
+      have := (hE.1 a ha).ncard_add_virtualGenus_properTransform_lt ((hq a ha).linearSubst M)
+        ((irreducible_linearSubst_iff hU).2 (hirr a ha))
+        (by rwa [nonOrdinaryMultiplePoints_linearSubst (hq a ha) hM, Set.mem_preimage, hTP])
+      rwa [ncard_nonOrdinaryMultiplePoints_linearSubst (hq a ha) hM,
+        virtualGenus_linearSubst (hq a ha) hM] at this
+    -- The defect of a pair does not grow, and drops for a pair with a common tangent at `P`.
+    have hD (p : ι × ι) (hp : p ∈ s.offDiag) := by
+      obtain ⟨h1, h2, h12⟩ := Finset.mem_offDiag.1 hp
+      refine defect_properTransform_linearSubst_le (hq _ h1) (hq _ h2) (hrel _ h1 _ h2 h12) hM
+        ?_ hTP
+      rw [map_mul, isExcellentPosition_mul_iff ((hq _ h1).linearSubst M) ((hq _ h2).linearSubst M)]
+      exact ⟨hE.1 _ h1, hE.1 _ h2, hE.2 _ h1 _ h2 h12⟩
+    have hlt : measure s (fun a ↦ properTransform (linearSubst M (q a)))
+        (fun a ↦ 2 * d a - (mult (q a) P).toNat) < measure s q d := by
+      rw [measure, measure]
+      rcases (mem_nonOrdinaryMultiplePoints_prod_iff hq fun a ha ↦ (hirr a ha).ne_zero).1 hP with
+        ⟨a, ha, hPa⟩ | ⟨a, ha, b, hb, hab, hL⟩
+      · exact add_lt_add_of_lt_of_le (Finset.sum_lt_sum hN1 ⟨a, ha, hN2 a ha hPa⟩)
+          (Finset.sum_le_sum fun p hp ↦ (hD p hp).1)
+      · exact add_lt_add_of_le_of_lt (Finset.sum_le_sum hN1)
+          (Finset.sum_lt_sum (fun p hp ↦ (hD p hp).1)
+            ⟨(a, b), Finset.mem_offDiag.2 ⟨ha, hb, hab⟩,
+              (hD (a, b) (Finset.mem_offDiag.2 ⟨ha, hb, hab⟩)).2 hL⟩)
+    obtain ⟨M', t, hseq, hord⟩ := ih _ _ hq' hirr' hrel' (by omega)
+    refine ⟨fun | 0 => M | j + 1 => M' j, t + 1,
+      isQuadraticTransformSeq_succ_iff.2 ⟨⟨hM, hE0⟩, ?_⟩, ?_⟩
+    · rw [hprod]
+      exact hseq
+    · rw [quadraticTransformSeq_succ']
+      dsimp only
+      rw [hprod]
+      exact hord
+
+/-- **Sequences of quadratic transformations to ordinary multiple points, for a family**
+(Fulton, §7.4, Problem 7.16 (a)). Let `k` be algebraically closed of characteristic zero and
+`q_a`, for `a ∈ s`, pairwise relatively prime irreducible forms. Then there is a sequence of
+quadratic transformations of `∏_a q_a` after which all multiple points are ordinary. -/
+theorem exists_isQuadraticTransformSeq_prod_forall_isOrdinaryMultiplePoint [CharZero k]
+    {ι : Type*} {s : Finset ι} {q : ι → MvPolynomial (Fin 3) k} {d : ι → ℕ}
+    (hq : ∀ a ∈ s, (q a).IsHomogeneous (d a)) (hirr : ∀ a ∈ s, Irreducible (q a))
+    (hrel : ∀ a ∈ s, ∀ b ∈ s, a ≠ b → IsRelPrime (q a) (q b)) :
+    ∃ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (t : ℕ), IsQuadraticTransformSeq M (∏ a ∈ s, q a) t ∧
+      ∀ P, IsMultiplePoint (quadraticTransformSeq M (∏ a ∈ s, q a) t) P →
+        IsOrdinaryMultiplePoint (quadraticTransformSeq M (∏ a ∈ s, q a) t) P := by
+  obtain ⟨M, t, h, hN⟩ := exists_isQuadraticTransformSeq_prod_of_measure_lt s
+    ((measure s q d).toNat + 1) q d hq hirr hrel
+    (by have := Int.toNat_of_nonneg (measure_nonneg hq hirr hrel); omega)
+  exact ⟨M, t, h, nonOrdinaryMultiplePoints_eq_empty_iff.1 hN⟩
+
+open UniqueFactorizationMonoid in
+/-- **Sequences of quadratic transformations to ordinary multiple points, for a squarefree form**
+(Fulton, §7.4, Problem 7.16 (a)). Let `k` be algebraically closed of characteristic zero and `H`
+a squarefree form. Then there is a sequence of quadratic transformations of `H` after which all
+multiple points are ordinary. -/
+theorem exists_isQuadraticTransformSeq_forall_isOrdinaryMultiplePoint_of_squarefree [CharZero k]
+    {H : MvPolynomial (Fin 3) k} (hH : H.IsHomogeneous n) (hsq : Squarefree H) :
+    ∃ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (t : ℕ), IsQuadraticTransformSeq M H t ∧
+      ∀ P, IsMultiplePoint (quadraticTransformSeq M H t) P →
+        IsOrdinaryMultiplePoint (quadraticTransformSeq M H t) P := by
+  classical
+  have hm (q : MvPolynomial (Fin 3) k) (hq : q ∈ (factors H).toFinset) :
+      Irreducible q ∧ q ∣ H := by
+    rw [Multiset.mem_toFinset] at hq
+    exact ⟨irreducible_of_factor q hq, dvd_of_mem_factors hq⟩
+  have hF (q : MvPolynomial (Fin 3) k) (hq : q ∈ (factors H).toFinset) :
+      q.IsHomogeneous q.totalDegree := by
+    obtain ⟨e, -, he⟩ :=
+      hH.exists_isHomogeneous_of_dvd hsq.ne_zero (hm q hq).2 (hm q hq).1.not_isUnit
+    rwa [he.totalDegree (hm q hq).1.ne_zero]
+  obtain ⟨M, t, h, hord⟩ := exists_isQuadraticTransformSeq_prod_forall_isOrdinaryMultiplePoint
+    (s := (factors H).toFinset) (q := id) hF (fun q hq ↦ (hm q hq).1)
+    (fun p hp q hq hpq ↦ (hm p hp).1.isRelPrime_iff_not_dvd.2 <|
+      hsq.not_dvd_of_mem_erase_factors (Multiset.mem_toFinset.1 hp)
+        ((Multiset.mem_erase_of_ne hpq.symm).2 (Multiset.mem_toFinset.1 hq)))
+  -- `H` is the product of its factors, up to a nonzero constant.
+  obtain ⟨u, hu⟩ := factors_prod hsq.ne_zero
+  obtain ⟨c, hc, hcu⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
+  have hprod : ∏ q ∈ (factors H).toFinset, id q = (factors H).prod := by
+    simp [Finset.prod_eq_multiset_prod, Multiset.dedup_eq_self.2 hsq.nodup_factors]
+  have hP : (factors H).prod.IsHomogeneous ((factors H).toFinset.sum fun q ↦ q.totalDegree) :=
+    hprod ▸ IsHomogeneous.prod _ _ _ hF
+  have hHc : H = c • (factors H).prod := by
+    conv_lhs => rw [← hu]
+    rw [hcu, mul_comm, smul_eq_C_mul]
+  refine ⟨M, t, ?_, fun P hP' ↦ ?_⟩
+  · rw [hHc, isQuadraticTransformSeq_smul_iff hP hc.ne_zero, ← hprod]
+    exact h
+  · rw [hHc, quadraticTransformSeq_smul hP, ← hprod] at hP' ⊢
+    have := nonOrdinaryMultiplePoints_eq_empty_iff.2 hord
+    rw [← nonOrdinaryMultiplePoints_smul hc.ne_zero] at this
+    exact nonOrdinaryMultiplePoints_eq_empty_iff.1 this P hP'
+
+/-- **Sequences of quadratic transformations to ordinary multiple points** (Fulton, §7.4,
+Problem 7.16 (a)). Let `k` be algebraically closed of characteristic zero and `F`, `G` forms with
+`F G` squarefree. Then there is a sequence of quadratic transformations of `F G` after which all
+multiple points of `F_s G_s` are ordinary. -/
+theorem exists_isQuadraticTransformSeq_forall_isOrdinaryMultiplePoint [CharZero k]
+    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n) (hsq : Squarefree (F * G)) :
+    ∃ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (s : ℕ), IsQuadraticTransformSeq M (F * G) s ∧
+      ∀ P, IsMultiplePoint (quadraticTransformSeq M F s * quadraticTransformSeq M G s) P →
+        IsOrdinaryMultiplePoint (quadraticTransformSeq M F s * quadraticTransformSeq M G s) P := by
+  obtain ⟨M, s, h, hord⟩ :=
+    exists_isQuadraticTransformSeq_forall_isOrdinaryMultiplePoint_of_squarefree (hF.mul hG) hsq
+  rw [quadraticTransformSeq_mul hF hG] at hord
+  exact ⟨M, s, h, hord⟩
+
+/-- **Sequences of quadratic transformations to a pair with ordinary multiple points and no
+common tangents** (Fulton, §7.4, Problem 7.16 (a)). Let `k` be algebraically closed of
+characteristic zero and `F`, `G` forms with `F G` squarefree. Then there is a sequence of
+quadratic transformations of `F G` after which `F_s` and `G_s` have only ordinary multiple points
+and no common tangent at any point. -/
+theorem exists_isQuadraticTransformSeq_forall_not_isTangentAt [CharZero k]
+    (hF : F.IsHomogeneous m) (hG : G.IsHomogeneous n) (hsq : Squarefree (F * G)) :
+    ∃ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (s : ℕ), IsQuadraticTransformSeq M (F * G) s ∧
+      (∀ P, IsMultiplePoint (quadraticTransformSeq M F s) P →
+        IsOrdinaryMultiplePoint (quadraticTransformSeq M F s) P) ∧
+      (∀ P, IsMultiplePoint (quadraticTransformSeq M G s) P →
+        IsOrdinaryMultiplePoint (quadraticTransformSeq M G s) P) ∧
+      ∀ P L, ¬(IsTangentAt (quadraticTransformSeq M F s) P L ∧
+        IsTangentAt (quadraticTransformSeq M G s) P L) := by
+  obtain ⟨M, s, h, hord⟩ := exists_isQuadraticTransformSeq_forall_isOrdinaryMultiplePoint hF hG hsq
+  have hle (P : ℙ k (Fin 3 → k)) := le_self_add (a := mult (quadraticTransformSeq M F s) P)
+    (b := mult (quadraticTransformSeq M G s) P)
+  have hle' (P : ℙ k (Fin 3 → k)) := le_add_self (a := mult (quadraticTransformSeq M G s) P)
+    (b := mult (quadraticTransformSeq M F s) P)
+  refine ⟨M, s, h, fun P hP ↦ ?_, fun P hP ↦ ?_, fun P L ⟨hLF, hLG⟩ ↦ ?_⟩
+  · have hO := hord P (isMultiplePoint_def.2 ((isMultiplePoint_def.1 hP).trans
+      ((hle P).trans (mult_mul _ _ P).ge)))
+    exact hO.mult_le_one_or_isOrdinaryMultiplePoint_left.resolve_left
+      (not_le.2 (lt_of_lt_of_le (by norm_num) (isMultiplePoint_def.1 hP)))
+  · have hO := hord P (isMultiplePoint_def.2 ((isMultiplePoint_def.1 hP).trans
+      ((hle' P).trans (mult_mul _ _ P).ge)))
+    exact hO.mult_le_one_or_isOrdinaryMultiplePoint_right.resolve_left
+      (not_le.2 (lt_of_lt_of_le (by norm_num) (isMultiplePoint_def.1 hP)))
+  · have h1 := Order.one_le_iff_pos.2 (mult_pos_iff_eval_rep.2 hLF.eval_rep_eq_zero)
+    have h2 := Order.one_le_iff_pos.2 (mult_pos_iff_eval_rep.2 hLG.eval_rep_eq_zero)
+    have hO := hord P (isMultiplePoint_def.2 (by
+      rw [mult_mul]
+      exact (add_le_add h1 h2).trans_eq' (by norm_num)))
+    exact hO.not_isTangentAt_and ⟨L, hLF, hLG⟩
+
+end Existence
 
 end PlaneCurves.Projective
 

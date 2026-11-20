@@ -690,22 +690,46 @@ section IsAlgClosed
 
 variable [IsAlgClosed k]
 
-/-- Over an algebraically closed field, a curve has a tangent line at each of its points. -/
-theorem exists_isTangentAt (hF : F.IsHomogeneous d) (hF0 : F ≠ 0) (hP : eval P.rep F = 0) :
-    ∃ L, IsTangentAt F P L := by
+/-- Over an algebraically closed field, every irreducible factor of the leading form of a nonzero
+form `F` at `P` is, up to a nonzero scalar, a tangent of `F` at `P`: the leading form is a
+product of tangents. -/
+theorem exists_isTangentAt_associated_of_dvd (hF : F.IsHomogeneous d) (hF0 : F ≠ 0)
+    {q : MvPolynomial (Fin 3) k} (hq : Irreducible q) (hdvd : q ∣ leadingForm F P) :
+    ∃ L, IsTangentAt F P L ∧ Associated q L := by
   obtain ⟨i, hi⟩ := P.exists_mem_affineOpen
   have hmult := mult_eq_orderAt_dehomogenize hF hi
   have hf0 : dehomogenize i F ≠ 0 := by
     rintro h
     rw [h, orderAt_zero, mult_eq_top_iff] at hmult
     exact hF0 hmult
-  obtain ⟨-, -, u, hcard, hu, -⟩ :=
+  obtain ⟨ε, hε, u, -, hu, heq⟩ :=
     Affine.exists_leadingFormAt_eq_C_mul_prod (P := affineChart i P) hf0
-  have hpos : 0 < mult F P := mult_pos_iff_eval_rep.2 hP
-  rw [hmult, ← hcard] at hpos
-  obtain ⟨L', hL'⟩ := Multiset.card_pos_iff_exists_mem.1 (by exact_mod_cast hpos)
-  exact ⟨_, (isTangentAt_aeval_chart_iff hF hi
-    (Affine.isTangentAt_def.1 (hu L' hL')).1).2 (hu L' hL')⟩
+  set φ : Fin 2 → MvPolynomial (Fin 3) k := fun j ↦ X (i.succAbove j) - C (affineChart i P j) * X i
+  have hdvd' : q ∣ (u.map (aeval φ)).prod := by
+    have := (associated_leadingForm_affine hF hi).dvd_iff_dvd_right.1 hdvd
+    rwa [heq, map_mul, aeval_C, algebraMap_eq, map_multiset_prod,
+      (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hε).map C)).dvd_iff_dvd_right] at this
+  obtain ⟨y, hy, hqy⟩ := hq.prime.exists_mem_multiset_dvd hdvd'
+  obtain ⟨L', hL', rfl⟩ := Multiset.mem_map.1 hy
+  have hT := (isTangentAt_aeval_chart_iff hF hi (Affine.isTangentAt_def.1 (hu L' hL')).1).2
+    (hu L' hL')
+  exact ⟨_, hT, hq.associated_of_dvd (irreducible_of_isHomogeneous_one hT.1 hT.2.1) hqy⟩
+
+/-- Over an algebraically closed field, a curve has a tangent line at each of its points. -/
+theorem exists_isTangentAt (hF : F.IsHomogeneous d) (hF0 : F ≠ 0) (hP : eval P.rep F = 0) :
+    ∃ L, IsTangentAt F P L := by
+  have hQ0 : leadingForm F P ≠ 0 := leadingForm_eq_zero_iff.not.2 hF0
+  have hpos : 0 < (mult F P).toNat := by
+    have := mult_pos_iff_eval_rep.2 hP
+    lift mult F P to ℕ using mult_ne_top hF0 with m
+    simpa using this
+  have hQu : ¬IsUnit (leadingForm F P) := fun hu ↦ by
+    have := ((isHomogeneous_leadingForm F P).totalDegree hQ0).symm
+    rw [(isUnit_iff_totalDegree_of_isReduced.1 hu).2] at this
+    omega
+  obtain ⟨q, hq, hqQ⟩ := WfDvdMonoid.exists_irreducible_factor hQu hQ0
+  obtain ⟨L, hL, -⟩ := exists_isTangentAt_associated_of_dvd hF hF0 hq hqQ
+  exact ⟨L, hL⟩
 
 /-- Over an algebraically closed field, an irreducible curve of degree `d ≥ 2` has multiplicity
 less than `d` at every point: a curve with a point of multiplicity `d` is a union of lines through
@@ -760,31 +784,6 @@ theorem isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two (hF : F.IsH
   · refine Or.inl ⟨isMultiplePoint_def.2 h.ge, ?_⟩
     rw [hM]
     exact squarefree_mul_iff.2 ⟨hrel, hLirr.squarefree, hMirr.squarefree⟩
-
-/-- Over an algebraically closed field, every irreducible factor of the leading form of a nonzero
-form `F` at `P` is, up to a nonzero scalar, a tangent of `F` at `P`: the leading form is a
-product of tangents. -/
-theorem exists_isTangentAt_associated_of_dvd (hF : F.IsHomogeneous d) (hF0 : F ≠ 0)
-    {q : MvPolynomial (Fin 3) k} (hq : Irreducible q) (hdvd : q ∣ leadingForm F P) :
-    ∃ L, IsTangentAt F P L ∧ Associated q L := by
-  obtain ⟨i, hi⟩ := P.exists_mem_affineOpen
-  have hmult := mult_eq_orderAt_dehomogenize hF hi
-  have hf0 : dehomogenize i F ≠ 0 := by
-    rintro h
-    rw [h, orderAt_zero, mult_eq_top_iff] at hmult
-    exact hF0 hmult
-  obtain ⟨ε, hε, u, -, hu, heq⟩ :=
-    Affine.exists_leadingFormAt_eq_C_mul_prod (P := affineChart i P) hf0
-  set φ : Fin 2 → MvPolynomial (Fin 3) k := fun j ↦ X (i.succAbove j) - C (affineChart i P j) * X i
-  have hdvd' : q ∣ (u.map (aeval φ)).prod := by
-    have := (associated_leadingForm_affine hF hi).dvd_iff_dvd_right.1 hdvd
-    rwa [heq, map_mul, aeval_C, algebraMap_eq, map_multiset_prod,
-      (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hε).map C)).dvd_iff_dvd_right] at this
-  obtain ⟨y, hy, hqy⟩ := hq.prime.exists_mem_multiset_dvd hdvd'
-  obtain ⟨L', hL', rfl⟩ := Multiset.mem_map.1 hy
-  have hT := (isTangentAt_aeval_chart_iff hF hi (Affine.isTangentAt_def.1 (hu L' hL')).1).2
-    (hu L' hL')
-  exact ⟨_, hT, hq.associated_of_dvd (irreducible_of_isHomogeneous_one hT.1 hT.2.1) hqy⟩
 
 /-- Over an algebraically closed field, the leading forms of a nonzero form `F` and of `G` at `P`
 are relatively prime exactly when `F` and `G` have no common tangent at `P`. -/
