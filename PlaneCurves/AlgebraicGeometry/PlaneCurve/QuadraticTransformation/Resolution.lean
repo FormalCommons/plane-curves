@@ -789,11 +789,9 @@ theorem exists_reduction_avoiding_of_le_degree [IsAlgClosed k] (hF : F.IsHomogen
     exists_avoids_le_degree hG₁ (hS.image φ₁) hS₁ d
   have := Fact.mk hirrG
   obtain ⟨l, hc, hl⟩ := exists_isChain_cons_getLast_eq hc₁ hl₁ hc₂ hl₂
-  refine ⟨l, G, m, hG, hirrG, hc, hl, nonOrdinaryMultiplePoints_eq_empty_iff.1 ?_, hdm,
-    hg.trans_le hg₁, _, _, _, Avoids.trans hA₁ hA₂⟩
-  rw [nonOrdinaryMultiplePoints_eq_empty_iff.2 hord₁, Set.ncard_empty,
-    Set.ncard_eq_zero (nonOrdinaryMultiplePoints_finite hG hirrG)] at hN
-  exact hN
+  exact ⟨l, G, m, hG, hirrG, hc, hl,
+    forall_isOrdinaryMultiplePoint_of_ncard_le hG hirrG hN.le hord₁, hdm, hg.trans_le hg₁, _, _,
+    _, Avoids.trans hA₁ hA₂⟩
 
 end Avoiding
 
@@ -857,27 +855,6 @@ private theorem exists_algEquiv_center_properTransform_linearSubst
     exact (center_map_linearSubstQuadraticFunctionFieldEquiv_mem_pointsOverCentre hG M hH rfl hE
       _ hp (hp ▸ hP)).2
 
-omit [Fact (Irreducible G)] in
-/-- If a quadratic transformation of a curve with only ordinary multiple points is centred at a
-simple point, a point off the curve, or an ordinary multiple point, the new curve has only
-ordinary multiple points. -/
-private theorem IsQuadraticTransformAt.isOrdinaryMultiplePoint_of_isOrdinaryMultiplePoint
-    (hG : G.IsHomogeneous d) {H : MvPolynomial (Fin 3) k} {P : ℙ k (Fin 3 → k)} {d' : ℕ}
-    (h : IsQuadraticTransformAt G P H)
-    (hH : H.IsHomogeneous d') (hirrH : Irreducible H)
-    (hord : ∀ Q, IsMultiplePoint G Q → IsOrdinaryMultiplePoint G Q)
-    (hP : mult G P ≤ 1 ∨ IsOrdinaryMultiplePoint G P) :
-    ∀ Q, IsMultiplePoint H Q → IsOrdinaryMultiplePoint H Q := by
-  have hN := h.ncard_nonOrdinaryMultiplePoints_eq hG hP
-  rw [nonOrdinaryMultiplePoints_eq_empty_iff.2 hord, Set.ncard_empty,
-    Set.ncard_eq_zero (nonOrdinaryMultiplePoints_finite hH hirrH)] at hN
-  exact nonOrdinaryMultiplePoints_eq_empty_iff.1 hN
-
-/-- The centre of a place of `k(G)` is a point of `G`. -/
-private theorem coe_center_mem_zeroLocus (p : Place k (functionField hG)) :
-    (center hG p).1 ∈ zeroLocus {G} :=
-  (zeroLocus_ideal hG).le (center hG p).2
-
 /-- At a non-terrible multiple point `P`, ordinary, of a curve `G` with only ordinary multiple
 points, one quadratic transformation lowers the number of places of a finite set `Ps` centred at
 multiple points, if some place of `Ps` is centred at `P`. -/
@@ -919,7 +896,7 @@ private theorem exists_isQuadraticTransform_ncard_lt
     rwa [hoff p R hRt hR, isMultiplePoint_def, mult_properTransform_linearSubst_quadraticMap hG
       (mulVec_injective_of_isUnit M'.isUnit) hRt, hR, ← isMultiplePoint_def] at hpm
   exact ⟨_, d', hH, hirrH, h.isQuadraticTransform,
-    h.isOrdinaryMultiplePoint_of_isOrdinaryMultiplePoint hG hH hirrH hord (Or.inr hPo), e',
+    h.forall_isOrdinaryMultiplePoint hG hH hirrH hord (Or.inr hPo), e',
     Set.ncard_lt_ncard ((Set.ssubset_iff_of_subset hsub).2
       ⟨p₀, ⟨hp₀, hm⟩, fun h ↦ h.2.not_isSimplePoint (hon hPo p₀ rfl)⟩)
       (hPs.subset (Set.sep_subset _ _))⟩
@@ -960,7 +937,7 @@ private theorem exists_isChain_ncard_lt
     exists_algEquiv_center_properTransform_linearSubst e M' hE
   rw [hTQ'] at h₁
   have := Fact.mk hirr₁
-  have hord₁ := h₁.isOrdinaryMultiplePoint_of_isOrdinaryMultiplePoint hG hH₁ hirr₁ hord (Or.inl hQ1)
+  have hord₁ := h₁.forall_isOrdinaryMultiplePoint hG hH₁ hirr₁ hord (Or.inl hQ1)
   -- every centre moves off the triangle, with its multiplicity
   have hmove (p : Place k (functionField hF)) (hp : p ∈ Ps) :
       ∃ R, R ∉ fundamentalTriangle ∧
