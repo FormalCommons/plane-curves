@@ -932,8 +932,8 @@ theorem properTransform_dvd_of_dvd_properTransform (hF : F.IsHomogeneous n)
   exact dvd_mul_right _ _
 
 /-- An irreducible factor `q` of the proper transform of a form `F` with no exceptional component
-has an irreducible proper transform `q'` dividing `F`. -/
-private theorem exists_irreducible_properTransform_dvd (hF : F.IsHomogeneous n)
+is homogeneous and has an irreducible proper transform. -/
+private theorem exists_isHomogeneous_irreducible_properTransform (hF : F.IsHomogeneous n)
     (hX : ∀ i, ¬ X i ∣ F) {q : MvPolynomial (Fin 3) k} (hq : Irreducible q)
     (hqF : q ∣ properTransform F) :
     ∃ e, q.IsHomogeneous e ∧ Irreducible (properTransform q) := by
@@ -953,7 +953,7 @@ theorem _root_.IsRelPrime.properTransform {G : MvPolynomial (Fin 3) k} {m : ℕ}
   have hF0 : F ≠ 0 := fun h0 ↦ hXF 0 (h0 ▸ dvd_zero _)
   refine WfDvdMonoid.isRelPrime_of_no_irreducible_factors
     (fun h0 ↦ (properTransform_eq_zero_iff hF).not.2 hF0 h0.1) fun q hq hqF hqG ↦ ?_
-  obtain ⟨e, -, hq'⟩ := exists_irreducible_properTransform_dvd hF hXF hq hqF
+  obtain ⟨e, -, hq'⟩ := exists_isHomogeneous_irreducible_properTransform hF hXF hq hqF
   exact hq'.not_isUnit (h (properTransform_dvd_of_dvd_properTransform hF hXF hqF)
     (properTransform_dvd_of_dvd_properTransform hG hXG hqG))
 
@@ -964,7 +964,8 @@ theorem _root_.Squarefree.properTransform (h : Squarefree F) (hF : F.IsHomogeneo
   refine (squarefree_iff_irreducible_sq_not_dvd_of_ne_zero
     ((properTransform_eq_zero_iff hF).not.2 hF0)).2 fun q hq hqF ↦ ?_
   obtain ⟨e, hqe, hq'⟩ :=
-    exists_irreducible_properTransform_dvd hF hX hq (dvd_trans (dvd_mul_right q q) hqF)
+    exists_isHomogeneous_irreducible_properTransform hF hX hq
+      (dvd_trans (dvd_mul_right q q) hqF)
   have := properTransform_dvd_of_dvd_properTransform hF hX hqF
   rw [properTransform_mul hqe hqe] at this
   exact hq'.not_isUnit (h _ this)
