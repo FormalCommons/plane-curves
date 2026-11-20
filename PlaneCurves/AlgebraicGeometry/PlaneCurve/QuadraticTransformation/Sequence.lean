@@ -31,6 +31,8 @@ and 7.16), the matrices must be part of the data. This file makes them so.
 
 * `PlaneCurves.Projective.quadraticTransformSeq_mul`: for forms `F` and `G`, the sequence of
   `F G` is the product of the sequences of `F` and of `G`.
+* `PlaneCurves.Projective.quadraticTransformSeq_smul`,
+  `PlaneCurves.Projective.isQuadraticTransformSeq_smul_iff`: a nonzero constant factor goes along.
 * `PlaneCurves.Projective.isQuadraticTransformSeq_succ_iff`: a sequence of `s + 1` steps is a
   first step followed by a sequence of `s` steps.
 * `PlaneCurves.Projective.IsQuadraticTransformSeq.of_mul_left`, `.of_mul_right`: a sequence of
@@ -110,6 +112,16 @@ theorem quadraticTransformSeq_mul (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous
       properTransform_mul (hd.linearSubst (M i)) (he.linearSubst (M i))]
     rfl
 
+/-- Along a sequence, the curves of `c F` are `c` times the curves of the form `F`. -/
+theorem quadraticTransformSeq_smul (hF : F.IsHomogeneous n) (c : k) (i : ℕ) :
+    quadraticTransformSeq M (c • F) i = c • quadraticTransformSeq M F i := by
+  induction i with
+  | zero => rfl
+  | succ i ih =>
+    obtain ⟨d, hd⟩ := isHomogeneous_quadraticTransformSeq (M := M) hF i
+    rw [quadraticTransformSeq_succ, ih, map_smul, properTransform_smul (hd.linearSubst (M i))]
+    rfl
+
 /-! ### Sequences of quadratic transformations -/
 
 /-- The first `s` steps of the sequence of `F` along `M` are quadratic transformations: for
@@ -141,6 +153,13 @@ theorem isQuadraticTransformSeq_succ_iff {s : ℕ} :
   refine ⟨fun h ↦ ⟨h 0 s.succ_pos, fun i hi ↦ h (i + 1) (by omega)⟩, fun ⟨h0, h⟩ i hi ↦ ?_⟩
   rcases i with _ | i
   exacts [h0, h i (by omega)]
+
+/-- A sequence of quadratic transformations of a form `F` is one of `c F`, for `c ≠ 0`, and
+conversely. -/
+theorem isQuadraticTransformSeq_smul_iff (hF : F.IsHomogeneous n) {c : k} (hc : c ≠ 0) {s : ℕ} :
+    IsQuadraticTransformSeq M (c • F) s ↔ IsQuadraticTransformSeq M F s := by
+  simp only [isQuadraticTransformSeq_def, quadraticTransformSeq_smul hF, map_smul,
+    isExcellentPosition_smul_iff hc]
 
 namespace IsQuadraticTransformSeq
 
