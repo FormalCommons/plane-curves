@@ -78,11 +78,6 @@ open scoped LinearAlgebra.Projectivization
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k} {Q : ℙ k (Fin 3 → k)} {n : ℕ}
 
-private theorem eval_rep_eq_zero_iff_mem (hF : F.IsHomogeneous n) :
-    eval Q.rep F = 0 ↔ Q ∈ zeroLocus {F} := by
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)]
-  simp
-
 /-! ### Excellent position -/
 
 /-- A plane curve `F` is in *excellent position* (Fulton, §7.4) if it is in good position and
@@ -150,7 +145,7 @@ theorem fundamentalPoint_notMem (h : IsExcellentPosition F) {i : Fin 3} (hi : i 
 theorem eval_single_ne_zero (h : IsExcellentPosition F) (hF : F.IsHomogeneous n) {i : Fin 3}
     (hi : i ≠ 2) : eval (Pi.single i 1) F ≠ 0 := fun h0 ↦ by
   refine h.fundamentalPoint_notMem hi ?_
-  rw [fundamentalPoint_def, mk_mem_zeroLocus_iff (by simpa using ⟨n, hF⟩)]
+  rw [fundamentalPoint_def, mk_mem_zeroLocus_singleton_iff hF]
   simpa using h0
 
 /-- The multiplicity of a curve in excellent position at `P'` and `P''` is zero. -/
@@ -177,7 +172,7 @@ private theorem intersectionNumber_le_one_of (hF : F.IsHomogeneous n) {j : Fin 3
   · exact (H hQ).le
   · rw [(intersectionNumber_eq_zero_iff hF (isHomogeneous_X k j)).2]
     · exact zero_le_one
-    · rw [mem_zeroLocus_pair_iff, ← eval_rep_eq_zero_iff_mem hF, mem_zeroLocus_X_iff] at hQ
+    · rw [mem_zeroLocus_pair_iff, mem_zeroLocus_singleton_iff hF, mem_zeroLocus_X_iff] at hQ
       by_contra! h'
       exact hQ ⟨h'.1, by simpa using h'.2⟩
 
@@ -341,7 +336,7 @@ theorem ncard_zeroLocus_X_two [IsAlgClosed k] (h : IsExcellentPosition F)
   have hP' : fundamentalPoint (k := k) 1 ∉ zeroLocus {F} := h.fundamentalPoint_notMem (by decide)
   have h0 : intersectionNumber (fundamentalPoint 1) F (X 2) = ((0 : ℕ) : ℕ∞) := by
     rw [Nat.cast_zero, intersectionNumber_eq_zero_iff hF (isHomogeneous_X k 2)]
-    exact Or.inl (by rwa [Ne, eval_rep_eq_zero_iff_mem hF])
+    exact Or.inl (by rwa [Ne, ← mem_zeroLocus_singleton_iff hF])
   have := ncard_zeroLocus_pair_diff hF (isHomogeneous_X k 2) (X_ne_zero 2) (h.not_X_dvd 2) h0
     fun Q hQ _ ↦ h.intersectionNumber_X_two_eq_one hQ
   rwa [Set.sdiff_singleton_eq_self fun hQ ↦ hP' (mem_zeroLocus_pair_iff.1 hQ).1,
@@ -377,10 +372,10 @@ private theorem isRelPrime_of_intersectionNumber_eq_one [IsAlgClosed k] (hF : F.
   have hn : n ≠ 0 := hF.degree_ne_zero_of_irreducible hirr
   obtain ⟨Q, hQF, hQP⟩ :=
     ((zeroLocus_singleton_infinite (n := 2) le_rfl hF hn).sdiff (Set.finite_singleton P)).nonempty
-  have hQF' := (eval_rep_eq_zero_iff_mem hF).2 hQF
+  have hQF' := (mem_zeroLocus_singleton_iff hF).1 hQF
   have hQL : Q ∈ zeroLocus {L} := by
     obtain ⟨g, rfl⟩ := hFL
-    exact (eval_rep_eq_zero_iff_mem hL).1 (by rw [map_mul, hQF', zero_mul])
+    exact (mem_zeroLocus_singleton_iff hL).2 (by rw [map_mul, hQF', zero_mul])
   have htop : intersectionNumber Q F L = ⊤ := by
     by_contra hne
     exact (intersectionNumber_ne_top_iff hF hL).1 hne F hirr dvd_rfl hFL hQF'
@@ -437,7 +432,7 @@ private theorem isExcellentPosition_linearSubst_of_lines [IsAlgClosed k] (hF : F
       change mult F (T _) < _ at ht
       rw [hTP, hIP j hij.symm] at ht
       exact lt_irrefl _ ht
-    · exact hfund hi ((hzero F _).1 ((eval_rep_eq_zero_iff_mem hG).1 ht.eval_rep_eq_zero))
+    · exact hfund hi ((hzero F _).1 ((mem_zeroLocus_singleton_iff hG).2 ht.eval_rep_eq_zero))
   · rw [mem_zeroLocus_pair_iff, hzero, hmemX] at hQ
     have hTQP : T Q ≠ P := fun h ↦ hQP (map_injective _ hM (h.trans hTP.symm))
     refine ⟨fun i hi ↦ ?_, ?_⟩
@@ -656,8 +651,8 @@ private theorem eq_or_eq_and_intersectionNumber_eq_one [IsAlgClosed k] (hF : F.I
     exact (Finset.sum_le_sum_of_subset Finset.subset_union_right).trans hsum.le
   have hone {P : ℙ k (Fin 3 → k)} (hP : P ∈ zeroLocus {F, X j}) :
       1 ≤ intersectionNumber P F (X j) := by
-    rw [mem_zeroLocus_pair_iff, ← eval_rep_eq_zero_iff_mem hF,
-      ← eval_rep_eq_zero_iff_mem hXh] at hP
+    rw [mem_zeroLocus_pair_iff, mem_zeroLocus_singleton_iff hF,
+      mem_zeroLocus_singleton_iff hXh] at hP
     exact one_le_intersectionNumber hF hXh hP.1 hP.2
   have htop (P : ℙ k (Fin 3 → k)) : intersectionNumber P F (X j) ≠ ⊤ :=
     intersectionNumber_ne_top_of_isRelPrime hF hXh hrel
@@ -781,7 +776,7 @@ example : IsGoodPosition (X 0 + X 2 : MvPolynomial (Fin 3) ℚ) ∧
   have hL : (X 0 + X 2 : MvPolynomial (Fin 3) ℚ).IsHomogeneous 1 :=
     (isHomogeneous_X ℚ 0).add (isHomogeneous_X ℚ 2)
   have hP' : fundamentalPoint (k := ℚ) 1 ∈ zeroLocus {X 0 + X 2} := by
-    rw [fundamentalPoint_def, mk_mem_zeroLocus_iff (by simpa using ⟨1, hL⟩)]
+    rw [fundamentalPoint_def, mk_mem_zeroLocus_singleton_iff hL]
     simp
   refine ⟨isGoodPosition_def.2 fun i j hij ht ↦ ?_,
     fun h ↦ h.fundamentalPoint_notMem (i := 1) (by decide) hP'⟩

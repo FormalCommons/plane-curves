@@ -127,8 +127,7 @@ theorem exists_linearSubst_forall_mem_affineOpen_last [Infinite k]
     (Function.injective_of_subsingleton _)
   have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.1 hM
   refine ⟨hU.unit, fun Q hQ ↦ (mem_affineOpen_iff _ Q).2 fun hQn ↦ ha _ hQ ?_⟩
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
-  rintro f rfl
+  rw [mem_zeroLocus_singleton_iff (isHomogeneous_sum_C_mul_X a)]
   rw [← eval_rep_linearSubst_eq_zero_iff hU.unit (isHomogeneous_sum_C_mul_X a), hU.unit_spec,
     hMa ()]
   simpa using hQn

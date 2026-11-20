@@ -207,7 +207,7 @@ theorem exists_linearSubst_eq_X_mul_X_sub_X_sq {F : MvPolynomial (Fin 3) k}
   obtain ⟨P, hP⟩ := zeroLocus_singleton_nonempty (n := 2) two_ne_zero hF two_ne_zero
   have he : (Pi.single 1 1 : Fin 3 → k) ≠ 0 := by simp
   obtain ⟨M, hM, hMP⟩ := exists_mulVecLin_map_eq (mk k _ he) P
-  rw [← hMP, map_mk, mk_mem_zeroLocus_iff (by simpa using ⟨2, hF⟩)] at hP
+  rw [← hMP, map_mk, mk_mem_zeroLocus_singleton_iff hF] at hP
   have h0 : eval (M *ᵥ Pi.single 1 1) F = 0 := by simpa using hP
   set G := linearSubst M F with hGdef
   have hG : G.IsHomogeneous 2 := hF.linearSubst M

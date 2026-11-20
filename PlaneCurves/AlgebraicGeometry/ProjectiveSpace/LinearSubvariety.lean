@@ -109,7 +109,7 @@ theorem zeroLocus_singleton_sum_C_mul_X (a : Fin (n + 1) → k) :
       (LinearMap.ker (dotProductEquiv k (Fin (n + 1)) a)).projectivization := by
   ext P
   induction P using Projectivization.ind with | h v hv =>
-  rw [mk_mem_zeroLocus_iff (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩), SetLike.mem_coe,
+  rw [mk_mem_zeroLocus_singleton_iff (isHomogeneous_sum_C_mul_X a), SetLike.mem_coe,
     Submodule.mk_mem_projectivization_iff]
   simp [dotProduct]
 
@@ -211,7 +211,7 @@ theorem isPrime_vanishingIdeal_projectivization [Infinite k] {p : Submodule k (F
 theorem mem_zeroLocus_singleton_sum_C_mul_X_iff (a : Fin (n + 1) → k)
     (P : ℙ k (Fin (n + 1) → k)) :
     P ∈ zeroLocus {∑ i, C (a i) * X i} ↔ a ⬝ᵥ P.rep = 0 := by
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
+  rw [mem_zeroLocus_singleton_iff (isHomogeneous_sum_C_mul_X a)]
   simp [dotProduct]
 
 /-- A linear equivalence of `kⁿ⁺¹`, as a change of coordinates of `ℙⁿ`, is the map of a
@@ -461,8 +461,7 @@ theorem exists_isHomogeneous_eval_rep_ne_zero_forall_eval_rep_eq_zero
     obtain ⟨m, G, hG, hGP, hGT⟩ := ih fun h ↦ hPT (Finset.mem_insert_of_mem h)
     have hQP : Q ≠ P := fun h ↦ hPT (h ▸ Finset.mem_insert_self Q T)
     obtain ⟨a, haQ, haP⟩ := exists_sum_C_mul_X_mem_zeroLocus_notMem_zeroLocus hQP
-    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩),
-      Set.forall_mem_singleton] at haQ haP
+    rw [mem_zeroLocus_singleton_iff (isHomogeneous_sum_C_mul_X a)] at haQ haP
     refine ⟨1 + m, (∑ i, C (a i) * X i) * G, (isHomogeneous_sum_C_mul_X a).mul hG,
       by rw [eval_mul]; exact mul_ne_zero haP hGP, fun Q' hQ' ↦ ?_⟩
     rcases Finset.mem_insert.1 hQ' with rfl | hQ'
@@ -545,13 +544,8 @@ theorem linearIndependent_rep_of_dotProduct {c₀ c₁ c₂ : ℙ k (Fin (n + 1)
     have := congrArg (· ⬝ᵥ v) hg
     simp only [Fin.sum_univ_three, add_dotProduct, smul_dotProduct, zero_dotProduct] at this
     simpa [h0, h1, h2] using this
-  have hpair : LinearIndependent k ![c₀.rep, c₁.rep] := by
-    have := independent_iff.1 ((independent_pair_iff_ne c₀ c₁).2 h01)
-    convert this using 1
-    ext i : 1
-    fin_cases i <;> rfl
-  obtain ⟨hg0, hg1⟩ := LinearIndependent.pair_iff.1 hpair (g 0) (g 1)
-    (by simpa [Fin.sum_univ_three, hg2] using hg)
+  obtain ⟨hg0, hg1⟩ := LinearIndependent.pair_iff.1 (linearIndependent_pair_iff_ne.2 h01)
+    (g 0) (g 1) (by simpa [Fin.sum_univ_three, hg2] using hg)
   intro i
   fin_cases i
   exacts [hg0, hg1, hg2]
@@ -562,8 +556,7 @@ theorem single_one_mem_zeroLocus_sum_C_mul_X_iff (a : Fin 3 → k) (ha : a ≠ 0
     mk k (Pi.single 1 1) (by simp) ∈ zeroLocus {∑ i, C (a i) * X i} ↔
       (∃ c ≠ 0, ∃ l, ∑ i, C (a i) * X i = C c * (X 0 - C l * X 2)) ∨
         ∃ c ≠ 0, ∑ i, C (a i) * X i = C c * X 2 := by
-  rw [mk_mem_zeroLocus_iff (by simpa using ⟨1, isHomogeneous_sum_C_mul_X a⟩)]
-  simp only [Set.mem_singleton_iff, forall_eq]
+  rw [mk_mem_zeroLocus_singleton_iff (isHomogeneous_sum_C_mul_X a)]
   constructor
   · intro h
     have h1 : a 1 = 0 := by simpa [Fin.sum_univ_three] using h

@@ -67,7 +67,7 @@ private theorem noetherConditionsAt_of_le_formDivisor
     (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))) :
     NoetherConditionsAt P.1 F S R := by
   have hPF : P.1 ∈ zeroLocus {F} := by
-    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩)]
+    rw [mem_zeroLocus_singleton_iff hF]
     simpa using (mem_zeroLocus_ideal_iff hF).1 P.2
   have hcoeff (Q : Place k (functionField hF)) :
       (formDivisor hF hS).coeff Q + (adjointDivisor hF).coeff Q ≤ (formDivisor hF hR).coeff Q :=

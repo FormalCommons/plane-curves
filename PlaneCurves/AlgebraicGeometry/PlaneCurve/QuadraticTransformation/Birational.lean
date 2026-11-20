@@ -198,7 +198,7 @@ theorem quadraticMap_eq_fundamentalPoint_iff {P : ℙ k (Fin 3 → k)}
   have hw := quadVec_ne_zero_of_forall_ne_fundamentalPoint hP
   simp only [mk_eq_fundamentalPoint_iff, ne_eq] at hP
   rw [quadraticMap_mk v hv hw, mk_eq_fundamentalPoint_iff,
-    mk_mem_zeroLocus_iff (by simpa using ⟨1, isHomogeneous_X k i⟩)]
+    mk_mem_zeroLocus_singleton_iff (isHomogeneous_X k i)]
   simp only [Fin.forall_fin_succ, Fin.isValue] at hP
   fin_cases i <;> simp [Fin.forall_fin_succ] at hP ⊢ <;> tauto
 
@@ -213,8 +213,8 @@ theorem mem_zeroLocus_quadraticTransform_iff (hF : F.IsHomogeneous n) {P : ℙ k
     (hP : P ∉ fundamentalTriangle) :
     P ∈ zeroLocus {quadraticTransform F} ↔ P ∈ zeroLocus {properTransform F} := by
   have h : ∀ i, P.rep i ≠ 0 := by simpa [mem_fundamentalTriangle_iff] using hP
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨_, hF.quadraticTransform⟩),
-    mem_zeroLocus_iff_eval_rep (by simpa using ⟨_, hF.properTransform⟩)]
+  rw [mem_zeroLocus_singleton_iff hF.quadraticTransform,
+    mem_zeroLocus_singleton_iff hF.properTransform]
   simp [quadraticTransform_eq hF, h]
 
 /-- Off the fundamental triangle, a form `G` vanishes at the image of a point under the point map
@@ -238,11 +238,8 @@ theorem quadraticMap_mem_zeroLocus_iff (hF : F.IsHomogeneous n) {P : ℙ k (Fin 
   induction P using Projectivization.ind with | h v hv =>
   have h := forall_rep_ne_zero_of_notMem hP
   rw [quadraticMap_mk v hv (quadVec_ne_zero_of_forall_ne_zero h),
-    mk_mem_zeroLocus_iff (by simpa using ⟨_, hF.quadraticTransform⟩),
-    mk_mem_zeroLocus_iff (by simpa using ⟨_, hF⟩)]
-  simp only [Set.mem_singleton_iff, forall_eq]
-  rw [eval_quadraticTransform]
-  rw [quadVec_quadVec, hF.eval_smul]
+    mk_mem_zeroLocus_singleton_iff hF.quadraticTransform,
+    mk_mem_zeroLocus_singleton_iff hF, eval_quadraticTransform, quadVec_quadVec, hF.eval_smul]
   simp [h]
 
 /-- Off the fundamental triangle, the point map sends the zeros of `F` to the zeros of the
@@ -260,9 +257,8 @@ theorem quadraticMap_mem_zeroLocus_of_mem_zeroLocus_properTransform (hF : F.IsHo
     (h : P ∈ zeroLocus {properTransform F}) : quadraticMap P ∈ zeroLocus {F} := by
   induction P using Projectivization.ind with | h v hv =>
   have hw := quadVec_ne_zero_of_forall_ne_fundamentalPoint hP
-  rw [mk_mem_zeroLocus_iff (by simpa using ⟨_, hF.properTransform⟩)] at h
-  rw [quadraticMap_mk v hv hw, mk_mem_zeroLocus_iff (by simpa using ⟨_, hF⟩)]
-  simp only [Set.mem_singleton_iff, forall_eq] at h ⊢
+  rw [mk_mem_zeroLocus_singleton_iff hF.properTransform] at h
+  rw [quadraticMap_mk v hv hw, mk_mem_zeroLocus_singleton_iff hF]
   rw [← eval_quadraticTransform, quadraticTransform_eq hF]
   simp [h]
 

@@ -549,8 +549,7 @@ theorem exists_basicOpen_normalization
     convert zeroLocus_singleton_infinite (n := 2) le_rfl hF
       (hF.degree_ne_zero_of_irreducible Fact.out) using 1
     ext P'
-    rw [mem_zeroLocus_ideal_iff hF, mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩),
-      Set.forall_mem_singleton]
+    rw [mem_zeroLocus_ideal_iff hF, mem_zeroLocus_singleton_iff hF]
   obtain ⟨P₀, hP₀, hP₀P⟩ := (hinf.sdiff (Set.finite_singleton P.1)).nonempty
   obtain ⟨m, G, hG, hGP, hGS⟩ := exists_isHomogeneous_eval_rep_ne_zero_forall_eval_rep_eq_zero
     P.1 ((hS.image Subtype.val).insert P₀) (by
