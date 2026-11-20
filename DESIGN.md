@@ -752,7 +752,7 @@ D1–D3 need only Tau Ceti and can start at once; D4 needs only stage 2.
 | D3 | `FieldTheory/FunctionField/Rational.lean` | part (a) of **8-genus01** | — |
 | D4 | `PlaneCurve/Divisor.lean` | `formQuotient`, `formDivisor`; **8-divisor** | V5, V8, Q12 |
 | D5 | `PlaneCurve/Adjoint/Basic.lean` | `adjointDivisor`, `IsAdjoint`, `adjointSubmodule`; **8-adjoint** | D4, B3 |
-| D6 | `PlaneCurve/Cubic/DivisorClass.lean` | **8-cubic** | D4, N6, V3 |
+| D6 | `PlaneCurve/Cubic/DivisorClass.lean` | **8-cubic** | D4, N6, V3, D9 |
 | D7 | `PlaneCurve/Adjoint/Residue.lean` | adjoint division lemma; **8-residue** | D5, N2, O1 |
 | D8 | `PlaneCurve/Adjoint/RiemannRochSpace.lean` | **8-lem** | D7, Q10 |
 | D9 | `PlaneCurve/Genus/Basic.lean` | **8-genus** | D8, D2 |
