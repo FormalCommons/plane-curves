@@ -7,8 +7,8 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.GroupLaw
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Divisor
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Genus.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.SimplePoint
-public import TauCeti.AlgebraicGeometry.Curves.PlaneCurve.Genus
 public import TauCeti.FieldTheory.FunctionField.Elliptic.Basic
 public import TauCeti.FieldTheory.FunctionField.RiemannRoch.Equiv
 
@@ -18,8 +18,8 @@ public import TauCeti.FieldTheory.FunctionField.RiemannRoch.Equiv
 Let `k` be algebraically closed, `C : F = 0` a nonsingular plane cubic with function field
 `K = k(C)`, and `O` a point of `C`. Every point `A` of `C` is simple, and so is the centre of
 exactly one place of `K`, the place at `A` (`CubicGroup.place`); every place of `K` arises so.
-The curve has genus one (`genus_functionField_of_isNonsingular`, from Tau Ceti's genus of a smooth
-plane curve). Then, writing `≡` for linear equivalence of divisors on the nonsingular model:
+The curve has genus one (`genus_functionField_of_isNonsingular`, the nonsingular case of the
+genus formula). Then, writing `≡` for linear equivalence of divisors on the nonsingular model:
 
 * (a) `A ≡ B` iff `A = B`, since `C` has positive genus;
 * (b) `A + B ≡ C + D` iff the chords through `A`, `B` and through `C`, `D` have the same third
@@ -42,8 +42,6 @@ The proof uses neither Max Noether's theorem nor the residue theorem.
 
 ## Main results
 
-* `PlaneCurves.Projective.genus_functionField_of_isNonsingular`: a nonsingular plane curve of
-  degree `d` has genus `(d - 1)(d - 2) / 2`.
 * `PlaneCurves.Projective.CubicGroup.formDivisor_chordLine`: `div L = A + B + φ(A, B)` for the
   chord line `L` through `A` and `B`.
 * `PlaneCurves.Projective.CubicGroup.linearlyEquivalent_ofPoint_place_iff`,
@@ -65,20 +63,6 @@ open scoped LinearAlgebra.Projectivization
 namespace PlaneCurves.Projective
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k}
-
-/-! ### The genus of a nonsingular plane curve -/
-
-/-- **The genus of a nonsingular plane curve**: the function field of a nonsingular plane curve
-of degree `d` has genus `(d - 1)(d - 2) / 2`. This is Tau Ceti's
-`TauCeti.AlgebraicGeometry.projectivePlaneCurve.genus_functionField`, read on `k(C)`. -/
-theorem genus_functionField_of_isNonsingular [IsAlgClosed k] {d : ℕ} (hF : F.IsHomogeneous d)
-    [Fact (Irreducible F)] (hns : IsNonsingular F) :
-    genus k (functionField hF) = (d - 1) * (d - 2) / 2 := by
-  rw [← genus_eq_of_ringEquiv (RingEquiv.refl k)
-    (functionField.schemeFunctionFieldEquiv hF).toRingEquiv
-    (functionField.schemeFunctionFieldEquiv hF).commutes]
-  exact projectivePlaneCurve.genus_functionField (K := k) hF
-    fun b hb hb0 ↦ isNonsingular_def.1 hns b hb hb0
 
 namespace CubicGroup
 
