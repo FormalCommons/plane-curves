@@ -33,8 +33,9 @@ the change of variables along `M⁻¹`.
   `MvPolynomial.linearSubst_linearSubst_nonsing_inv`: for `M` with invertible determinant, the
   changes of variables along `M` and `M⁻¹` are inverse to each other.
 * `MvPolynomial.linearSubst_injective`, `MvPolynomial.irreducible_linearSubst_iff`,
-  `MvPolynomial.squarefree_linearSubst_iff`: such a change of variables is injective and
-  preserves irreducibility and being squarefree.
+  `MvPolynomial.squarefree_linearSubst_iff`, `MvPolynomial.isRelPrime_linearSubst_iff`: such a
+  change of variables is injective and preserves irreducibility, being squarefree and being
+  relatively prime.
 * `MvPolynomial.totalDegree_linearSubst_le`, `MvPolynomial.totalDegree_linearSubst`: a change of
   variables does not raise the total degree, and preserves it when `M` is invertible.
 * `MvPolynomial.linearSubst_toPEquiv_toMatrix`: renaming the variables along a permutation is the
@@ -166,6 +167,19 @@ theorem squarefree_linearSubst_iff {M : Matrix σ σ R} (hM : IsUnit M.det)
     {p : MvPolynomial σ R} : Squarefree (linearSubst M p) ↔ Squarefree p := by
   simpa using TauCeti.squarefree_map_iff
     (linearSubstAlgEquiv ((Matrix.isUnit_iff_isUnit_det M).2 hM).unit) (a := p)
+
+/-- A linear change of variables along a matrix with invertible determinant preserves being
+relatively prime. -/
+theorem isRelPrime_linearSubst_iff {M : Matrix σ σ R} (hM : IsUnit M.det)
+    {p q : MvPolynomial σ R} : IsRelPrime (linearSubst M p) (linearSubst M q) ↔ IsRelPrime p q := by
+  set e := linearSubstAlgEquiv ((Matrix.isUnit_iff_isUnit_det M).2 hM).unit
+  have he (r : MvPolynomial σ R) : linearSubst M r = e r := rfl
+  rw [he, he]
+  refine ⟨fun h d hp hq ↦ (isUnit_map_iff e d).1 (h (map_dvd e hp) (map_dvd e hq)),
+    fun h d hp hq ↦ ?_⟩
+  obtain ⟨x, rfl⟩ := e.surjective d
+  rw [map_dvd_iff] at hp hq
+  exact (h hp hq).map e
 
 /-- A linear change of variables along a matrix with invertible determinant preserves the total
 degree. -/
