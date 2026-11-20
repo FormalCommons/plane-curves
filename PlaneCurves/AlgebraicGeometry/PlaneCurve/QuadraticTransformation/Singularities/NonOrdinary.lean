@@ -31,6 +31,9 @@ leaves `N(F)` unchanged.
 * `PlaneCurves.Projective.nonOrdinaryMultiplePoints_finite`,
   `nonOrdinaryMultiplePoints_linearSubst`, `ncard_nonOrdinaryMultiplePoints_linearSubst`: its
   API.
+* `PlaneCurves.Projective.mem_nonOrdinaryMultiplePoints_mul_iff`,
+  `PlaneCurves.Projective.mem_nonOrdinaryMultiplePoints_prod_iff`: the non-ordinary multiple
+  points of a product are those of its factors and the common tangents of two factors.
 * `PlaneCurves.Projective.IsExcellentPosition.nonOrdinaryMultiplePoints_properTransform`: the
   non-ordinary multiple points of the proper transform.
 * `PlaneCurves.Projective.IsExcellentPosition.ncard_add_virtualGenus_properTransform_lt`:
@@ -168,6 +171,72 @@ example [IsAlgClosed k] :
   have hsq := associated_leadingForm_X_sq_mul_X_sub_X_pow_three.squarefree_iff.1
     (isOrdinaryMultiplePoint_def.1 h).2
   exact (prime_X : Prime (X 1 : MvPolynomial (Fin 3) k)).not_isUnit (hsq _ (by rw [sq]))
+
+/-! ### Products -/
+
+/-- **The non-ordinary multiple points of a product.** Over an algebraically closed field, a
+point is a non-ordinary multiple point of the product `F G` of a nonzero form `F` and a nonzero
+polynomial `G` exactly when it is one of `F` or of `G`, or `F` and `G` have a common tangent
+there. -/
+theorem mem_nonOrdinaryMultiplePoints_mul_iff [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hF0 : F ≠ 0) (hG0 : G ≠ 0) :
+    P ∈ nonOrdinaryMultiplePoints (F * G) ↔ P ∈ nonOrdinaryMultiplePoints F ∨
+      P ∈ nonOrdinaryMultiplePoints G ∨ ∃ L, IsTangentAt F P L ∧ IsTangentAt G P L := by
+  have two_le {a : ℕ∞} (h : ¬a ≤ 1) : 2 ≤ a := by
+    rw [not_le, ← ENat.add_one_le_iff ENat.one_ne_top, one_add_one_eq_two] at h
+    exact h
+  have hsF := fun h ↦ two_le (mt (squarefree_leadingForm_of_mult_le_one (P := P) hF0) h)
+  have hsG := fun h ↦ two_le (mt (squarefree_leadingForm_of_mult_le_one (P := P) hG0) h)
+  simp only [mem_nonOrdinaryMultiplePoints_iff, isOrdinaryMultiplePoint_def, isMultiplePoint_def,
+    mult_mul, leadingForm_mul, squarefree_mul_iff, isRelPrime_leadingForm_iff hF hF0]
+  have hT : (∃ L, IsTangentAt F P L ∧ IsTangentAt G P L) → 2 ≤ mult F P + mult G P := by
+    rintro ⟨L, hFL, hGL⟩
+    rw [← one_add_one_eq_two]
+    exact add_le_add (Order.one_le_iff_pos.2 (mult_pos_iff_eval_rep.2 hFL.eval_rep_eq_zero))
+      (Order.one_le_iff_pos.2 (mult_pos_iff_eval_rep.2 hGL.eval_rep_eq_zero))
+  have ha : 2 ≤ mult F P → 2 ≤ mult F P + mult G P := fun h ↦ h.trans le_self_add
+  have hb : 2 ≤ mult G P → 2 ≤ mult F P + mult G P := fun h ↦ h.trans le_add_self
+  clear two_le
+  generalize (∃ L, IsTangentAt F P L ∧ IsTangentAt G P L) = T at *
+  generalize Squarefree (leadingForm F P) = sF at *
+  generalize Squarefree (leadingForm G P) = sG at *
+  tauto
+
+/-- **The non-ordinary multiple points of a finite product.** Over an algebraically closed field,
+a point is a non-ordinary multiple point of a finite product `∏ a ∈ s, q a` of nonzero forms
+exactly when it is one of some `q a`, or two of the factors have a common tangent there. -/
+theorem mem_nonOrdinaryMultiplePoints_prod_iff [IsAlgClosed k] {ι : Type*} {s : Finset ι}
+    {q : ι → MvPolynomial (Fin 3) k} {d : ι → ℕ} (hq : ∀ a ∈ s, (q a).IsHomogeneous (d a))
+    (hq0 : ∀ a ∈ s, q a ≠ 0) :
+    P ∈ nonOrdinaryMultiplePoints (∏ a ∈ s, q a) ↔
+      (∃ a ∈ s, P ∈ nonOrdinaryMultiplePoints (q a)) ∨
+        ∃ a ∈ s, ∃ b ∈ s, a ≠ b ∧ ∃ L, IsTangentAt (q a) P L ∧ IsTangentAt (q b) P L := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    rw [Finset.prod_empty]
+    exact iff_of_false (fun h ↦ h.2 (isOrdinaryMultiplePoint_def.2 ⟨h.1, by simp⟩)) (by simp)
+  | insert a s has ih =>
+    have hqs (b : ι) (hb : b ∈ s) := hq b (Finset.mem_insert_of_mem hb)
+    have hq0s (b : ι) (hb : b ∈ s) := hq0 b (Finset.mem_insert_of_mem hb)
+    rw [Finset.prod_insert has, mem_nonOrdinaryMultiplePoints_mul_iff
+      (hq a (Finset.mem_insert_self a s)) (hq0 a (Finset.mem_insert_self a s))
+      (Finset.prod_ne_zero_iff.2 hq0s), ih hqs hq0s]
+    simp only [isTangentAt_prod_iff, Finset.exists_mem_insert, ne_eq, not_true_eq_false,
+      false_and, false_or]
+    constructor
+    · rintro (h | (⟨b, hb, h⟩ | ⟨b, hb, c, hc, hbc, h⟩) | ⟨L, hL, b, hb, hbL⟩)
+      · exact Or.inl (Or.inl h)
+      · exact Or.inl (Or.inr ⟨b, hb, h⟩)
+      · exact Or.inr (Or.inr ⟨b, hb, Or.inr ⟨c, hc, hbc, h⟩⟩)
+      · exact Or.inr (Or.inl ⟨b, hb, fun h ↦ has (h ▸ hb), L, hL, hbL⟩)
+    · rintro ((h | ⟨b, hb, h⟩) | ⟨b, hb, -, L, hL, hbL⟩ |
+        ⟨b, hb, ⟨-, L, hbL, hL⟩ | ⟨c, hc, hbc, h⟩⟩)
+      · exact Or.inl h
+      · exact Or.inr (Or.inl (Or.inl ⟨b, hb, h⟩))
+      · exact Or.inr (Or.inr ⟨L, hL, b, hb, hbL⟩)
+      · exact Or.inr (Or.inr ⟨L, hL, b, hb, hbL⟩)
+      · exact Or.inr (Or.inl (Or.inr ⟨b, hb, c, hc, hbc, h⟩))
 
 /-! ### One quadratic transformation -/
 

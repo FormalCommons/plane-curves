@@ -42,7 +42,11 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
 
 * `PlaneCurves.Projective.associated_leadingForm_affine`: the leading form in an affine chart.
 * `PlaneCurves.Projective.isTangentAt_mul_iff`: the tangents of `F G` at `P` are those of `F`
-  and those of `G`.
+  and those of `G`, and `PlaneCurves.Projective.isTangentAt_prod_iff` for finite products.
+* `PlaneCurves.Projective.IsOrdinaryMultiplePoint.not_isTangentAt_and`: at an ordinary multiple
+  point of `F G`, `F` and `G` have no common tangent, and
+  `PlaneCurves.Projective.IsOrdinaryMultiplePoint.mult_le_one_or_isOrdinaryMultiplePoint_left`:
+  each factor has multiplicity at most one or an ordinary multiple point there.
 * `PlaneCurves.Projective.isTangentAt_iff_affine`,
   `PlaneCurves.Projective.tangentMultiplicity_eq_affine`,
   `PlaneCurves.Projective.isOrdinaryMultiplePoint_iff_affine`: tangent lines, their
@@ -66,6 +70,8 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
 * `PlaneCurves.Projective.exists_isTangentAt`: over an algebraically closed field, a curve has a
   tangent at each of its points; `PlaneCurves.Projective.mult_lt_of_irreducible`: so an
   irreducible curve of degree `d ≥ 2` has multiplicity less than `d` everywhere.
+* `PlaneCurves.Projective.isRelPrime_leadingForm_iff`: over an algebraically closed field, two
+  leading forms at `P` are relatively prime exactly when the curves have no common tangent there.
 * `PlaneCurves.Projective.isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two`: over an
   algebraically closed field, a double point is ordinary (a node) or has a single tangent, of
   multiplicity `2`.
@@ -311,6 +317,31 @@ theorem isTangentAt_mul_iff {G : MvPolynomial (Fin 3) k} :
   · rintro (⟨h1, h2, h3, h4⟩ | ⟨h1, h2, h3, h4⟩)
     exacts [⟨h1, h2, h3, dvd_mul_of_dvd_left h4 _⟩, ⟨h1, h2, h3, dvd_mul_of_dvd_right h4 _⟩]
 
+@[simp]
+theorem leadingForm_mul (F G : MvPolynomial (Fin 3) k) (P : ℙ k (Fin 3 → k)) :
+    leadingForm (F * G) P = leadingForm F P * leadingForm G P :=
+  leadingFormAt_mul F G P.rep
+
+@[simp]
+theorem leadingForm_one (P : ℙ k (Fin 3 → k)) : leadingForm (1 : MvPolynomial (Fin 3) k) P = 1 :=
+  leadingFormAt_one P.rep
+
+/-- The constant curve `1` has no tangents. -/
+@[simp]
+theorem not_isTangentAt_one : ¬IsTangentAt (1 : MvPolynomial (Fin 3) k) P L := fun h ↦
+  (irreducible_of_isHomogeneous_one h.1 h.2.1).not_isUnit
+    (isUnit_of_dvd_one (leadingForm_one P ▸ h.2.2.2))
+
+/-- **The tangents of a finite product.** A line is tangent to `∏ a ∈ s, F a` at `P` exactly
+when it is tangent to one of the `F a` there. -/
+theorem isTangentAt_prod_iff {ι : Type*} (s : Finset ι) (F : ι → MvPolynomial (Fin 3) k) :
+    IsTangentAt (∏ a ∈ s, F a) P L ↔ ∃ a ∈ s, IsTangentAt (F a) P L := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert a s has ih => rw [Finset.prod_insert has, isTangentAt_mul_iff, ih,
+      Finset.exists_mem_insert]
+
 /-- Rescaling a curve by a nonzero constant does not change its ordinary multiple points. -/
 @[simp]
 theorem isOrdinaryMultiplePoint_smul_iff {c : k} (hc : c ≠ 0) :
@@ -318,6 +349,50 @@ theorem isOrdinaryMultiplePoint_smul_iff {c : k} (hc : c ≠ 0) :
   rw [isOrdinaryMultiplePoint_def, isOrdinaryMultiplePoint_def, isMultiplePoint_smul_iff hc,
     leadingForm_def, leadingForm_def, leadingFormAt_smul, smul_eq_C_mul,
     (associated_unit_mul_left _ _ (hc.isUnit.map C)).squarefree_iff]
+
+/-- At a point of multiplicity at most one the leading form of a nonzero curve is squarefree: it
+is a nonzero constant or a linear form. -/
+theorem squarefree_leadingForm_of_mult_le_one (hF0 : F ≠ 0) (h : mult F P ≤ 1) :
+    Squarefree (leadingForm F P) := by
+  have hQ0 : leadingForm F P ≠ 0 := leadingForm_eq_zero_iff.not.2 hF0
+  have hH := isHomogeneous_leadingForm F P
+  have hm : (mult F P).toNat = 0 ∨ (mult F P).toNat = 1 := by
+    have := ENat.toNat_le_toNat h ENat.one_ne_top
+    simp only [ENat.toNat_one] at this
+    omega
+  rcases hm with hm | hm
+  · rw [hm] at hH
+    have hC := totalDegree_eq_zero_iff_eq_C.1 (hH.totalDegree hQ0)
+    rw [hC] at hQ0 ⊢
+    exact (isUnit_iff_ne_zero.2 (by simpa using hQ0) |>.map C).squarefree
+  · rw [hm] at hH
+    exact (irreducible_of_isHomogeneous_one hH hQ0).squarefree
+
+/-- At an ordinary multiple point of `F G`, a factor has multiplicity at most one or an ordinary
+multiple point. -/
+theorem IsOrdinaryMultiplePoint.mult_le_one_or_isOrdinaryMultiplePoint_left
+    {G : MvPolynomial (Fin 3) k} (h : IsOrdinaryMultiplePoint (F * G) P) :
+    mult F P ≤ 1 ∨ IsOrdinaryMultiplePoint F P := by
+  rw [isOrdinaryMultiplePoint_def, leadingForm_mul] at h
+  rw [isOrdinaryMultiplePoint_def, isMultiplePoint_def, ← not_lt, ← ENat.add_one_le_iff
+    ENat.one_ne_top, one_add_one_eq_two]
+  exact (em _).imp_right fun hm ↦ ⟨not_not.1 hm, h.2.of_mul_left⟩
+
+/-- At an ordinary multiple point of `F G`, a factor has multiplicity at most one or an ordinary
+multiple point. -/
+theorem IsOrdinaryMultiplePoint.mult_le_one_or_isOrdinaryMultiplePoint_right
+    {G : MvPolynomial (Fin 3) k} (h : IsOrdinaryMultiplePoint (F * G) P) :
+    mult G P ≤ 1 ∨ IsOrdinaryMultiplePoint G P :=
+  (mul_comm F G ▸ h).mult_le_one_or_isOrdinaryMultiplePoint_left
+
+/-- At an ordinary multiple point of `F G`, the curves `F` and `G` have no common tangent: its
+square would divide the squarefree leading form of `F G`. -/
+theorem IsOrdinaryMultiplePoint.not_isTangentAt_and {G : MvPolynomial (Fin 3) k}
+    (h : IsOrdinaryMultiplePoint (F * G) P) : ¬∃ L, IsTangentAt F P L ∧ IsTangentAt G P L := by
+  rintro ⟨L, hF, hG⟩
+  rw [isOrdinaryMultiplePoint_def, leadingForm_mul] at h
+  exact (irreducible_of_isHomogeneous_one hF.1 hF.2.1).not_isUnit
+    (h.2 L (mul_dvd_mul hF.2.2.2 hG.2.2.2))
 
 /-- A form vanishes at `P.rep` exactly when it vanishes at the point `Fin.insertNth i 1 a` of the
 chart `Xᵢ = 1` corresponding to `P`. -/
@@ -685,6 +760,44 @@ theorem isOrdinaryMultiplePoint_or_exists_tangentMultiplicity_eq_two (hF : F.IsH
   · refine Or.inl ⟨isMultiplePoint_def.2 h.ge, ?_⟩
     rw [hM]
     exact squarefree_mul_iff.2 ⟨hrel, hLirr.squarefree, hMirr.squarefree⟩
+
+/-- Over an algebraically closed field, every irreducible factor of the leading form of a nonzero
+form `F` at `P` is, up to a nonzero scalar, a tangent of `F` at `P`: the leading form is a
+product of tangents. -/
+theorem exists_isTangentAt_associated_of_dvd (hF : F.IsHomogeneous d) (hF0 : F ≠ 0)
+    {q : MvPolynomial (Fin 3) k} (hq : Irreducible q) (hdvd : q ∣ leadingForm F P) :
+    ∃ L, IsTangentAt F P L ∧ Associated q L := by
+  obtain ⟨i, hi⟩ := P.exists_mem_affineOpen
+  have hmult := mult_eq_orderAt_dehomogenize hF hi
+  have hf0 : dehomogenize i F ≠ 0 := by
+    rintro h
+    rw [h, orderAt_zero, mult_eq_top_iff] at hmult
+    exact hF0 hmult
+  obtain ⟨ε, hε, u, -, hu, heq⟩ :=
+    Affine.exists_leadingFormAt_eq_C_mul_prod (P := affineChart i P) hf0
+  set φ : Fin 2 → MvPolynomial (Fin 3) k := fun j ↦ X (i.succAbove j) - C (affineChart i P j) * X i
+  have hdvd' : q ∣ (u.map (aeval φ)).prod := by
+    have := (associated_leadingForm_affine hF hi).dvd_iff_dvd_right.1 hdvd
+    rwa [heq, map_mul, aeval_C, algebraMap_eq, map_multiset_prod,
+      (associated_unit_mul_left _ _ ((isUnit_iff_ne_zero.2 hε).map C)).dvd_iff_dvd_right] at this
+  obtain ⟨y, hy, hqy⟩ := hq.prime.exists_mem_multiset_dvd hdvd'
+  obtain ⟨L', hL', rfl⟩ := Multiset.mem_map.1 hy
+  have hT := (isTangentAt_aeval_chart_iff hF hi (Affine.isTangentAt_def.1 (hu L' hL')).1).2
+    (hu L' hL')
+  exact ⟨_, hT, hq.associated_of_dvd (irreducible_of_isHomogeneous_one hT.1 hT.2.1) hqy⟩
+
+/-- Over an algebraically closed field, the leading forms of a nonzero form `F` and of `G` at `P`
+are relatively prime exactly when `F` and `G` have no common tangent at `P`. -/
+theorem isRelPrime_leadingForm_iff (hF : F.IsHomogeneous d) (hF0 : F ≠ 0)
+    {G : MvPolynomial (Fin 3) k} :
+    IsRelPrime (leadingForm F P) (leadingForm G P) ↔
+      ¬∃ L, IsTangentAt F P L ∧ IsTangentAt G P L := by
+  refine ⟨fun h ⟨L, hFL, hGL⟩ ↦ (irreducible_of_isHomogeneous_one hFL.1 hFL.2.1).not_isUnit
+    (h hFL.2.2.2 hGL.2.2.2), fun h ↦ ?_⟩
+  refine WfDvdMonoid.isRelPrime_of_no_irreducible_factors
+    (fun h0 ↦ leadingForm_eq_zero_iff.not.2 hF0 h0.1) fun q hq hqF hqG ↦ h ?_
+  obtain ⟨L, hL, hqL⟩ := exists_isTangentAt_associated_of_dvd hF hF0 hq hqF
+  exact ⟨L, hL, hL.1, hL.2.1, hL.2.2.1, hqL.symm.dvd.trans hqG⟩
 
 end IsAlgClosed
 
