@@ -48,7 +48,7 @@ adjoint divisor:
 * `PlaneCurves.Projective.fx_smul_D_add_fy_smul_D`: `f_x dx + f_y dy = 0`.
 * `PlaneCurves.Projective.chartDifferential_eq`: `dx / f_y = -dy / f_x`.
 * `PlaneCurves.Projective.chartDifferential_ne_zero`: `dx / f_y ≠ 0`.
-* `coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isMultiplePoint`,
+* `coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isOrdinaryMultiplePoint`,
   `coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isSimplePoint`,
   `coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_eval_X_two_eq_zero`:
   the bounds on the orders of `dx / f_y`.
@@ -256,7 +256,7 @@ at a place `P` over an ordinary multiple point `Q = [a : b : 1]` of multiplicity
 `ord_P(dx / f_y) ≤ -(r - 1)`, the coefficient of `(n - 3) div Z - E` at `P`. The line `Y - b Z`
 is not tangent at `Q`, since it passes through `[1 : 0 : 0]`, so `y - b` is a uniformizer at `P`,
 while `ord_P(f_x) ≥ m_Q(F_X) ≥ r - 1`. -/
-theorem coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isMultiplePoint
+theorem coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isOrdinaryMultiplePoint
     {P : Place k (functionField hF)} (hP2 : eval (center hF P).1.rep (X 2) ≠ 0)
     (hP : IsOrdinaryMultiplePoint F (center hF P).1) :
     (kaehlerDifferentialDivisor (functionField.isFunctionField hF)
