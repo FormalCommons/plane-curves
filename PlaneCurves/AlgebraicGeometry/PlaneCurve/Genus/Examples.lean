@@ -183,21 +183,16 @@ theorem eq_of_isMultiplePoint_nodalQuartic (h2 : (2 : k) ≠ 0) {Q : ℙ k (Fin 
   refine ⟨Units.mk0 (v 1) h1, funext fun i ↦ ?_⟩
   fin_cases i <;> simp [h02.1, h02.2]
 
-/-- The order at `(0, 1, 0)` of `X 0` and `X 2`, and their leading forms there. -/
-private theorem orderAt_X_and_leadingFormAt_X {j : Fin 3} (hj : (![0, 1, 0] : Fin 3 → k) j = 0) :
-    (X j : MvPolynomial (Fin 3) k).orderAt ![0, 1, 0] = 1 ∧
-      (X j : MvPolynomial (Fin 3) k).leadingFormAt ![0, 1, 0] = X j := by
-  refine ⟨by simpa [hj] using orderAt_X_sub_C (R := k) ![0, 1, 0] j, ?_⟩
-  have h := leadingFormAt_taylor ![0, 1, 0] 0 (X j : MvPolynomial (Fin 3) k)
-  rwa [zero_add, taylor_X, hj, C_0, add_zero, (isHomogeneous_X k j).leadingFormAt_zero,
-    eq_comm] at h
-
 /-- At `(0, 1, 0)`, `Y²XZ - X⁴ - Z⁴` has order two and leading form `XZ`. -/
 private theorem orderAt_and_leadingFormAt_nodalQuartic :
     (nodalQuartic k).orderAt ![0, 1, 0] = 2 ∧
       (nodalQuartic k).leadingFormAt ![0, 1, 0] = X 0 * X 2 := by
-  obtain ⟨hX0, hL0⟩ := orderAt_X_and_leadingFormAt_X (k := k) (j := 0) rfl
-  obtain ⟨hX2, hL2⟩ := orderAt_X_and_leadingFormAt_X (k := k) (j := 2) rfl
+  have hX0 : (X 0 : MvPolynomial (Fin 3) k).orderAt ![0, 1, 0] = 1 := orderAt_X_of_eq_zero rfl
+  have hX2 : (X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 1, 0] = 1 := orderAt_X_of_eq_zero rfl
+  have hL0 : (X 0 : MvPolynomial (Fin 3) k).leadingFormAt ![0, 1, 0] = X 0 :=
+    leadingFormAt_X_of_eq_zero rfl
+  have hL2 : (X 2 : MvPolynomial (Fin 3) k).leadingFormAt ![0, 1, 0] = X 2 :=
+    leadingFormAt_X_of_eq_zero rfl
   have hX1 : eval ![0, 1, 0] (X 1 : MvPolynomial (Fin 3) k) ≠ 0 := by simp
   have hp : (X 1 ^ 2 * X 0 * X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 1, 0] = 2 := by
     rw [orderAt_mul, orderAt_mul, orderAt_pow, orderAt_eq_zero_iff.2 hX1, hX0, hX2]
