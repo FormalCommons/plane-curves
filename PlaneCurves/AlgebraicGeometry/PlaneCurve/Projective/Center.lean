@@ -363,6 +363,11 @@ theorem center_eq_iff_le {Q : Place k (functionField hF)} :
   · rfl
   · exact Q.exists_notMem_integers
 
+/-- The centre of a place of `k(C)` is a point of `C`. -/
+theorem coe_center_mem_zeroLocus (Q : Place k (functionField hF)) :
+    (center hF Q).1 ∈ zeroLocus {F} :=
+  (zeroLocus_ideal hF).le (center hF Q).2
+
 variable (hF) in
 /-- Every point of `C` is the centre of some place of `k(C)`: by Chevalley's extension theorem,
 some place dominates `𝒪_P(C)`. -/

@@ -38,6 +38,9 @@ leaves `N(F)` unchanged.
 * `PlaneCurves.Projective.IsQuadraticTransformAt.ncard_add_virtualGenus_lt` and
   `PlaneCurves.Projective.IsQuadraticTransformAt.ncard_nonOrdinaryMultiplePoints_eq`: the same
   for a quadratic transformation centred at a point.
+* `PlaneCurves.Projective.IsQuadraticTransformAt.forall_isOrdinaryMultiplePoint`: a quadratic
+  transformation centred at a point of multiplicity at most one or at an ordinary multiple point
+  of a curve with only ordinary multiple points gives a curve with only ordinary multiple points.
 
 ## References
 
@@ -283,6 +286,18 @@ theorem ncard_add_virtualGenus_properTransform_lt [IsAlgClosed k] (h : IsExcelle
 
 end IsExcellentPosition
 
+/-- If an irreducible curve `G` over a perfect field has at most as many non-ordinary multiple
+points as a curve `F` whose multiple points are all ordinary, then the multiple points of `G` are
+all ordinary. -/
+theorem forall_isOrdinaryMultiplePoint_of_ncard_le [PerfectField k] {m : ℕ}
+    (hG : G.IsHomogeneous m) (hirrG : Irreducible G)
+    (hN : (nonOrdinaryMultiplePoints G).ncard ≤ (nonOrdinaryMultiplePoints F).ncard)
+    (hord : ∀ Q, IsMultiplePoint F Q → IsOrdinaryMultiplePoint F Q) :
+    ∀ Q, IsMultiplePoint G Q → IsOrdinaryMultiplePoint G Q := by
+  rw [nonOrdinaryMultiplePoints_eq_empty_iff.2 hord, Set.ncard_empty, Nat.le_zero,
+    Set.ncard_eq_zero (nonOrdinaryMultiplePoints_finite hG hirrG)] at hN
+  exact nonOrdinaryMultiplePoints_eq_empty_iff.1 hN
+
 namespace IsQuadraticTransformAt
 
 /-- **A quadratic transformation centred at a non-ordinary multiple point lowers `N + g*`**
@@ -313,6 +328,19 @@ theorem ncard_nonOrdinaryMultiplePoints_eq [IsAlgClosed k] (h : IsQuadraticTrans
     rwa [mult_linearSubst hF hM, isOrdinaryMultiplePoint_linearSubst_iff hF hM, hMP]
   rw [hE.ncard_nonOrdinaryMultiplePoints_properTransform (hF.linearSubst M) hP',
     ncard_nonOrdinaryMultiplePoints_linearSubst hF hM]
+
+/-- **A quadratic transformation centred at a simple point, at a point off the curve or at an
+ordinary multiple point keeps the multiple points ordinary.** If `G` is an irreducible quadratic
+transformation of `F` centred at `P`, over an algebraically closed field, the multiple points of
+`F` are all ordinary, and `m_P(F) ≤ 1` or `P` is an ordinary multiple point of `F`, then the
+multiple points of `G` are all ordinary. -/
+theorem forall_isOrdinaryMultiplePoint [IsAlgClosed k] (h : IsQuadraticTransformAt F P G)
+    (hF : F.IsHomogeneous n) {m : ℕ} (hG : G.IsHomogeneous m) (hirrG : Irreducible G)
+    (hord : ∀ Q, IsMultiplePoint F Q → IsOrdinaryMultiplePoint F Q)
+    (hP : mult F P ≤ 1 ∨ IsOrdinaryMultiplePoint F P) :
+    ∀ Q, IsMultiplePoint G Q → IsOrdinaryMultiplePoint G Q :=
+  forall_isOrdinaryMultiplePoint_of_ncard_le hG hirrG
+    (h.ncard_nonOrdinaryMultiplePoints_eq hF hP).le hord
 
 end IsQuadraticTransformAt
 
