@@ -88,9 +88,8 @@ theorem isRelPrime_of_finite_zeroLocus_pair [IsAlgClosed k] (hF : F.IsHomogeneou
   by_contra hFG
   obtain ⟨H', e, he, hH'e, hH'F, hH'G⟩ := hF.exists_isHomogeneous_dvd_of_not_isRelPrime hG hFG
   refine zeroLocus_singleton_infinite le_rfl hH'e he (h.subset fun P hP ↦ ?_)
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨e, hH'e⟩)] at hP
+  have hP0 : eval P.rep H' = 0 := (mem_zeroLocus_singleton_iff hH'e).1 hP
   rw [mem_zeroLocus_iff_eval_rep (forall_isHomogeneous_pair hF hG)]
-  have hP0 : eval P.rep H' = 0 := hP H' rfl
   simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
   rintro f (rfl | rfl)
   exacts [zero_dvd_iff.1 (hP0 ▸ map_dvd (eval P.rep) hH'F),

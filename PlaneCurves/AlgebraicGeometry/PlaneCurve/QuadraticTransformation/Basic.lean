@@ -122,7 +122,7 @@ theorem mk_eq_fundamentalPoint_iff (v : Fin 3 → k) (hv : v ≠ 0) (i : Fin 3) 
 @[simp]
 theorem fundamentalPoint_mem_zeroLocus_X_iff {i j : Fin 3} :
     fundamentalPoint (k := k) i ∈ zeroLocus {X j} ↔ i ≠ j := by
-  rw [fundamentalPoint_def, mk_mem_zeroLocus_iff (by simpa using ⟨1, isHomogeneous_X k j⟩)]
+  rw [fundamentalPoint_def, mk_mem_zeroLocus_singleton_iff (isHomogeneous_X k j)]
   simp [Pi.single_apply, eq_comm]
 
 /-- The fundamental point `[eᵢ]` lies in the standard affine open `Xⱼ ≠ 0` exactly when
@@ -171,7 +171,7 @@ private theorem isHomogeneous_X_mul_X_mul_X :
 theorem mk_mem_fundamentalTriangle_iff (v : Fin 3 → k) (hv : v ≠ 0) :
     mk k v hv ∈ fundamentalTriangle ↔ ∃ i, v i = 0 := by
   rw [fundamentalTriangle_def,
-    mk_mem_zeroLocus_iff (by simpa using ⟨3, isHomogeneous_X_mul_X_mul_X⟩)]
+    mk_mem_zeroLocus_singleton_iff isHomogeneous_X_mul_X_mul_X]
   simp [Fin.exists_fin_succ, or_assoc]
 
 /-- A point lies on the fundamental triangle exactly when one of its coordinates is zero. -/
@@ -198,7 +198,7 @@ theorem fundamentalTriangle_eq_iUnion :
   ext P
   simp only [Set.mem_iUnion, mem_fundamentalTriangle_iff]
   refine exists_congr fun i ↦ ?_
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_X k i⟩)]
+  rw [mem_zeroLocus_singleton_iff (isHomogeneous_X k i)]
   simp
 
 end FundamentalPoint

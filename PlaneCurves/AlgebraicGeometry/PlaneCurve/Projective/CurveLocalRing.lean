@@ -267,8 +267,7 @@ omit [Fact (Irreducible F)] in
 theorem mem_zeroLocus_ideal_iff {P : ℙ k (Fin 3 → k)} :
     P ∈ zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)) ↔
       eval P.rep F = 0 := by
-  rw [zeroLocus_ideal, ProjectiveSpace.mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩)]
-  simp
+  rw [zeroLocus_ideal, ProjectiveSpace.mem_zeroLocus_singleton_iff hF]
 
 variable (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))
 

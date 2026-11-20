@@ -55,12 +55,6 @@ open scoped LinearAlgebra.Projectivization Matrix
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k} {Q : ℙ k (Fin 3 → k)} {n : ℕ}
 
-/-- A point lies on the curve of a form `G` exactly when `G` vanishes at its coordinates. -/
-private theorem mem_zeroLocus_singleton_iff {G : MvPolynomial (Fin 3) k} {d : ℕ}
-    (hG : G.IsHomogeneous d) {P : ℙ k (Fin 3 → k)} : P ∈ zeroLocus {G} ↔ eval P.rep G = 0 := by
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hG⟩)]
-  simp
-
 /-- A plane curve `F` is in *transverse position* if the line `Z = 0` meets it transversally,
 `[1 : 0 : 0]` is not on it, and no tangent line at a multiple point of `F` passes through
 `[1 : 0 : 0]`. -/
@@ -195,13 +189,6 @@ end IsTransversePosition
 
 /-! ### Existence of transverse position -/
 
-/-- Two distinct points of the dual plane give linearly independent coefficient vectors. -/
-private theorem linearIndependent_rep_pair {c c' : ℙ k (Fin 3 → k)} (hne : c ≠ c') :
-    LinearIndependent k ![c.rep, c'.rep] := by
-  rw [← crossProduct_ne_zero_iff_linearIndependent]
-  refine mt (mk_eq_mk_iff_crossProduct_eq_zero c.rep_ne_zero c'.rep_ne_zero).mpr ?_
-  simpa using hne
-
 /-- **Existence of transverse position.** Let `k` be algebraically closed and `F` an irreducible
 form. Then there is a projective change of coordinates, given by an invertible matrix `M`, that
 puts `F(M X)` in transverse position.
@@ -231,7 +218,7 @@ theorem exists_isTransversePosition [IsAlgClosed k] (hF : F.IsHomogeneous n)
   set B := zeroLocus {F, L} ∪ ⋃ c' ∈ T, zeroLocus {L, ∑ i, C (c'.rep i) * X i}
   have hB : B.Finite := (Set.finite_of_ncard_ne_zero (hcard ▸ hn)).union
     (hT.biUnion fun c' hc' ↦ by
-      rw [zeroLocus_pair_sum_C_mul_X (linearIndependent_rep_pair (hcT c' hc'))]
+      rw [zeroLocus_pair_sum_C_mul_X (linearIndependent_pair_iff_ne.2 (hcT c' hc'))]
       exact Set.finite_singleton _)
   obtain ⟨v, hvL, hvB⟩ :=
     ((zeroLocus_singleton_infinite (n := 2) le_rfl hL one_ne_zero).sdiff hB).nonempty
@@ -239,7 +226,7 @@ theorem exists_isTransversePosition [IsAlgClosed k] (hF : F.IsHomogeneous n)
   -- A second line through `v`, and a change of coordinates moving the two lines to `Y` and `Z`.
   obtain ⟨c₁, hc₁v, hc₁c⟩ :=
     ((infinite_setOf_eval_sum_C_mul_X_eq_zero v).sdiff (Set.finite_singleton c)).nonempty
-  have hind := linearIndependent_rep_pair (by simpa using hc₁c : c₁ ≠ c)
+  have hind := linearIndependent_pair_iff_ne.2 (by simpa using hc₁c : c₁ ≠ c)
   obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X hind (τ := ![1, 2])
     (by intro i j h; fin_cases i <;> fin_cases j <;> simp_all)
   have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.1 hM
