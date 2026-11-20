@@ -545,12 +545,9 @@ theorem exists_basicOpen_normalization
         eval Q.1.rep G = 0 := by
   classical
   have hinf : (zeroLocus (projectivePlaneCurve.ideal hF :
-      Set (MvPolynomial (Fin 3) k))).Infinite := by
-    convert zeroLocus_singleton_infinite (n := 2) le_rfl hF
-      (hF.degree_ne_zero_of_irreducible Fact.out) using 1
-    ext P'
-    rw [mem_zeroLocus_ideal_iff hF, mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩),
-      Set.forall_mem_singleton]
+      Set (MvPolynomial (Fin 3) k))).Infinite :=
+    zeroLocus_ideal hF ▸ zeroLocus_singleton_infinite (n := 2) le_rfl hF
+      (hF.degree_ne_zero_of_irreducible Fact.out)
   obtain ⟨P₀, hP₀, hP₀P⟩ := (hinf.sdiff (Set.finite_singleton P.1)).nonempty
   obtain ⟨m, G, hG, hGP, hGS⟩ := exists_isHomogeneous_eval_rep_ne_zero_forall_eval_rep_eq_zero
     P.1 ((hS.image Subtype.val).insert P₀) (by
