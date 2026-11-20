@@ -113,8 +113,7 @@ omit [IsAlgClosed k] in
 private theorem eval_rep_fundamentalPoint_X_eq_zero_iff {i j : Fin 3} :
     eval (fundamentalPoint (k := k) i).rep (X j) = 0 ↔ i ≠ j := by
   rw [← fundamentalPoint_mem_zeroLocus_X_iff (k := k),
-    mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_X k j⟩)]
-  simp
+    mem_zeroLocus_singleton_iff (isHomogeneous_X k j)]
 
 omit [Fact (Irreducible (properTransform F))] in
 /-- The order of `Xᵢ^Q` at a place centred at an ordinary multiple point `[0 : 0 : 1]` of a curve
