@@ -82,6 +82,20 @@ theorem coe_kaehlerDifferentialEquivWeilDifferentialOfSeparating_ne_zero
 
 end TauCeti
 
+namespace KaehlerDifferential
+
+variable {k K : Type*} [Field k] [Field K] [Algebra k K] [PerfectField k]
+
+/-- Every Kähler differential of a function field over a perfect field is a multiple `f ω₀` of
+a given nonzero one. -/
+theorem exists_smul_eq_of_ne_zero (hK : IsFunctionField k K) {ω₀ : Ω[K⁄k]} (hω₀ : ω₀ ≠ 0)
+    (ω : Ω[K⁄k]) : ∃ f : K, f • ω₀ = ω := by
+  obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
+  exact (finrank_eq_one_iff_of_ne_zero' ω₀ hω₀).1
+    (finrank_kaehlerDifferential_eq_one_of_separating hx) ω
+
+end KaehlerDifferential
+
 namespace PlaneCurves
 
 variable {k K : Type*} [Field k] [Field K] [Algebra k K] [PerfectField k]
@@ -208,14 +222,6 @@ theorem isRiemannRochDivisor_kaehlerDifferentialDivisor (ω : Ω[K⁄k]) (hω : 
 
 /-! ### The spaces `Ω(D)` -/
 
-include hK in
-/-- Every Kähler differential is a multiple `f ω₀` of a given nonzero one. -/
-theorem exists_smul_eq_of_ne_zero {ω₀ : Ω[K⁄k]} (hω₀ : ω₀ ≠ 0) (ω : Ω[K⁄k]) :
-    ∃ f : K, f • ω₀ = ω := by
-  obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
-  exact (finrank_eq_one_iff_of_ne_zero' ω₀ hω₀).1
-    (finrank_kaehlerDifferential_eq_one_of_separating hx) ω
-
 /-- For a nonzero `ω₀` with divisor `W`, the multiple `f ω₀` is zero or has `div (f ω₀) ≥ D`
 exactly when `f ∈ L(W - D)`. -/
 private theorem forall_le_kaehlerDifferentialDivisor_smul_iff (D : Divisor k K) {ω₀ : Ω[K⁄k]}
@@ -239,15 +245,15 @@ def kaehlerDifferentialFiltration (D : Divisor k K) : Submodule k Ω[K⁄k] wher
   add_mem' {a b} ha hb := by
     obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
     have h0 := D_ne_zero_of_separating hx
-    obtain ⟨f, rfl⟩ := exists_smul_eq_of_ne_zero hK h0 a
-    obtain ⟨g, rfl⟩ := exists_smul_eq_of_ne_zero hK h0 b
+    obtain ⟨f, rfl⟩ := KaehlerDifferential.exists_smul_eq_of_ne_zero hK h0 a
+    obtain ⟨g, rfl⟩ := KaehlerDifferential.exists_smul_eq_of_ne_zero hK h0 b
     simp only [Set.mem_ofPred_eq, forall_le_kaehlerDifferentialDivisor_smul_iff hK hex D h0,
       ← add_smul] at ha hb ⊢
     exact add_mem ha hb
   smul_mem' c {a} ha := by
     obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
     have h0 := D_ne_zero_of_separating hx
-    obtain ⟨f, rfl⟩ := exists_smul_eq_of_ne_zero hK h0 a
+    obtain ⟨f, rfl⟩ := KaehlerDifferential.exists_smul_eq_of_ne_zero hK h0 a
     simp only [Set.mem_ofPred_eq, forall_le_kaehlerDifferentialDivisor_smul_iff hK hex D h0]
       at ha ⊢
     rw [← smul_assoc, forall_le_kaehlerDifferentialDivisor_smul_iff hK hex D h0]
@@ -283,7 +289,7 @@ def riemannRochSpaceEquivKaehlerDifferentialFiltration (D : Divisor k K) {ω₀ 
       map_add' f g := Subtype.ext (by simp [add_smul])
       map_smul' c f := Subtype.ext (by simp [smul_assoc]) }
     ⟨fun f g h ↦ Subtype.ext (smul_left_injective K hω₀ (congrArg Subtype.val h)), fun ω ↦ by
-      obtain ⟨f, hf⟩ := exists_smul_eq_of_ne_zero hK hω₀ ω
+      obtain ⟨f, hf⟩ := KaehlerDifferential.exists_smul_eq_of_ne_zero hK hω₀ ω
       exact ⟨⟨f, (smul_mem_kaehlerDifferentialFiltration_iff hK hex D hω₀ f).1 (hf ▸ ω.2)⟩,
         Subtype.ext hf⟩⟩
 
@@ -300,8 +306,8 @@ theorem coe_riemannRochSpaceEquivKaehlerDifferentialFiltration_apply (D : Diviso
 theorem finrank_kaehlerDifferentialFiltration (D : Divisor k K) {ω₀ : Ω[K⁄k]} (hω₀ : ω₀ ≠ 0) :
     Module.finrank k (kaehlerDifferentialFiltration hK hex D) =
       Divisor.dim (kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D) := by
-    rw [Divisor.dim_def]
-    exact (riemannRochSpaceEquivKaehlerDifferentialFiltration hK hex D hω₀).finrank_eq.symm
+  rw [Divisor.dim_def]
+  exact (riemannRochSpaceEquivKaehlerDifferentialFiltration hK hex D hω₀).finrank_eq.symm
 
 /-- **The holomorphic differentials form a space of dimension `g`** (Fulton, §8.6,
 Proposition 9(2)). -/

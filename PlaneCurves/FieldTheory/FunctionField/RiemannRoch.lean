@@ -192,6 +192,7 @@ theorem Divisor.IsRiemannRochDivisor.two_mul_dim_sub_dim_eq {W : Divisor k K} {g
   rw [← h, add_sub_cancel_left] at hD
   rw [← h, add_sub_cancel_right] at hD'
   linear_combination hD - hD'
+
 end TauCeti
 
 end
