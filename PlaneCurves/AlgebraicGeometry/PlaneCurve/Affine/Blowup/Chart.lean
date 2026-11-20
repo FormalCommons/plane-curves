@@ -621,7 +621,7 @@ theorem exists_linearSubst_eval_blowupChartLeadingCoeff_ne_zero [IsAlgClosed k]
     fun h ↦ hT (isTangentAt_zero_X_zero_iff.2 h)
   have hr : 0 < (G.orderAt 0).toNat :=
     ENat.toNat_pos (orderAt_eq_zero_iff.not.2 (not_not.2 hG0))
-      (orderAt_eq_top_iff.not.2 hG.ne_zero)
+      (orderAt_ne_top hG.ne_zero)
   refine ⟨d, hG, fun hA ↦ ha ?_, hG0, hT, fun Q hQ ↦ ?_⟩
   · rw [← hGdef] at hA
     obtain ⟨c, hc⟩ := hA.symm.dvd

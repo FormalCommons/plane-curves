@@ -324,7 +324,7 @@ theorem le_orderAt_iff_forall_le_addValuation_blowupPlace (hT : ¬IsTangentAt F 
       (s : WithTop ℤ) ≤ (blowupPlace hF hX h hα).addValuation
         (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) G)) := by
   have hGn : G.orderAt 0 = (G.orderAt 0).toNat :=
-    (ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG)).symm
+    (natCast_toNat_orderAt hG).symm
   refine ⟨fun hsG α hα ↦ le_trans ?_ (natCast_orderAt_le_addValuation_blowupPlace hF hX h hα G),
     fun hall ↦ ?_⟩
   · rw [hGn, Nat.cast_le] at hsG

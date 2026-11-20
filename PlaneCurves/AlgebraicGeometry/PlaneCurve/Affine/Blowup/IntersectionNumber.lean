@@ -157,7 +157,7 @@ private theorem map_natCast_eq_of_irreducible {F : MvPolynomial (Fin 2) k} (hF :
   have hr : ∑ Q ∈ S, Q.addValuation (algebraMap _ _ (Ideal.Quotient.mk (Ideal.span {F}) (X 0))) =
       (((F.orderAt 0).toNat : ℕ) : WithTop ℤ) := by
     rw [← map_natCast_intersectionNumber_eq_sum_addValuation hF h0, hI,
-      ← ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF.ne_zero), ENat.toNat_natCast]
+      ← natCast_toNat_orderAt hF.ne_zero, ENat.toNat_natCast]
     rfl
   have hdisj : (A : Set k).PairwiseDisjoint fun α ↦ placesOverFinset hF' ![0, α] := by
     intro α _ β _ hne
@@ -214,8 +214,8 @@ theorem intersectionNumber_eq_mul_add_sum_blowupStrictTransform {F : MvPolynomia
     have hAa : ∀ α, eval ![0, α] (blowupStrictTransform a) = 0 → α ∈ A := fun α h ↦
       hA α (by rw [blowupStrictTransform_mul, eval_mul, h, mul_zero])
     rw [intersectionNumber_mul_left, eq_of_irreducible hp.irreducible hTp G hAp, ih hTa hAa,
-      orderAt_mul, ENat.toNat_add (orderAt_eq_top_iff.not.2 hp.ne_zero)
-        (orderAt_eq_top_iff.not.2 ha), blowupStrictTransform_mul]
+      orderAt_mul, ENat.toNat_add (orderAt_ne_top hp.ne_zero)
+        (orderAt_ne_top ha), blowupStrictTransform_mul]
     simp_rw [intersectionNumber_mul_left]
     rw [Finset.sum_add_distrib]
     push_cast
@@ -237,8 +237,8 @@ theorem intersectionNumber_eq_mul_add_finsum_blowupStrictTransform {F G : MvPoly
   obtain ⟨A, hA, -⟩ := exists_finset_eval_zero_blowupStrictTransform hF hT
   rw [finsum_eq_sum_of_support_subset (s := A) _ fun α hα ↦ (hA α).2 ?_,
     intersectionNumber_eq_mul_add_sum_blowupStrictTransform hT G fun α ↦ (hA α).2, Nat.cast_mul,
-    ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hF),
-    ENat.natCast_toNat (orderAt_eq_top_iff.not.2 hG)]
+    natCast_toNat_orderAt hF,
+    natCast_toNat_orderAt hG]
   by_contra h
   exact hα (intersectionNumber_eq_zero_of_eval_ne_zero_left h)
 
