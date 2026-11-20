@@ -7,7 +7,11 @@ module
 
 public import Mathlib.Algebra.Module.Torsion.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.GroupLaw
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.Weierstrass
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
+public import TauCeti.AlgebraicGeometry.EllipticCurve.Affine.Point.TwoTorsion
+public import TauCeti.AlgebraicGeometry.EllipticCurve.Isogeny.MulByInt.Torsion.Structure
+public import TauCeti.Algebra.Module.Torsion.Basic
 
 /-!
 # Flexes of a plane cubic and torsion of its group
@@ -23,6 +27,13 @@ Problems 5.34, 5.37):
 * a point `A ≠ O` has order two iff the tangent at `A` passes through `O`.
 
 These hold in every characteristic, and for the simple points of any irreducible cubic.
+
+When `F` is nonsingular, the group is, through the isomorphism with the group of a Weierstrass
+curve (`PlaneCurves.Projective.exists_addEquiv_weierstrass_of_isFlex`), that of an elliptic
+curve, so Tau Ceti's structure of its torsion gives: the `N`-torsion is `ℤ/N × ℤ/N` when `N` is
+invertible in `k`. In particular a nonsingular cubic with a flex has nine flexes when `3 ≠ 0`,
+and four points killed by `2` when `2 ≠ 0`; on the Legendre cubic `Y²Z = X(X - Z)(X - λZ)` the
+three points of order two are `[0 : 0 : 1]`, `[1 : 0 : 1]` and `[λ : 0 : 1]`.
 
 ## Main results
 
@@ -41,6 +52,14 @@ These hold in every characteristic, and for the simple points of any irreducible
   consists of the flexes.
 * `PlaneCurves.Projective.CubicGroup.two_nsmul_eq_zero_iff`: for a flex `O` and `A ≠ O`,
   `2A = 0` iff the tangent at `A` passes through `O`.
+* `PlaneCurves.Projective.CubicGroup.nonempty_torsionBy_addEquiv_prod`: for `F` nonsingular,
+  a flex `O` and `N ≠ 0` in `k`, the `N`-torsion of `CubicGroup F O` is `ℤ/N × ℤ/N`; the cases
+  `N = 3` and `N = 2` are `nonempty_torsionBy_three_addEquiv_prod` and
+  `nonempty_torsionBy_two_addEquiv_prod`.
+* `PlaneCurves.Projective.IsFlex.ncard_setOf_isFlex`: a nonsingular cubic with a flex has nine
+  flexes when `3 ≠ 0`.
+* `WeierstrassCurve.Projective.point_image_setOf_addOrderOf_eq_two_of_legendre`: the points of
+  order two on a Legendre cubic.
 
 ## References
 
@@ -156,6 +175,141 @@ theorem isFlex_thirdPoint (hF : F.IsHomogeneous 3) (hirr : Irreducible F) (hP : 
     rw [CubicGroup.chord_eq_neg_sub_of_isFlex hP, neg_zero, zero_sub, smul_neg, hB, neg_zero])
   rwa [CubicGroup.point_chord, CubicGroup.point_zero] at h
 
+/-! ### Torsion of the group of a nonsingular cubic -/
+
+namespace CubicGroup
+
+variable [Fact (F.IsHomogeneous 3)] [Fact (Irreducible F)] [Fact (IsSimplePoint F O)]
+
+/-- **The `N`-torsion of the group of a nonsingular cubic.** If `F` is a nonsingular cubic over
+an algebraically closed field, `O` is a flex of `F` and `N` is invertible in `k`, then the
+`N`-torsion subgroup of the chord–tangent group `CubicGroup F O` is isomorphic to
+`ℤ/N × ℤ/N`. -/
+theorem nonempty_torsionBy_addEquiv_prod (hns : IsNonsingular F) (hO' : IsFlex F O) (N : ℕ)
+    (hN : (N : k) ≠ 0) :
+    Nonempty (AddSubgroup.torsionBy (CubicGroup F O) (N : ℤ) ≃+ ZMod N × ZMod N) := by
+  classical
+  obtain ⟨W, hΔ, ⟨e⟩⟩ := exists_addEquiv_weierstrass_of_isFlex hO'
+  have : W.IsElliptic := ⟨(hΔ hns).isUnit⟩
+  obtain ⟨f⟩ := W.torsion_addEquiv_prod N hN
+  exact ⟨(AddEquiv.torsionByCongr (e.trans
+    (WeierstrassCurve.Projective.Point.toAffineAddEquiv W.toProjective)) N).trans f⟩
+
+/-- **The `3`-torsion of the group of a nonsingular cubic** ([Fulton2008], Problem 5.37 (c)). If
+`F` is a nonsingular cubic over an algebraically closed field with `3 ≠ 0`, and `O` is a flex
+of `F`, then the `3`-torsion subgroup of `CubicGroup F O`, the subgroup of flexes, is isomorphic
+to `ℤ/3 × ℤ/3`. -/
+theorem nonempty_torsionBy_three_addEquiv_prod (hns : IsNonsingular F) (hO' : IsFlex F O)
+    (h3 : (3 : k) ≠ 0) :
+    Nonempty (AddSubgroup.torsionBy (CubicGroup F O) 3 ≃+ ZMod 3 × ZMod 3) :=
+  nonempty_torsionBy_addEquiv_prod hns hO' 3 (by exact_mod_cast h3)
+
+/-- **The `2`-torsion of the group of a nonsingular cubic** ([Fulton2008], Problem 5.37 (e)). If
+`F` is a nonsingular cubic over an algebraically closed field with `2 ≠ 0`, and `O` is a flex
+of `F`, then the `2`-torsion subgroup of `CubicGroup F O` is isomorphic to `ℤ/2 × ℤ/2`. -/
+theorem nonempty_torsionBy_two_addEquiv_prod (hns : IsNonsingular F) (hO' : IsFlex F O)
+    (h2 : (2 : k) ≠ 0) :
+    Nonempty (AddSubgroup.torsionBy (CubicGroup F O) 2 ≃+ ZMod 2 × ZMod 2) :=
+  nonempty_torsionBy_addEquiv_prod hns hO' 2 (by exact_mod_cast h2)
+
+end CubicGroup
+
+/-- **A nonsingular cubic with a flex has nine flexes** ([Fulton2008], Problem 5.37 (c)). If `F`
+is a nonsingular cubic over an algebraically closed field with `3 ≠ 0`, and `F` has a flex, then
+`F` has exactly nine flexes. Unlike `IsNonsingular.ncard_setOf_isFlex`, this allows
+characteristic `2`. -/
+theorem IsFlex.ncard_setOf_isFlex (hF : F.IsHomogeneous 3) (hns : IsNonsingular F)
+    (hO : IsFlex F O) (h3 : (3 : k) ≠ 0) : {P | IsFlex F P}.ncard = 9 := by
+  have : Fact (F.IsHomogeneous 3) := ⟨hF⟩
+  have : Fact (Irreducible F) := ⟨hns.irreducible hF three_ne_zero⟩
+  have : Fact (IsSimplePoint F O) := ⟨hO.isSimplePoint⟩
+  obtain ⟨e⟩ := CubicGroup.nonempty_torsionBy_three_addEquiv_prod hns hO h3
+  have hS : {P | IsFlex F P} =
+      CubicGroup.point '' (AddSubgroup.torsionBy (CubicGroup F O) 3 : Set (CubicGroup F O)) := by
+    ext P
+    refine ⟨fun hP ↦ ⟨⟨P, hP.isSimplePoint⟩, ?_, rfl⟩, ?_⟩
+    · exact (CubicGroup.mem_torsionBy_three_iff_isFlex hO).2 hP
+    · rintro ⟨A, hA, rfl⟩
+      exact (CubicGroup.mem_torsionBy_three_iff_isFlex hO).1 hA
+  rw [hS, Set.ncard_image_of_injective _ CubicGroup.point_injective, ← Nat.card_coe_set_eq,
+    SetLike.coe_sort_coe, Nat.card_congr e.toEquiv, Nat.card_prod, Nat.card_zmod]
+
 end PlaneCurves.Projective
+
+/-! ### Points of order two on a Legendre cubic -/
+
+namespace WeierstrassCurve.Projective
+
+open MvPolynomial Projectivization PlaneCurves.Projective
+
+variable {k : Type*} [Field k] [IsAlgClosed k] {W : WeierstrassCurve.Projective k} {l : k}
+
+/-- **The points of order two on a Legendre cubic** ([Fulton2008], Problem 5.37 (d)). Let `W` be
+the Weierstrass curve `Y²Z = X(X - Z)(X - λZ)`, that is `a₂ = -(1 + λ)`, `a₄ = λ` and the other
+coefficients `0`, with `λ ≠ 0, 1`, over an algebraically closed field with `2 ≠ 0`. Then the
+points of order two of the group of `W.polynomial` with zero `O = [0 : 1 : 0]` are the points
+`[0 : 0 : 1]`, `[1 : 0 : 1]` and `[λ : 0 : 1]`. -/
+theorem point_image_setOf_addOrderOf_eq_two_of_legendre (ha₁ : W.a₁ = 0)
+    (ha₂ : W.a₂ = -(1 + l)) (ha₃ : W.a₃ = 0) (ha₄ : W.a₄ = l) (ha₆ : W.a₆ = 0) (hl₀ : l ≠ 0)
+    (hl₁ : l ≠ 1) (h2 : (2 : k) ≠ 0) :
+    CubicGroup.point '' {A : CubicGroup W.polynomial (0 : W.Point).toProjectivization |
+        addOrderOf A = 2} =
+      {Projectivization.mk k ![0, 0, 1] (by simp), Projectivization.mk k ![1, 0, 1] (by simp),
+        Projectivization.mk k ![l, 0, 1] (by simp)} := by
+  classical
+  have key (x y : k) : W.toAffine.Equation x y ∧ W.toAffine.polynomialY.evalEval x y = 0 ↔
+      y = 0 ∧ (x = 0 ∨ x = 1 ∨ x = l) := by
+    rw [Affine.equation_iff', Affine.evalEval_polynomialY, ha₁, ha₂, ha₃, ha₄, ha₆]
+    constructor
+    · rintro ⟨he, hy⟩
+      have hy : y = 0 := by simpa [h2] using hy
+      subst hy
+      have : x * (x - 1) * (x - l) = 0 := by linear_combination -he
+      simpa [sub_eq_zero, or_assoc] using this
+    · rintro ⟨rfl, hx⟩
+      rcases hx with rfl | rfl | rfl <;> constructor <;> ring
+  have back (x : k) (hx : x = 0 ∨ x = 1 ∨ x = l) :
+      ∃ h : W.toAffine.Nonsingular x 0,
+        addOrderOf (Point.toCubicGroup (Point.fromAffine (.some x 0 h))) = 2 := by
+    obtain ⟨he, hy⟩ := (key x 0).2 ⟨rfl, hx⟩
+    have h : W.toAffine.Nonsingular x 0 := by
+      refine (Affine.nonsingular_iff' x 0).2 ⟨he, Or.inl ?_⟩
+      rw [ha₁, ha₂, ha₄]
+      rcases hx with rfl | rfl | rfl
+      · simpa using hl₀
+      · intro h0; exact hl₁ (by linear_combination h0)
+      · intro h0; exact (mul_ne_zero hl₀ (sub_ne_zero.2 hl₁)) (by linear_combination -h0)
+    refine ⟨h, ?_⟩
+    rw [AddEquiv.addOrderOf_eq, ← Point.toAffineAddEquiv_symm_apply, AddEquiv.addOrderOf_eq]
+    refine addOrderOf_eq_prime ?_ (Affine.Point.some_ne_zero h)
+    rw [two_nsmul, (Affine.Point.some_add_self_eq_zero_iff h).2 hy]
+  ext P
+  constructor
+  · rintro ⟨A, hA, rfl⟩
+    obtain ⟨Q, rfl⟩ := Point.toCubicGroup.surjective A
+    obtain ⟨R, rfl⟩ := (Point.toAffineAddEquiv W).symm.surjective Q
+    rw [Set.mem_ofPred_eq, AddEquiv.addOrderOf_eq, AddEquiv.addOrderOf_eq] at hA
+    rcases R with _ | ⟨x, y, h⟩
+    · exact absurd hA (by
+        rw [show (Affine.Point.zero : W.toAffine.Point) = 0 from rfl, addOrderOf_zero]
+        norm_num)
+    have h2R := addOrderOf_nsmul_eq_zero (Affine.Point.some x y h)
+    rw [hA, two_nsmul, Affine.Point.some_add_self_eq_zero_iff h] at h2R
+    obtain ⟨rfl, hx⟩ := (key x y).1 ⟨h.1, h2R⟩
+    rw [Point.point_toCubicGroup_apply, Point.toAffineAddEquiv_symm_apply,
+      Point.toProjectivization_fromAffine_some]
+    rcases hx with rfl | rfl | rfl <;> simp
+  · have mem (x : k) (hx : x = 0 ∨ x = 1 ∨ x = l) :
+        Projectivization.mk k ![x, 0, 1] (by simp) ∈ CubicGroup.point ''
+          {A : CubicGroup W.polynomial (0 : W.Point).toProjectivization | addOrderOf A = 2} := by
+      obtain ⟨h, hA⟩ := back x hx
+      exact ⟨_, hA, by rw [Point.point_toCubicGroup_apply,
+        Point.toProjectivization_fromAffine_some]⟩
+    rintro (rfl | rfl | rfl)
+    · exact mem 0 (by simp)
+    · exact mem 1 (by simp)
+    · exact mem l (by simp)
+
+end WeierstrassCurve.Projective
 
 end
