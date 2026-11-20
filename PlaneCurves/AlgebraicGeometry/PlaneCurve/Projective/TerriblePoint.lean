@@ -62,6 +62,9 @@ through `P` meet an irreducible `F` in `deg F - m_P(F)` further points, transver
   have `I(P, F ∩ L) = r`.
 * `PlaneCurves.Projective.exists_ncard_zeroLocus_pair_sum_C_mul_X_eq`: a line through no
   point of a given finite set meets an irreducible `F` of degree `n` transversally in `n` points.
+* `eventually_cofinite_forall_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint`,
+  `PlaneCurves.Projective.exists_forall_ncard_zeroLocus_pair_sum_C_mul_X_eq`: the same for
+  finitely many irreducible forms at once.
 * `PlaneCurves.Projective.isTerriblePoint_iff_forall_isSimplePoint`: for `n ≥ 2`, `[v]` is
   terrible iff the tangent line at every simple point passes through `[v]`.
 * `PlaneCurves.Projective.infinite_setOf_ncard_zeroLocus_pair_diff_lt_iff`: `P` is terrible iff
@@ -310,6 +313,64 @@ theorem exists_ncard_zeroLocus_pair_sum_C_mul_X_eq [IsAlgClosed k] (hF : F.IsHom
   rw [Set.sdiff_singleton_eq_self hPZ, Nat.sub_zero] at hn
   refine ⟨c, fun Q hQ hQc ↦ hc.2 ⟨hcP, Q, hQ, fun h ↦ hPS.1 (h ▸ hQ), hQc⟩, hn, fun Q hQ ↦
     h1 Q hQ fun h ↦ hPZ (h ▸ hQ)⟩
+
+/-- **Lines through a point that is not terrible, for finitely many curves.** Let `k` be
+algebraically closed, `F a` for `a ∈ s` finitely many irreducible forms of degrees `n a`, and `P`
+a point of `ℙ²` that is not terrible for any of them, with `r a = m_P(F a)`. Then for all but
+finitely many lines `L` through `P`, for every `a ∈ s`, the line `L` meets `F a` in exactly
+`n a - r a` points other than `P`, transversally, and has `I(P, F a ∩ L) = r a`. -/
+theorem eventually_cofinite_forall_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint
+    [IsAlgClosed k] {ι : Type*} {s : Finset ι} {F : ι → MvPolynomial (Fin 3) k} {n r : ι → ℕ}
+    (hF : ∀ a ∈ s, (F a).IsHomogeneous (n a)) (hirr : ∀ a ∈ s, Irreducible (F a))
+    {P : ℙ k (Fin 3 → k)} (hP : ∀ a ∈ s, ¬IsTerriblePoint (F a) P.rep)
+    (hr : ∀ a ∈ s, mult (F a) P = r a) :
+    ∀ᶠ c : ℙ k (Fin 3 → k) in Filter.cofinite, eval P.rep (∑ i, C (c.rep i) * X i) = 0 →
+      ∀ a ∈ s, (zeroLocus {F a, ∑ i, C (c.rep i) * X i} \ {P}).ncard = n a - r a ∧
+        (∀ Q ∈ zeroLocus {F a, ∑ i, C (c.rep i) * X i}, Q ≠ P →
+          intersectionNumber Q (F a) (∑ i, C (c.rep i) * X i) = 1) ∧
+        intersectionNumber P (F a) (∑ i, C (c.rep i) * X i) = r a :=
+  ((Filter.eventually_all_finset s).2 fun a ha ↦
+    eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint (hF a ha) (hirr a ha)
+      (hP a ha) (hr a ha)).mono fun _ hc hcP a ha ↦ hc a ha hcP
+
+/-- **Lines meeting finitely many plane curves in distinct points.** Let `k` be algebraically
+closed and `F a` for `a ∈ s` finitely many irreducible forms of degrees `n a`. For every finite
+set `S` of points of `ℙ²` there is a line `L = ∑ i, c i X i` through no point of `S` that meets
+each `F a` in exactly `n a` points, with `I(Q, F a ∩ L) = 1` at each of them. Such lines pass
+through a point off every `F a` that is terrible for none of them. -/
+theorem exists_forall_ncard_zeroLocus_pair_sum_C_mul_X_eq [IsAlgClosed k] {ι : Type*}
+    {s : Finset ι} {F : ι → MvPolynomial (Fin 3) k} {n : ι → ℕ}
+    (hF : ∀ a ∈ s, (F a).IsHomogeneous (n a)) (hirr : ∀ a ∈ s, Irreducible (F a))
+    {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite) :
+    ∃ c : ℙ k (Fin 3 → k), (∀ Q ∈ S, eval Q.rep (∑ i, C (c.rep i) * X i) ≠ 0) ∧
+      ∀ a ∈ s, (zeroLocus {F a, ∑ i, C (c.rep i) * X i}).ncard = n a ∧
+        ∀ Q ∈ zeroLocus {F a, ∑ i, C (c.rep i) * X i},
+          intersectionNumber Q (F a) (∑ i, C (c.rep i) * X i) = 1 := by
+  have hT : (⋃ a ∈ s, {Q : ℙ k (Fin 3 → k) | IsTerriblePoint (F a) Q.rep}).Finite :=
+    s.finite_toSet.biUnion fun a ha ↦ Set.Subsingleton.finite fun Q hQ Q' hQ' ↦ by
+      simpa using hQ.mk_eq_mk (hF a ha) (hirr a ha) Q.rep_ne_zero Q'.rep_ne_zero hQ'
+  obtain ⟨P, hPF, hPS⟩ := exists_eval_rep_ne_zero_notMem two_ne_zero
+    (IsHomogeneous.prod s F n hF) (Finset.prod_ne_zero_iff.2 fun a ha ↦ (hirr a ha).ne_zero)
+    (hS.union hT)
+  rw [Set.mem_union, not_or] at hPS
+  rw [eval_prod, Finset.prod_ne_zero_iff] at hPF
+  have hPF' (a : ι) (ha : a ∈ s) : P ∉ zeroLocus {F a} := by
+    rw [mem_zeroLocus_singleton_iff (hF a ha)]
+    exact hPF a ha
+  have hgood := eventually_cofinite_forall_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF
+    hirr (r := fun _ ↦ 0) (fun a ha hPa ↦ hPS.2 (Set.mem_biUnion ha hPa)) fun a ha ↦ by
+      rw [Nat.cast_zero, mult_eq_zero_iff (hF a ha)]
+      exact hPF' a ha
+  rw [Filter.eventually_cofinite] at hgood
+  obtain ⟨c, hcP, hc⟩ := ((infinite_setOf_eval_sum_C_mul_X_eq_zero P).sdiff
+    (hgood.union (finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite hS P))).nonempty
+  simp only [Set.mem_ofPred_eq, Set.mem_union, not_or, not_not] at hcP hc
+  refine ⟨c, fun Q hQ hQc ↦ hc.2 ⟨hcP, Q, hQ, fun h ↦ hPS.1 (h ▸ hQ), hQc⟩, fun a ha ↦ ?_⟩
+  obtain ⟨hn, h1, -⟩ := hc.1 hcP a ha
+  have hPZ : P ∉ zeroLocus {F a, ∑ i, C (c.rep i) * X i} :=
+    fun h ↦ hPF' a ha (zeroLocus_anti_mono (by simp) h)
+  rw [Set.sdiff_singleton_eq_self hPZ, Nat.sub_zero] at hn
+  exact ⟨hn, fun Q hQ ↦ h1 Q hQ fun h ↦ hPZ (h ▸ hQ)⟩
 
 /-! ### The geometric characterization -/
 
