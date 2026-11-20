@@ -30,8 +30,8 @@ the same degree not divisible by `F` is a unit of `K`, with divisor `div G - div
 ## Main results
 
 * `coeff_formDivisor`: the coefficient of `div G` at `Q` is `ord_Q(G)`.
-* `formDivisor_nonneg`, `coeff_formDivisor_pos_iff`, `formDivisor_mul`,
-  `formDivisor_eq_of_dvd_sub`, `not_dvd_pow_of_not_dvd`, `formDivisor_pow`.
+* `formDivisor_nonneg`, `coeff_formDivisor_pos_iff`, `coeff_formDivisor_eq_zero_iff`,
+  `formDivisor_mul`, `formDivisor_eq_of_dvd_sub`, `not_dvd_pow_of_not_dvd`, `formDivisor_pow`.
 * `principal_formQuotient`: `div (G / H) = div G - div H`; `exists_formQuotient_eq`.
 * `sum_coeff_formDivisor_center`: `∑_{Q over P} ord_Q(G) = I(P, C ∩ G)`;
   `coeff_formDivisor_of_isSimplePoint`: `ord_Q(G) = I(P, C ∩ G)` at the place over a simple point.
@@ -181,6 +181,15 @@ theorem coeff_formDivisor_pos_iff (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
     {Q : Place k (functionField hF)} :
     0 < (formDivisor hF hG).coeff Q ↔ eval (center hF Q).1.rep G = 0 := by
   rw [← ordForm_pos_iff hG, ← coeff_formDivisor hG hFG, WithTop.coe_pos]
+
+/-- A form `G` with `F ∤ G` has coefficient `0` in `div G` at `Q` iff `G` does not vanish at the
+centre of `Q`. -/
+theorem coeff_formDivisor_eq_zero_iff (hG : G.IsHomogeneous m) (hFG : ¬ F ∣ G)
+    {Q : Place k (functionField hF)} :
+    (formDivisor hF hG).coeff Q = 0 ↔ eval (center hF Q).1.rep G ≠ 0 := by
+  rw [Ne, ← coeff_formDivisor_pos_iff hG hFG]
+  have := (WeilDivisor.nonneg_iff _).1 (formDivisor_nonneg (hF := hF) hG) Q
+  omega
 
 /-- `div (G G') = div G + div G'` for forms not divisible by `F`. -/
 theorem formDivisor_mul (hG : G.IsHomogeneous m) (hG' : G'.IsHomogeneous m') (hFG : ¬ F ∣ G)
