@@ -11,6 +11,7 @@ public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.NormalForm
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Hessian.Flex
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.IntersectionCycle
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.Singular
+public import PlaneCurves.Data.Finsupp.Multiset
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Affine.Point.Collinear
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Affine.Singular
 public import TauCeti.AlgebraicGeometry.EllipticCurve.Projective.CoordinateRing
@@ -282,14 +283,6 @@ private theorem aeval_dehomogenize_two_polynomial_line (ℓ ν : k) :
   simp [dehomogenize_two_polynomial, WeierstrassCurve.Affine.polynomial]
   ring
 
-private theorem sum_map_single_eq_toFinsupp {α β : Type*} [DecidableEq β] (g : α → β)
-    (s : Multiset α) : (s.map fun x ↦ single (g x) 1).sum = Multiset.toFinsupp (s.map g) := by
-  induction s using Multiset.induction_on with
-  | empty => simp
-  | cons a s ih =>
-    rw [Multiset.map_cons, Multiset.sum_cons, ih, Multiset.map_cons, ← Multiset.singleton_add,
-      Multiset.toFinsupp_add, Multiset.toFinsupp_singleton]
-
 /-! ### Lines and the cubic -/
 
 /-- The point `O = [0 : 1 : 0]` is a simple point of `W.polynomial`. -/
@@ -332,7 +325,7 @@ theorem intersectionCycle_X_one_sub (ℓ ν : k) :
     fun x x' h ↦ by
       simp only [mk_eq_mk_insertNth_two, mk_insertNth_one_inj, Matrix.vecCons_inj] at h
       exact h.1
-  rw [hneg, intersectionCycle_smul_left (by norm_num), sum_map_single_eq_toFinsupp]
+  rw [hneg, intersectionCycle_smul_left (by norm_num), Multiset.sum_map_single_eq_toFinsupp]
   ext P
   apply Nat.cast_injective (R := ℕ∞)
   rw [intersectionCycle_apply hL hF hrel, Multiset.toFinsupp_apply]

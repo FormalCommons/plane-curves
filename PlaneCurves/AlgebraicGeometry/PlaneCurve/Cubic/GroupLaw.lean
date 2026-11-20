@@ -221,6 +221,17 @@ end Zero
 
 variable [IsAlgClosed k] [hF : Fact (F.IsHomogeneous 3)] [hirr : Fact (Irreducible F)]
 
+omit [IsAlgClosed k] in
+/-- The chord line through two points of the group is not a component of `F`. -/
+theorem isRelPrime_chordLine (A B : CubicGroup F O) :
+    IsRelPrime F (chordLine F A.point B.point) :=
+  (Projective.isRelPrime_chordLine hF.out hirr.out (by norm_num) (Or.inr A.isSimplePoint)).symm
+
+omit [IsAlgClosed k] in
+/-- An irreducible cubic does not divide a chord line through two points of the group. -/
+theorem not_dvd_chordLine (A B : CubicGroup F O) : ¬ F ∣ chordLine F A.point B.point :=
+  fun h ↦ hirr.out.not_isUnit (isRelPrime_chordLine A B dvd_rfl h)
+
 /-- The third point `φ(A, B)` of the chord through simple points `A`, `B` of an irreducible cubic,
 as a point of the group. -/
 noncomputable def chord (A B : CubicGroup F O) : CubicGroup F O :=

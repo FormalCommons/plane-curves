@@ -6,7 +6,8 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.Algebra.MvPolynomial.Derivation
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Adjoint.Basic
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Adjoint.RiemannRochSpace
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.CanonicalDivisor.Basic
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.CanonicalDivisor.Position
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Place.OrdinaryMultiplePoint
 public import PlaneCurves.FieldTheory.FunctionField.KaehlerDifferential
@@ -52,6 +53,12 @@ adjoint divisor:
   `coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isSimplePoint`,
   `coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_eval_X_two_eq_zero`:
   the bounds on the orders of `dx / f_y`.
+* `PlaneCurves.Projective.kaehlerDifferentialDivisor_chartDifferential`: when the multiple points
+  of `C` are ordinary, `div (dx / f_y) = (n - 3) div Z - E`, since both sides have degree `2g - 2`.
+* `PlaneCurves.Projective.nonneg_kaehlerDifferentialDivisor_iff`: the differentials without poles
+  are the `H(x, y, 1) dx / f_y` for the adjoints `H` of degree `n - 3`.
+* `PlaneCurves.Projective.canonical_eq_formDivisor_sub_adjointDivisor`: canonical divisors of a
+  plane curve are cut out by adjoints of degree `n - 3`.
 
 ## References
 
@@ -418,6 +425,174 @@ theorem coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_eval_X_two_eq_z
   omega
 
 end Orders
+
+/-! ### The divisor of `dx / f_y` and the holomorphic differentials -/
+
+section Divisor
+
+variable [IsAlgClosed k] (hord : ∀ P, IsMultiplePoint F P → IsOrdinaryMultiplePoint F P)
+include hord
+
+section Transverse
+
+variable (hpos : IsTransversePosition F) (hn : 2 ≤ n)
+include hpos hn
+
+/-- **`div (dx / f_y) ≤ (n - 3) div Z - E`.** In transverse position, for `n ≥ 2` and a curve
+whose multiple points are ordinary, the divisor of `dx / f_y` is at most `(n - 3) div Z - E`,
+`E` the adjoint divisor. -/
+theorem kaehlerDifferentialDivisor_chartDifferential_le :
+    kaehlerDifferentialDivisor (functionField.isFunctionField hF)
+        isIntegrallyClosedIn_of_isAlgClosed
+        (chartDifferential hF (hpos.not_dvd_X hF hn 2))
+        (chartDifferential_ne_zero _ (hpos.not_dvd_pderiv_one hF hn)) ≤
+      ((n : ℤ) - 3) • formDivisor hF (isHomogeneous_X k 2) - adjointDivisor hF := by
+  refine WeilDivisor.le_iff.2 fun P ↦ ?_
+  by_cases hP2 : eval (center hF P).1.rep (X 2) = 0
+  · exact coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_eval_X_two_eq_zero hpos hn hP2
+  have hC : (center hF P).1 ∈ zeroLocus {F} := by
+    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)]
+    simpa using (mem_zeroLocus_ideal_iff hF).1 (center hF P).2
+  rcases isSimplePoint_or_isMultiplePoint hF hC with hs | hm
+  · exact coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isSimplePoint hpos hn hP2 hs
+  · exact coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isOrdinaryMultiplePoint hpos hn
+      hP2 (hord _ hm)
+
+/-- **The divisor of `dx / f_y`** (Fulton, §8.5): in transverse position, for `n ≥ 2` and a curve
+whose multiple points are ordinary, `div (dx / f_y) = (n - 3) div Z - E`, `E` the adjoint
+divisor. Both sides have degree `2g - 2`, and the left one is at most the right one. -/
+theorem kaehlerDifferentialDivisor_chartDifferential :
+    kaehlerDifferentialDivisor (functionField.isFunctionField hF)
+        isIntegrallyClosedIn_of_isAlgClosed
+        (chartDifferential hF (hpos.not_dvd_X hF hn 2))
+        (chartDifferential_ne_zero _ (hpos.not_dvd_pderiv_one hF hn)) =
+      ((n : ℤ) - 3) • formDivisor hF (isHomogeneous_X k 2) - adjointDivisor hF := by
+  have hK := functionField.isFunctionField hF
+  have hle := kaehlerDifferentialDivisor_chartDifferential_le (hF := hF) hord hpos hn
+  have h0 := (Divisor.degree_eq_zero_iff hK (sub_nonneg.2 hle)).1 (by
+    rw [map_sub, degree_zsmul_formDivisor_sub_adjointDivisor hord _ (hpos.not_dvd_X hF hn 2),
+      (isRiemannRochDivisor_kaehlerDifferentialDivisor hK _ _ _).degree_eq hK
+        isIntegrallyClosedIn_of_isAlgClosed, sub_self])
+  exact (sub_eq_zero.1 h0).symm
+
+end Transverse
+
+/-- **The holomorphic differentials of a plane curve** (Fulton, §8.5): in transverse position,
+for `n ≥ 3` and a curve whose multiple points are ordinary, a Kähler differential `ω` has no pole
+exactly when `ω = H(x, y, 1) dx / f_y` for an adjoint `H` of degree `n - 3`. -/
+theorem nonneg_kaehlerDifferentialDivisor_iff (hpos : IsTransversePosition F) (hn : 3 ≤ n)
+    (ω : Ω[functionField hF⁄k]) :
+    (∀ hω : ω ≠ 0, 0 ≤ kaehlerDifferentialDivisor (functionField.isFunctionField hF)
+        isIntegrallyClosedIn_of_isAlgClosed ω hω) ↔
+      ∃ H ∈ adjointSubmodule F (n - 3),
+        ω = aeval (chartCoord hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2)) H •
+          chartDifferential hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2) := by
+  have h2n : 2 ≤ n := Nat.le_of_succ_le hn
+  have hK := functionField.isFunctionField hF
+  have h2 := hpos.not_dvd_X hF h2n 2
+  have hω₀ := chartDifferential_ne_zero (hF := hF) h2 (hpos.not_dvd_pderiv_one hF h2n)
+  have hZ : (X 2 : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k 2
+  -- `G ↦ G / Z^{n-3}` is `G ↦ G(x, y, 1)`.
+  have hcoe (G : adjointSubmodule F (n - 3)) :
+      (adjointToRiemannRochSpace hF hord hZ h2 G : functionField hF) =
+        aeval (chartCoord hF h2) (G : MvPolynomial (Fin 3) k) := by
+    rw [coe_adjointToRiemannRochSpace_apply hord hZ h2 (isHomogeneous_X_pow 2 (n - 3)) G
+      (projectivePlaneCurve.pow_notMem_ideal hF h2 _),
+      aeval_chartCoord h2 (mem_adjointSubmodule_iff.1 G.2).1]
+  -- `h dx / f_y` has no pole iff `h ∈ L((n - 3) div Z - E)`.
+  have key (h : functionField hF) (hh : h ≠ 0) :
+      0 ≤ kaehlerDifferentialDivisor hK isIntegrallyClosedIn_of_isAlgClosed
+          (h • chartDifferential hF h2) (smul_ne_zero hh hω₀) ↔
+        h ∈ riemannRochSpace ((n - 3) • formDivisor hF hZ - adjointDivisor hF) := by
+    have hE : (n - 3) • formDivisor hF hZ = ((n : ℤ) - 3) • formDivisor hF hZ := by
+      rw [← natCast_zsmul, Nat.cast_sub hn, Nat.cast_ofNat]
+    rw [kaehlerDifferentialDivisor_smul hK _ hh hω₀,
+      kaehlerDifferentialDivisor_chartDifferential hord hpos h2n, hE,
+      ← mem_riemannRochSpace_units_iff hK, Units.val_mk0]
+  constructor
+  · intro hω
+    obtain ⟨t, ht, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
+    obtain ⟨c, rfl⟩ := (finrank_eq_one_iff_of_ne_zero' _ hω₀).1
+      (finrank_kaehlerDifferential_eq_one_of_separating ht) ω
+    rcases eq_or_ne c 0 with rfl | hc0
+    · exact ⟨0, zero_mem _, by rw [map_zero]⟩
+    obtain ⟨G, hG⟩ := adjointToRiemannRochSpace_surjective hord hZ h2
+      ⟨c, (key c hc0).1 (hω (smul_ne_zero hc0 hω₀))⟩
+    exact ⟨G, G.2, by rw [← hcoe, hG]⟩
+  · rintro ⟨H, hH, rfl⟩ hω
+    have hh : aeval (chartCoord hF h2) H ≠ 0 := fun h0 ↦ hω (by
+      rw [h0]; exact zero_smul (functionField hF) (_ : Ω[functionField hF⁄k]))
+    refine (key _ hh).2 ?_
+    rw [← hcoe ⟨H, hH⟩]
+    exact (adjointToRiemannRochSpace hF hord hZ h2 ⟨H, hH⟩).2
+
+/-- **Canonical divisors of a plane curve are cut out by adjoints** (Fulton, §8.5, Proposition 8
+and its Corollary). Let `C : F = 0` be an irreducible projective plane curve of degree `n` over an
+algebraically closed field, all of whose multiple points are ordinary, with function field `K`
+of genus `g` and adjoint divisor `E`. Then:
+
+1. for every line `L` with `F ∤ L`, `(n - 3) div L - E` is canonical; for `n ≥ 3`, so is
+   `div G - E` for every form `G` of degree `n - 3` with `F ∤ G`; for `n = 3`, `-E` is canonical;
+2. in transverse position and for `n ≥ 2`, `div (dx / f_y) = (n - 3) div Z - E`;
+3. every canonical divisor `W` has `deg W = 2g - 2` and `ℓ(W) = g`;
+4. for `n ≥ 3`, the effective canonical divisors are the `div G - E` for the nonzero adjoints `G`
+   of degree `n - 3`, these adjoints form a space of dimension `g`, and in transverse position
+   the differentials without poles are the `H(x, y, 1) dx / f_y` for the adjoints `H` of degree
+   `n - 3`.
+
+Milestone: *Canonical divisors of a plane curve are cut out by adjoints of degree n − 3*. -/
+theorem canonical_eq_formDivisor_sub_adjointDivisor :
+    ((∀ {L : MvPolynomial (Fin 3) k} (hL : L.IsHomogeneous 1), ¬ F ∣ L →
+        (Place.orderSystem (functionField.isFunctionField hF)).divisorClass
+            (((n : ℤ) - 3) • formDivisor hF hL - adjointDivisor hF) =
+          canonicalClass (functionField.isFunctionField hF) isIntegrallyClosedIn_of_isAlgClosed) ∧
+      (3 ≤ n → ∀ {G : MvPolynomial (Fin 3) k} (hG : G.IsHomogeneous (n - 3)), ¬ F ∣ G →
+        (Place.orderSystem (functionField.isFunctionField hF)).divisorClass
+            (formDivisor hF hG - adjointDivisor hF) =
+          canonicalClass (functionField.isFunctionField hF) isIntegrallyClosedIn_of_isAlgClosed) ∧
+      (n = 3 → (Place.orderSystem (functionField.isFunctionField hF)).divisorClass
+            (-adjointDivisor hF) =
+          canonicalClass (functionField.isFunctionField hF) isIntegrallyClosedIn_of_isAlgClosed)) ∧
+    (∀ (hpos : IsTransversePosition F) (hn : 2 ≤ n),
+      kaehlerDifferentialDivisor (functionField.isFunctionField hF)
+          isIntegrallyClosedIn_of_isAlgClosed
+          (chartDifferential hF (hpos.not_dvd_X hF hn 2))
+          (chartDifferential_ne_zero _ (hpos.not_dvd_pderiv_one hF hn)) =
+        ((n : ℤ) - 3) • formDivisor hF (isHomogeneous_X k 2) - adjointDivisor hF) ∧
+    (∀ W : Divisor k (functionField hF),
+      (Place.orderSystem (functionField.isFunctionField hF)).divisorClass W =
+          canonicalClass (functionField.isFunctionField hF) isIntegrallyClosedIn_of_isAlgClosed →
+        Divisor.degree W = 2 * (genus k (functionField hF) : ℤ) - 2 ∧
+          Divisor.dim W = genus k (functionField hF)) ∧
+    (∀ hn : 3 ≤ n,
+      (∀ W : Divisor k (functionField hF),
+        0 ≤ W ∧ (Place.orderSystem (functionField.isFunctionField hF)).divisorClass W =
+            canonicalClass (functionField.isFunctionField hF)
+              isIntegrallyClosedIn_of_isAlgClosed ↔
+          ∃ (G : MvPolynomial (Fin 3) k) (hG : G ∈ adjointSubmodule F (n - 3)), G ≠ 0 ∧
+            W = formDivisor hF (mem_adjointSubmodule_iff.1 hG).1 - adjointDivisor hF) ∧
+      Module.finrank k (adjointSubmodule F (n - 3)) = genus k (functionField hF) ∧
+      ∀ (hpos : IsTransversePosition F) (ω : Ω[functionField hF⁄k]),
+        (∀ hω : ω ≠ 0, 0 ≤ kaehlerDifferentialDivisor (functionField.isFunctionField hF)
+            isIntegrallyClosedIn_of_isAlgClosed ω hω) ↔
+          ∃ H ∈ adjointSubmodule F (n - 3),
+            ω = aeval (chartCoord hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2)) H •
+              chartDifferential hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2)) := by
+  have hK := functionField.isFunctionField hF
+  refine ⟨⟨fun hL hFL ↦
+      divisorClass_sub_three_zsmul_formDivisor_sub_adjointDivisor_eq_canonicalClass hord hL hFL,
+    fun hn _ hG hFG ↦ divisorClass_formDivisor_sub_adjointDivisor_eq_canonicalClass hord hn hG hFG,
+    divisorClass_neg_adjointDivisor_eq_canonicalClass hord⟩,
+    fun hpos hn ↦ kaehlerDifferentialDivisor_chartDifferential hord hpos hn,
+    fun W hW ↦ ⟨(isRiemannRochDivisor_of_divisorClass_eq_canonicalClass hK _ hW).degree_eq hK
+        isIntegrallyClosedIn_of_isAlgClosed,
+      (isRiemannRochDivisor_of_divisorClass_eq_canonicalClass hK _ hW).dim_eq hK
+        isIntegrallyClosedIn_of_isAlgClosed⟩,
+    fun hn ↦ ⟨fun _ ↦ nonneg_and_divisorClass_eq_canonicalClass_iff hord hn,
+      finrank_adjointSubmodule_sub_three hord hn,
+      fun hpos ω ↦ nonneg_kaehlerDifferentialDivisor_iff hord hpos hn ω⟩⟩
+
+end Divisor
 
 end PlaneCurves.Projective
 
