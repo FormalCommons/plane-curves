@@ -425,13 +425,11 @@ omit [IsAlgClosed k] in
 `Xⁿ`, of order `n`, and `Yⁿ⁻¹Z`, of order `n - 1`. -/
 theorem orderAt_X_pow_add_X_pow_mul_X (hn : n ≠ 0) :
     (X 0 ^ n + X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = ↑(n - 1) := by
-  have h1 (i : Fin 3) (hi : ![(0 : k), 0, 1] i = 0) :
-      (X i : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = 1 := by
-    simpa [hi] using orderAt_X_sub_C (R := k) ![0, 0, 1] i
   have hp : (X 0 ^ n : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = n := by
-    rw [orderAt_pow, h1 0 rfl]; simp
+    rw [orderAt_pow, orderAt_X_of_eq_zero (by simp)]; simp
   have hq : (X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] = ↑(n - 1) := by
-    rw [orderAt_mul, orderAt_pow, h1 1 rfl, orderAt_eq_zero_iff.2 (by simp)]; simp
+    rw [orderAt_mul, orderAt_pow, orderAt_X_of_eq_zero (by simp),
+      orderAt_eq_zero_iff.2 (by simp)]; simp
   have hlt : (X 1 ^ (n - 1) * X 2 : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] <
       (X 0 ^ n : MvPolynomial (Fin 3) k).orderAt ![0, 0, 1] := by
     rw [hp, hq]; exact_mod_cast Nat.sub_lt (Nat.pos_of_ne_zero hn) one_pos
