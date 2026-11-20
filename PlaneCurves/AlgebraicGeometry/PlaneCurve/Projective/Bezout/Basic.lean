@@ -147,9 +147,7 @@ theorem finsum_intersectionNumber_eq_mul (hF : F.IsHomogeneous m) (hG : G.IsHomo
     exists_linearSubst_forall_mem_affineOpen_last (finite_zeroLocus_pair_of_isRelPrime hF hG hFG)
   set T := map N.1.mulVecLin (Matrix.mulVec_injective_of_isUnit N.isUnit)
   have hrel : IsRelPrime (linearSubst N.1 F) (linearSubst N.1 G) :=
-    IsRelPrime.of_map (linearSubstAlgEquiv N).symm (by
-      rwa [← linearSubstAlgEquiv_apply, ← linearSubstAlgEquiv_apply, AlgEquiv.symm_apply_apply,
-        AlgEquiv.symm_apply_apply])
+    (isRelPrime_linearSubst_iff ((Matrix.isUnit_iff_isUnit_det _).1 N.isUnit)).2 hFG
   have key := finsum_intersectionNumber_eq_mul_of_forall_mem_affineOpen (i := Fin.last 2)
     (hF.linearSubst N.1) (hG.linearSubst N.1) hrel fun Q hQF hQG ↦ hN Q (by
       rw [mem_zeroLocus_iff_eval_rep (by rintro f (rfl | rfl); exacts [⟨m, hF⟩, ⟨n, hG⟩])]
