@@ -41,6 +41,8 @@ affine tangent `L_(i)(Y + a) = 0`: this is how Fulton defines them in §5.1.
 ## Main results
 
 * `PlaneCurves.Projective.associated_leadingForm_affine`: the leading form in an affine chart.
+* `PlaneCurves.Projective.isTangentAt_mul_iff`: the tangents of `F G` at `P` are those of `F`
+  and those of `G`.
 * `PlaneCurves.Projective.isTangentAt_iff_affine`,
   `PlaneCurves.Projective.tangentMultiplicity_eq_affine`,
   `PlaneCurves.Projective.isOrdinaryMultiplePoint_iff_affine`: tangent lines, their
@@ -296,6 +298,18 @@ theorem isTangentAt_smul_iff {c : k} (hc : c ≠ 0) :
     IsTangentAt (c • F) P L ↔ IsTangentAt F P L := by
   rw [isTangentAt_def, isTangentAt_def, leadingForm_def, leadingForm_def, leadingFormAt_smul,
     smul_eq_C_mul, (hc.isUnit.map C).dvd_mul_left]
+
+/-- **The tangents of a product.** A line is tangent to `F G` at `P` exactly when it is tangent
+to `F` or to `G` there: the leading form of `F G` is the product of the leading forms, and a
+linear form is prime. -/
+theorem isTangentAt_mul_iff {G : MvPolynomial (Fin 3) k} :
+    IsTangentAt (F * G) P L ↔ IsTangentAt F P L ∨ IsTangentAt G P L := by
+  simp only [isTangentAt_def, leadingForm_def, leadingFormAt_mul]
+  refine ⟨fun ⟨h1, h2, h3, h4⟩ ↦ ?_, ?_⟩
+  · exact ((irreducible_of_isHomogeneous_one h1 h2).prime.dvd_or_dvd h4).imp
+      (fun h ↦ ⟨h1, h2, h3, h⟩) fun h ↦ ⟨h1, h2, h3, h⟩
+  · rintro (⟨h1, h2, h3, h4⟩ | ⟨h1, h2, h3, h4⟩)
+    exacts [⟨h1, h2, h3, dvd_mul_of_dvd_left h4 _⟩, ⟨h1, h2, h3, dvd_mul_of_dvd_right h4 _⟩]
 
 /-- Rescaling a curve by a nonzero constant does not change its ordinary multiple points. -/
 @[simp]

@@ -53,7 +53,8 @@ All declarations are in the namespace `PlaneCurves.Projective`.
   in fundamental points; `IsExcellentPosition.eq_fundamentalPoint_or_mem_pointsOverCentre`: its
   points on the triangle are fundamental or over the centre.
 * `IsExcellentPosition.mem_pointsOverCentre_iff`, `IsExcellentPosition.pointsOverCentre_finite`:
-  the points over the centre, in terms of the tangent cone of `F` at `P`.
+  the points over the centre, in terms of the tangent cone of `F` at `P`;
+  `pointsOverCentre_mul`: those of a product are those of the factors.
 * `IsExcellentPosition.mult_properTransform_fundamentalPoint_two`,
   `IsExcellentPosition.mult_properTransform_fundamentalPoint`: the multiplicities `n`, `n - r`,
   `n - r` of `C'` at `P`, `P'`, `P''`.
@@ -385,6 +386,18 @@ theorem pointsOverCentre_subset_fundamentalTriangle :
     pointsOverCentre F ⊆ fundamentalTriangle := fun Q hQ ↦ by
   rw [fundamentalTriangle_eq_iUnion, Set.mem_iUnion]
   exact ⟨2, zeroLocus_anti_mono (by simp) hQ.1⟩
+
+/-- The points over the centre of a product of forms are those of the factors: `(F G)' = F' G'`.
+-/
+theorem pointsOverCentre_mul {G : MvPolynomial (Fin 3) k} {m : ℕ} (hF : F.IsHomogeneous n)
+    (hG : G.IsHomogeneous m) :
+    pointsOverCentre (F * G) = pointsOverCentre F ∪ pointsOverCentre G := by
+  ext Q
+  simp only [pointsOverCentre_def, Set.mem_ofPred_eq, Set.mem_union, properTransform_mul hF hG,
+    mem_zeroLocus_pair_iff, mem_zeroLocus_singleton_iff (hF.properTransform.mul hG.properTransform),
+    mem_zeroLocus_singleton_iff hF.properTransform, mem_zeroLocus_singleton_iff hG.properTransform,
+    eval_mul, mul_eq_zero]
+  tauto
 
 namespace IsExcellentPosition
 

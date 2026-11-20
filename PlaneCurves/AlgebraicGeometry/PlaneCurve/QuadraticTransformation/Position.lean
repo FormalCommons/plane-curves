@@ -51,6 +51,11 @@ squarefree criterion by intersection numbers,
 * `PlaneCurves.Projective.IsExcellentPosition.ncard_zeroLocus_X_two`,
   `PlaneCurves.Projective.IsExcellentPosition.ncard_zeroLocus_X_diff`: `L` meets `F` in `n`
   points, `L'` and `L''` in `n - r` points other than `P`.
+* `PlaneCurves.Projective.isExcellentPosition_mul_iff`: `F G` is in excellent position exactly
+  when `F` and `G` are and meet on the fundamental triangle only at `P`;
+  `PlaneCurves.Projective.IsExcellentPosition.of_mul_left`,
+  `PlaneCurves.Projective.IsExcellentPosition.of_mul_right`,
+  `PlaneCurves.Projective.IsExcellentPosition.eq_fundamentalPoint_two_of_mem`.
 * `PlaneCurves.Projective.exists_isExcellentPosition`: Fulton's Lemma 1, for every point that is
   not terrible, in any characteristic;
   `PlaneCurves.Projective.exists_isExcellentPosition_of_charZero` is the book's
@@ -355,6 +360,88 @@ theorem ncard_zeroLocus_X_diff [IsAlgClosed k] (h : IsExcellentPosition F)
     fun Q hQ hQP ↦ h.intersectionNumber_eq_one hQ hQP
 
 end IsExcellentPosition
+
+/-! ### Products -/
+
+section Products
+
+variable {G : MvPolynomial (Fin 3) k} {m : ℕ}
+
+private theorem one_le_intersectionNumber_X {H : MvPolynomial (Fin 3) k} {e : ℕ}
+    (hH : H.IsHomogeneous e) {j : Fin 3} (hQ : Q ∈ zeroLocus {H, X j}) :
+    1 ≤ intersectionNumber Q H (X j) := by
+  rw [mem_zeroLocus_pair_iff, mem_zeroLocus_singleton_iff hH,
+    mem_zeroLocus_singleton_iff (isHomogeneous_X k j)] at hQ
+  exact one_le_intersectionNumber hH (isHomogeneous_X k j) hQ.1 hQ.2
+
+private theorem intersectionNumber_X_eq_zero {H : MvPolynomial (Fin 3) k} {e : ℕ}
+    (hH : H.IsHomogeneous e) {j : Fin 3} (hQ : Q ∉ zeroLocus {H, X j}) :
+    intersectionNumber Q H (X j) = 0 := by
+  rw [mem_zeroLocus_pair_iff, mem_zeroLocus_singleton_iff hH,
+    mem_zeroLocus_singleton_iff (isHomogeneous_X k j)] at hQ
+  rw [intersectionNumber_eq_zero_iff hH (isHomogeneous_X k j)]
+  tauto
+
+/-- **Excellent position of a product.** `F G` is in excellent position exactly when `F` and `G`
+are, and their only common point on the fundamental triangle is `[0 : 0 : 1]`. -/
+theorem isExcellentPosition_mul_iff (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m) :
+    IsExcellentPosition (F * G) ↔ IsExcellentPosition F ∧ IsExcellentPosition G ∧
+      ∀ j, ∀ Q ∈ zeroLocus {F, G, X j}, Q = fundamentalPoint 2 := by
+  have hmem (j : Fin 3) (Q : ℙ k (Fin 3 → k)) :
+      Q ∈ zeroLocus {F * G, X j} ↔ Q ∈ zeroLocus {F, X j} ∨ Q ∈ zeroLocus {G, X j} := by
+    simp only [mem_zeroLocus_pair_iff, mem_zeroLocus_singleton_iff (hF.mul hG),
+      mem_zeroLocus_singleton_iff hF, mem_zeroLocus_singleton_iff hG, eval_mul, mul_eq_zero]
+    tauto
+  have h3 (j : Fin 3) (Q : ℙ k (Fin 3 → k)) :
+      Q ∈ zeroLocus {F, G, X j} ↔ Q ∈ zeroLocus {F, X j} ∧ Q ∈ zeroLocus {G, X j} := by
+    simp only [zeroLocus_insert, Set.mem_inter_iff]
+    tauto
+  simp only [isExcellentPosition_def, isGoodPosition_mul_iff, hmem,
+    intersectionNumber_mul_left hF hG (isHomogeneous_X k _)]
+  constructor
+  · rintro ⟨⟨hgF, hgG⟩, h⟩
+    refine ⟨⟨hgF, fun j Q hQ hQP ↦ ?_⟩, ⟨hgG, fun j Q hQ hQP ↦ ?_⟩, fun j Q hQ ↦ ?_⟩
+    · obtain ⟨h1, h2⟩ := h j Q (Or.inl hQ) hQP
+      exact ⟨h1, le_antisymm (h2 ▸ le_self_add) (one_le_intersectionNumber_X hF hQ)⟩
+    · obtain ⟨h1, h2⟩ := h j Q (Or.inr hQ) hQP
+      exact ⟨h1, le_antisymm (h2 ▸ le_add_self) (one_le_intersectionNumber_X hG hQ)⟩
+    · rw [h3] at hQ
+      by_contra hQP
+      have := (h j Q (Or.inl hQ.1) hQP).2 ▸
+        add_le_add (one_le_intersectionNumber_X hF hQ.1) (one_le_intersectionNumber_X hG hQ.2)
+      exact absurd this (by norm_num)
+  · rintro ⟨⟨hgF, hF'⟩, ⟨hgG, hG'⟩, h⟩
+    refine ⟨⟨hgF, hgG⟩, fun j Q hQ hQP ↦ ?_⟩
+    rcases hQ with hQ | hQ
+    · have hQG : Q ∉ zeroLocus {G, X j} := fun hQG ↦ hQP (h j Q ((h3 j Q).2 ⟨hQ, hQG⟩))
+      obtain ⟨h1, h2⟩ := hF' j Q hQ hQP
+      exact ⟨h1, by rw [h2, intersectionNumber_X_eq_zero hG hQG, add_zero]⟩
+    · have hQF : Q ∉ zeroLocus {F, X j} := fun hQF ↦ hQP (h j Q ((h3 j Q).2 ⟨hQF, hQ⟩))
+      obtain ⟨h1, h2⟩ := hG' j Q hQ hQP
+      exact ⟨h1, by rw [h2, intersectionNumber_X_eq_zero hF hQF, zero_add]⟩
+
+namespace IsExcellentPosition
+
+/-- A factor of a curve in excellent position is in excellent position. -/
+theorem of_mul_left (h : IsExcellentPosition (F * G)) (hF : F.IsHomogeneous n)
+    (hG : G.IsHomogeneous m) : IsExcellentPosition F :=
+  ((isExcellentPosition_mul_iff hF hG).1 h).1
+
+/-- A factor of a curve in excellent position is in excellent position. -/
+theorem of_mul_right (h : IsExcellentPosition (F * G)) (hF : F.IsHomogeneous n)
+    (hG : G.IsHomogeneous m) : IsExcellentPosition G :=
+  ((isExcellentPosition_mul_iff hF hG).1 h).2.1
+
+/-- If `F G` is in excellent position, the only common point of `F` and `G` on an exceptional
+line is `[0 : 0 : 1]`. -/
+theorem eq_fundamentalPoint_two_of_mem (h : IsExcellentPosition (F * G))
+    (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m) {j : Fin 3}
+    (hQ : Q ∈ zeroLocus {F, G, X j}) : Q = fundamentalPoint 2 :=
+  ((isExcellentPosition_mul_iff hF hG).1 h).2.2 j Q hQ
+
+end IsExcellentPosition
+
+end Products
 
 /-! ### Existence of excellent position -/
 

@@ -70,6 +70,8 @@ Steps (2) and (3), for a form with no exceptional component, compare the powers 
   `PlaneCurves.Projective.dvd_quadraticTransform_iff`: for `F` irreducible as well, `F'` is
   irreducible, and `F' ∣ H^Q ↔ F ∣ H`; `dvd_quadraticTransform_iff_properTransform_dvd`:
   `F ∣ H^Q ↔ F' ∣ H`.
+* `IsRelPrime.properTransform`, `Squarefree.properTransform`: for forms with no exceptional
+  component, the proper transform keeps relative primality and squarefreeness.
 * `PlaneCurves.Projective.mult_properTransform_fundamentalPoint_add`,
   `PlaneCurves.Projective.mult_properTransform_fundamentalPoint`: step (3),
   `m_{[eᵢ]}(F') = n - m_{[eⱼ]}(F) - m_{[eₗ]}(F)`.
@@ -916,6 +918,56 @@ theorem dvd_quadraticTransform_iff_properTransform_dvd (hF : F.IsHomogeneous n)
   have h := dvd_quadraticTransform_iff (H := H) hF.properTransform
     (irreducible_properTransform hF hirr hX) (not_X_dvd_properTransform hF hirr.ne_zero)
   rwa [properTransform_properTransform hF hX] at h
+
+/-- For a form `F` with no exceptional component, a divisor `H` of `F'` has `H' ∣ F`. -/
+theorem properTransform_dvd_of_dvd_properTransform (hF : F.IsHomogeneous n)
+    (hX : ∀ i, ¬ X i ∣ F) (hH : H ∣ properTransform F) : properTransform H ∣ F := by
+  obtain ⟨K, hK⟩ := hH
+  have hF0 : F ≠ 0 := fun h0 ↦ hX 0 (h0 ▸ dvd_zero _)
+  have hHK0 : H * K ≠ 0 := hK ▸ (properTransform_eq_zero_iff hF).not.2 hF0
+  have hP := hK ▸ hF.properTransform
+  rw [← properTransform_properTransform hF hX, hK,
+    properTransform_mul (hP.of_mul_left (right_ne_zero_of_mul hHK0))
+      (hP.of_mul_right (left_ne_zero_of_mul hHK0))]
+  exact dvd_mul_right _ _
+
+/-- An irreducible factor `q` of the proper transform of a form `F` with no exceptional component
+has an irreducible proper transform `q'` dividing `F`. -/
+private theorem exists_irreducible_properTransform_dvd (hF : F.IsHomogeneous n)
+    (hX : ∀ i, ¬ X i ∣ F) {q : MvPolynomial (Fin 3) k} (hq : Irreducible q)
+    (hqF : q ∣ properTransform F) :
+    ∃ e, q.IsHomogeneous e ∧ Irreducible (properTransform q) := by
+  have hF0 : F ≠ 0 := fun h0 ↦ hX 0 (h0 ▸ dvd_zero _)
+  obtain ⟨e, -, hqe⟩ := hF.properTransform.exists_isHomogeneous_of_dvd
+    ((properTransform_eq_zero_iff hF).not.2 hF0) hqF hq.not_isUnit
+  exact ⟨e, hqe, irreducible_properTransform hqe hq fun i hi ↦
+    not_X_dvd_properTransform hF hF0 i (hi.trans hqF)⟩
+
+/-- Relatively prime forms with no exceptional component have relatively prime proper
+transforms. -/
+theorem _root_.IsRelPrime.properTransform {G : MvPolynomial (Fin 3) k} {m : ℕ}
+    (h : IsRelPrime F G) (hF : F.IsHomogeneous n) (hG : G.IsHomogeneous m)
+    (hXF : ∀ i, ¬ X i ∣ F) (hXG : ∀ i, ¬ X i ∣ G) :
+    IsRelPrime (PlaneCurves.Projective.properTransform F)
+      (PlaneCurves.Projective.properTransform G) := by
+  have hF0 : F ≠ 0 := fun h0 ↦ hXF 0 (h0 ▸ dvd_zero _)
+  refine WfDvdMonoid.isRelPrime_of_no_irreducible_factors
+    (fun h0 ↦ (properTransform_eq_zero_iff hF).not.2 hF0 h0.1) fun q hq hqF hqG ↦ ?_
+  obtain ⟨e, -, hq'⟩ := exists_irreducible_properTransform_dvd hF hXF hq hqF
+  exact hq'.not_isUnit (h (properTransform_dvd_of_dvd_properTransform hF hXF hqF)
+    (properTransform_dvd_of_dvd_properTransform hG hXG hqG))
+
+/-- A squarefree form with no exceptional component has a squarefree proper transform. -/
+theorem _root_.Squarefree.properTransform (h : Squarefree F) (hF : F.IsHomogeneous n)
+    (hX : ∀ i, ¬ X i ∣ F) : Squarefree (PlaneCurves.Projective.properTransform F) := by
+  have hF0 : F ≠ 0 := fun h0 ↦ hX 0 (h0 ▸ dvd_zero _)
+  refine (squarefree_iff_irreducible_sq_not_dvd_of_ne_zero
+    ((properTransform_eq_zero_iff hF).not.2 hF0)).2 fun q hq hqF ↦ ?_
+  obtain ⟨e, hqe, hq'⟩ :=
+    exists_irreducible_properTransform_dvd hF hX hq (dvd_trans (dvd_mul_right q q) hqF)
+  have := properTransform_dvd_of_dvd_properTransform hF hX hqF
+  rw [properTransform_mul hqe hqe] at this
+  exact hq'.not_isUnit (h _ this)
 
 end Involution
 
