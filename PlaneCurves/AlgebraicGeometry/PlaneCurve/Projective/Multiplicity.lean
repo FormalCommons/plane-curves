@@ -31,7 +31,8 @@ is Fulton's definition.
   dehomogenization `F_(i)` at the chart point of `P`, for every chart containing `P`.
 * `PlaneCurves.Projective.mult_smul`, `PlaneCurves.Projective.mult_linearSubst`: invariance under
   scalars and projective changes of coordinates.
-* `PlaneCurves.Projective.mult_eq_zero_iff`, `PlaneCurves.Projective.mult_mul`,
+* `PlaneCurves.Projective.mult_eq_zero_iff`, `PlaneCurves.Projective.support_mult_mul_mult`,
+  `PlaneCurves.Projective.mult_mul`,
   `PlaneCurves.Projective.mult_prod_pow`, `PlaneCurves.Projective.mult_le_degree`.
 * `PlaneCurves.Projective.mult_eq_orderAt_dehomogenize_and_properties`: the multiplicity of a
   projective plane curve at a point, as in §5.1 of Fulton.
@@ -107,6 +108,13 @@ theorem mult_eq_zero_iff (hF : F.IsHomogeneous d) : mult F P = 0 ↔ P ∉ zeroL
 /-- The multiplicity of a form at `P` is positive exactly when `P` is on the curve. -/
 theorem mult_pos_iff (hF : F.IsHomogeneous d) : 0 < mult F P ↔ P ∈ zeroLocus {F} := by
   rw [pos_iff_ne_zero, Ne, mult_eq_zero_iff hF, not_not]
+
+/-- The terms `m_P(F) m_P(G)` are nonzero exactly at the common points of `F` and `G`. -/
+theorem support_mult_mul_mult {e : ℕ} (hF : F.IsHomogeneous d) (hG : G.IsHomogeneous e) :
+    Function.support (fun P ↦ mult F P * mult G P) = zeroLocus {F, G} := by
+  ext P
+  simp only [Function.mem_support, ne_eq, mul_eq_zero, not_or, mult_eq_zero_iff hF,
+    mult_eq_zero_iff hG, not_not, mem_zeroLocus_pair_iff]
 
 /-- `m_P(cF) = m_P(F)` for `c ≠ 0`. -/
 @[simp]

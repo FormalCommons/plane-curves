@@ -171,12 +171,15 @@ theorem squarefree_linearSubst_iff {M : Matrix σ σ R} (hM : IsUnit M.det)
 /-- A linear change of variables along a matrix with invertible determinant preserves being
 relatively prime. -/
 theorem isRelPrime_linearSubst_iff {M : Matrix σ σ R} (hM : IsUnit M.det)
-    {p q : MvPolynomial σ R} :
-    IsRelPrime (linearSubst M p) (linearSubst M q) ↔ IsRelPrime p q := by
+    {p q : MvPolynomial σ R} : IsRelPrime (linearSubst M p) (linearSubst M q) ↔ IsRelPrime p q := by
   set e := linearSubstAlgEquiv ((Matrix.isUnit_iff_isUnit_det M).2 hM).unit
-  have he (r : MvPolynomial σ R) : e r = linearSubst M r := rfl
-  refine ⟨fun h ↦ IsRelPrime.of_map e (by simpa only [he] using h), fun h ↦ ?_⟩
-  exact IsRelPrime.of_map e.symm (by simpa only [← he, AlgEquiv.symm_apply_apply] using h)
+  have he (r : MvPolynomial σ R) : linearSubst M r = e r := rfl
+  rw [he, he]
+  refine ⟨fun h d hp hq ↦ (isUnit_map_iff e d).1 (h (map_dvd e hp) (map_dvd e hq)),
+    fun h d hp hq ↦ ?_⟩
+  obtain ⟨x, rfl⟩ := e.surjective d
+  rw [map_dvd_iff] at hp hq
+  exact (h hp hq).map e
 
 /-- A linear change of variables along a matrix with invertible determinant preserves the total
 degree. -/
