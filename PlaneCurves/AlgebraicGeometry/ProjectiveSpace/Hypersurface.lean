@@ -237,7 +237,7 @@ omit [IsAlgClosed k] in
 theorem zeroLocus_singleton_X (i : Fin (n + 1)) :
     zeroLocus ({X i} : Set (MvPolynomial (Fin (n + 1)) k)) = (affineOpen i)ᶜ := by
   ext P
-  rw [mem_zeroLocus_iff_eval_rep (by rintro _ rfl; exact ⟨1, isHomogeneous_X k i⟩)]
+  rw [mem_zeroLocus_X_iff]
   simp [mem_affineOpen_iff]
 
 /-- **Projective Nullstellensatz.** Let `k` be algebraically closed and `R = k[X₀, …, Xₙ]`.
