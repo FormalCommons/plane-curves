@@ -383,10 +383,9 @@ theorem coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_eval_X_two_eq_z
   have h0 := hpos.not_dvd_pderiv_zero hF (by omega)
   have h1 := hpos.not_dvd_pderiv_one hF hn
   set Q := (center hF P).1 with hQ
-  have hQZ : Q ∈ zeroLocus {F, X 2} := by
-    refine mem_zeroLocus_pair_iff.2 ⟨?_, mem_zeroLocus_X_iff.2 (by simpa using hP2)⟩
-    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)]
-    simpa using (mem_zeroLocus_ideal_iff hF).1 (center hF P).2
+  have hQZ : Q ∈ zeroLocus {F, X 2} :=
+    mem_zeroLocus_pair_iff.2 ⟨zeroLocus_ideal hF ▸ (center hF P).2,
+      mem_zeroLocus_X_iff.2 (by simpa using hP2)⟩
   have hs := hpos.isSimplePoint hF hQZ
   -- `ord_P(Z) = 1` and `ord_P(Y) = 0`, so `ord_P(y) = -1`.
   have hZ1 : (formDivisor hF (isHomogeneous_X k 2)).coeff P = 1 := by
@@ -450,9 +449,7 @@ theorem kaehlerDifferentialDivisor_chartDifferential_le :
   refine WeilDivisor.le_iff.2 fun P ↦ ?_
   by_cases hP2 : eval (center hF P).1.rep (X 2) = 0
   · exact coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_eval_X_two_eq_zero hpos hn hP2
-  have hC : (center hF P).1 ∈ zeroLocus {F} := by
-    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)]
-    simpa using (mem_zeroLocus_ideal_iff hF).1 (center hF P).2
+  have hC : (center hF P).1 ∈ zeroLocus {F} := zeroLocus_ideal hF ▸ (center hF P).2
   rcases isSimplePoint_or_isMultiplePoint hF hC with hs | hm
   · exact coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isSimplePoint hpos hn hP2 hs
   · exact coeff_kaehlerDifferentialDivisor_chartDifferential_le_of_isOrdinaryMultiplePoint hpos hn
