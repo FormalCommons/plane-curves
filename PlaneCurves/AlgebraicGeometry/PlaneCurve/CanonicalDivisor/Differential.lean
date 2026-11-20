@@ -55,8 +55,9 @@ adjoint divisor:
   the bounds on the orders of `dx / f_y`.
 * `PlaneCurves.Projective.kaehlerDifferentialDivisor_chartDifferential`: when the multiple points
   of `C` are ordinary, `div (dx / f_y) = (n - 3) div Z - E`, since both sides have degree `2g - 2`.
-* `PlaneCurves.Projective.nonneg_kaehlerDifferentialDivisor_iff`: the differentials without poles
-  are the `H(x, y, 1) dx / f_y` for the adjoints `H` of degree `n - 3`.
+* `PlaneCurves.Projective.kaehlerDifferentialFiltration_zero_eq_map_adjointSubmodule`: the space
+  `Ω(0)` of differentials without poles is the image of the adjoints `H` of degree `n - 3` under
+  `H ↦ H(x, y, 1) dx / f_y`.
 * `PlaneCurves.Projective.canonical_eq_formDivisor_sub_adjointDivisor`: canonical divisors of a
   plane curve are cut out by adjoints of degree `n - 3`.
 
@@ -475,15 +476,17 @@ theorem kaehlerDifferentialDivisor_chartDifferential :
 end Transverse
 
 /-- **The holomorphic differentials of a plane curve** (Fulton, §8.5): in transverse position,
-for `n ≥ 3` and a curve whose multiple points are ordinary, a Kähler differential `ω` has no pole
-exactly when `ω = H(x, y, 1) dx / f_y` for an adjoint `H` of degree `n - 3`. -/
-theorem nonneg_kaehlerDifferentialDivisor_iff (hpos : IsTransversePosition F) (hn : 3 ≤ n)
-    (ω : Ω[functionField hF⁄k]) :
-    (∀ hω : ω ≠ 0, 0 ≤ kaehlerDifferentialDivisor (functionField.isFunctionField hF)
-        isIntegrallyClosedIn_of_isAlgClosed ω hω) ↔
-      ∃ H ∈ adjointSubmodule F (n - 3),
-        ω = aeval (chartCoord hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2)) H •
-          chartDifferential hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2) := by
+for `n ≥ 3` and a curve whose multiple points are ordinary, the space `Ω(0)` of differentials
+without poles is the image of the adjoints `H` of degree `n - 3` under
+`H ↦ H(x, y, 1) dx / f_y`. -/
+theorem kaehlerDifferentialFiltration_zero_eq_map_adjointSubmodule
+    (hpos : IsTransversePosition F) (hn : 3 ≤ n) :
+    kaehlerDifferentialFiltration (functionField.isFunctionField hF)
+        isIntegrallyClosedIn_of_isAlgClosed 0 =
+      (adjointSubmodule F (n - 3)).map
+        (LinearMap.smulRight
+          (aeval (chartCoord hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2))).toLinearMap
+          (chartDifferential hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2))) := by
   have h2n : 2 ≤ n := Nat.le_of_succ_le hn
   have hK := functionField.isFunctionField hF
   have h2 := hpos.not_dvd_X hF h2n 2
@@ -496,31 +499,20 @@ theorem nonneg_kaehlerDifferentialDivisor_iff (hpos : IsTransversePosition F) (h
     rw [coe_adjointToRiemannRochSpace_apply hord hZ h2 (isHomogeneous_X_pow 2 (n - 3)) G
       (projectivePlaneCurve.pow_notMem_ideal hF h2 _),
       aeval_chartCoord h2 (mem_adjointSubmodule_iff.1 G.2).1]
-  -- `h dx / f_y` has no pole iff `h ∈ L((n - 3) div Z - E)`.
-  have key (h : functionField hF) (hh : h ≠ 0) :
-      0 ≤ kaehlerDifferentialDivisor hK isIntegrallyClosedIn_of_isAlgClosed
-          (h • chartDifferential hF h2) (smul_ne_zero hh hω₀) ↔
-        h ∈ riemannRochSpace ((n - 3) • formDivisor hF hZ - adjointDivisor hF) := by
-    have hE : (n - 3) • formDivisor hF hZ = ((n : ℤ) - 3) • formDivisor hF hZ := by
-      rw [← natCast_zsmul, Nat.cast_sub hn, Nat.cast_ofNat]
-    rw [kaehlerDifferentialDivisor_smul hK _ hh hω₀,
-      kaehlerDifferentialDivisor_chartDifferential hord hpos h2n, hE,
-      ← mem_riemannRochSpace_units_iff hK, Units.val_mk0]
+  have hE : (n - 3) • formDivisor hF hZ = ((n : ℤ) - 3) • formDivisor hF hZ := by
+    rw [← natCast_zsmul, Nat.cast_sub hn, Nat.cast_ofNat]
+  ext ω
+  obtain ⟨c, rfl⟩ := KaehlerDifferential.exists_smul_eq_of_ne_zero hK hω₀ ω
+  -- `c dx / f_y` has no pole iff `c ∈ L((n - 3) div Z - E)`.
+  rw [smul_mem_kaehlerDifferentialFiltration_iff hK _ 0 hω₀, sub_zero,
+    kaehlerDifferentialDivisor_chartDifferential hord hpos h2n, ← hE, Submodule.mem_map]
+  simp only [LinearMap.smulRight_apply, AlgHom.toLinearMap_apply]
   constructor
-  · intro hω
-    obtain ⟨t, ht, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
-    obtain ⟨c, rfl⟩ := (finrank_eq_one_iff_of_ne_zero' _ hω₀).1
-      (finrank_kaehlerDifferential_eq_one_of_separating ht) ω
-    rcases eq_or_ne c 0 with rfl | hc0
-    · exact ⟨0, zero_mem _, by rw [map_zero]⟩
-    obtain ⟨G, hG⟩ := adjointToRiemannRochSpace_surjective hord hZ h2
-      ⟨c, (key c hc0).1 (hω (smul_ne_zero hc0 hω₀))⟩
+  · intro hc
+    obtain ⟨G, hG⟩ := adjointToRiemannRochSpace_surjective hord hZ h2 ⟨c, hc⟩
     exact ⟨G, G.2, by rw [← hcoe, hG]⟩
-  · rintro ⟨H, hH, rfl⟩ hω
-    have hh : aeval (chartCoord hF h2) H ≠ 0 := fun h0 ↦ hω (by
-      rw [h0]; exact zero_smul (functionField hF) (_ : Ω[functionField hF⁄k]))
-    refine (key _ hh).2 ?_
-    rw [← hcoe ⟨H, hH⟩]
+  · rintro ⟨H, hH, he⟩
+    rw [← smul_left_injective _ hω₀ he, ← hcoe ⟨H, hH⟩]
     exact (adjointToRiemannRochSpace hF hord hZ h2 ⟨H, hH⟩).2
 
 /-- **Canonical divisors of a plane curve are cut out by adjoints** (Fulton, §8.5, Proposition 8
@@ -534,8 +526,8 @@ of genus `g` and adjoint divisor `E`. Then:
 3. every canonical divisor `W` has `deg W = 2g - 2` and `ℓ(W) = g`;
 4. for `n ≥ 3`, the effective canonical divisors are the `div G - E` for the nonzero adjoints `G`
    of degree `n - 3`, these adjoints form a space of dimension `g`, and in transverse position
-   the differentials without poles are the `H(x, y, 1) dx / f_y` for the adjoints `H` of degree
-   `n - 3`.
+   the space `Ω(0)` of differentials without poles is the image of the adjoints `H` of degree
+   `n - 3` under `H ↦ H(x, y, 1) dx / f_y`.
 
 Milestone: *Canonical divisors of a plane curve are cut out by adjoints of degree n − 3*. -/
 theorem canonical_eq_formDivisor_sub_adjointDivisor :
@@ -569,12 +561,13 @@ theorem canonical_eq_formDivisor_sub_adjointDivisor :
           ∃ (G : MvPolynomial (Fin 3) k) (hG : G ∈ adjointSubmodule F (n - 3)), G ≠ 0 ∧
             W = formDivisor hF (mem_adjointSubmodule_iff.1 hG).1 - adjointDivisor hF) ∧
       Module.finrank k (adjointSubmodule F (n - 3)) = genus k (functionField hF) ∧
-      ∀ (hpos : IsTransversePosition F) (ω : Ω[functionField hF⁄k]),
-        (∀ hω : ω ≠ 0, 0 ≤ kaehlerDifferentialDivisor (functionField.isFunctionField hF)
-            isIntegrallyClosedIn_of_isAlgClosed ω hω) ↔
-          ∃ H ∈ adjointSubmodule F (n - 3),
-            ω = aeval (chartCoord hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2)) H •
-              chartDifferential hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2)) := by
+      ∀ hpos : IsTransversePosition F,
+        kaehlerDifferentialFiltration (functionField.isFunctionField hF)
+            isIntegrallyClosedIn_of_isAlgClosed 0 =
+          (adjointSubmodule F (n - 3)).map
+            (LinearMap.smulRight
+              (aeval (chartCoord hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2))).toLinearMap
+              (chartDifferential hF (hpos.not_dvd_X hF (Nat.le_of_succ_le hn) 2)))) := by
   have hK := functionField.isFunctionField hF
   refine ⟨⟨fun hL hFL ↦
       divisorClass_sub_three_zsmul_formDivisor_sub_adjointDivisor_eq_canonicalClass hord hL hFL,
@@ -587,7 +580,7 @@ theorem canonical_eq_formDivisor_sub_adjointDivisor :
         isIntegrallyClosedIn_of_isAlgClosed⟩,
     fun hn ↦ ⟨fun _ ↦ nonneg_and_divisorClass_eq_canonicalClass_iff hord hn,
       finrank_adjointSubmodule_sub_three hord hn,
-      fun hpos ω ↦ nonneg_kaehlerDifferentialDivisor_iff hord hpos hn ω⟩⟩
+      fun hpos ↦ kaehlerDifferentialFiltration_zero_eq_map_adjointSubmodule hord hpos hn⟩⟩
 
 end Divisor
 
