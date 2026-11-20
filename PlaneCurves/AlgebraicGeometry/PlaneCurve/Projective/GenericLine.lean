@@ -197,10 +197,7 @@ theorem finite_setOf_isTangentAt (hF0 : F ≠ 0) (P : ℙ k (Fin 3 → k)) :
 theorem subsingleton_setOf_eval_sum_C_mul_X_eq_zero (hPQ : P ≠ Q) :
     {c : ℙ k (Fin 3 → k) | eval P.rep (∑ i, C (c.rep i) * X i) = 0 ∧
       eval Q.rep (∑ i, C (c.rep i) * X i) = 0}.Subsingleton := by
-  have hind : LinearIndependent k ![P.rep, Q.rep] := by
-    rw [← crossProduct_ne_zero_iff_linearIndependent]
-    refine mt (mk_eq_mk_iff_crossProduct_eq_zero P.rep_ne_zero Q.rep_ne_zero).mpr ?_
-    simpa using hPQ
+  have hind : LinearIndependent k ![P.rep, Q.rep] := linearIndependent_pair_iff_ne.2 hPQ
   have hsub : ∀ c : ℙ k (Fin 3 → k), eval P.rep (∑ i, C (c.rep i) * X i) = 0 →
       eval Q.rep (∑ i, C (c.rep i) * X i) = 0 →
       c ∈ zeroLocus {∑ i, C (P.rep i) * X i, ∑ i, C (Q.rep i) * X i} := by
@@ -246,10 +243,8 @@ theorem exists_map_eq_and_linearSubst_eq_X_zero [IsAlgClosed k] {c : ℙ k (Fin 
       linearSubst M.1 (∑ i, C (c.rep i) * X i) = X 0 := by
   obtain ⟨c', hc'P, hc'c⟩ :=
     ((infinite_setOf_eval_sum_C_mul_X_eq_zero P).sdiff (Set.finite_singleton c)).nonempty
-  have hind : LinearIndependent k ![c.rep, c'.rep] := by
-    rw [← crossProduct_ne_zero_iff_linearIndependent]
-    refine mt (mk_eq_mk_iff_crossProduct_eq_zero c.rep_ne_zero c'.rep_ne_zero).mpr ?_
-    simpa using Ne.symm hc'c
+  have hind : LinearIndependent k ![c.rep, c'.rep] :=
+    linearIndependent_pair_iff_ne.2 (Ne.symm hc'c)
   obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X hind (τ := ![0, 1])
     (by intro i j h; fin_cases i <;> fin_cases j <;> simp_all)
   have hU : IsUnit M := Matrix.mulVec_injective_iff_isUnit.1 hM
@@ -494,7 +489,7 @@ theorem eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_polarDerivative_ne_z
       obtain ⟨hQF, hQL⟩ := (hmem hL Q).1 hQ
       have hQs : IsSimplePoint F Q :=
         (isSimplePoint_or_isMultiplePoint hF
-          ((mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩)).2 (by simpa))).resolve_right
+          ((mem_zeroLocus_singleton_iff hF).2 (by simpa))).resolve_right
           fun hm ↦ hS Q (Or.inl hm) hQP hQL
       refine (intersectionNumber_eq_one_iff hF hL hL0 hQL).2
         ⟨hQs, fun hT ↦ hS Q (Or.inr ?_) hQP hQL⟩

@@ -95,7 +95,7 @@ theorem isTangentAt_rename_fundamentalPoint_iff (hF : F.IsHomogeneous n)
 private theorem eval_rep_fundamentalPoint_X {i j : Fin 3} (hij : i ≠ j) :
     eval (fundamentalPoint (k := k) i).rep (X j) = 0 := by
   have h := (fundamentalPoint_mem_zeroLocus_X_iff (k := k)).2 hij
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_X k j⟩)] at h
+  rw [mem_zeroLocus_singleton_iff (isHomogeneous_X k j)] at h
   simpa using h
 
 /-- **The coordinate tangents at `[0 : 0 : 1]`.** For `i = 0, 1`, the line `Xᵢ = 0` is tangent to

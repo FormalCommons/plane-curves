@@ -134,7 +134,7 @@ theorem zeroLocus_singleton_infinite (hn : 2 ≤ n) (hf : f.IsHomogeneous d) (hd
     simp only [Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
       Set.mem_singleton_iff, forall_eq_or_imp, forall_eq] at hP
     refine Set.mem_biUnion (x := P) ?_ ?_
-    · rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hf⟩)]
+    · rw [mem_zeroLocus_singleton_iff hf]
       simpa using hP.1
     · simp only [Set.mem_ofPred_eq, Polynomial.IsRoot.def, Polynomial.eval_finsetSum,
         Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X]

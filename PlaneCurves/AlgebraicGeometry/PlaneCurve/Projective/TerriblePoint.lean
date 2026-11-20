@@ -296,7 +296,7 @@ theorem exists_ncard_zeroLocus_pair_sum_C_mul_X_eq [IsAlgClosed k] (hF : F.IsHom
     (hS.union hT.finite)
   rw [Set.mem_union, not_or] at hPS
   have hPF' : P ∉ zeroLocus {F} := by
-    rwa [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩), Set.forall_mem_singleton]
+    rwa [mem_zeroLocus_singleton_iff hF]
   have hr : mult F P = (0 : ℕ) := by rw [Nat.cast_zero, mult_eq_zero_iff hF]; exact hPF'
   have hgood := eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF hirr
     hPS.2 hr
