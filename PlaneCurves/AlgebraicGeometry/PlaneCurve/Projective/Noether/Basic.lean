@@ -194,9 +194,7 @@ theorem mem_span_pair_iff_forall_noetherConditionsAt (hF : F.IsHomogeneous m)
     (fun Q hQF hQG ↦ hM Q (hZ _ ((eval_rep_linearSubst_eq_zero_iff M hF Q).1 hQF)
       ((eval_rep_linearSubst_eq_zero_iff M hG Q).1 hQG)))
     fun Q ↦ (noetherConditionsAt_linearSubst_iff hF hG hH M Q).2 (hN' _)
-  exact IsRelPrime.of_map (linearSubstAlgEquiv M).symm (by
-    rwa [← linearSubstAlgEquiv_apply, ← linearSubstAlgEquiv_apply, AlgEquiv.symm_apply_apply,
-      AlgEquiv.symm_apply_apply])
+  exact (isRelPrime_linearSubst_iff ((Matrix.isUnit_iff_isUnit_det _).1 M.isUnit)).2 hFG
 
 /-- **Max Noether's fundamental theorem, degree form.** Let `k` be algebraically closed, `F` and
 `G` forms of degrees `m` and `e` in `k[X, Y, Z]` with no common component, and `H` a form of
