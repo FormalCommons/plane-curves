@@ -66,8 +66,8 @@ private theorem support_mult_mul_subset :
       {P | IsMultiplePoint F P} := by
   intro P hP
   rw [Function.mem_support] at hP
-  rw [Set.mem_ofPred_eq, isMultiplePoint_def, ← ENat.natCast_toNat (mult_eq_top_iff.not.2
-    (Fact.out : Irreducible F).ne_zero)]
+  rw [Set.mem_ofPred_eq, isMultiplePoint_def, ←
+    natCast_toNat_mult (Fact.out : Irreducible F).ne_zero]
   by_contra h
   have h' : ((mult F P).toNat : ℕ∞) < (2 : ℕ) := not_le.1 h
   have : (mult F P).toNat < 2 := by exact_mod_cast h'
