@@ -9,6 +9,7 @@ public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.GenericLine
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.TerriblePoint
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.LinearSubvariety
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.GoodPosition
+public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 
 /-!
 # Excellent position for the standard quadratic transformation
@@ -729,19 +730,6 @@ theorem exists_isExcellentPosition_of_charZero [IsAlgClosed k] [CharZero k]
       map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) :=
   exists_isExcellentPosition hF hirr (not_isTerriblePoint hF hirr P.rep_ne_zero)
 
-/-- In the multiset of irreducible factors of a squarefree element, no factor divides another one
-of the rest of the multiset: otherwise the square of a factor would divide the element. -/
-private theorem not_dvd_of_mem_erase_factors {R : Type*} [CommRing R] [IsDomain R]
-    [UniqueFactorizationMonoid R] [DecidableEq R] {H p q : R} (hH : Squarefree H)
-    (hp : p ∈ UniqueFactorizationMonoid.factors H)
-    (hq : q ∈ (UniqueFactorizationMonoid.factors H).erase p) : ¬ p ∣ q := by
-  intro hpq
-  have hdvd : p * p ∣ H := ((mul_dvd_mul_left p hpq).trans (by
-    rw [← Multiset.prod_erase hp]
-    exact mul_dvd_mul_left p (Multiset.dvd_prod hq))).trans
-    (UniqueFactorizationMonoid.factors_prod hH.ne_zero).dvd
-  exact (UniqueFactorizationMonoid.irreducible_of_factor p hp).not_isUnit (hH p hdvd)
-
 open UniqueFactorizationMonoid in
 /-- **Existence of excellent position for a squarefree form, avoiding a finite set.** Let `k` be
 algebraically closed, `H` a squarefree form, `P` a point of `ℙ²` that is terrible for no
@@ -766,23 +754,17 @@ theorem exists_isExcellentPosition_avoiding_of_squarefree [IsAlgClosed k]
     obtain ⟨e, -, he⟩ :=
       hH.exists_isHomogeneous_of_dvd hsq.ne_zero (hm q hq).2 (hm q hq).1.not_isUnit
     rwa [he.totalDegree (hm q hq).1.ne_zero]
-  have hnd : (factors H).Nodup := Multiset.nodup_iff_count_le_one.2 fun p ↦ by
-    by_contra! h
-    have hp : 0 < (factors H).count p := by omega
-    have hp' : 0 < ((factors H).erase p).count p := by rw [Multiset.count_erase_self]; omega
-    exact not_dvd_of_mem_erase_factors hsq (Multiset.count_pos.1 hp) (Multiset.count_pos.1 hp')
-      dvd_rfl
   obtain ⟨M, hM, hTP, hE, hR⟩ := exists_isExcellentPosition_prod_avoiding
     (s := (factors H).toFinset) (F := id) hF (fun q hq ↦ (hm q hq).1)
     (fun p hp q hq hpq ↦ (hm p hp).1.isRelPrime_iff_not_dvd.2 <|
-      not_dvd_of_mem_erase_factors hsq (Multiset.mem_toFinset.1 hp)
+      hsq.not_dvd_of_mem_erase_factors (Multiset.mem_toFinset.1 hp)
         ((Multiset.mem_erase_of_ne hpq.symm).2 (Multiset.mem_toFinset.1 hq)))
     (fun q hq ↦ hP q (hm q hq).1 (hm q hq).2) hS hPS
   -- `H` is the product of its factors, up to a nonzero constant.
   obtain ⟨u, hu⟩ := factors_prod hsq.ne_zero
   obtain ⟨c, hc, hcu⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
   have hprod : ∏ q ∈ (factors H).toFinset, id q = (factors H).prod := by
-    simp [Finset.prod_eq_multiset_prod, Multiset.dedup_eq_self.2 hnd]
+    simp [Finset.prod_eq_multiset_prod, Multiset.dedup_eq_self.2 hsq.nodup_factors]
   refine ⟨M, hM, hTP, ?_, hR⟩
   rw [← hu, hcu, mul_comm, ← smul_eq_C_mul, map_smul, ← hprod,
     isExcellentPosition_smul_iff (isUnit_iff_ne_zero.1 hc)]

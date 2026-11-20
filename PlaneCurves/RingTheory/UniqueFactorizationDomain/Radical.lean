@@ -23,6 +23,8 @@ the same irreducible factors. These statements need no `NormalizationMonoid`, un
   irreducible factor of `b` divides `a`.
 * `UniqueFactorizationMonoid.squarefree_prod_of_irreducible`: a product of pairwise
   non-associated irreducible elements is squarefree.
+* `Squarefree.nodup_factors`, `Squarefree.not_dvd_of_mem_erase_factors`: conversely, the
+  irreducible factors of a squarefree element are pairwise distinct, and none divides another.
 * `UniqueFactorizationMonoid.dvd_mul_prod_pow_iff`: the irreducible factors of `u ∏ fᵢ^{eᵢ}`.
 * `Ideal.mem_radical_span_singleton_iff`, `Ideal.radical_span_singleton_eq_iff`,
   `Ideal.radical_span_singleton_eq_span`: the radical of a principal ideal.
@@ -111,6 +113,37 @@ theorem dvd_mul_prod_pow_iff {u p : R} (hu : IsUnit u) (hp : Irreducible p) {e :
     ⟨hp.prime.dvd_of_dvd_pow, fun h => h.trans (dvd_pow_self _ (he i hi))⟩
 
 end UniqueFactorizationMonoid
+
+namespace Squarefree
+
+open UniqueFactorizationMonoid
+
+variable {R : Type*} [CommMonoidWithZero R] [UniqueFactorizationMonoid R]
+
+/-- In the multiset of irreducible factors of a squarefree element `x`, no factor divides another
+member of the multiset: otherwise the square of that factor would divide `x`. -/
+theorem not_dvd_of_mem_erase_factors [DecidableEq R] {x p q : R} (hx : Squarefree x)
+    (hp : p ∈ factors x) (hq : q ∈ (factors x).erase p) : ¬p ∣ q := by
+  intro hpq
+  have hdvd : p * p ∣ x := ((mul_dvd_mul_left p hpq).trans (by
+    rw [← Multiset.prod_erase hp]
+    exact mul_dvd_mul_left p (Multiset.dvd_prod hq))).trans
+    (factors_prod (ne_zero_of_mem_factors hp)).dvd
+  exact (irreducible_of_factor p hp).not_isUnit (hx p hdvd)
+
+/-- The irreducible factors of a squarefree element are pairwise distinct. Unlike Mathlib's
+`UniqueFactorizationMonoid.squarefree_iff_nodup_normalizedFactors`, this needs no
+`NormalizationMonoid`. -/
+theorem nodup_factors {x : R} (hx : Squarefree x) : (factors x).Nodup := by
+  classical
+  refine Multiset.nodup_iff_count_le_one.2 fun p ↦ ?_
+  by_contra! h
+  have hp : 0 < (factors x).count p := by omega
+  have hp' : 0 < ((factors x).erase p).count p := by rw [Multiset.count_erase_self]; omega
+  exact hx.not_dvd_of_mem_erase_factors (Multiset.count_pos.1 hp) (Multiset.count_pos.1 hp')
+    dvd_rfl
+
+end Squarefree
 
 namespace Ideal
 
