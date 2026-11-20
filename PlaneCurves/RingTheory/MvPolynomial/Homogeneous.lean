@@ -26,7 +26,9 @@ each of its homogeneous components.
   for `F(1, T)` as a polynomial in one variable.
 * `MvPolynomial.IsHomogeneous.dvd_homogeneousComponent`: a form dividing a polynomial divides
   each of its homogeneous components.
-* `MvPolynomial.IsHomogeneous.exists_isHomogeneous_of_dvd`: over a field, a divisor of a nonzero
+* `MvPolynomial.IsHomogeneous.isHomogeneous_totalDegree_of_dvd`: a divisor of a nonzero form is
+  a form, of degree its total degree, and
+  `MvPolynomial.IsHomogeneous.exists_isHomogeneous_of_dvd`: over a field, a divisor of a nonzero
   form that is not a unit is a form of positive degree.
 * `MvPolynomial.IsHomogeneous.degree_ne_zero_of_irreducible`: over a field, an irreducible form
   has positive degree, and `MvPolynomial.IsHomogeneous.isRelPrime_of_irreducible`: it is prime
@@ -104,6 +106,12 @@ theorem IsHomogeneous.exists_isHomogeneous_of_dvd {k : Type*} [Field k]
   rintro hc
   rw [totalDegree_eq_zero_iff_eq_C.1 h0, hc, map_zero, zero_mul] at hF0
   exact hF0 rfl
+
+/-- Without zero divisors, a divisor of a nonzero form is a form, of degree its total degree. -/
+theorem IsHomogeneous.isHomogeneous_totalDegree_of_dvd [NoZeroDivisors R] {H : MvPolynomial σ R}
+    (hF : F.IsHomogeneous d) (hF0 : F ≠ 0) (hHF : H ∣ F) : H.IsHomogeneous H.totalDegree := by
+  obtain ⟨c, rfl⟩ := hHF
+  exact hF.of_mul_left (right_ne_zero_of_mul hF0)
 
 /-- An irreducible form over a field has positive degree. -/
 theorem IsHomogeneous.degree_ne_zero_of_irreducible {k : Type*} [Field k] {F : MvPolynomial σ k}
