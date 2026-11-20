@@ -37,7 +37,9 @@ leaves `N(F)` unchanged.
 * `PlaneCurves.Projective.IsExcellentPosition.nonOrdinaryMultiplePoints_properTransform`: the
   non-ordinary multiple points of the proper transform.
 * `PlaneCurves.Projective.IsExcellentPosition.ncard_add_virtualGenus_properTransform_lt`:
-  `N(F') + g*(F') < N(F) + g*(F)` when the centre is a non-ordinary multiple point.
+  `N(F') + g*(F') < N(F) + g*(F)` when the centre is a non-ordinary multiple point, and
+  `PlaneCurves.Projective.IsExcellentPosition.ncard_add_virtualGenus_properTransform_le`:
+  `N(F') + g*(F') ≤ N(F) + g*(F)` wherever the centre is.
 * `PlaneCurves.Projective.IsQuadraticTransformAt.ncard_add_virtualGenus_lt` and
   `PlaneCurves.Projective.IsQuadraticTransformAt.ncard_nonOrdinaryMultiplePoints_eq`: the same
   for a quadratic transformation centred at a point.
@@ -351,6 +353,27 @@ theorem ncard_add_virtualGenus_properTransform_lt [IsAlgClosed k] (h : IsExcelle
   have h1 := h.ncard_nonOrdinaryMultiplePoints_properTransform_le hF hirr hP
   have h2 := h.ncard_nonOrdinaryMultiplePoints_inter_pointsOverCentre_le hF
   rw [h.virtualGenus_properTransform hF hirr]
+  omega
+
+/-- **A quadratic transformation does not raise `N + g*`.** For an irreducible curve `F` in
+excellent position over an algebraically closed field, the proper transform `F'` has
+`N(F') + g*(F') ≤ N(F) + g*(F)`, `N` counting the non-ordinary multiple points, wherever the
+centre `[0 : 0 : 1]` is. -/
+theorem ncard_add_virtualGenus_properTransform_le [IsAlgClosed k] (h : IsExcellentPosition F)
+    (hF : F.IsHomogeneous n) (hirr : Irreducible F) :
+    ((nonOrdinaryMultiplePoints (properTransform F)).ncard : ℤ) +
+        Projective.virtualGenus (properTransform F) ≤
+      (nonOrdinaryMultiplePoints F).ncard + Projective.virtualGenus F := by
+  by_cases hP : fundamentalPoint 2 ∈ nonOrdinaryMultiplePoints F
+  · exact (h.ncard_add_virtualGenus_properTransform_lt hF hirr hP).le
+  have hP' : mult F (fundamentalPoint 2) ≤ 1 ∨ IsOrdinaryMultiplePoint F (fundamentalPoint 2) := by
+    by_cases h2 : IsMultiplePoint F (fundamentalPoint 2)
+    · exact Or.inr (by simpa [h2] using hP)
+    · exact Or.inl (Order.le_of_lt_add_one (not_le.1 (isMultiplePoint_def.not.1 h2)))
+  have h0 : 0 ≤ ∑ᶠ Q ∈ pointsOverCentre F, ((mult (properTransform F) Q).toNat.choose 2 : ℤ) :=
+    finsum_nonneg fun _ ↦ finsum_nonneg fun _ ↦ Nat.cast_nonneg _
+  rw [h.ncard_nonOrdinaryMultiplePoints_properTransform hF hP', h.virtualGenus_properTransform hF
+    hirr]
   omega
 
 end IsExcellentPosition
