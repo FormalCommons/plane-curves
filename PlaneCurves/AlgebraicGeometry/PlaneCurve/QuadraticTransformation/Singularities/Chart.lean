@@ -376,7 +376,7 @@ theorem localRingEquivQuadraticMap_mk (hF : F.IsHomogeneous n) (hP : P ∉ funda
 private theorem eval_dehomogenize_eq_zero (hF : F.IsHomogeneous n) (hP : P ∈ affineOpen 2)
     (hPF : P ∈ zeroLocus {F}) : eval (affineChart 2 P) (dehomogenize 2 F) = 0 :=
   (eval_affineChart_dehomogenize_eq_zero_iff hP hF).2 <| by
-    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)] at hPF; exact hPF F rfl
+    exact (mem_zeroLocus_singleton_iff hF).1 hPF
 
 /-- **Fulton's (7)(2)(a), multiplicities.** Off the fundamental triangle, the quadratic
 transformation preserves multiplicities: `m_{Q(P)}(F') = m_P(F)` for every form `F`. -/

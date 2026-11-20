@@ -34,7 +34,8 @@ correspondence of §4.2.
 
 ## Main results
 
-* `mk_mem_zeroLocus_iff`: for forms, one set of homogeneous coordinates suffices.
+* `mk_mem_zeroLocus_iff`: for forms, one set of homogeneous coordinates suffices;
+  `mem_zeroLocus_singleton_iff` and `mk_mem_zeroLocus_singleton_iff` for one form.
 * `zeroLocus_homogeneousComponent` (Problem 4.2): over an infinite field, `V(S)` is the zero locus
   of the homogeneous components of the elements of `S`; with `zeroLocus_span` and
   `exists_finset_zeroLocus_eq`, it is the zero locus of the ideal spanned by `S`, and of
@@ -167,6 +168,20 @@ theorem mem_zeroLocus_iff_eval_rep (hS : ∀ f ∈ S, ∃ d, f.IsHomogeneous d) 
   conv_lhs => rw [← P.mk_rep]
   exact mk_mem_zeroLocus_iff hS _ _
 
+/-- The class of `v ≠ 0` lies on the zero locus of a form `f` exactly when `f(v) = 0`. -/
+theorem mk_mem_zeroLocus_singleton_iff {f : MvPolynomial (Fin (n + 1)) k} {d : ℕ}
+    (hf : f.IsHomogeneous d) (v : Fin (n + 1) → k) (hv : v ≠ 0) :
+    mk k v hv ∈ zeroLocus {f} ↔ eval v f = 0 := by
+  rw [mk_mem_zeroLocus_iff (by simpa using ⟨d, hf⟩)]
+  simp
+
+/-- A point lies on the zero locus of a form `f` exactly when `f` vanishes at its
+representative `P.rep`. -/
+theorem mem_zeroLocus_singleton_iff {f : MvPolynomial (Fin (n + 1)) k} {d : ℕ}
+    (hf : f.IsHomogeneous d) : P ∈ zeroLocus {f} ↔ eval P.rep f = 0 := by
+  conv_lhs => rw [← P.mk_rep]
+  exact mk_mem_zeroLocus_singleton_iff hf _ _
+
 /-- A polynomial and a nonzero multiple of it have the same zero locus. -/
 theorem zeroLocus_singleton_smul {f : MvPolynomial (Fin (n + 1)) k} {c : k} (hc : c ≠ 0) :
     zeroLocus {c • f} = zeroLocus {f} := by
@@ -177,8 +192,7 @@ theorem zeroLocus_singleton_smul {f : MvPolynomial (Fin (n + 1)) k} {c : k} (hc 
 /-- A point lies on the coordinate hyperplane `Xⱼ = 0` exactly when its `j`-th homogeneous
 coordinate vanishes. -/
 theorem mem_zeroLocus_X_iff {j : Fin (n + 1)} : P ∈ zeroLocus {X j} ↔ P.rep j = 0 := by
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_X k j⟩)]
-  simp
+  simp [mem_zeroLocus_singleton_iff (isHomogeneous_X k j)]
 
 theorem zeroLocus_anti_mono (h : S ⊆ T) : zeroLocus T ⊆ zeroLocus S :=
   fun _ hP v hv hvP f hf ↦ (mem_zeroLocus_iff.1 hP) v hv hvP f (h hf)

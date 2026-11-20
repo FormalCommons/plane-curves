@@ -358,7 +358,7 @@ private theorem mem_zeroLocus_X_two_and_ne_iff :
     funext m
     fin_cases m <;> simp [hQ, mul_div_cancel₀ _ h1]
   · rintro ⟨α, hα, rfl⟩
-    refine ⟨(mk_mem_zeroLocus_iff (by simpa using ⟨1, isHomogeneous_X k 2⟩) _ _).2
+    refine ⟨(mk_mem_zeroLocus_singleton_iff (isHomogeneous_X k 2) _ _).2
       (by simp), fun i hi ↦ ?_⟩
     rw [mk_eq_fundamentalPoint_iff] at hi
     fin_cases i
@@ -412,22 +412,19 @@ theorem mem_pointsOverCentre_iff (h : IsExcellentPosition F) (hF : F.IsHomogeneo
     Q ∈ pointsOverCentre F ↔ ∃ α : k, α ≠ 0 ∧ Q = mk k ![α, 1, 0] (by simp) ∧
       eval ![1, α] (leadingFormAt (dehomogenize 2 F) 0) = 0 := by
   have hF' := h.isHomogeneous_properTransform hF
-  have hmem (α : k) : mk k ![α, 1, 0] (by simp) ∈ zeroLocus {properTransform F} ↔
-      eval ![α, 1, 0] (properTransform F) = 0 := by
-    rw [mk_mem_zeroLocus_iff (by simpa using ⟨_, hF'⟩)]
-    simp
   change (Q ∈ zeroLocus {properTransform F, X 2} ∧ ∀ i, Q ≠ fundamentalPoint i) ↔ _
   rw [zeroLocus_insert]
   constructor
   · rintro ⟨⟨hQF, hQ2⟩, hne⟩
     obtain ⟨α, hα, rfl⟩ := mem_zeroLocus_X_two_and_ne_iff.1 ⟨hQ2, hne⟩
     refine ⟨α, hα, rfl, ?_⟩
-    have := (hmem α).1 hQF
+    have := (mk_mem_zeroLocus_singleton_iff hF' _ _).1 hQF
     rw [h.eval_properTransform_vec_one_zero hF] at this
     exact (mul_eq_zero.1 this).resolve_left (pow_ne_zero _ hα)
   · rintro ⟨α, hα, rfl, h0⟩
     obtain ⟨h2, hne⟩ := mem_zeroLocus_X_two_and_ne_iff.2 ⟨α, hα, rfl⟩
-    exact ⟨⟨(hmem α).2 (by rw [h.eval_properTransform_vec_one_zero hF, h0, mul_zero]), h2⟩, hne⟩
+    exact ⟨⟨(mk_mem_zeroLocus_singleton_iff hF' _ _).2
+      (by rw [h.eval_properTransform_vec_one_zero hF, h0, mul_zero]), h2⟩, hne⟩
 
 /-- A curve in excellent position has only finitely many points over the centre. -/
 theorem pointsOverCentre_finite (h : IsExcellentPosition F) (hF : F.IsHomogeneous n) :

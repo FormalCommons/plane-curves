@@ -102,8 +102,7 @@ theorem mult_pos_iff_eval_rep : 0 < mult F P ↔ eval P.rep F = 0 :=
 
 /-- The multiplicity of a form at `P` is zero exactly when `P` is not on the curve. -/
 theorem mult_eq_zero_iff (hF : F.IsHomogeneous d) : mult F P = 0 ↔ P ∉ zeroLocus {F} := by
-  rw [mult_def, orderAt_eq_zero_iff, mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩)]
-  simp
+  rw [mult_def, orderAt_eq_zero_iff, mem_zeroLocus_singleton_iff hF]
 
 /-- The multiplicity of a form at `P` is positive exactly when `P` is on the curve. -/
 theorem mult_pos_iff (hF : F.IsHomogeneous d) : 0 < mult F P ↔ P ∈ zeroLocus {F} := by

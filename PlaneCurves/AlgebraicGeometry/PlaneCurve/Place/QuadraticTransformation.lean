@@ -76,9 +76,9 @@ theorem center_map_quadraticFunctionFieldEquiv (hX : ∀ i, ¬ X i ∣ F)
   have hR : quadraticMap (center hF p).1 ∈ zeroLocus
       (projectivePlaneCurve.ideal hF.properTransform : Set (MvPolynomial (Fin 3) k)) := by
     have h := (quadraticMap_mem_zeroLocus_properTransform_iff hF hp).2 (by
-      rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)]
+      rw [mem_zeroLocus_singleton_iff hF]
       simpa using (mem_zeroLocus_ideal_iff hF).1 (center hF p).2)
-    rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨_, hF.properTransform⟩)] at h
+    rw [mem_zeroLocus_singleton_iff hF.properTransform] at h
     exact (mem_zeroLocus_ideal_iff _).2 (by simpa using h)
   exact congrArg Subtype.val ((center_map_eq_iff_of_map_localSubring _
     (map_localSubring_quadraticFunctionFieldEquiv hF hX (R' := ⟨_, hR⟩) hp rfl)).2 rfl)
@@ -115,8 +115,7 @@ omit [IsAlgClosed k] in
 private theorem eval_rep_fundamentalPoint_X_eq_zero_iff {i j : Fin 3} :
     eval (fundamentalPoint (k := k) i).rep (X j) = 0 ↔ i ≠ j := by
   rw [← fundamentalPoint_mem_zeroLocus_X_iff (k := k),
-    mem_zeroLocus_iff_eval_rep (by simpa using ⟨1, isHomogeneous_X k j⟩)]
-  simp
+    mem_zeroLocus_singleton_iff (isHomogeneous_X k j)]
 
 omit [Fact (Irreducible (properTransform F))] in
 /-- The order of `Xᵢ^Q` at a place centred at an ordinary multiple point `[0 : 0 : 1]` of a curve

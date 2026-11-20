@@ -34,6 +34,10 @@ canonical too; for `d = 3` this says that `-E` is canonical.
   is canonical.
 * `PlaneCurves.Projective.exists_kaehlerDifferentialDivisor_eq_formDivisor_sub_adjointDivisor`:
   `div G - E` is the divisor of a nonzero Kähler differential.
+* `PlaneCurves.Projective.nonneg_and_divisorClass_eq_canonicalClass_iff`: the effective canonical
+  divisors are the `div G - E` for the nonzero adjoints `G` of degree `d - 3`.
+* `PlaneCurves.Projective.finrank_adjointSubmodule_sub_three`: the adjoints of degree `d - 3`
+  form a space of dimension `g`.
 
 The degree `2g - 2` and the dimension `ℓ(W) = g` of a canonical divisor `W`
 come from `TauCeti.isRiemannRochDivisor_of_divisorClass_eq_canonicalClass` with
@@ -117,6 +121,88 @@ theorem exists_kaehlerDifferentialDivisor_eq_formDivisor_sub_adjointDivisor (hd 
         formDivisor hF hG - adjointDivisor hF :=
   (divisorClass_eq_canonicalClass_iff_exists_kaehlerDifferentialDivisor_eq _ _ _).1
     (divisorClass_formDivisor_sub_adjointDivisor_eq_canonicalClass hord hd hG hFG)
+
+omit hord in
+/-- For `3 ≤ d`, the natural multiple `(d - 3) • div L` is `((d : ℤ) - 3) • div L`. -/
+private theorem nsmul_formDivisor_sub_three (hd : 3 ≤ d) {L : MvPolynomial (Fin 3) k}
+    (hL : L.IsHomogeneous 1) :
+    (d - 3) • formDivisor hF hL = ((d : ℤ) - 3) • formDivisor hF hL := by
+  rw [← natCast_zsmul, Nat.cast_sub hd, Nat.cast_ofNat]
+
+omit [IsAlgClosed k] hord in
+/-- A nonzero adjoint of degree `d - 3` is not divisible by `F`. -/
+private theorem not_dvd_of_mem_adjointSubmodule_sub_three (hF : F.IsHomogeneous d) (hd : 3 ≤ d)
+    {G : MvPolynomial (Fin 3) k} (hG : G ∈ adjointSubmodule F (d - 3)) (hG0 : G ≠ 0) :
+    ¬ F ∣ G := fun h ↦
+  (Fact.out : Irreducible F).not_isUnit
+    ((hF.isRelPrime_of_irreducible Fact.out (mem_adjointSubmodule_iff.1 hG).1 hG0
+      (by omega)) dvd_rfl h)
+
+/-- **Effective canonical divisors are cut out by adjoints of degree `d - 3`**: for `3 ≤ d`, a
+divisor `W` of `k(C)` is effective and canonical exactly when `W = div G - E` for a nonzero
+adjoint `G` of degree `d - 3`. -/
+theorem nonneg_and_divisorClass_eq_canonicalClass_iff (hd : 3 ≤ d)
+    {W : Divisor k (functionField hF)} :
+    0 ≤ W ∧ (Place.orderSystem (functionField.isFunctionField hF)).divisorClass W =
+        canonicalClass (functionField.isFunctionField hF) isIntegrallyClosedIn_of_isAlgClosed ↔
+      ∃ (G : MvPolynomial (Fin 3) k) (hG : G ∈ adjointSubmodule F (d - 3)), G ≠ 0 ∧
+        W = formDivisor hF (mem_adjointSubmodule_iff.1 hG).1 - adjointDivisor hF := by
+  have hK := functionField.isFunctionField hF
+  constructor
+  · rintro ⟨hW, hWK⟩
+    obtain ⟨i, hi⟩ := projectivePlaneCurve.exists_not_dvd_X (Fact.out : Irreducible F)
+    have hL : (X i : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k i
+    have hE := divisorClass_sub_three_zsmul_formDivisor_sub_adjointDivisor_eq_canonicalClass
+      (hF := hF) hord hL hi
+    rw [← nsmul_formDivisor_sub_three hd hL] at hE
+    -- `W - E_{d-3}` is the divisor of a function `z ∈ L(E_{d-3})`.
+    obtain ⟨z, hz⟩ := (Divisor.divisorClass_eq_zero_iff hK).1
+      (show (Place.orderSystem hK).divisorClass
+          (W - ((d - 3) • formDivisor hF hL - adjointDivisor hF)) = 0 by
+        rw [map_sub, hWK, hE, sub_self])
+    have hzL : (z : functionField hF) ∈
+        riemannRochSpace ((d - 3) • formDivisor hF hL - adjointDivisor hF) := by
+      rw [mem_riemannRochSpace_units_iff hK, hz, sub_add_cancel]
+      exact hW
+    obtain ⟨G, hGz⟩ := adjointToRiemannRochSpace_surjective hord hL hi ⟨_, hzL⟩
+    have hGd := (mem_adjointSubmodule_iff.1 G.2).1
+    have hLm : (X i ^ (d - 3) : MvPolynomial (Fin 3) k).IsHomogeneous (d - 3) := by
+      simpa using hL.pow (d - 3)
+    have hFLm := not_dvd_pow_of_not_dvd hi (d - 3)
+    have hG0 : (G : MvPolynomial (Fin 3) k) ≠ 0 := by
+      intro h
+      have : G = 0 := Subtype.ext h
+      rw [this, map_zero] at hGz
+      exact z.ne_zero (congrArg Subtype.val hGz).symm
+    have hFG := not_dvd_of_mem_adjointSubmodule_sub_three hF hd G.2 hG0
+    have hzq : formQuotient hF hGd hLm hFG hFLm = z := by
+      refine Units.ext ?_
+      rw [coe_formQuotient, ← coe_adjointToRiemannRochSpace_apply hord hL hi hLm G]
+      exact congrArg Subtype.val hGz
+    refine ⟨G, G.2, hG0, ?_⟩
+    rw [sub_eq_iff_eq_add.1 hz.symm, ← hzq, principal_formQuotient,
+      formDivisor_congr hLm (hL.pow (d - 3)) rfl, formDivisor_pow hL hi]
+    abel
+  · rintro ⟨G, hG, hG0, rfl⟩
+    have hGd := (mem_adjointSubmodule_iff.1 hG).1
+    have hFG := not_dvd_of_mem_adjointSubmodule_sub_three hF hd hG hG0
+    exact ⟨sub_nonneg.2 ((isAdjoint_iff_le_formDivisor hord hGd hFG).1
+      (mem_adjointSubmodule_iff.1 hG).2),
+      divisorClass_formDivisor_sub_adjointDivisor_eq_canonicalClass hord hd hGd hFG⟩
+
+/-- **The adjoints of degree `d - 3` have dimension `g`**: for `3 ≤ d`, the space `V_{d-3}` of
+adjoints of degree `d - 3` has dimension the genus of `k(C)`. -/
+theorem finrank_adjointSubmodule_sub_three (hd : 3 ≤ d) :
+    Module.finrank k (adjointSubmodule F (d - 3)) = genus k (functionField hF) := by
+  have hK := functionField.isFunctionField hF
+  obtain ⟨i, hi⟩ := projectivePlaneCurve.exists_not_dvd_X (Fact.out : Irreducible F)
+  have hL : (X i : MvPolynomial (Fin 3) k).IsHomogeneous 1 := isHomogeneous_X k i
+  have hE := divisorClass_sub_three_zsmul_formDivisor_sub_adjointDivisor_eq_canonicalClass
+    (hF := hF) hord hL hi
+  rw [← nsmul_formDivisor_sub_three hd hL] at hE
+  rw [← dim_eq_finrank_adjointSubmodule (hF := hF) hord hL hi (m := d - 3) (by omega)]
+  exact (isRiemannRochDivisor_of_divisorClass_eq_canonicalClass hK _ hE).dim_eq hK
+    isIntegrallyClosedIn_of_isAlgClosed
 
 end PlaneCurves.Projective
 

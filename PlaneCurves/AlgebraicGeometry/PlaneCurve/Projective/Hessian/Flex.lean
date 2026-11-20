@@ -559,7 +559,7 @@ theorem IsNonsingular.exists_isFlex (hF : F.IsHomogeneous n) (h : IsNonsingular 
   obtain ⟨P, hP⟩ := zeroLocus_nonempty_of_card_le (n := 2) Finset.card_le_two hS
   rw [mem_zeroLocus_iff_eval_rep fun f hf ↦ (hS f hf).imp fun _ ↦ And.right] at hP
   have hPF : P ∈ zeroLocus {F} :=
-    (mem_zeroLocus_iff_eval_rep (by simpa using ⟨n, hF⟩)).2 (by simpa using hP F (by simp))
+    (mem_zeroLocus_singleton_iff hF).2 (by simpa using hP F (by simp))
   rcases (eval_det_hessian_eq_zero_iff hF hPF hchar).1 (hP H (by simp)) with hfl | hm
   · exact ⟨P, hfl⟩
   · exact absurd ((isNonsingular_iff_forall_isSimplePoint hF).1 h P hPF) hm.not_isSimplePoint
@@ -625,7 +625,7 @@ theorem IsNonsingular.intersectionNumber_det_hessian_eq (hF : F.IsHomogeneous 3)
   · have hfl : ¬IsFlex F P := fun hfl ↦ hPF (hfl.isSimplePoint.mem_zeroLocus hF)
     simp only [hfl, ↓reduceIte]
     refine (intersectionNumber_eq_zero_iff hH hF).2 (Or.inr fun h0 ↦ hPF ?_)
-    exact (mem_zeroLocus_iff_eval_rep (by simpa using ⟨3, hF⟩)).2 (by simpa using h0)
+    exact (mem_zeroLocus_singleton_iff hF).2 (by simpa using h0)
 
 /-- On a nonsingular cubic, when `6 ≠ 0` in `k`, the curve and its Hessian are relatively prime:
 otherwise `I(P, H ∩ F) = ⊤` at every point, in particular at a flex. -/

@@ -158,7 +158,7 @@ theorem IsNonsingular.isSimplePoint (hns : IsNonsingular F)
     (P : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k))) :
     IsSimplePoint F P.1 := by
   refine (isNonsingular_iff_forall_isSimplePoint hF).1 hns P.1 ?_
-  rw [mem_zeroLocus_iff_eval_rep (by simpa using ⟨d, hF⟩), Set.forall_mem_singleton]
+  rw [mem_zeroLocus_singleton_iff hF]
   exact (mem_zeroLocus_ideal_iff hF).1 P.2
 
 variable (hF) in
