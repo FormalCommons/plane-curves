@@ -62,6 +62,8 @@ point of the product, lowers it.
 * `PlaneCurves.Projective.exists_isQuadraticTransformSeq_forall_not_isTangentAt`: its corollary,
   a sequence after which `F_s` and `G_s` have only ordinary multiple points and no common
   tangent at any point, the last pair of Noether's formula.
+* `PlaneCurves.Projective.natCast_mul_eq_finsum_mult_mul_mult_add_spec`: Noether's formula, the
+  inequality, and, in characteristic zero, a sequence along which the formula holds, together.
 
 ## References
 
@@ -518,6 +520,67 @@ theorem exists_isQuadraticTransformSeq_forall_not_isTangentAt [CharZero k]
     exact hO.not_isTangentAt_and ⟨L, hLF, hLG⟩
 
 end Existence
+
+/-! ### Noether's formula -/
+
+/-- **Noether's formula for intersection numbers at infinitely near points** (Fulton, §7.4,
+Problems 7.15 and 7.16). Let `k` be algebraically closed and `F`, `G` forms of degrees `m` and `n`
+in `k[X, Y, Z]`. Along a sequence of `s` quadratic transformations, write `Fᵢ` and `Gᵢ` for the
+curves after `i` steps; the *neighbouring singularities* of the `i`-th step are the points `Q`
+over its centre.
+
+1. If `F` and `G` are nonzero and relatively prime, then for every sequence of quadratic
+   transformations of `F G` after which `F_s` and `G_s` have no common tangent at any point,
+   `m n = ∑_P m_P(F) m_P(G) + ∑_{i < s} ∑_Q m_Q(Fᵢ₊₁) m_Q(Gᵢ₊₁)`.
+2. If `F` is irreducible, then for every sequence of quadratic transformations of `F`,
+   `∑_P m_P(F)(m_P(F) - 1) + ∑_{i < s} ∑_Q m_Q(Fᵢ₊₁)(m_Q(Fᵢ₊₁) - 1) ≤ (m - 1)(m - 2)`.
+3. If `k` has characteristic zero and `F G` is squarefree, there is a sequence of quadratic
+   transformations of `F G` after which `F_s` and `G_s` have only ordinary multiple points and no
+   common tangent at any point, and the formula of 1 holds along it.
+
+The book states 1 and 2 for sequences that end at ordinary multiple points. Here 1 needs only that
+the last pair has no common tangent, and 2 holds for every sequence; both hold in every
+characteristic.
+
+Milestone: *Noether's formula for intersection numbers at infinitely near points*. -/
+theorem natCast_mul_eq_finsum_mult_mul_mult_add_spec [IsAlgClosed k] (hF : F.IsHomogeneous m)
+    (hG : G.IsHomogeneous n) :
+    (∀ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (s : ℕ), IsQuadraticTransformSeq M (F * G) s →
+      F ≠ 0 → G ≠ 0 → IsRelPrime F G →
+      (∀ P L, ¬(IsTangentAt (quadraticTransformSeq M F s) P L ∧
+        IsTangentAt (quadraticTransformSeq M G s) P L)) →
+      ((m * n : ℕ) : ℕ∞) = ∑ᶠ P, mult F P * mult G P +
+        ∑ i ∈ Finset.range s,
+          ∑ᶠ Q ∈ pointsOverCentre (linearSubst (M i) (quadraticTransformSeq M (F * G) i)),
+            mult (quadraticTransformSeq M F (i + 1)) Q *
+              mult (quadraticTransformSeq M G (i + 1)) Q) ∧
+    (∀ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (s : ℕ), IsQuadraticTransformSeq M F s →
+      Irreducible F →
+      ∑ᶠ P, ((mult F P).toNat : ℤ) * ((mult F P).toNat - 1) +
+          ∑ i ∈ Finset.range s,
+            ∑ᶠ Q ∈ pointsOverCentre (linearSubst (M i) (quadraticTransformSeq M F i)),
+              ((mult (quadraticTransformSeq M F (i + 1)) Q).toNat : ℤ) *
+                ((mult (quadraticTransformSeq M F (i + 1)) Q).toNat - 1) ≤
+        ((m : ℤ) - 1) * ((m : ℤ) - 2)) ∧
+    (CharZero k → Squarefree (F * G) →
+      ∃ (M : ℕ → Matrix (Fin 3) (Fin 3) k) (s : ℕ), IsQuadraticTransformSeq M (F * G) s ∧
+        (∀ P, IsMultiplePoint (quadraticTransformSeq M F s) P →
+          IsOrdinaryMultiplePoint (quadraticTransformSeq M F s) P) ∧
+        (∀ P, IsMultiplePoint (quadraticTransformSeq M G s) P →
+          IsOrdinaryMultiplePoint (quadraticTransformSeq M G s) P) ∧
+        (∀ P L, ¬(IsTangentAt (quadraticTransformSeq M F s) P L ∧
+          IsTangentAt (quadraticTransformSeq M G s) P L)) ∧
+        ((m * n : ℕ) : ℕ∞) = ∑ᶠ P, mult F P * mult G P +
+          ∑ i ∈ Finset.range s,
+            ∑ᶠ Q ∈ pointsOverCentre (linearSubst (M i) (quadraticTransformSeq M (F * G) i)),
+              mult (quadraticTransformSeq M F (i + 1)) Q *
+                mult (quadraticTransformSeq M G (i + 1)) Q) := by
+  refine ⟨fun M s h hF0 hG0 hFG hT ↦ h.natCast_mul_eq_finsum_mult_mul_mult_add hF hG hF0 hG0 hFG hT,
+    fun M s h hirr ↦ h.finsum_mult_mul_mult_sub_one_add_le hF hirr, fun _ hsq ↦ ?_⟩
+  obtain ⟨M, s, h, hFo, hGo, hT⟩ := exists_isQuadraticTransformSeq_forall_not_isTangentAt hF hG hsq
+  have hFG0 : F * G ≠ 0 := fun h0 ↦ not_squarefree_zero (h0 ▸ hsq)
+  exact ⟨M, s, h, hFo, hGo, hT, h.natCast_mul_eq_finsum_mult_mul_mult_add hF hG
+    (left_ne_zero_of_mul hFG0) (right_ne_zero_of_mul hFG0) (squarefree_mul_iff.1 hsq).1 hT⟩
 
 end PlaneCurves.Projective
 
