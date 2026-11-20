@@ -203,6 +203,15 @@ theorem irreducible (h : IsQuadraticTransformSeq M F s) (hF : F.IsHomogeneous n)
     obtain ⟨d, hd⟩ := isHomogeneous_quadraticTransformSeq (M := M) hF i
     exact (h.isQuadraticTransformAt hi).irreducible hd (ih (by omega))
 
+/-- Along a sequence of quadratic transformations, the curves of a nonzero form are nonzero. -/
+theorem ne_zero (h : IsQuadraticTransformSeq M F s) (hF : F.IsHomogeneous n) (hF0 : F ≠ 0)
+    {i : ℕ} (hi : i ≤ s) : quadraticTransformSeq M F i ≠ 0 := by
+  rcases i with _ | i
+  · exact hF0
+  · obtain ⟨d, hd⟩ := isHomogeneous_quadraticTransformSeq (M := M) hF i
+    rw [quadraticTransformSeq_succ, ne_eq, properTransform_eq_zero_iff (hd.linearSubst (M i))]
+    exact (h.isExcellentPosition hi).ne_zero
+
 /-- Along a sequence of quadratic transformations of a product `F G` of relatively prime forms,
 the curves of `F` and of `G` stay relatively prime. -/
 theorem isRelPrime (h : IsQuadraticTransformSeq M (F * G) s) (hF : F.IsHomogeneous n)
