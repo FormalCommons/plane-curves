@@ -124,12 +124,6 @@ theorem coeff_ofPoint_place (A : CubicGroup F O) (Q : Place k (functionField hF.
 
 /-! ### The divisor of a chord line -/
 
-omit [IsAlgClosed k] in
-/-- An irreducible cubic does not divide a chord line through a simple point. -/
-theorem not_dvd_chordLine (A B : CubicGroup F O) : ¬ F ∣ chordLine F A.point B.point :=
-  fun h ↦ hirr.out.not_isUnit (isRelPrime_chordLine hF.out hirr.out (by norm_num)
-    (Or.inr A.isSimplePoint) h dvd_rfl)
-
 /-- The coefficient of the divisor of the chord line through `A` and `B`, at a place `Q`, is the
 intersection number of the line and `C` at the centre of `Q`. -/
 theorem coeff_formDivisor_chordLine (A B : CubicGroup F O) (Q : Place k (functionField hF.out)) :
@@ -137,8 +131,7 @@ theorem coeff_formDivisor_chordLine (A B : CubicGroup F O) (Q : Place k (functio
       (intersectionCycle (chordLine F A.point B.point) F (center hF.out Q).1 : ℕ) := by
   classical
   have hL := isHomogeneous_chordLine F A.point B.point
-  have hrel := isRelPrime_chordLine hF.out hirr.out (by norm_num) (Or.inr A.isSimplePoint)
-    (Q := B.point)
+  have hrel := (isRelPrime_chordLine A B).symm
   have hZ := intersectionCycle_chordLine hF.out hirr.out A.isSimplePoint B.isSimplePoint
   by_cases hv : eval (center hF.out Q).1.rep (chordLine F A.point B.point) = 0
   · have hsupp :
