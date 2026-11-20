@@ -749,25 +749,15 @@ theorem exists_isExcellentPosition_avoiding_of_squarefree [IsAlgClosed k]
       Irreducible q ∧ q ∣ H := by
     rw [Multiset.mem_toFinset] at hq
     exact ⟨irreducible_of_factor q hq, dvd_of_mem_factors hq⟩
-  have hF (q : MvPolynomial (Fin 3) k) (hq : q ∈ (factors H).toFinset) :
-      q.IsHomogeneous q.totalDegree := by
-    obtain ⟨e, -, he⟩ :=
-      hH.exists_isHomogeneous_of_dvd hsq.ne_zero (hm q hq).2 (hm q hq).1.not_isUnit
-    rwa [he.totalDegree (hm q hq).1.ne_zero]
   obtain ⟨M, hM, hTP, hE, hR⟩ := exists_isExcellentPosition_prod_avoiding
-    (s := (factors H).toFinset) (F := id) hF (fun q hq ↦ (hm q hq).1)
-    (fun p hp q hq hpq ↦ (hm p hp).1.isRelPrime_iff_not_dvd.2 <|
-      hsq.not_dvd_of_mem_erase_factors (Multiset.mem_toFinset.1 hp)
-        ((Multiset.mem_erase_of_ne hpq.symm).2 (Multiset.mem_toFinset.1 hq)))
+    (s := (factors H).toFinset) (F := fun q ↦ q)
+    (fun q hq ↦ hH.isHomogeneous_totalDegree_of_dvd hsq.ne_zero (hm q hq).2)
+    (fun q hq ↦ (hm q hq).1)
+    (fun p hp q hq hpq ↦ hsq.pairwise_isRelPrime_toFinset_factors hp hq hpq)
     (fun q hq ↦ hP q (hm q hq).1 (hm q hq).2) hS hPS
-  -- `H` is the product of its factors, up to a nonzero constant.
-  obtain ⟨u, hu⟩ := factors_prod hsq.ne_zero
-  obtain ⟨c, hc, hcu⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
-  have hprod : ∏ q ∈ (factors H).toFinset, id q = (factors H).prod := by
-    simp [Finset.prod_eq_multiset_prod, Multiset.dedup_eq_self.2 hsq.nodup_factors]
+  obtain ⟨c, hc, hHc⟩ := exists_eq_smul_prod_toFinset_factors hsq
   refine ⟨M, hM, hTP, ?_, hR⟩
-  rw [← hu, hcu, mul_comm, ← smul_eq_C_mul, map_smul, ← hprod,
-    isExcellentPosition_smul_iff (isUnit_iff_ne_zero.1 hc)]
+  rw [hHc, map_smul, isExcellentPosition_smul_iff hc]
   exact hE
 
 /-- **Existence of excellent position for a squarefree form in characteristic zero.** Over an

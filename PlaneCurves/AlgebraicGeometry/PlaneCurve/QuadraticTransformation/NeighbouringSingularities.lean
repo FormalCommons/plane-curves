@@ -441,31 +441,19 @@ theorem exists_isQuadraticTransformSeq_forall_isOrdinaryMultiplePoint_of_squaref
     rw [Multiset.mem_toFinset] at hq
     exact ⟨irreducible_of_factor q hq, dvd_of_mem_factors hq⟩
   have hF (q : MvPolynomial (Fin 3) k) (hq : q ∈ (factors H).toFinset) :
-      q.IsHomogeneous q.totalDegree := by
-    obtain ⟨e, -, he⟩ :=
-      hH.exists_isHomogeneous_of_dvd hsq.ne_zero (hm q hq).2 (hm q hq).1.not_isUnit
-    rwa [he.totalDegree (hm q hq).1.ne_zero]
+      q.IsHomogeneous q.totalDegree :=
+    hH.isHomogeneous_totalDegree_of_dvd hsq.ne_zero (hm q hq).2
   obtain ⟨M, t, h, hord⟩ := exists_isQuadraticTransformSeq_prod_forall_isOrdinaryMultiplePoint
-    (s := (factors H).toFinset) (q := id) hF (fun q hq ↦ (hm q hq).1)
-    (fun p hp q hq hpq ↦ (hm p hp).1.isRelPrime_iff_not_dvd.2 <|
-      hsq.not_dvd_of_mem_erase_factors (Multiset.mem_toFinset.1 hp)
-        ((Multiset.mem_erase_of_ne hpq.symm).2 (Multiset.mem_toFinset.1 hq)))
-  -- `H` is the product of its factors, up to a nonzero constant.
-  obtain ⟨u, hu⟩ := factors_prod hsq.ne_zero
-  obtain ⟨c, hc, hcu⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
-  have hprod : ∏ q ∈ (factors H).toFinset, id q = (factors H).prod := by
-    simp [Finset.prod_eq_multiset_prod, Multiset.dedup_eq_self.2 hsq.nodup_factors]
-  have hP : (factors H).prod.IsHomogeneous ((factors H).toFinset.sum fun q ↦ q.totalDegree) :=
-    hprod ▸ IsHomogeneous.prod _ _ _ hF
-  have hHc : H = c • (factors H).prod := by
-    conv_lhs => rw [← hu]
-    rw [hcu, mul_comm, smul_eq_C_mul]
+    (s := (factors H).toFinset) (q := fun q ↦ q) hF (fun q hq ↦ (hm q hq).1)
+    (fun p hp q hq hpq ↦ hsq.pairwise_isRelPrime_toFinset_factors hp hq hpq)
+  obtain ⟨c, hc, hHc⟩ := exists_eq_smul_prod_toFinset_factors hsq
+  have hP := IsHomogeneous.prod _ _ _ hF
   refine ⟨M, t, ?_, fun P hP' ↦ ?_⟩
-  · rw [hHc, isQuadraticTransformSeq_smul_iff hP hc.ne_zero, ← hprod]
+  · rw [hHc, isQuadraticTransformSeq_smul_iff hP hc]
     exact h
-  · rw [hHc, quadraticTransformSeq_smul hP, ← hprod] at hP' ⊢
+  · rw [hHc, quadraticTransformSeq_smul hP] at hP' ⊢
     have := nonOrdinaryMultiplePoints_eq_empty_iff.2 hord
-    rw [← nonOrdinaryMultiplePoints_smul hc.ne_zero] at this
+    rw [← nonOrdinaryMultiplePoints_smul hc] at this
     exact nonOrdinaryMultiplePoints_eq_empty_iff.1 this P hP'
 
 /-- **Sequences of quadratic transformations to ordinary multiple points** (Fulton, §7.4,

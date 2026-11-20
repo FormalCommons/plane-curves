@@ -25,6 +25,9 @@ the same irreducible factors. These statements need no `NormalizationMonoid`, un
   non-associated irreducible elements is squarefree.
 * `Squarefree.nodup_factors`, `Squarefree.not_dvd_of_mem_erase_factors`: conversely, the
   irreducible factors of a squarefree element are pairwise distinct, and none divides another.
+* `Squarefree.pairwise_isRelPrime_toFinset_factors`, `Squarefree.associated_prod_toFinset_factors`:
+  the distinct irreducible factors of a squarefree element are pairwise relatively prime, and their
+  product is associated to it.
 * `UniqueFactorizationMonoid.dvd_mul_prod_pow_iff`: the irreducible factors of `u ∏ fᵢ^{eᵢ}`.
 * `Ideal.mem_radical_span_singleton_iff`, `Ideal.radical_span_singleton_eq_iff`,
   `Ideal.radical_span_singleton_eq_span`: the radical of a principal ideal.
@@ -142,6 +145,22 @@ theorem nodup_factors {x : R} (hx : Squarefree x) : (factors x).Nodup := by
   have hp' : 0 < ((factors x).erase p).count p := by rw [Multiset.count_erase_self]; omega
   exact hx.not_dvd_of_mem_erase_factors (Multiset.count_pos.1 hp) (Multiset.count_pos.1 hp')
     dvd_rfl
+
+/-- The distinct irreducible factors of a squarefree element are pairwise relatively prime. -/
+theorem pairwise_isRelPrime_toFinset_factors [DecidableEq R] {x : R} (hx : Squarefree x) :
+    ((factors x).toFinset : Set R).Pairwise IsRelPrime := by
+  intro p hp q hq hpq
+  rw [Finset.mem_coe, Multiset.mem_toFinset] at hp hq
+  exact (irreducible_of_factor p hp).isRelPrime_iff_not_dvd.2 <|
+    hx.not_dvd_of_mem_erase_factors hp ((Multiset.mem_erase_of_ne hpq.symm).2 hq)
+
+/-- A squarefree element is associated to the product of its distinct irreducible factors. -/
+theorem associated_prod_toFinset_factors [DecidableEq R] {x : R} (hx : Squarefree x) :
+    Associated (∏ q ∈ (factors x).toFinset, q) x := by
+  nontriviality R
+  rw [Finset.prod_eq_multiset_prod, Multiset.toFinset_val,
+    Multiset.dedup_eq_self.2 hx.nodup_factors, Multiset.map_id']
+  exact factors_prod hx.ne_zero
 
 end Squarefree
 

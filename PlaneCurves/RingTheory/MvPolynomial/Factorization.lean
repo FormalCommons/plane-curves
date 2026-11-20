@@ -5,8 +5,10 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import Mathlib.Algebra.MvPolynomial.Nilpotent
 public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import PlaneCurves.RingTheory.UniqueFactorizationDomain.Radical
 
 /-!
 # Factors of a multivariate polynomial
@@ -14,7 +16,8 @@ public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 Over a field, a nonzero polynomial has at most as many irreducible factors, counted with
 multiplicity, as its total degree. Over a unique factorization domain `R`, a nonzero polynomial
 `F ∈ R[X_σ]` factors as `F' U`, where `U` does not vanish at a given point `P` and every
-irreducible factor of `F'` vanishes at `P`.
+irreducible factor of `F'` vanishes at `P`. Over a field, a squarefree polynomial is a nonzero
+constant times the product of its distinct irreducible factors.
 
 ## Main results
 
@@ -22,6 +25,8 @@ irreducible factor of `F'` vanishes at `P`.
   `deg F` irreducible factors, counted with multiplicity.
 * `MvPolynomial.exists_eq_mul_eval_ne_zero`: a nonzero polynomial is `F' U` with `U(P) ≠ 0` and
   every irreducible factor of `F'` vanishing at `P`.
+* `MvPolynomial.exists_eq_smul_prod_toFinset_factors`: over a field, a squarefree polynomial is
+  `c ∏ q` with `c ≠ 0`, the product over its distinct irreducible factors.
 -/
 
 public section
@@ -65,6 +70,17 @@ theorem card_factors_le_totalDegree {k : Type*} [Field k] {F : MvPolynomial σ k
       exact hp.ne_zero (by rw [totalDegree_eq_zero_iff_eq_C.1 h0, hc, map_zero])
     have := ih ha
     omega
+
+/-- Over a field, a squarefree polynomial is a nonzero constant times the product of its distinct
+irreducible factors. -/
+theorem exists_eq_smul_prod_toFinset_factors {k : Type*} [Field k]
+    [DecidableEq (MvPolynomial σ k)] {F : MvPolynomial σ k} (hF : Squarefree F) :
+    ∃ c : k, c ≠ 0 ∧ F = c • ∏ q ∈ (UniqueFactorizationMonoid.factors F).toFinset, q := by
+  obtain ⟨u, hu⟩ := hF.associated_prod_toFinset_factors
+  obtain ⟨c, hc, hcu⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
+  refine ⟨c, hc.ne_zero, ?_⟩
+  conv_lhs => rw [← hu]
+  rw [hcu, smul_eq_C_mul, mul_comm]
 
 end MvPolynomial
 
