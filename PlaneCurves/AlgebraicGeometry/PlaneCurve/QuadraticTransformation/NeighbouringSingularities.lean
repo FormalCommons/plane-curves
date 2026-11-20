@@ -168,19 +168,6 @@ theorem natCast_mul_eq_finsum_mult_mul_mult_add [IsAlgClosed k]
   rw [hB, add_comm, add_assoc] at key
   exact WithTop.add_left_cancel (ENat.natCast_ne_top _) key
 
-/-- `2 * m.choose 2 = m (m - 1)` in `ℤ`, summed over a set. -/
-private theorem two_mul_finsum_mem_choose_two {α : Type*} (S : Set α) (f : α → ℕ) :
-    2 * ∑ᶠ a ∈ S, ((f a).choose 2 : ℤ) = ∑ᶠ a ∈ S, ((f a : ℤ) * ((f a : ℤ) - 1)) := by
-  rw [mul_finsum_mem]
-  refine finsum_mem_congr rfl fun a _ ↦ ?_
-  have h2 : 2 * (f a).choose 2 = f a * (f a - 1) := by
-    rw [Nat.choose_two_right, Nat.mul_div_cancel' (Nat.even_mul_pred_self _).two_dvd]
-  rcases Nat.eq_zero_or_pos (f a) with h0 | hpos
-  · simp [h0]
-  · have := congrArg (Nat.cast : ℕ → ℤ) h2
-    push_cast [Nat.cast_sub hpos] at this
-    exact this
-
 /-- **The virtual genus along a sequence of quadratic transformations** (Fulton, §7.4,
 Problem 7.16). Let `k` be algebraically closed and `F` an irreducible form, and apply a sequence of
 `s` quadratic transformations to it. Then
@@ -203,7 +190,8 @@ theorem two_mul_virtualGenus_eq [IsAlgClosed k] (h : IsQuadraticTransformSeq M F
       (hd.linearSubst (M s))
       ((irreducible_linearSubst_iff (Matrix.isUnit_det_of_mulVecLin_injective hM)).2 hirr')
     rw [virtualGenus_linearSubst hd hM, ← quadraticTransformSeq_succ] at hg
-    rw [ih (h.mono (Nat.le_succ s)), Finset.sum_range_succ, ← two_mul_finsum_mem_choose_two, hg]
+    rw [ih (h.mono (Nat.le_succ s)), Finset.sum_range_succ, hg, mul_sub, mul_finsum_mem]
+    simp_rw [Nat.two_mul_cast_choose_two]
     ring
 
 /-- **The inequality for neighbouring singularities** (Fulton, §7.4, Problem 7.16 (b)). Let `k` be

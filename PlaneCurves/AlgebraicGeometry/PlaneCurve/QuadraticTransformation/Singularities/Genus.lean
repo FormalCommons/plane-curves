@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.NormalForm
+public import PlaneCurves.Data.Nat.Choose.Cast
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Projective.MultiplePoints
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Singularities.Chart
 
@@ -72,15 +73,6 @@ theorem virtualGenus_def (F : MvPolynomial (Fin 3) k) :
     virtualGenus F = ((F.totalDegree - 1).choose 2 : ℤ) - ∑ᶠ P, ((mult F P).toNat.choose 2 : ℤ) :=
   (rfl)
 
-/-- `2 * m.choose 2 = m (m - 1)` in `ℤ`. -/
-private theorem two_mul_choose_two (m : ℕ) : 2 * (m.choose 2 : ℤ) = m * (m - 1) := by
-  induction m with
-  | zero => simp
-  | succ m ih =>
-    rw [Nat.choose_succ_succ', Nat.choose_one_right]
-    push_cast
-    linear_combination ih
-
 /-- The term `m_P(F)(m_P(F) - 1)/2` of the virtual genus is nonzero exactly at the multiple
 points of `F ≠ 0`. -/
 theorem choose_two_toNat_mult_ne_zero_iff (hF0 : F ≠ 0) (P : ℙ k (Fin 3 → k)) :
@@ -105,9 +97,9 @@ a nonzero form `F` of degree `n ≥ 1`. -/
 theorem two_mul_virtualGenus (hF : F.IsHomogeneous n) (hF0 : F ≠ 0) (hn : n ≠ 0) :
     2 * virtualGenus F = ((n : ℤ) - 1) * ((n : ℤ) - 2) -
       ∑ᶠ P, ((mult F P).toNat : ℤ) * ((mult F P).toNat - 1) := by
-  rw [virtualGenus_def, hF.totalDegree hF0, mul_sub, mul_finsum, two_mul_choose_two,
+  rw [virtualGenus_def, hF.totalDegree hF0, mul_sub, mul_finsum, Nat.two_mul_cast_choose_two,
     Nat.cast_sub (Nat.one_le_iff_ne_zero.2 hn)]
-  simp_rw [two_mul_choose_two]
+  simp_rw [Nat.two_mul_cast_choose_two]
   ring
 
 /-- The virtual genus does not change when `F` is multiplied by a nonzero scalar. -/
@@ -336,8 +328,9 @@ theorem virtualGenus_properTransform [IsAlgClosed k] (h : IsExcellentPosition F)
   rw [← hr]
   have key : 2 * ((2 * n - r - 1).choose 2 : ℤ) - 2 * (n.choose 2 : ℤ) -
       2 * (2 * ((n - r).choose 2 : ℤ)) = 2 * ((n - 1).choose 2 : ℤ) - 2 * (r.choose 2 : ℤ) := by
-    rw [mul_left_comm, two_mul_choose_two, two_mul_choose_two, two_mul_choose_two,
-      two_mul_choose_two, two_mul_choose_two, Nat.cast_sub (by omega), Nat.cast_sub (by omega),
+    rw [mul_left_comm, Nat.two_mul_cast_choose_two, Nat.two_mul_cast_choose_two,
+      Nat.two_mul_cast_choose_two, Nat.two_mul_cast_choose_two, Nat.two_mul_cast_choose_two,
+      Nat.cast_sub (by omega), Nat.cast_sub (by omega),
       Nat.cast_sub hrn, Nat.cast_sub (by omega)]
     push_cast
     ring
