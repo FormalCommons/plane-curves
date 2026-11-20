@@ -32,6 +32,8 @@ lower bound for `dim V_m` give `l(E_{d-3}) ≥ g`, and `deg E_{d-3} = 2 g - 2`.
   `deg ((d - 3) div L - E) = 2 g - 2`.
 * `PlaneCurves.Projective.genus_le_dim_zsmul_formDivisor_sub_adjointDivisor`:
   `g ≤ l((d - 3) div L - E)`.
+* `PlaneCurves.Projective.genus_functionField_of_isNonsingular`: a nonsingular plane curve of
+  degree `d` has genus `(d - 1)(d - 2) / 2`.
 * `PlaneCurves.Projective.two_mul_genus_eq_spec`: the milestone.
 
 ## References
@@ -212,6 +214,24 @@ theorem genus_le_dim_zsmul_formDivisor_sub_adjointDivisor :
 
 end Line
 
+/-! ### Nonsingular curves -/
+
+/-- **The genus of a nonsingular plane curve**: the function field of a nonsingular plane curve
+of degree `d` has genus `(d - 1)(d - 2) / 2`. -/
+theorem genus_functionField_of_isNonsingular (hF : F.IsHomogeneous d) (hns : IsNonsingular F) :
+    genus k (functionField hF) = (d - 1) * (d - 2) / 2 := by
+  have hg := two_mul_genus_eq hF fun P hP ↦ absurd hP (hns.not_isMultiplePoint hF P)
+  rw [finsum_mult_mul_eq_zero_of_isNonsingular hF hns, sub_zero] at hg
+  have h : (((d - 1) * (d - 2) : ℕ) : ℤ) = ((d : ℤ) - 1) * ((d : ℤ) - 2) := by
+    rcases d with _ | _ | d
+    · exact absurd rfl (hF.degree_ne_zero_of_irreducible Fact.out)
+    · simp
+    · push_cast [Nat.add_sub_cancel, show d + 1 + 1 - 2 = d by omega]
+      ring
+  rw [← h] at hg
+  generalize (d - 1) * (d - 2) = x at hg ⊢
+  omega
+
 /-! ### The milestone -/
 
 /-- **The genus formula for plane curves with only ordinary multiple points** (Fulton, §8.3,
@@ -227,7 +247,7 @@ projective plane curve of degree `d` all of whose multiple points are ordinary, 
    conics have genus `0`, cubics genus `1` and quartics genus `3`.
 
 The book states the formula as `g = (d - 1)(d - 2)/2 - ∑_P r_P (r_P - 1)/2`; both sides of the
-doubled form are integers. The nonsingular case is also
+doubled form are integers. The nonsingular case, in the book's form, is
 `PlaneCurves.Projective.genus_functionField_of_isNonsingular`.
 
 Milestone: *Genus formula for plane curves with only ordinary multiple points*. -/
