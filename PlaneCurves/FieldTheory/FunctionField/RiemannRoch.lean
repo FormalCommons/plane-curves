@@ -5,6 +5,8 @@ Authors: The FormalCommons contributors
 -/
 module
 
+public import TauCeti.FieldTheory.FunctionField.Consequences.Clifford
+public import TauCeti.FieldTheory.FunctionField.Consequences.HighDegree
 public import TauCeti.FieldTheory.FunctionField.Differential.CanonicalDivisor
 public import TauCeti.FieldTheory.FunctionField.RiemannRoch.Genus
 
@@ -16,7 +18,8 @@ dimension of the Riemann–Roch space of a divisor `D`. Tau Ceti proves Riemann'
 `ℓ(D) ≥ deg D + 1 - g` (`TauCeti.Divisor.degree_add_one_sub_genus_le_dim`), its Corollary 3,
 equality in large degree (`TauCeti.exists_forall_dim_eq_degree_add_one_sub_genus`), and the
 Riemann–Roch theorem. This file adds Corollaries 1 and 2 of Riemann's theorem and Noether's
-reduction lemma, in the form of Fulton's §8.3 and §8.6.
+reduction lemma, in the form of Fulton's §8.3 and §8.6, and the corollaries of the Riemann–Roch
+theorem that Tau Ceti does not state.
 
 The reduction lemma is proved by the short route through the Riemann–Roch theorem: for a place `P`
 of degree one, `ℓ(D + P) - ℓ(D) = 1 + ℓ(W - D - P) - ℓ(W - D)`, and the last difference is `0`
@@ -35,6 +38,12 @@ place has degree one (`TauCeti.Place.degree_eq_one_of_isAlgClosed_of_isFunctionF
   `W` satisfying the Riemann–Roch identity.
 * `TauCeti.Divisor.dim_add_ofPoint_eq_of_divisorClass_eq_canonicalClass`: **Noether's reduction
   lemma**, for `W` in the canonical class.
+* `TauCeti.Divisor.dim_sub_ofPoint_add_one`: Corollary 3 to the Riemann–Roch theorem,
+  `ℓ(D - P) = ℓ(D) - 1` if `deg D ≥ 2g`.
+* `TauCeti.Divisor.IsRiemannRochDivisor.two_mul_dim_le_degree_add_two`: **Clifford's theorem**
+  in the book's form, `2 ℓ(D) ≤ deg D + 2` if `ℓ(D) > 0` and `ℓ(W - D) > 0`.
+* `TauCeti.Divisor.IsRiemannRochDivisor.two_mul_dim_sub_dim_eq`: if `D + D' = W`, then
+  `2 (ℓ(D) - ℓ(D')) = deg D - deg D'`.
 
 ## References
 
@@ -144,6 +153,45 @@ theorem Divisor.dim_add_ofPoint_eq_of_divisorClass_eq_canonicalClass (hK : IsFun
     Divisor.dim (D + WeilDivisor.ofPoint P) = Divisor.dim D :=
   (isRiemannRochDivisor_of_divisorClass_eq_canonicalClass hK hex hW).dim_add_ofPoint_eq hK D hP h
 
+/-! ### Corollaries of the Riemann–Roch theorem -/
+
+/-- **Corollary 3 to the Riemann–Roch theorem** (Fulton, §8.6): if `deg D ≥ 2g`, then
+`ℓ(D - P) = ℓ(D) - 1` for every place `P` of degree one. -/
+theorem Divisor.dim_sub_ofPoint_add_one (hK : IsFunctionField k K)
+    (hex : IsIntegrallyClosedIn k K) {D : Divisor k K}
+    (hD : 2 * (genus k K : ℤ) ≤ Divisor.degree D) {P : Place k K} (hP : P.degree = 1) :
+    Divisor.dim (D - WeilDivisor.ofPoint P) + 1 = Divisor.dim D := by
+  have h1 := Divisor.dim_eq_degree_add_one_sub_genus_of_two_mul_genus_sub_one_le_degree hK hex
+    (D := D) (by omega)
+  have hdeg : Divisor.degree (D - WeilDivisor.ofPoint P) = Divisor.degree D - 1 := by
+    rw [Divisor.degree_sub, Divisor.degree_ofPoint, hP, Nat.cast_one]
+  have h2 := Divisor.dim_eq_degree_add_one_sub_genus_of_two_mul_genus_sub_one_le_degree hK hex
+    (D := D - WeilDivisor.ofPoint P) (by omega)
+  omega
+
+/-- **Clifford's theorem** (Fulton, §8.6, Corollary 4): if `W` is a Riemann–Roch divisor for the
+genus, `ℓ(D) > 0` and `ℓ(W - D) > 0`, then `2 ℓ(D) ≤ deg D + 2`. -/
+theorem Divisor.IsRiemannRochDivisor.two_mul_dim_le_degree_add_two (hK : IsFunctionField k K)
+    (hex : IsIntegrallyClosedIn k K) {W : Divisor k K} (hW : W.IsRiemannRochDivisor (genus k K))
+    {D : Divisor k K} (hD : 0 < Divisor.dim D) (hWD : 0 < Divisor.dim (W - D)) :
+    2 * (Divisor.dim D : ℤ) ≤ Divisor.degree D + 2 := by
+  have h0 : 0 ≤ Divisor.degree D :=
+    not_lt.1 fun h ↦ hD.ne' (Divisor.dim_eq_zero_of_degree_neg hK h)
+  have h1 : 0 ≤ Divisor.degree (W - D) :=
+    not_lt.1 fun h ↦ hWD.ne' (Divisor.dim_eq_zero_of_degree_neg hK h)
+  rw [Divisor.degree_sub, hW.degree_eq hK hex] at h1
+  exact Divisor.two_mul_dim_le_degree_add_two hK hex h0 (by omega)
+
+/-- **Problem 8.30 of Fulton**: if `W` is a Riemann–Roch divisor and `D + D' = W`, then
+`2 (ℓ(D) - ℓ(D')) = deg D - deg D'`. -/
+theorem Divisor.IsRiemannRochDivisor.two_mul_dim_sub_dim_eq {W : Divisor k K} {g₀ : ℕ}
+    (hW : W.IsRiemannRochDivisor g₀) {D D' : Divisor k K} (h : D + D' = W) :
+    2 * ((Divisor.dim D : ℤ) - Divisor.dim D') = Divisor.degree D - Divisor.degree D' := by
+  have hD := Divisor.isRiemannRochDivisor_iff.mp hW D
+  have hD' := Divisor.isRiemannRochDivisor_iff.mp hW D'
+  rw [← h, add_sub_cancel_left] at hD
+  rw [← h, add_sub_cancel_right] at hD'
+  linear_combination hD - hD'
 end TauCeti
 
 end

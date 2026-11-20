@@ -30,6 +30,8 @@ applies to the divisors of Kähler differentials, among them the Riemann–Roch 
 
 * `PlaneCurves.kaehlerDifferentialDivisor`: the divisor `div (ω)` of a nonzero Kähler
   differential.
+* `PlaneCurves.kaehlerDifferentialFiltration`: the space `Ω(D)` of the Kähler differentials `ω`
+  with `ω = 0` or `div ω ≥ D`.
 
 ## Main results
 
@@ -45,10 +47,13 @@ applies to the divisors of Kähler differentials, among them the Riemann–Roch 
   divisors of nonzero Kähler differentials are exactly the divisors of the canonical class.
 * `PlaneCurves.isRiemannRochDivisor_kaehlerDifferentialDivisor`: the Riemann–Roch theorem
   `ℓ(D) = deg D + 1 - g + ℓ(div ω - D)`.
+* `PlaneCurves.finrank_kaehlerDifferentialFiltration`: `dim_k Ω(D) = ℓ(div ω - D)`; and
+  `PlaneCurves.finrank_kaehlerDifferentialFiltration_zero`: the holomorphic differentials form a
+  space of dimension `g`.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §8.4 and §8.5
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §8.4, §8.5 and §8.6
 * [H. Stichtenoth, *Algebraic Function Fields and Codes*][Stichtenoth2009], §IV.3
 -/
 
@@ -200,6 +205,112 @@ theorem isRiemannRochDivisor_kaehlerDifferentialDivisor (ω : Ω[K⁄k]) (hω : 
     (kaehlerDifferentialDivisor hK hex ω hω).IsRiemannRochDivisor (genus k K) :=
   isRiemannRochDivisor_of_divisorClass_eq_canonicalClass hK hex
     (divisorClass_kaehlerDifferentialDivisor hK hex ω hω)
+
+/-! ### The spaces `Ω(D)` -/
+
+include hK in
+/-- Every Kähler differential is a multiple `f ω₀` of a given nonzero one. -/
+theorem exists_smul_eq_of_ne_zero {ω₀ : Ω[K⁄k]} (hω₀ : ω₀ ≠ 0) (ω : Ω[K⁄k]) :
+    ∃ f : K, f • ω₀ = ω := by
+  obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
+  exact (finrank_eq_one_iff_of_ne_zero' ω₀ hω₀).1
+    (finrank_kaehlerDifferential_eq_one_of_separating hx) ω
+
+/-- For a nonzero `ω₀` with divisor `W`, the multiple `f ω₀` is zero or has `div (f ω₀) ≥ D`
+exactly when `f ∈ L(W - D)`. -/
+private theorem forall_le_kaehlerDifferentialDivisor_smul_iff (D : Divisor k K) {ω₀ : Ω[K⁄k]}
+    (hω₀ : ω₀ ≠ 0) (f : K) :
+    (∀ hω : f • ω₀ ≠ 0, D ≤ kaehlerDifferentialDivisor hK hex (f • ω₀) hω) ↔
+      f ∈ riemannRochSpace (kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D) := by
+  rcases eq_or_ne f 0 with rfl | hf
+  · simp
+  have h := mem_riemannRochSpace_units_iff hK (z := Units.mk0 f hf)
+    (D := kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D)
+  rw [Units.val_mk0] at h
+  rw [h, ← add_sub_assoc, sub_nonneg, ← kaehlerDifferentialDivisor_smul hK hex hf hω₀]
+  exact ⟨fun h' ↦ h' (smul_ne_zero hf hω₀), fun h' _ ↦ h'⟩
+
+/-- The **space `Ω(D)` of differentials bounded by a divisor `D`** (Fulton, §8.6): the Kähler
+differentials `ω` of `K / k` with `ω = 0` or `div ω ≥ D`, a `k`-subspace of `Ω[K⁄k]`. The
+holomorphic differentials are `Ω(0)`. -/
+def kaehlerDifferentialFiltration (D : Divisor k K) : Submodule k Ω[K⁄k] where
+  carrier := {ω | ∀ hω : ω ≠ 0, D ≤ kaehlerDifferentialDivisor hK hex ω hω}
+  zero_mem' h := absurd rfl h
+  add_mem' {a b} ha hb := by
+    obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
+    have h0 := D_ne_zero_of_separating hx
+    obtain ⟨f, rfl⟩ := exists_smul_eq_of_ne_zero hK h0 a
+    obtain ⟨g, rfl⟩ := exists_smul_eq_of_ne_zero hK h0 b
+    simp only [Set.mem_ofPred_eq, forall_le_kaehlerDifferentialDivisor_smul_iff hK hex D h0,
+      ← add_smul] at ha hb ⊢
+    exact add_mem ha hb
+  smul_mem' c {a} ha := by
+    obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
+    have h0 := D_ne_zero_of_separating hx
+    obtain ⟨f, rfl⟩ := exists_smul_eq_of_ne_zero hK h0 a
+    simp only [Set.mem_ofPred_eq, forall_le_kaehlerDifferentialDivisor_smul_iff hK hex D h0]
+      at ha ⊢
+    rw [← smul_assoc, forall_le_kaehlerDifferentialDivisor_smul_iff hK hex D h0]
+    exact Submodule.smul_mem _ c ha
+
+theorem mem_kaehlerDifferentialFiltration_iff {D : Divisor k K} {ω : Ω[K⁄k]} :
+    ω ∈ kaehlerDifferentialFiltration hK hex D ↔
+      ∀ hω : ω ≠ 0, D ≤ kaehlerDifferentialDivisor hK hex ω hω :=
+  Iff.rfl
+
+/-- A nonzero differential lies in `Ω(D)` exactly when `div ω ≥ D`. -/
+theorem mem_kaehlerDifferentialFiltration_iff_le {D : Divisor k K} {ω : Ω[K⁄k]} (hω : ω ≠ 0) :
+    ω ∈ kaehlerDifferentialFiltration hK hex D ↔ D ≤ kaehlerDifferentialDivisor hK hex ω hω :=
+  ⟨fun h ↦ h hω, fun h _ ↦ h⟩
+
+/-- For a nonzero `ω₀`, `f ω₀ ∈ Ω(D)` exactly when `f ∈ L(div ω₀ - D)`. -/
+theorem smul_mem_kaehlerDifferentialFiltration_iff (D : Divisor k K) {ω₀ : Ω[K⁄k]}
+    (hω₀ : ω₀ ≠ 0) (f : K) :
+    f • ω₀ ∈ kaehlerDifferentialFiltration hK hex D ↔
+      f ∈ riemannRochSpace (kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D) :=
+  forall_le_kaehlerDifferentialDivisor_smul_iff hK hex D hω₀ f
+
+/-- **Duality** `L(W - D) ≅ Ω(D)` (Fulton, §8.6, Proposition 9): for a nonzero Kähler
+differential `ω₀` with divisor `W`, the map `f ↦ f ω₀` is a `k`-linear isomorphism from
+`L(W - D)` onto `Ω(D)`. -/
+def riemannRochSpaceEquivKaehlerDifferentialFiltration (D : Divisor k K) {ω₀ : Ω[K⁄k]}
+    (hω₀ : ω₀ ≠ 0) :
+    riemannRochSpace (kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D) ≃ₗ[k]
+      kaehlerDifferentialFiltration hK hex D :=
+  LinearEquiv.ofBijective
+    { toFun := fun f : riemannRochSpace (kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D) ↦
+        ⟨(f : K) • ω₀, (smul_mem_kaehlerDifferentialFiltration_iff hK hex D hω₀ (f : K)).2 f.2⟩
+      map_add' f g := Subtype.ext (by simp [add_smul])
+      map_smul' c f := Subtype.ext (by simp [smul_assoc]) }
+    ⟨fun f g h ↦ Subtype.ext (smul_left_injective K hω₀ (congrArg Subtype.val h)), fun ω ↦ by
+      obtain ⟨f, hf⟩ := exists_smul_eq_of_ne_zero hK hω₀ ω
+      exact ⟨⟨f, (smul_mem_kaehlerDifferentialFiltration_iff hK hex D hω₀ f).1 (hf ▸ ω.2)⟩,
+        Subtype.ext hf⟩⟩
+
+@[simp]
+theorem coe_riemannRochSpaceEquivKaehlerDifferentialFiltration_apply (D : Divisor k K)
+    {ω₀ : Ω[K⁄k]} (hω₀ : ω₀ ≠ 0)
+    (f : riemannRochSpace (kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D)) :
+    (riemannRochSpaceEquivKaehlerDifferentialFiltration hK hex D hω₀ f : Ω[K⁄k]) =
+      (f : K) • ω₀ :=
+  (rfl)
+
+/-- **`δ(D) = ℓ(W - D)`** (Fulton, §8.6, Proposition 9(1)): for a nonzero Kähler differential
+`ω₀` with divisor `W`, the space `Ω(D)` has dimension `ℓ(W - D)`. -/
+theorem finrank_kaehlerDifferentialFiltration (D : Divisor k K) {ω₀ : Ω[K⁄k]} (hω₀ : ω₀ ≠ 0) :
+    Module.finrank k (kaehlerDifferentialFiltration hK hex D) =
+      Divisor.dim (kaehlerDifferentialDivisor hK hex ω₀ hω₀ - D) := by
+    rw [Divisor.dim_def]
+    exact (riemannRochSpaceEquivKaehlerDifferentialFiltration hK hex D hω₀).finrank_eq.symm
+
+/-- **The holomorphic differentials form a space of dimension `g`** (Fulton, §8.6,
+Proposition 9(2)). -/
+theorem finrank_kaehlerDifferentialFiltration_zero :
+    Module.finrank k (kaehlerDifferentialFiltration hK hex 0) = genus k K := by
+  obtain ⟨x, hx, hsep⟩ := hK.exists_transcendental_and_isSeparable_adjoin_of_perfectField
+  have h0 := D_ne_zero_of_separating hx
+  rw [finrank_kaehlerDifferentialFiltration hK hex 0 h0, sub_zero]
+  exact (isRiemannRochDivisor_kaehlerDifferentialDivisor hK hex _ h0).dim_eq hK hex
 
 end PlaneCurves
 
