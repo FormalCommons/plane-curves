@@ -724,8 +724,7 @@ theorem exists_isTangentAt (hF : F.IsHomogeneous d) (hF0 : F ≠ 0) (hP : eval P
     lift mult F P to ℕ using mult_ne_top hF0 with m
     simpa using this
   have hQu : ¬IsUnit (leadingForm F P) := fun hu ↦ by
-    have := ((isHomogeneous_leadingForm F P).totalDegree hQ0).symm
-    rw [(isUnit_iff_totalDegree_of_isReduced.1 hu).2] at this
+    have := (isHomogeneous_leadingForm F P).eq_zero_of_isUnit hu
     omega
   obtain ⟨q, hq, hqQ⟩ := WfDvdMonoid.exists_irreducible_factor hQu hQ0
   obtain ⟨L, hL, -⟩ := exists_isTangentAt_associated_of_dvd hF hF0 hq hqQ
