@@ -83,16 +83,6 @@ section LeadingForm
 
 variable {k : Type*} [Field k] {F : MvPolynomial (Fin 3) k} {n : ℕ}
 
-private theorem leadingFormAt_X_single_two {j : Fin 3} (hj : j ≠ 2) :
-    (X j : MvPolynomial (Fin 3) k).leadingFormAt (Pi.single 2 1) = X j := by
-  have h := leadingFormAt_taylor (Pi.single 2 1) 0 (X j : MvPolynomial (Fin 3) k)
-  rwa [zero_add, taylor_X, Pi.single_eq_of_ne hj, C_0, add_zero,
-    (isHomogeneous_X k j).leadingFormAt_zero, eq_comm] at h
-
-private theorem orderAt_X_single_two {j : Fin 3} (hj : j ≠ 2) :
-    (X j : MvPolynomial (Fin 3) k).orderAt (Pi.single 2 1) = 1 := by
-  simpa [Pi.single_eq_of_ne hj] using orderAt_X_sub_C (R := k) (Pi.single 2 1) j
-
 /-- `F(Y, X, 0)` is a form of degree `n`. -/
 private theorem isHomogeneous_aeval_X_one_X_zero (hF : F.IsHomogeneous n) :
     (aeval (![X 1, X 0, 0] : Fin 3 → MvPolynomial (Fin 3) k) F).IsHomogeneous n := by
@@ -153,8 +143,8 @@ private theorem add_one_le_orderAt_X_mul_X_mul_quadraticTransform {K : MvPolynom
       fin_cases i <;> simp
     rw [h0]
     exact (hXK.of_mul_right (X_ne_zero 2)).natCast_le_orderAt_zero
-  rw [orderAt_mul, orderAt_mul, orderAt_X_single_two (by decide),
-    orderAt_X_single_two (by decide), ← hdeg]
+  rw [orderAt_mul, orderAt_mul, orderAt_X_of_eq_zero (by simp),
+    orderAt_X_of_eq_zero (by simp), ← hdeg]
   calc ((K.totalDegree + 1 : ℕ) : ℕ∞) + 1 = 1 + 1 + K.totalDegree := by push_cast; ring
     _ ≤ 1 + 1 + (quadraticTransform K).orderAt (Pi.single 2 1) := by gcongr
 
@@ -196,8 +186,8 @@ theorem X_pow_mul_leadingFormAt_properTransform_single_two (hF : F.IsHomogeneous
       aeval (![X 1, X 0, 0] : Fin 3 → MvPolynomial (Fin 3) k) F := by
   rw [← leadingFormAt_quadraticTransform_single_two hF hX, quadraticTransform_eq hF,
     leadingFormAt_mul, leadingFormAt_mul, leadingFormAt_mul, leadingFormAt_pow, leadingFormAt_pow,
-    leadingFormAt_pow, leadingFormAt_X_single_two (by decide),
-    leadingFormAt_X_single_two (by decide),
+    leadingFormAt_pow, leadingFormAt_X_of_eq_zero (by simp),
+    leadingFormAt_X_of_eq_zero (by simp),
     leadingFormAt_of_eval_ne_zero (by simp : eval (Pi.single 2 1 : Fin 3 → k) (X 2) ≠ 0)]
   simp
 

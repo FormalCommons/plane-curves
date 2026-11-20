@@ -56,6 +56,8 @@ tangent lines at the point.
 * `MvPolynomial.IsHomogeneous.orderAt_zero`: a nonzero form of degree `d` has order `d` at the
   origin.
 * `MvPolynomial.IsHomogeneous.leadingFormAt_zero`: a form is its own leading form at the origin.
+* `MvPolynomial.orderAt_X_of_eq_zero`, `MvPolynomial.leadingFormAt_X_of_eq_zero`: at a point
+  where `Xⱼ` vanishes, it has order one and is its own leading form.
 * `MvPolynomial.taylor_eq_leadingFormAt`: if the order at `a` is at least the total degree,
   `p(X + a)` is the leading form at `a`.
 * `MvPolynomial.orderAt_taylor_sub_leadingFormAt`: `p(X + a)` minus the leading form has order
@@ -384,6 +386,20 @@ theorem IsHomogeneous.leadingFormAt_zero {d : ℕ} (hp : p.IsHomogeneous d) :
   · exact MvPolynomial.leadingFormAt_zero 0
   rw [leadingFormAt_def, hp.orderAt_zero hp₀, ENat.toNat_natCast, taylor_zero]
   exact homogeneousComponent_of_mem ((mem_homogeneousSubmodule _ _).2 hp) |>.trans (ite_eq_left rfl)
+
+/-- A coordinate `Xⱼ` has order one at a point where it vanishes. -/
+theorem orderAt_X_of_eq_zero [Nontrivial R] {j : σ} (ha : a j = 0) :
+    (X j : MvPolynomial σ R).orderAt a = 1 := by
+  have h := orderAt_taylor a 0 (X j : MvPolynomial σ R)
+  rwa [zero_add, taylor_X, ha, C_0, add_zero, (isHomogeneous_X R j).orderAt_zero (X_ne_zero j),
+    Nat.cast_one, eq_comm] at h
+
+/-- A coordinate `Xⱼ` is its own leading form at a point where it vanishes. -/
+theorem leadingFormAt_X_of_eq_zero {j : σ} (ha : a j = 0) :
+    (X j : MvPolynomial σ R).leadingFormAt a = X j := by
+  have h := leadingFormAt_taylor a 0 (X j : MvPolynomial σ R)
+  rwa [zero_add, taylor_X, ha, C_0, add_zero, (isHomogeneous_X R j).leadingFormAt_zero,
+    eq_comm] at h
 
 end CommSemiring
 

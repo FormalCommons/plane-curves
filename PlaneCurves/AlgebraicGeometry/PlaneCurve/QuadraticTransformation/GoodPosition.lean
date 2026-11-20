@@ -353,12 +353,6 @@ theorem isGoodPosition_rename_iff (hF : F.IsHomogeneous n) (σ : Equiv.Perm (Fin
     rw [← rename_X, isTangentAt_rename_fundamentalPoint_iff hF σ]
     exact h _ _ fun e ↦ hij (congrArg σ e)
 
-private theorem leadingFormAt_X_of_eq_zero {j : Fin 3} {v : Fin 3 → k} (hv : v j = 0) :
-    (X j : MvPolynomial (Fin 3) k).leadingFormAt v = X j := by
-  have h := leadingFormAt_taylor v 0 (X j : MvPolynomial (Fin 3) k)
-  rwa [zero_add, taylor_X, hv, C_0, add_zero, (isHomogeneous_X k j).leadingFormAt_zero,
-    eq_comm] at h
-
 /-- A curve in good position has no exceptional component: an exceptional line `V(Xⱼ)` in it
 would be tangent to it at the fundamental points on `V(Xⱼ)`. -/
 theorem IsGoodPosition.not_X_dvd (h : IsGoodPosition F) (j : Fin 3) : ¬ X j ∣ F := by
