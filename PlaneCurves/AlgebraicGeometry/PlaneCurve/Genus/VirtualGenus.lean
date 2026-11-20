@@ -6,7 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Genus.Basic
-public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Resolution
+public import PlaneCurves.AlgebraicGeometry.PlaneCurve.QuadraticTransformation.Resolution.StrongForm
 public import PlaneCurves.FieldTheory.FunctionField.Rational
 public import TauCeti.FieldTheory.FunctionField.RiemannRoch.Equiv
 
