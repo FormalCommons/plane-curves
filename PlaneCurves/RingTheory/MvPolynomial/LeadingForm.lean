@@ -9,6 +9,7 @@ public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 public import Mathlib.Algebra.MvPolynomial.Nilpotent
 public import TauCeti.RingTheory.MvPolynomial.OrderAt
 public import PlaneCurves.RingTheory.MvPolynomial.LinearSubst
+public import PlaneCurves.RingTheory.MvPolynomial.Homogeneous
 import Mathlib.Algebra.MvPolynomial.CommRing
 import TauCeti.RingTheory.MvPolynomial.PoincareLemma
 import Mathlib.Tactic.LinearCombination
@@ -452,10 +453,9 @@ theorem isUnit_leadingFormAt_iff [IsDomain R] {p : MvPolynomial σ R}
     {a : σ → R} : IsUnit (p.leadingFormAt a) ↔ IsUnit (eval a p) := by
   refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
   · have hp : p ≠ 0 := by rintro rfl; simp at h
-    have hd := (isHomogeneous_leadingFormAt p a).totalDegree (leadingFormAt_ne_zero hp)
-    rw [(isUnit_iff_totalDegree_of_isReduced.1 h).2] at hd
     have h0 : p.orderAt a = 0 := by
-      rw [← natCast_toNat_orderAt hp, ← hd, Nat.cast_zero]
+      rw [← natCast_toNat_orderAt hp, (isHomogeneous_leadingFormAt p a).eq_zero_of_isUnit h,
+        Nat.cast_zero]
     rw [leadingFormAt_of_eval_ne_zero (orderAt_eq_zero_iff.1 h0)] at h
     simpa using h.map (constantCoeff (σ := σ) (R := R))
   · rw [leadingFormAt_of_eval_ne_zero h.ne_zero]

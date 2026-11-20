@@ -87,8 +87,7 @@ private theorem mul_eq_mul_of_isRelPrime {m' n' : ℕ} (hF : F.IsHomogeneous m)
     (hFG : IsRelPrime F G) : m * n = m' * n' := by
   have hdeg {H : MvPolynomial (Fin 3) k} {d d' : ℕ} (hH : H.IsHomogeneous d)
       (hH' : H.IsHomogeneous d') (hu : IsUnit H) : d = 0 ∧ d' = 0 := by
-    have h0 := (isUnit_iff_totalDegree_of_isReduced.1 hu).2
-    exact ⟨(hH.totalDegree hu.ne_zero).symm.trans h0, (hH'.totalDegree hu.ne_zero).symm.trans h0⟩
+    exact ⟨hH.eq_zero_of_isUnit hu, hH'.eq_zero_of_isUnit hu⟩
   by_cases hF0 : F = 0
   · subst hF0
     obtain ⟨h1, h2⟩ := hdeg hG hG' (isRelPrime_zero_left.1 hFG)

@@ -24,6 +24,7 @@ each of its homogeneous components.
 * `MvPolynomial.IsHomogeneous.aeval_one_X_eq_zero_iff`: a binary form `F` vanishes exactly when
   `F(1, Y)` does, and `MvPolynomial.IsHomogeneous.aeval_one_polynomial_X_eq_zero_iff` the same
   for `F(1, T)` as a polynomial in one variable.
+* `MvPolynomial.IsHomogeneous.eq_zero_of_isUnit`: a form that is a unit has degree `0`.
 * `MvPolynomial.IsHomogeneous.dvd_homogeneousComponent`: a form dividing a polynomial divides
   each of its homogeneous components.
 * `MvPolynomial.IsHomogeneous.isHomogeneous_totalDegree_of_dvd`: a divisor of a nonzero form is
@@ -94,6 +95,12 @@ theorem IsHomogeneous.dvd_homogeneousComponent {P : MvPolynomial σ R} (hF : F.I
   rw [mul_comm, hF.homogeneousComponent_mul_right]
   split_ifs
   exacts [dvd_mul_left _ _, dvd_zero _]
+
+/-- A form that is a unit has degree `0`. -/
+theorem IsHomogeneous.eq_zero_of_isUnit [Nontrivial R] (hF : F.IsHomogeneous d)
+    (hu : IsUnit F) : d = 0 := by
+  by_contra hd
+  simpa [hF.constantCoeff_eq_zero hd] using hu.map (constantCoeff (σ := σ) (R := R))
 
 /-- Over a field, a divisor of a nonzero form that is not a unit is a form of positive
 degree. -/

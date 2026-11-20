@@ -7,6 +7,7 @@ module
 
 public import PlaneCurves.AlgebraicGeometry.AffineSpace.Hypersurface
 public import PlaneCurves.AlgebraicGeometry.ProjectiveSpace.ProjectiveClosure
+public import PlaneCurves.RingTheory.MvPolynomial.Homogeneous
 
 /-!
 # Subvarieties of projective space
@@ -75,8 +76,7 @@ theorem eq_zeroLocus_singleton_or_eq_univ [IsAlgClosed k] {F : MvPolynomial (Fin
     rw [← hW, hbot, HomogeneousIdeal.coe_bot]
     exact zeroLocus_singleton_zero
   left
-  have hFu : ¬ IsUnit F := fun hu ↦ hd ((hF.totalDegree hF0).symm.trans
-    (isUnit_iff_totalDegree_of_isReduced.1 hu).2)
+  have hFu : ¬ IsUnit F := fun hu ↦ hd (hF.eq_zero_of_isUnit hu)
   obtain ⟨p, hp, hpF⟩ := WfDvdMonoid.exists_irreducible_factor hFu hF0
   -- `I(W) ⊆ I(V(F)) = Rad (F) ⊆ (p)`, so the nonzero prime `I(W)` is `(p)`, and then
   -- `I(V(F)) ⊆ (p) = I(W)`.

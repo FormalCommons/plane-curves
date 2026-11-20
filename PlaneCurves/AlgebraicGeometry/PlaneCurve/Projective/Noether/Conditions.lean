@@ -273,10 +273,7 @@ theorem exists_isHomogeneous_intersectionCycle_eq_add_of_forall_noetherCondition
     hFH hDF (hAB ▸ dvd_add (dvd_mul_of_dvd_right hDF A) (dvd_mul_of_dvd_left hDB G))
   have hBne : B ≠ 0 := by
     rintro rfl
-    have hu := isRelPrime_zero_right.1 hFB
-    have h := hF.totalDegree hu.ne_zero
-    rw [(isUnit_iff_totalDegree_of_isReduced.1 hu).2] at h
-    omega
+    exact hd.ne' (hF.eq_zero_of_isUnit (isRelPrime_zero_right.1 hFB))
   refine ⟨not_lt.1 fun h ↦ hBne (hB0 h), B, hB, hBne, hFB, ?_⟩
   rw [intersectionCycle_comm H, intersectionCycle_comm B, intersectionCycle_comm G, ← hAB,
     add_comm, intersectionCycle_add_mul, intersectionCycle_mul_right hF hB hG hFB hFG]
