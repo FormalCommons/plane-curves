@@ -41,6 +41,9 @@ applies to the divisors of Kähler differentials, among them the Riemann–Roch 
 * `PlaneCurves.kaehlerDifferentialDivisor_smul`: `div (f ω) = div f + div ω`.
 * `PlaneCurves.divisorClass_kaehlerDifferentialDivisor`: `div (ω)` represents Tau Ceti's
   canonical class.
+* `TauCeti.degree_eq_of_divisorClass_eq_canonicalClass` and
+  `TauCeti.dim_eq_of_divisorClass_eq_canonicalClass`: a canonical divisor `W` has
+  `deg W = 2g - 2` and `ℓ(W) = g`.
 * `PlaneCurves.divisorClass_eq_canonicalClass_iff_exists_kaehlerDifferentialDivisor_eq`: the
   divisors of nonzero Kähler differentials are exactly the divisors of the canonical class.
 * `PlaneCurves.isRiemannRochDivisor_kaehlerDifferentialDivisor`: the Riemann–Roch theorem
@@ -74,6 +77,20 @@ theorem coe_kaehlerDifferentialEquivWeilDifferentialOfSeparating_ne_zero
       Module.Dual k ↥(repartitionSpace k K))) ≠ 0 := by
   let := weilDifferentialSpaceModule hK
   simpa using hω
+
+/-- **A canonical divisor has degree `2g - 2`** (Stichtenoth, Corollary 1.5.16). -/
+theorem degree_eq_of_divisorClass_eq_canonicalClass (hK : IsFunctionField k K)
+    (hex : IsIntegrallyClosedIn k K) {W : Divisor k K}
+    (hW : (Place.orderSystem hK).divisorClass W = canonicalClass hK hex) :
+    Divisor.degree W = 2 * genus k K - 2 :=
+  (isRiemannRochDivisor_of_divisorClass_eq_canonicalClass hK hex hW).degree_eq hK hex
+
+/-- **A canonical divisor `W` has `ℓ(W) = g`** (Stichtenoth, Corollary 1.5.16). -/
+theorem dim_eq_of_divisorClass_eq_canonicalClass (hK : IsFunctionField k K)
+    (hex : IsIntegrallyClosedIn k K) {W : Divisor k K}
+    (hW : (Place.orderSystem hK).divisorClass W = canonicalClass hK hex) :
+    Divisor.dim W = genus k K :=
+  (isRiemannRochDivisor_of_divisorClass_eq_canonicalClass hK hex hW).dim_eq hK hex
 
 end TauCeti
 
