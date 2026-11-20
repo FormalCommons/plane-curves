@@ -58,12 +58,15 @@ and `N(F) + g*(F)` in characteristic zero, where no point is terrible.
 * `PlaneCurves.Projective.exists_reduction`: **reduction to ordinary multiple points**.
 * `PlaneCurves.Projective.exists_reduction_avoiding`: the reduction, with points, local rings and
   function field followed along it off a finite set disjoint from given simple points.
+* `PlaneCurves.Projective.exists_reduction_avoiding_of_le_degree`: the same, without the bound on
+  the number of steps, to a curve of degree at least any given `d`.
 * `PlaneCurves.Projective.exists_ordinary_model`: an irreducible curve has a birational plane
   model with only ordinary multiple points and virtual genus not larger.
 
 ## References
 
-* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.4, Problem 7.13, and Appendix A
+* [W. Fulton, *Algebraic Curves*][Fulton2008], §7.4, Problems 7.13 and 7.14, and
+  Appendix A
 -/
 
 public section
@@ -657,6 +660,123 @@ theorem exists_reduction [IsAlgClosed k] (hF : F.IsHomogeneous n) (hirr : Irredu
   obtain ⟨l, G, d, hG, hirrG, hc, hlG, hord, h2, h0, hg, -⟩ :=
     exists_reduction_avoiding hF hirr Set.finite_empty (S := ∅) (by simp)
   exact ⟨l, G, d, hc, hlG, hG, hirrG, hord, h2, h0, hg⟩
+
+
+/-- Two sequences of related terms, the second starting where the first ends, concatenate. -/
+private theorem exists_isChain_cons_getLast_eq {α : Type*} {R : α → α → Prop} {a b c : α}
+    {l₁ l₂ : List α} (h₁ : List.IsChain R (a :: l₁))
+    (e₁ : (a :: l₁).getLast (List.cons_ne_nil a l₁) = b) (h₂ : List.IsChain R (b :: l₂))
+    (e₂ : (b :: l₂).getLast (List.cons_ne_nil b l₂) = c) :
+    ∃ l : List α, List.IsChain R (a :: l) ∧ (a :: l).getLast (List.cons_ne_nil a l) = c := by
+  induction l₁ generalizing a with
+  | nil => exact ⟨l₂, by simp_all⟩
+  | cons x l ih =>
+    obtain ⟨hax, h⟩ := List.isChain_cons_cons.1 h₁
+    obtain ⟨l', hl', e⟩ := ih h (by simpa using e₁)
+    exact ⟨x :: l', List.isChain_cons_cons.2 ⟨hax, hl'⟩, by simpa using e⟩
+
+/-- A quadratic transformation centred at a point off the curve that is not terrible doubles the
+degree and keeps the virtual genus and the number of non-ordinary multiple points; it comes with
+the data of `exists_reduction_avoiding` for a finite set `S` of simple points. -/
+private theorem exists_avoids_two_mul [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    [Fact (Irreducible F)] {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite)
+    (hSF : ∀ P ∈ S, IsSimplePoint F P) :
+    ∃ (G : MvPolynomial (Fin 3) k) (hG : G.IsHomogeneous (2 * n)) (hirrG : Irreducible G),
+      IsQuadraticTransform F G ∧
+      (nonOrdinaryMultiplePoints G).ncard = (nonOrdinaryMultiplePoints F).ncard ∧
+      virtualGenus G = virtualGenus F ∧
+      haveI := Fact.mk hirrG
+      ∃ B φ e, Avoids hF hG S B φ e := by
+  have hirr : Irreducible F := Fact.out
+  have hT : {Q : ℙ k (Fin 3 → k) | IsTerriblePoint F Q.rep}.Finite :=
+    Set.Subsingleton.finite fun P hP Q hQ ↦ by
+      simpa using hP.mk_eq_mk hF hirr P.rep_ne_zero Q.rep_ne_zero hQ
+  obtain ⟨P, hP, hPT⟩ := exists_eval_rep_ne_zero_notMem (n := 2) two_ne_zero hF hirr.ne_zero hT
+  have hP0 : mult F P = 0 := nonpos_iff_eq_zero.1 (not_lt.1 (mt mult_pos_iff_eval_rep.1 hP))
+  have hPS : P ∉ S := fun h ↦ (mult_eq_zero_iff hF).1 hP0 ((hSF P h).mem_zeroLocus hF)
+  obtain ⟨G, d, hG, hirrG, h, B, φ, e, hA⟩ :=
+    exists_avoids_of_not_isTerriblePoint hF hPT hS hSF hPS
+  obtain rfl : d = 2 * n := hG.inj_right (by simpa [hP0] using h.isHomogeneous hF) hirrG.ne_zero
+  exact ⟨G, hG, hirrG, h.isQuadraticTransform,
+    h.ncard_nonOrdinaryMultiplePoints_eq hF (Or.inl (by simp [hP0])),
+    (h.virtualGenus_eq hF hirr (Or.inl (by simp [hP0]))).1, B, φ, e, hA⟩
+
+/-- Quadratic transformations centred at points off the curve raise the degree beyond any `d`,
+keeping the virtual genus and the number of non-ordinary multiple points, with the data of
+`exists_reduction_avoiding` for a finite set `S` of simple points. -/
+private theorem exists_avoids_le_degree [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    [Fact (Irreducible F)] {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite)
+    (hSF : ∀ P ∈ S, IsSimplePoint F P) (d : ℕ) :
+    ∃ (l : List (MvPolynomial (Fin 3) k)) (G : MvPolynomial (Fin 3) k) (m : ℕ)
+      (hG : G.IsHomogeneous m) (hirrG : Irreducible G),
+      List.IsChain IsQuadraticTransform (F :: l) ∧ (F :: l).getLast (List.cons_ne_nil F l) = G ∧
+      d ≤ m ∧ (nonOrdinaryMultiplePoints G).ncard = (nonOrdinaryMultiplePoints F).ncard ∧
+      virtualGenus G = virtualGenus F ∧
+      haveI := Fact.mk hirrG
+      ∃ B φ e, Avoids hF hG S B φ e := by
+  induction hμ : d - n using Nat.strong_induction_on generalizing F n S with
+  | _ μ ih =>
+  have hirr : Irreducible F := Fact.out
+  by_cases hd : d ≤ n
+  · exact ⟨[], F, n, hF, hirr, List.isChain_singleton F, rfl, hd, rfl, rfl, _, _, _,
+      avoids_refl hF hSF⟩
+  have hn := hF.degree_ne_zero_of_irreducible hirr
+  obtain ⟨G₁, hG₁, hirr₁, h₁, hN₁, hg₁, B₁, φ₁, e₁, hA₁⟩ := exists_avoids_two_mul hF hS hSF
+  have := Fact.mk hirr₁
+  have hS₁ : ∀ P ∈ φ₁ '' S, IsSimplePoint G₁ P := by
+    rintro _ ⟨s, hs, rfl⟩
+    exact hA₁.2.2.2.2.2.1 s ⟨(hSF s hs).mem_zeroLocus hF, Set.disjoint_left.1 hA₁.2.1 hs⟩
+  obtain ⟨l, G, m, hG, hirrG, hc, hlG, hdm, hN, hg, B₂, φ₂, e₂, hA₂⟩ :=
+    ih (d - 2 * n) (by omega) hG₁ (hS.image φ₁) hS₁ rfl
+  have := Fact.mk hirrG
+  exact ⟨G₁ :: l, G, m, hG, hirrG, List.isChain_cons_cons.2 ⟨h₁, hc⟩, by simpa using hlG, hdm,
+    hN.trans hN₁, hg.trans hg₁, _, _, _, Avoids.trans hA₁ hA₂⟩
+
+/-- **Reduction to ordinary multiple points, along a finite set of simple points, to arbitrarily
+large degree** (Fulton, Problems 7.13 and 7.14 (b)). Let `F` be an irreducible form over an
+algebraically closed field, `S` a finite set of simple points of `F`, and `d` a natural number.
+There is a finite sequence `F = F₁, …, F_m = G` of quadratic transformations such that `G` is an
+irreducible form of degree at least `d` with only ordinary multiple points and `g*(G) ≤ g*(F)`.
+Moreover there are a finite set `B` of points, disjoint from `S` and containing the multiple
+points of `F`, a map `φ : ℙ² → ℙ²` and an isomorphism `e : k(F) ≅ k(G)` such that `φ` is injective
+on `V(F) ∖ B`, its image `φ(V(F) ∖ B)` is cofinite in `V(G)` and consists of simple points of
+`G`, and `e` carries the local ring of `F` at each point `R` of `V(F) ∖ B` onto the local ring of
+`G` at `φ R`. -/
+theorem exists_reduction_avoiding_of_le_degree [IsAlgClosed k] (hF : F.IsHomogeneous n)
+    (hirr : Irreducible F) {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite)
+    (hSF : ∀ P ∈ S, IsSimplePoint F P) (d : ℕ) :
+    ∃ (l : List (MvPolynomial (Fin 3) k)) (G : MvPolynomial (Fin 3) k) (m : ℕ)
+      (hG : G.IsHomogeneous m) (hirrG : Irreducible G),
+      List.IsChain IsQuadraticTransform (F :: l) ∧ (F :: l).getLast (List.cons_ne_nil F l) = G ∧
+      (∀ Q, IsMultiplePoint G Q → IsOrdinaryMultiplePoint G Q) ∧ d ≤ m ∧
+      virtualGenus G ≤ virtualGenus F ∧
+      haveI := Fact.mk hirr
+      haveI := Fact.mk hirrG
+      ∃ (B : Set (ℙ k (Fin 3 → k))) (φ : ℙ k (Fin 3 → k) → ℙ k (Fin 3 → k))
+        (e : functionField hF ≃ₐ[k] functionField hG),
+        B.Finite ∧ Disjoint S B ∧ {Q | IsMultiplePoint F Q} ⊆ B ∧
+        Set.InjOn φ (zeroLocus {F} \ B) ∧ (zeroLocus {G} \ φ '' (zeroLocus {F} \ B)).Finite ∧
+        (∀ R ∈ zeroLocus {F} \ B, IsSimplePoint G (φ R)) ∧
+        ∀ (R : zeroLocus (projectivePlaneCurve.ideal hF : Set (MvPolynomial (Fin 3) k)))
+          (R' : zeroLocus (projectivePlaneCurve.ideal hG : Set (MvPolynomial (Fin 3) k))),
+          R.1 ∉ B → φ R.1 = R'.1 →
+            (localSubring hF R).map (e : functionField hF →+* _) = localSubring hG R' := by
+  have := Fact.mk hirr
+  obtain ⟨l₁, G₁, d₁, hG₁, hirr₁, hc₁, hl₁, hord₁, -, -, hg₁, B₁, φ₁, e₁, hA₁⟩ :=
+    exists_reduction_avoiding hF hirr hS hSF
+  have := Fact.mk hirr₁
+  have hS₁ : ∀ P ∈ φ₁ '' S, IsSimplePoint G₁ P := by
+    rintro _ ⟨s, hs, rfl⟩
+    exact hA₁.2.2.2.2.2.1 s ⟨(hSF s hs).mem_zeroLocus hF, Set.disjoint_left.1 hA₁.2.1 hs⟩
+  obtain ⟨l₂, G, m, hG, hirrG, hc₂, hl₂, hdm, hN, hg, B₂, φ₂, e₂, hA₂⟩ :=
+    exists_avoids_le_degree hG₁ (hS.image φ₁) hS₁ d
+  have := Fact.mk hirrG
+  obtain ⟨l, hc, hl⟩ := exists_isChain_cons_getLast_eq hc₁ hl₁ hc₂ hl₂
+  refine ⟨l, G, m, hG, hirrG, hc, hl, nonOrdinaryMultiplePoints_eq_empty_iff.1 ?_, hdm,
+    hg.trans_le hg₁, _, _, _, Avoids.trans hA₁ hA₂⟩
+  rw [nonOrdinaryMultiplePoints_eq_empty_iff.2 hord₁, Set.ncard_empty,
+    Set.ncard_eq_zero (nonOrdinaryMultiplePoints_finite hG hirrG)] at hN
+  exact hN
 
 end Avoiding
 
