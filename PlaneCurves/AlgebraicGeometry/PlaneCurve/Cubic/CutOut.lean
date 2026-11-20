@@ -6,6 +6,7 @@ Authors: The FormalCommons contributors
 module
 
 public import PlaneCurves.AlgebraicGeometry.PlaneCurve.Cubic.Flex
+public import PlaneCurves.Data.Finsupp.Multiset
 
 /-!
 # Points of a cubic cut out by a curve of degree `m`
@@ -58,31 +59,6 @@ variable {k : Type*} [Field k] {F G H : MvPolynomial (Fin 3) k} {O : ℙ k (Fin 
 
 namespace CubicGroup
 
-/-! ### Zero-cycles of points of the group -/
-
-/-- The zero-cycle of a multiset of points of the group has degree its cardinality. -/
-@[simp]
-theorem degree_sum_map_single (s : Multiset (CubicGroup F O)) :
-    (s.map fun A ↦ single A.point 1).sum.degree = Multiset.card s := by
-  rw [map_multiset_sum, Multiset.map_map]
-  simp [Finsupp.degree_single]
-
-/-- A point in the support of the zero-cycle of a multiset of points of the group is one of
-them. -/
-theorem exists_mem_of_sum_map_single_apply_ne_zero {s : Multiset (CubicGroup F O)}
-    {P : ℙ k (Fin 3 → k)} (h : (s.map fun A ↦ single A.point 1).sum P ≠ 0) :
-    ∃ A ∈ s, A.point = P := by
-  classical
-  induction s using Multiset.induction_on with
-  | empty => simp at h
-  | cons a s ih =>
-    rw [Multiset.map_cons, Multiset.sum_cons, Finsupp.add_apply] at h
-    by_cases ha : a.point = P
-    · exact ⟨a, Multiset.mem_cons_self _ _, ha⟩
-    · rw [Finsupp.single_eq_of_ne (Ne.symm ha), zero_add] at h
-      obtain ⟨A, hA, rfl⟩ := ih h
-      exact ⟨A, Multiset.mem_cons_of_mem hA, rfl⟩
-
 /-- If a form `G` meets `F` in the zero-cycle of a multiset of points of the group, then every
 point of `V(F) ∩ V(G)` is a simple point of `F`. -/
 theorem isSimplePoint_of_intersectionCycle_eq {d e : ℕ} (hG : G.IsHomogeneous e)
@@ -91,7 +67,7 @@ theorem isSimplePoint_of_intersectionCycle_eq {d e : ℕ} (hG : G.IsHomogeneous 
     (hPG : eval P.rep G = 0) (hPF : eval P.rep F = 0) : IsSimplePoint F P := by
   have hP := (mem_support_intersectionCycle_iff hG hF hGF).2 ⟨hPG, hPF⟩
   rw [h, Finsupp.mem_support_iff] at hP
-  obtain ⟨A, -, rfl⟩ := exists_mem_of_sum_map_single_apply_ne_zero hP
+  obtain ⟨A, -, rfl⟩ := Finsupp.exists_mem_of_multiset_sum_map_single_apply_ne_zero hP
   exact A.isSimplePoint
 
 private theorem exists_eq_cons_cons_cons_cons {α : Type*} {s : Multiset α}
@@ -152,7 +128,8 @@ theorem sum_eq_nsmul_of_intersectionCycle_eq {m : ℕ} (hG : G.IsHomogeneous m) 
   induction m using Nat.strong_induction_on generalizing G s with | _ m ih =>
   have hGF : IsRelPrime G F := (hirr.out.isRelPrime_iff_not_dvd.2 hFG).symm
   have hcard : Multiset.card s = m * 3 := by
-    rw [← degree_sum_map_single, ← h, degree_intersectionCycle hG hF.out hGF]
+    rw [← Finsupp.degree_multiset_sum_map_single s CubicGroup.point, ← h,
+      degree_intersectionCycle hG hF.out hGF]
   obtain _ | _ | n := m
   · simp [Multiset.card_eq_zero.1 hcard]
   · obtain ⟨A, B, C, rfl⟩ := Multiset.card_eq_three.1 hcard
