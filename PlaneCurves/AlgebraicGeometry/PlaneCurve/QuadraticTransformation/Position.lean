@@ -55,7 +55,8 @@ squarefree criterion by intersection numbers,
   when `F` and `G` are and meet on the fundamental triangle only at `P`;
   `PlaneCurves.Projective.IsExcellentPosition.of_mul_left`,
   `PlaneCurves.Projective.IsExcellentPosition.of_mul_right`,
-  `PlaneCurves.Projective.IsExcellentPosition.eq_fundamentalPoint_two_of_mem`.
+  `PlaneCurves.Projective.IsExcellentPosition.eq_fundamentalPoint_two_of_mem`;
+  `PlaneCurves.Projective.isExcellentPosition_prod_iff`, the same for finite products.
 * `PlaneCurves.Projective.exists_isExcellentPosition`: Fulton's Lemma 1, for every point that is
   not terrible, in any characteristic;
   `PlaneCurves.Projective.exists_isExcellentPosition_of_charZero` is the book's
@@ -68,6 +69,12 @@ squarefree criterion by intersection numbers,
   `PlaneCurves.Projective.exists_isQuadraticTransformAt_avoiding`: the same, with a given finite
   set `S` not containing the centre kept off the fundamental triangle (Problem 7.13 (a));
   `PlaneCurves.Projective.exists_isExcellentPosition` is the case `S = ∅`.
+* `PlaneCurves.Projective.exists_isExcellentPosition_prod_avoiding`: the same for a product of
+  pairwise relatively prime irreducible forms, and so
+  `PlaneCurves.Projective.exists_isExcellentPosition_avoiding_of_squarefree` for a squarefree
+  form and a point that is terrible for none of its factors;
+  `PlaneCurves.Projective.exists_isExcellentPosition_of_squarefree_of_charZero`, for every point
+  in characteristic zero.
 
 ## References
 
@@ -441,6 +448,52 @@ theorem eq_fundamentalPoint_two_of_mem (h : IsExcellentPosition (F * G))
 
 end IsExcellentPosition
 
+/-- The constant `1`, the empty curve, is in excellent position. -/
+theorem isExcellentPosition_one : IsExcellentPosition (1 : MvPolynomial (Fin 3) k) :=
+  ⟨isGoodPosition_def.2 fun _ _ _ ht ↦ by simpa using ht.eval_rep_eq_zero, fun _ Q hQ ↦
+    absurd hQ (by rw [zeroLocus_eq_empty_of_one_mem (by simp)]; exact Set.notMem_empty Q)⟩
+
+/-- **Excellent position of a finite product.** A product of forms is in excellent position
+exactly when each of them is, and no two of them have a common point on the fundamental triangle
+other than `[0 : 0 : 1]`. -/
+theorem isExcellentPosition_prod_iff {ι : Type*} {s : Finset ι} {F : ι → MvPolynomial (Fin 3) k}
+    {n : ι → ℕ} (hF : ∀ a ∈ s, (F a).IsHomogeneous (n a)) :
+    IsExcellentPosition (∏ a ∈ s, F a) ↔ (∀ a ∈ s, IsExcellentPosition (F a)) ∧
+      ∀ a ∈ s, ∀ b ∈ s, a ≠ b → ∀ j, ∀ Q ∈ zeroLocus {F a, F b, X j},
+        Q = fundamentalPoint 2 := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp [isExcellentPosition_one]
+  | insert a s has ih =>
+    have hFs (b : ι) (hb : b ∈ s) := hF b (Finset.mem_insert_of_mem hb)
+    have hmem (j : Fin 3) (Q : ℙ k (Fin 3 → k)) :
+        Q ∈ zeroLocus {F a, ∏ b ∈ s, F b, X j} ↔ ∃ b ∈ s, Q ∈ zeroLocus {F a, F b, X j} := by
+      simp only [zeroLocus_insert, Set.mem_inter_iff,
+        mem_zeroLocus_singleton_iff (IsHomogeneous.prod s F n hFs), eval_prod,
+        Finset.prod_eq_zero_iff]
+      constructor
+      · rintro ⟨h1, ⟨b, hb, h2⟩, h3⟩
+        exact ⟨b, hb, h1, (mem_zeroLocus_singleton_iff (hFs b hb)).2 h2, h3⟩
+      · rintro ⟨b, hb, h1, h2, h3⟩
+        exact ⟨h1, ⟨b, hb, (mem_zeroLocus_singleton_iff (hFs b hb)).1 h2⟩, h3⟩
+    rw [Finset.prod_insert has, isExcellentPosition_mul_iff (hF a (Finset.mem_insert_self a s))
+      (IsHomogeneous.prod s F n hFs), ih hFs]
+    simp only [hmem]
+    constructor
+    · rintro ⟨hEa, ⟨hEs, hps⟩, hc⟩
+      refine ⟨Finset.forall_mem_insert _ _ _ |>.2 ⟨hEa, hEs⟩, ?_⟩
+      simp only [Finset.mem_insert]
+      rintro x (rfl | hx) y (rfl | hy) hxy j Q hQ
+      · exact absurd rfl hxy
+      · exact hc j Q ⟨y, hy, hQ⟩
+      · exact hc j Q ⟨x, hx, by rwa [Set.insert_comm]⟩
+      · exact hps x hx y hy hxy j Q hQ
+    · rintro ⟨hE, hp⟩
+      exact ⟨hE a (Finset.mem_insert_self a s), ⟨fun b hb ↦ hE b (Finset.mem_insert_of_mem hb),
+        fun x hx y hy ↦ hp x (Finset.mem_insert_of_mem hx) y (Finset.mem_insert_of_mem hy)⟩,
+        fun j Q ⟨b, hb, hQ⟩ ↦ hp a (Finset.mem_insert_self a s) b (Finset.mem_insert_of_mem hb)
+          (fun h ↦ has (h ▸ hb)) j Q hQ⟩
+
 end Products
 
 /-! ### Existence of excellent position -/
@@ -530,6 +583,110 @@ private theorem isExcellentPosition_linearSubst_of_lines [IsAlgClosed k] (hF : F
     · rw [hIX]
       exact hI j _ (mem_zeroLocus_pair_iff.2 hQ) hTQP
 
+/-- **Existence of excellent position for a product, avoiding a finite set.** Let `k` be
+algebraically closed, `F a` for `a ∈ s` finitely many irreducible forms, pairwise relatively
+prime, `P` a point of `ℙ²` that is terrible for none of them, and `S` a finite set of points not
+containing `P`. Then there is a projective change of coordinates `T`, given by an invertible
+matrix `M`, with `T([0 : 0 : 1]) = P`, the product of the `F a (M X)` in excellent position, and
+`T⁻¹(S)` off the fundamental triangle `V(XYZ)`.
+
+The lines `T(V(X))` and `T(V(Y))` are two lines through `P` that meet each `F a` transversally
+in `deg F a - m_P(F a)` further points, are not tangent at `P`, and miss `S` and the common
+points of two of the curves other than `P`; `T(V(Z))` is a line through no point of the curves
+on them, and through neither `P`, a point of `S` nor a common point of two of the curves, that
+meets each `F a` transversally in `deg F a` points. -/
+theorem exists_isExcellentPosition_prod_avoiding [IsAlgClosed k] {ι : Type*} {s : Finset ι}
+    {F : ι → MvPolynomial (Fin 3) k} {n : ι → ℕ} (hF : ∀ a ∈ s, (F a).IsHomogeneous (n a))
+    (hirr : ∀ a ∈ s, Irreducible (F a))
+    (hrel : ∀ a ∈ s, ∀ b ∈ s, a ≠ b → IsRelPrime (F a) (F b)) {P : ℙ k (Fin 3 → k)}
+    (hP : ∀ a ∈ s, ¬ IsTerriblePoint (F a) P.rep) {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite)
+    (hPS : P ∉ S) :
+    ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+      map M.mulVecLin hM (fundamentalPoint 2) = P ∧
+        IsExcellentPosition (linearSubst M (∏ a ∈ s, F a)) ∧
+        ∀ R, map M.mulVecLin hM R ∈ S → R ∉ fundamentalTriangle := by
+  classical
+  have hℓ (c : Fin 3 → k) := isHomogeneous_sum_C_mul_X (σ := Fin 3) (R := k) c
+  -- The common points of two of the curves, other than `P`, are kept off the lines too.
+  set S₁ := S ∪ (⋃ a ∈ s, ⋃ b ∈ s.erase a, zeroLocus {F a, F b}) \ {P}
+  have hS₁ : S₁.Finite := hS.union ((s.finite_toSet.biUnion fun a ha ↦
+    (s.erase a).finite_toSet.biUnion fun b hb ↦ finite_zeroLocus_pair_of_isRelPrime (hF a ha)
+      (hF b (Finset.mem_of_mem_erase hb))
+      (hrel a ha b (Finset.mem_of_mem_erase hb) (Finset.ne_of_mem_erase hb).symm)).sdiff)
+  have hPS₁ : P ∉ S₁ := by simp [S₁, hPS]
+  have hr (a : ι) (ha : a ∈ s) : mult (F a) P = (mult (F a) P).toNat :=
+    (ENat.natCast_toNat (mult_ne_top (hirr a ha).ne_zero)).symm
+  -- Two distinct lines through `P` meeting every `F a` as the terrible-point theorem says, and
+  -- through no point of `S₁`.
+  have hgood := Filter.eventually_cofinite.1
+    (eventually_cofinite_forall_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF hirr hP hr)
+  obtain ⟨c₀, hc₀, c₁, hc₁, h01⟩ := ((infinite_setOf_eval_sum_C_mul_X_eq_zero P).sdiff
+    (hgood.union (finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite hS₁ P))).nontrivial
+  simp only [Set.mem_sdiff, Set.mem_union, Set.mem_ofPred_eq, not_or, not_not, not_and,
+    not_exists] at hc₀ hc₁
+  have hI₀ (a : ι) (ha : a ∈ s) := (hc₀.2.1 hc₀.1 a ha).2
+  have hI₁ (a : ι) (ha : a ∈ s) := (hc₁.2.1 hc₁.1 a ha).2
+  have h0 : c₀.rep ⬝ᵥ P.rep = 0 := by rw [← eval_sum_C_mul_X]; exact hc₀.1
+  have h1 : c₁.rep ⬝ᵥ P.rep = 0 := by rw [← eval_sum_C_mul_X]; exact hc₁.1
+  -- A third line, through no point of the curves on the first two, and not through `P` or `S₁`.
+  set S₂ := (⋃ a ∈ s, zeroLocus {F a, ∑ i, C (c₀.rep i) * X i} ∪
+    zeroLocus {F a, ∑ i, C (c₁.rep i) * X i}) ∪ {P} ∪ S₁
+  have hS₂ : S₂.Finite :=
+    ((s.finite_toSet.biUnion fun a ha ↦ (finite_zeroLocus_pair_of_isRelPrime (hF a ha) (hℓ _)
+      (isRelPrime_of_intersectionNumber_eq_one (hF a ha) (hirr a ha) (hℓ _) (hI₀ a ha).1)).union
+     (finite_zeroLocus_pair_of_isRelPrime (hF a ha) (hℓ _)
+      (isRelPrime_of_intersectionNumber_eq_one (hF a ha) (hirr a ha) (hℓ _)
+        (hI₁ a ha).1))).union (Set.finite_singleton P)).union hS₁
+  obtain ⟨c₂, hc₂, hI₂⟩ := exists_forall_ncard_zeroLocus_pair_sum_C_mul_X_eq hF hirr hS₂
+  have h2 : c₂.rep ⬝ᵥ P.rep ≠ 0 := by
+    rw [← eval_sum_C_mul_X]
+    exact hc₂ P (by simp [S₂])
+  -- The three lines are independent, so a change of coordinates moves them to `V(Xⱼ)`.
+  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X
+    (linearIndependent_rep_of_dotProduct h01 h0 h1 h2) Function.injective_id
+  set T := map M.mulVecLin hM
+  have hTP : T (fundamentalPoint 2) = P := by
+    rw [fundamentalPoint_def]
+    refine map_mk_single_eq_of_linearSubst_sum_C_mul_X_eq_X hM hMa fun j hj ↦ ?_
+    fin_cases j
+    exacts [h0, h1, absurd rfl hj]
+  have hzero (H : MvPolynomial (Fin 3) k) (Q : ℙ k (Fin 3 → k)) :
+      Q ∈ zeroLocus {linearSubst M H} ↔ T Q ∈ zeroLocus {H} := by
+    rw [← Set.image_singleton, zeroLocus_linearSubst]
+    rfl
+  -- A point of `V(Xⱼ)` is sent to the `j`-th line, which misses `S₁`.
+  have hoff (j : Fin 3) (Q : ℙ k (Fin 3 → k)) (hQ : Q ∈ zeroLocus {X j}) : T Q ∉ S₁ := by
+    rw [← show linearSubst M _ = X j from hMa j, hzero, mem_zeroLocus_singleton_sum_C_mul_X_iff,
+      ← eval_sum_C_mul_X] at hQ
+    intro hQS
+    fin_cases j
+    exacts [hc₀.2.2 hc₀.1 _ hQS (ne_of_mem_of_not_mem hQS hPS₁) hQ,
+      hc₁.2.2 hc₁.1 _ hQS (ne_of_mem_of_not_mem hQS hPS₁) hQ, hc₂ _ (Or.inr hQS) hQ]
+  refine ⟨M, hM, hTP, ?_, fun R hR hRT ↦ ?_⟩
+  · rw [map_prod, isExcellentPosition_prod_iff fun a ha ↦ (hF a ha).linearSubst M]
+    refine ⟨fun a ha ↦ isExcellentPosition_linearSubst_of_lines (hF a ha) (hirr a ha) hM hMa hTP
+      (fun j ↦ ?_) (fun j hj ↦ ?_) (fun j hj Q hQ hQ2 ↦ hc₂ Q ?_ ?_),
+      fun a ha b hb hab j Q hQ ↦ ?_⟩
+    · fin_cases j
+      exacts [(hI₀ a ha).1, (hI₁ a ha).1, fun Q hQ _ ↦ (hI₂ a ha).2 Q hQ]
+    · fin_cases j
+      exacts [(hI₀ a ha).2.trans (hr a ha).symm, (hI₁ a ha).2.trans (hr a ha).symm,
+        absurd rfl hj]
+    · fin_cases j
+      exacts [Or.inl (Or.inl (Set.mem_biUnion ha (Or.inl hQ))),
+        Or.inl (Or.inl (Set.mem_biUnion ha (Or.inr hQ))), absurd rfl hj]
+    · rw [eval_sum_C_mul_X]
+      exact (mem_zeroLocus_singleton_sum_C_mul_X_iff _ _).1 hQ2
+    · -- A common point of two of the curves on `V(Xⱼ)`, other than `[0 : 0 : 1]`, would be sent
+      -- to a point of `S₁` on the `j`-th line.
+      by_contra hQP
+      simp only [zeroLocus_insert, Set.mem_inter_iff, hzero] at hQ
+      refine hoff j Q hQ.2.2 (Or.inr ⟨Set.mem_biUnion ha (Set.mem_biUnion
+        (Finset.mem_erase.2 ⟨hab.symm, hb⟩) (mem_zeroLocus_pair_iff.2 ⟨hQ.1, hQ.2.1⟩)), ?_⟩)
+      exact fun h ↦ hQP (map_injective _ hM (h.trans hTP.symm))
+  · obtain ⟨j, hj⟩ := mem_fundamentalTriangle_iff.1 hRT
+    exact hoff j R (mem_zeroLocus_X_iff.2 hj) (Or.inl hR)
+
 /-- **Existence of excellent position, avoiding a finite set** (Fulton, §7.4, Lemma 1, and
 Problem 7.13 (a)). Let `k` be algebraically closed, `F` an irreducible form of degree `n`, `P` a
 point of `ℙ²`, on `F` or not, that is not terrible for `F`, and `S` a finite set of points not
@@ -547,66 +704,8 @@ theorem exists_isExcellentPosition_avoiding [IsAlgClosed k] (hF : F.IsHomogeneou
     ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
       map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) ∧
         ∀ R, map M.mulVecLin hM R ∈ S → R ∉ fundamentalTriangle := by
-  classical
-  obtain ⟨r, hr⟩ : ∃ r : ℕ, mult F P = r :=
-    (ENat.ne_top_iff_exists.1 (mult_ne_top hirr.ne_zero)).imp fun _ h ↦ h.symm
-  have hℓ (a : Fin 3 → k) := isHomogeneous_sum_C_mul_X (σ := Fin 3) (R := k) a
-  -- Two distinct lines through `P` meeting `F` as part (d) of the terrible-point theorem says,
-  -- and through no point of `S`.
-  have hgood := Filter.eventually_cofinite.1
-    (eventually_cofinite_ncard_zeroLocus_pair_diff_eq_of_not_isTerriblePoint hF hirr hP hr)
-  obtain ⟨c₀, hc₀, c₁, hc₁, h01⟩ := ((infinite_setOf_eval_sum_C_mul_X_eq_zero P).sdiff
-    (hgood.union (finite_setOf_eval_sum_C_mul_X_eq_zero_of_finite hS P))).nontrivial
-  simp only [Set.mem_sdiff, Set.mem_union, Set.mem_ofPred_eq, not_or, not_not, not_and,
-    not_exists] at hc₀ hc₁
-  obtain ⟨-, hI₀, hIP₀⟩ := hc₀.2.1 hc₀.1
-  obtain ⟨-, hI₁, hIP₁⟩ := hc₁.2.1 hc₁.1
-  have hS₀ (Q) (hQ : Q ∈ S) := hc₀.2.2 hc₀.1 Q hQ (ne_of_mem_of_not_mem hQ hPS)
-  have hS₁ (Q) (hQ : Q ∈ S) := hc₁.2.2 hc₁.1 Q hQ (ne_of_mem_of_not_mem hQ hPS)
-  have h0 : c₀.rep ⬝ᵥ P.rep = 0 := by rw [← eval_sum_C_mul_X]; exact hc₀.1
-  have h1 : c₁.rep ⬝ᵥ P.rep = 0 := by rw [← eval_sum_C_mul_X]; exact hc₁.1
-  -- A third line, through no point of `F` on the first two, and not through `P` or `S`.
-  set S' := zeroLocus {F, ∑ i, C (c₀.rep i) * X i} ∪ zeroLocus {F, ∑ i, C (c₁.rep i) * X i} ∪
-    {P} ∪ S
-  have hS' : S'.Finite :=
-    (((finite_zeroLocus_pair_of_isRelPrime hF (hℓ _)
-      (isRelPrime_of_intersectionNumber_eq_one hF hirr (hℓ _) hI₀)).union
-     (finite_zeroLocus_pair_of_isRelPrime hF (hℓ _)
-      (isRelPrime_of_intersectionNumber_eq_one hF hirr (hℓ _) hI₁))).union
-     (Set.finite_singleton P)).union hS
-  obtain ⟨c₂, hc₂, -, hI₂⟩ := exists_ncard_zeroLocus_pair_sum_C_mul_X_eq hF hirr hS'
-  have h2 : c₂.rep ⬝ᵥ P.rep ≠ 0 := by
-    rw [← eval_sum_C_mul_X]
-    exact hc₂ P (by simp [S'])
-  -- The three lines are independent, so a change of coordinates moves them to `V(Xⱼ)`.
-  obtain ⟨M, hM, hMa⟩ := exists_linearSubst_sum_C_mul_X_eq_X
-    (linearIndependent_rep_of_dotProduct h01 h0 h1 h2) Function.injective_id
-  have hTP : map M.mulVecLin hM (fundamentalPoint 2) = P := by
-    rw [fundamentalPoint_def]
-    refine map_mk_single_eq_of_linearSubst_sum_C_mul_X_eq_X hM hMa fun j hj ↦ ?_
-    fin_cases j
-    exacts [h0, h1, absurd rfl hj]
-  refine ⟨M, hM, hTP, isExcellentPosition_linearSubst_of_lines hF hirr hM hMa hTP
-    (fun j ↦ ?_) (fun j hj ↦ ?_) (fun j hj Q hQ hQ2 ↦ hc₂ Q ?_ ?_), fun R hR hRT ↦ ?_⟩
-  · fin_cases j
-    exacts [hI₀, hI₁, fun Q hQ _ ↦ hI₂ Q hQ]
-  · fin_cases j
-    exacts [hIP₀.trans hr.symm, hIP₁.trans hr.symm, absurd rfl hj]
-  · fin_cases j
-    exacts [Or.inl (Or.inl (Or.inl hQ)), Or.inl (Or.inl (Or.inr hQ)), absurd rfl hj]
-  · rw [eval_sum_C_mul_X]
-    exact (mem_zeroLocus_singleton_sum_C_mul_X_iff _ _).1 hQ2
-  · -- A point of `T⁻¹(S)` on `V(Xⱼ)` would put a point of `S` on the `j`-th line.
-    have hoff (j : Fin 3) (a : Fin 3 → k) (ha : linearSubst M (∑ i, C (a i) * X i) = X j)
-        (hRa : eval (map M.mulVecLin hM R).rep (∑ i, C (a i) * X i) ≠ 0) : R.rep j ≠ 0 := by
-      intro hj
-      rw [← mem_zeroLocus_X_iff, ← ha, ← Set.image_singleton, zeroLocus_linearSubst M hM,
-        Set.mem_preimage, mem_zeroLocus_singleton_sum_C_mul_X_iff, ← eval_sum_C_mul_X] at hj
-      exact hRa hj
-    obtain ⟨j, hj⟩ := mem_fundamentalTriangle_iff.1 hRT
-    refine hoff j _ (hMa j) ?_ hj
-    fin_cases j
-    exacts [hS₀ _ hR, hS₁ _ hR, hc₂ _ (Or.inr hR)]
+  simpa using exists_isExcellentPosition_prod_avoiding (s := {()}) (F := fun _ ↦ F)
+    (fun _ _ ↦ hF) (fun _ _ ↦ hirr) (by simp) (fun _ _ ↦ hP) hS hPS
 
 /-- **Existence of excellent position** (Fulton, §7.4, Lemma 1). Let `k` be algebraically closed,
 `F` an irreducible form of degree `n`, and `P` a point of `ℙ²`, on `F` or not, that is not
@@ -629,6 +728,81 @@ theorem exists_isExcellentPosition_of_charZero [IsAlgClosed k] [CharZero k]
     ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
       map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M F) :=
   exists_isExcellentPosition hF hirr (not_isTerriblePoint hF hirr P.rep_ne_zero)
+
+/-- In the multiset of irreducible factors of a squarefree element, no factor divides another one
+of the rest of the multiset: otherwise the square of a factor would divide the element. -/
+private theorem not_dvd_of_mem_erase_factors {R : Type*} [CommRing R] [IsDomain R]
+    [UniqueFactorizationMonoid R] [DecidableEq R] {H p q : R} (hH : Squarefree H)
+    (hp : p ∈ UniqueFactorizationMonoid.factors H)
+    (hq : q ∈ (UniqueFactorizationMonoid.factors H).erase p) : ¬ p ∣ q := by
+  intro hpq
+  have hdvd : p * p ∣ H := ((mul_dvd_mul_left p hpq).trans (by
+    rw [← Multiset.prod_erase hp]
+    exact mul_dvd_mul_left p (Multiset.dvd_prod hq))).trans
+    (UniqueFactorizationMonoid.factors_prod hH.ne_zero).dvd
+  exact (UniqueFactorizationMonoid.irreducible_of_factor p hp).not_isUnit (hH p hdvd)
+
+open UniqueFactorizationMonoid in
+/-- **Existence of excellent position for a squarefree form, avoiding a finite set.** Let `k` be
+algebraically closed, `H` a squarefree form, `P` a point of `ℙ²` that is terrible for no
+irreducible factor of `H`, and `S` a finite set of points not containing `P`. Then there is a
+projective change of coordinates `T`, given by an invertible matrix `M`, with
+`T([0 : 0 : 1]) = P`, `H^T = H(M X)` in excellent position, and `T⁻¹(S)` off the fundamental
+triangle `V(XYZ)`. -/
+theorem exists_isExcellentPosition_avoiding_of_squarefree [IsAlgClosed k]
+    {H : MvPolynomial (Fin 3) k} (hH : H.IsHomogeneous n) (hsq : Squarefree H)
+    {P : ℙ k (Fin 3 → k)} (hP : ∀ q, Irreducible q → q ∣ H → ¬ IsTerriblePoint q P.rep)
+    {S : Set (ℙ k (Fin 3 → k))} (hS : S.Finite) (hPS : P ∉ S) :
+    ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+      map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M H) ∧
+        ∀ R, map M.mulVecLin hM R ∈ S → R ∉ fundamentalTriangle := by
+  classical
+  have hm (q : MvPolynomial (Fin 3) k) (hq : q ∈ (factors H).toFinset) :
+      Irreducible q ∧ q ∣ H := by
+    rw [Multiset.mem_toFinset] at hq
+    exact ⟨irreducible_of_factor q hq, dvd_of_mem_factors hq⟩
+  have hF (q : MvPolynomial (Fin 3) k) (hq : q ∈ (factors H).toFinset) :
+      q.IsHomogeneous q.totalDegree := by
+    obtain ⟨e, -, he⟩ :=
+      hH.exists_isHomogeneous_of_dvd hsq.ne_zero (hm q hq).2 (hm q hq).1.not_isUnit
+    rwa [he.totalDegree (hm q hq).1.ne_zero]
+  have hnd : (factors H).Nodup := Multiset.nodup_iff_count_le_one.2 fun p ↦ by
+    by_contra! h
+    have hp : 0 < (factors H).count p := by omega
+    have hp' : 0 < ((factors H).erase p).count p := by rw [Multiset.count_erase_self]; omega
+    exact not_dvd_of_mem_erase_factors hsq (Multiset.count_pos.1 hp) (Multiset.count_pos.1 hp')
+      dvd_rfl
+  obtain ⟨M, hM, hTP, hE, hR⟩ := exists_isExcellentPosition_prod_avoiding
+    (s := (factors H).toFinset) (F := id) hF (fun q hq ↦ (hm q hq).1)
+    (fun p hp q hq hpq ↦ (hm p hp).1.isRelPrime_iff_not_dvd.2 <|
+      not_dvd_of_mem_erase_factors hsq (Multiset.mem_toFinset.1 hp)
+        ((Multiset.mem_erase_of_ne hpq.symm).2 (Multiset.mem_toFinset.1 hq)))
+    (fun q hq ↦ hP q (hm q hq).1 (hm q hq).2) hS hPS
+  -- `H` is the product of its factors, up to a nonzero constant.
+  obtain ⟨u, hu⟩ := factors_prod hsq.ne_zero
+  obtain ⟨c, hc, hcu⟩ := isUnit_iff_eq_C_of_isReduced.1 u.isUnit
+  have hprod : ∏ q ∈ (factors H).toFinset, id q = (factors H).prod := by
+    simp [Finset.prod_eq_multiset_prod, Multiset.dedup_eq_self.2 hnd]
+  refine ⟨M, hM, hTP, ?_, hR⟩
+  rw [← hu, hcu, mul_comm, ← smul_eq_C_mul, map_smul, ← hprod,
+    isExcellentPosition_smul_iff (isUnit_iff_ne_zero.1 hc)]
+  exact hE
+
+/-- **Existence of excellent position for a squarefree form in characteristic zero.** Over an
+algebraically closed field of characteristic zero, every point `P` of `ℙ²` can be moved to
+`[0 : 0 : 1]` by a projective change of coordinates that puts a squarefree form in excellent
+position, since no point is terrible for its irreducible factors. -/
+theorem exists_isExcellentPosition_of_squarefree_of_charZero [IsAlgClosed k] [CharZero k]
+    {H : MvPolynomial (Fin 3) k} (hH : H.IsHomogeneous n) (hsq : Squarefree H)
+    (P : ℙ k (Fin 3 → k)) :
+    ∃ (M : Matrix (Fin 3) (Fin 3) k) (hM : Function.Injective M.mulVecLin),
+      map M.mulVecLin hM (fundamentalPoint 2) = P ∧ IsExcellentPosition (linearSubst M H) := by
+  obtain ⟨M, hM, hTP, hE, -⟩ := exists_isExcellentPosition_avoiding_of_squarefree hH hsq
+    (fun q hq hqH ↦ by
+      obtain ⟨e, -, he⟩ := hH.exists_isHomogeneous_of_dvd hsq.ne_zero hqH hq.not_isUnit
+      exact not_isTerriblePoint he hq P.rep_ne_zero)
+    Set.finite_empty (Set.notMem_empty P)
+  exact ⟨M, hM, hTP, hE⟩
 
 end Existence
 
