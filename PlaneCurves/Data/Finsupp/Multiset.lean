@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Data.Finsupp.Weight
 public import Mathlib.Algebra.BigOperators.Finsupp.Basic
+public import Mathlib.Data.Finsupp.Multiset
 
 /-!
 # The finitely supported function counting the images of a multiset
@@ -20,6 +21,8 @@ For a map `g : α → β` and a multiset `s` of elements of `α`, the sum
 * `Finsupp.degree_multiset_sum_map_single`: its degree is the cardinality of `s`.
 * `Finsupp.exists_mem_of_multiset_sum_map_single_apply_ne_zero`: a point of its support is the
   image of an element of `s`.
+* `Multiset.sum_map_single_eq_toFinsupp`: it is the multiset `s.map g`, seen as a finitely
+  supported function.
 -/
 
 public section
@@ -45,5 +48,20 @@ theorem exists_mem_of_multiset_sum_map_single_apply_ne_zero {s : Multiset α} {g
   exact ⟨a, ha, (Finset.mem_singleton.1 (support_single_subset hb)).symm⟩
 
 end Finsupp
+
+namespace Multiset
+
+variable {α β : Type*}
+
+/-- The sum of `single (g a) 1` over a multiset `s` is the multiset `s.map g`, seen as a finitely
+supported function. -/
+theorem sum_map_single_eq_toFinsupp [DecidableEq β] (g : α → β) (s : Multiset α) :
+    (s.map fun a ↦ Finsupp.single (g a) 1).sum = toFinsupp (s.map g) := by
+  induction s using Multiset.induction_on with
+  | empty => simp
+  | cons a s ih =>
+    rw [map_cons, sum_cons, ih, map_cons, ← singleton_add, toFinsupp_add, toFinsupp_singleton]
+
+end Multiset
 
 end

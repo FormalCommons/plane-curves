@@ -90,12 +90,6 @@ theorem intersectionCycle_chordLine_eq (A B : CubicGroup F O) :
   rw [intersectionCycle_chordLine hF.out hirr.out A.isSimplePoint B.isSimplePoint]
   simp [add_assoc]
 
-omit [IsAlgClosed k] in
-/-- The chord line through two points of the group is not a component of `F`. -/
-theorem isRelPrime_chordLine (A B : CubicGroup F O) :
-    IsRelPrime F (chordLine F A.point B.point) :=
-  (Projective.isRelPrime_chordLine hF.out hirr.out (by norm_num) (Or.inr A.isSimplePoint)).symm
-
 /-- The product of the chord lines through `A₁, A₂` and through `A₃, A₄` meets `F` in
 `A₁ + A₂ + φ(A₁, A₂) + A₃ + A₄ + φ(A₃, A₄)`. -/
 theorem intersectionCycle_chordLine_mul_chordLine_eq (A₁ A₂ A₃ A₄ : CubicGroup F O) :
