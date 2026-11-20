@@ -35,9 +35,9 @@ canonical too; for `d = 3` this says that `-E` is canonical.
 * `PlaneCurves.Projective.exists_kaehlerDifferentialDivisor_eq_formDivisor_sub_adjointDivisor`:
   `div G - E` is the divisor of a nonzero Kähler differential.
 
-The degree `2g - 2` and the dimension `ℓ(W) = g` of a canonical divisor `W` are
-`TauCeti.degree_eq_of_divisorClass_eq_canonicalClass` and
-`TauCeti.dim_eq_of_divisorClass_eq_canonicalClass`.
+The degree `2g - 2` and the dimension `ℓ(W) = g` of a canonical divisor `W`
+come from `TauCeti.isRiemannRochDivisor_of_divisorClass_eq_canonicalClass` with
+`TauCeti.Divisor.IsRiemannRochDivisor.degree_eq` and `.dim_eq`.
 
 ## References
 
@@ -102,8 +102,7 @@ theorem divisorClass_neg_adjointDivisor_eq_canonicalClass (hd : d = 3) :
       canonicalClass (functionField.isFunctionField hF) isIntegrallyClosedIn_of_isAlgClosed := by
   obtain ⟨i, hi⟩ := projectivePlaneCurve.exists_not_dvd_X (Fact.out : Irreducible F)
   have h := divisorClass_sub_three_zsmul_formDivisor_sub_adjointDivisor_eq_canonicalClass
-    (hF := hF) hord
-    (isHomogeneous_X k i) hi
+    (hF := hF) hord (isHomogeneous_X k i) hi
   subst hd
   simpa using h
 
